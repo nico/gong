@@ -15,10 +15,7 @@ TOOLNAME = gong
 # LINK_COMPONENTS before including Makefile.rules
 include $(GONG_LEVEL)/../../Makefile.config
 
-#LINK_COMPONENTS := $(TARGETS_TO_BUILD) codegen
-
-LINK_COMPONENTS := $(TARGETS_TO_BUILD) asmparser bitreader bitwriter codegen \
-                   instrumentation ipo linker selectiondag support mc target
+LINK_COMPONENTS := $(TARGETS_TO_BUILD)
 USEDLIBS = 
 
 include $(GONG_LEVEL)/Makefile
