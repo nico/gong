@@ -64,10 +64,8 @@ public:
   enum TokenFlags {
     StartOfLine   = 0x01,  // At start of line or only after whitespace.
     LeadingSpace  = 0x02,  // Whitespace exists before this token.
-    DisableExpand = 0x04,  // This identifier may never be macro expanded.
     NeedsCleaning = 0x08,   // Contained an escaped newline or trigraph.
-    LeadingEmptyMacro = 0x10, // Empty macro exists before this token.
-    HasUDSuffix = 0x20     // This string or character literal has a ud-suffix.
+    LeadingEmptyMacro = 0x10 // Empty macro exists before this token.
   };
 
   tok::TokenKind getKind() const { return (tok::TokenKind)Kind; }
@@ -172,10 +170,6 @@ public:
 
   /// \brief Return true if this token has trigraphs or escaped newlines in it.
   bool needsCleaning() const { return (Flags & NeedsCleaning) ? true : false; }
-
-  /// \brief Return true if this token is a string or character literal which
-  /// has a ud-suffix.
-  bool hasUDSuffix() const { return (Flags & HasUDSuffix) ? true : false; }
 };
 
 }  // end namespace gong
