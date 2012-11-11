@@ -1,0 +1,11 @@
+lib/Basic/Debug+Asserts/*
+lib/Basic/Release+Asserts/*
+lib/Lex/Debug+Asserts/*
+lib/Lex/Release+Asserts/*
+test/lit.site.cfg
+test/Lexer/Output/*
+tools/driver/Debug+Asserts/*
+tools/driver/Release+Asserts/*
+*.swp
+*.swo
+*.swn
