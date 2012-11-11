@@ -434,9 +434,14 @@ void Lexer::LexIdentifier(Token &Result, const char *CurPtr) {
     C = *CurPtr++;
 
   --CurPtr;   // Back up over the skipped character.
+  const char *IdStart = BufferPtr;
 
   FormTokenWithChars(Result, CurPtr, tok::identifier);
-  //Result.setRawIdentifierData(IdStart);  // XXX
+
+  // Update the token info (identifier info and appropriate token kind).
+  IdentifierInfo *II = &Identifiers.get(StringRef(IdStart, Result.getLength()));
+  Result.setIdentifierInfo(II);
+  Result.setKind(II->getTokenID());
 }
 
 /// LexRuneLiteral - Lex the remainder of a character constant, after having
@@ -1159,7 +1164,7 @@ void Lexer::LexTokenInternal(Token &Result) {
 LexNextToken:
   // New token, can't need cleaning yet.
   Result.clearFlag(Token::NeedsCleaning);
-  //Result.setIdentifierInfo(0);
+  Result.setIdentifierInfo(0);
 
   // CurPtr - Cache BufferPtr in an automatic variable.
   const char *CurPtr = BufferPtr;

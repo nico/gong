@@ -14,8 +14,8 @@
 #ifndef LLVM_GONG_LEXER_H
 #define LLVM_GONG_LEXER_H
 
+#include "gong/Basic/IdentifierTable.h"
 #include "gong/Lex/Token.h"
-#include "llvm/ADT/SmallVector.h"
 #include <string>
 #include <cassert>
 
@@ -60,6 +60,10 @@ class Lexer {
   // IsAtStartOfLine - True if the next lexed token should get the "start of
   // line" flag set on it.
   bool IsAtStartOfLine;
+
+  /// This is mapping/lookup information for all identifiers in / the program,
+  /// including program keywords.
+  mutable IdentifierTable Identifiers;
 
   Lexer(const Lexer &) LLVM_DELETED_FUNCTION;
   void operator=(const Lexer &) LLVM_DELETED_FUNCTION;

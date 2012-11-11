@@ -48,8 +48,6 @@ class Token {
   ///  Literals:  isLiteral() returns true.
   ///    This is a pointer to the start of the token in a text buffer, which
   ///    may be dirty (have trigraphs / escaped newlines).
-  ///  Annotations (resolved type names, C++ scopes, etc): isAnnotation().
-  ///    This is a pointer to sema-specific data for the annotation token.
   ///  Other:
   ///    This is null.
   void *PtrData;
@@ -118,17 +116,13 @@ public:
     Loc = SourceLocation();
   }
 
-  //IdentifierInfo *getIdentifierInfo() const {
-  //  assert(isNot(tok::raw_identifier) &&
-  //         "getIdentifierInfo() on a tok::raw_identifier token!");
-  //  assert(!isAnnotation() &&
-  //         "getIdentifierInfo() on an annotation token!");
-  //  if (isLiteral()) return 0;
-  //  return (IdentifierInfo*) PtrData;
-  //}
-  //void setIdentifierInfo(IdentifierInfo *II) {
-  //  PtrData = (void*) II;
-  //}
+  IdentifierInfo *getIdentifierInfo() const {
+    if (isLiteral()) return 0;
+    return (IdentifierInfo*) PtrData;
+  }
+  void setIdentifierInfo(IdentifierInfo *II) {
+    PtrData = (void*) II;
+  }
 
   /// getLiteralData - For a literal token (numeric constant, string, etc), this
   /// returns a pointer to the start of it in the text buffer if known, null
