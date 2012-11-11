@@ -222,16 +222,6 @@ private:
     return *Ptr;
   }
 
-  /// getEscapedNewLineSize - Return the size of the specified escaped newline,
-  /// or 0 if it is not an escaped newline. P[-1] is known to be a "\" on entry
-  /// to this function.
-  static unsigned getEscapedNewLineSize(const char *P);
-
-  /// SkipEscapedNewLines - If P points to an escaped newline (or a series of
-  /// them), skip over them and return the first non-escaped-newline found,
-  /// otherwise return P.
-  static const char *SkipEscapedNewLines(const char *P);
-
   //===--------------------------------------------------------------------===//
   // Other lexer functions.
 
