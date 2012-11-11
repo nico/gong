@@ -105,6 +105,9 @@ public:
   /// offset in the current file.
   SourceLocation getSourceLocation(const char *Loc) const;
 
+  StringRef getSpelling(const Token &Tok) const;
+  void DumpToken(const Token &Tok, bool DumpFlags) const;
+
   /// \brief Return the current location in the buffer.
   const char *getBufferLocation() const { return BufferPtr; }
   

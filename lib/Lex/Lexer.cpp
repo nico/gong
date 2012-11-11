@@ -16,6 +16,7 @@
 #include "llvm/ADT/StringSwitch.h"
 #include "llvm/Support/MathExtras.h"
 #include "llvm/Support/MemoryBuffer.h"
+#include "llvm/Support/raw_ostream.h"
 #include <cstring>
 using namespace gong;
 
@@ -258,6 +259,34 @@ SourceLocation Lexer::getSourceLocation(const char *Loc) const {
          "Location out of range for this buffer!");
   return SourceLocation::getFromPointer(Loc);
 }
+
+StringRef Lexer::getSpelling(const Token &Tok) const {
+  SourceLocation Loc = Tok.getLocation();
+  return StringRef(Loc.getPointer(), Tok.getLength());
+}
+
+void Lexer::DumpToken(const Token &Tok, bool DumpFlags) const {
+  llvm::errs() << tok::getTokenName(Tok.getKind()) << " '"
+               << getSpelling(Tok) << "'";
+
+  if (!DumpFlags) return;
+
+  llvm::errs() << "\t";
+  if (Tok.isAtStartOfLine())
+    llvm::errs() << " [StartOfLine]";
+  if (Tok.hasLeadingSpace())
+    llvm::errs() << " [LeadingSpace]";
+  //if (Tok.needsCleaning()) {
+  //  const char *Start = SourceMgr.getCharacterData(Tok.getLocation());
+  //  llvm::errs() << " [UnClean='" << StringRef(Start, Tok.getLength())
+  //               << "']";
+  //}
+
+  //llvm::errs() << "\tLoc=<";
+  //DumpLocation(Tok.getLocation());
+  //llvm::errs() << ">";
+}
+
 
 // SkipLineComment - We have just read the // characters from input.  Skip until
 // we find the newline character thats terminate the comment.  Then update
@@ -2065,6 +2094,16 @@ LexNextToken:
     } else if (Char == '=') {
       Kind = tok::ampequal;
       CurPtr = ConsumeChar(CurPtr, SizeTmp, Result);
+    } else if (Char == '^') {
+      char After = getCharAndSize(CurPtr+SizeTmp, SizeTmp2);
+      if (After == '=') {
+        Kind = tok::ampcaretequal;
+        CurPtr = ConsumeChar(ConsumeChar(CurPtr, SizeTmp, Result),
+                             SizeTmp2, Result);
+      } else {
+        Kind = tok::ampcaret;
+        CurPtr = ConsumeChar(CurPtr, SizeTmp, Result);
+      }
     } else {
       Kind = tok::amp;
     }
@@ -2175,6 +2214,9 @@ LexNextToken:
     } else if (Char == '=') {
       CurPtr = ConsumeChar(CurPtr, SizeTmp, Result);
       Kind = tok::lessequal;
+    } else if (Char == '-') {
+      CurPtr = ConsumeChar(CurPtr, SizeTmp, Result);
+      Kind = tok::lessminus;
     } else {
       Kind = tok::less;
     }
@@ -2231,7 +2273,13 @@ LexNextToken:
     }
     break;
   case ':':
-    Kind = tok::colon;
+    Char = getCharAndSize(CurPtr, SizeTmp);
+    if (Char == '=') {
+      Kind = tok::colonequal;
+      CurPtr = ConsumeChar(CurPtr, SizeTmp, Result);
+    } else {
+      Kind = tok::colon;
+    }
     break;
   case ';':
     Kind = tok::semi;

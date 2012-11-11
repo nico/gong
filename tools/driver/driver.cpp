@@ -38,25 +38,36 @@
 #include <cctype>
 using namespace gong;
 
+void DumpTokens(const char* FileName) {
+  OwningPtr<llvm::MemoryBuffer> NewBuf;
+  llvm::MemoryBuffer::getFile(FileName, NewBuf);
+  if (NewBuf) {
+    Lexer L(NewBuf.get());
+    Token Tok;
+    do {
+      L.Lex(Tok);
+      //printf("tok: %s\n", Tok.getName());
+      L.DumpToken(Tok, true);
+      llvm::errs() << "\n";
+    } while (Tok.isNot(tok::eof));
+  }
+}
+
 int main(int argc_, const char **argv_) {
   llvm::sys::PrintStackTraceOnErrorSignal();
   llvm::PrettyStackTraceProgram X(argc_, argv_);
 
   llvm::InitializeAllTargets();
 
-  if (argc_ < 2)
-    return -1;
-
-  OwningPtr<llvm::MemoryBuffer> NewBuf;
-  llvm::MemoryBuffer::getFile(argv_[1], NewBuf);
-  if (NewBuf) {
-    Lexer L(NewBuf.get());
-    Token Tok;
-    while (Tok.isNot(tok::eof)) {
-      L.Lex(Tok);
-      printf("tok: %s\n", Tok.getName());
+  const char* FileName = NULL;
+  for (int i = 1; i < argc_; ++i)
+    if (argv_[i][0] != '-') {
+      FileName = argv_[i];
+      break;
     }
-  }
+
+  if (FileName)
+    DumpTokens(FileName);
 
   llvm::llvm_shutdown();
 
