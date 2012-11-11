@@ -48,7 +48,7 @@ public:
   //
 
   /// \brief Given a diagnostic ID, return a description of the issue.
-  StringRef getDescription(unsigned DiagID) const;
+  static StringRef getDescription(unsigned DiagID);
 
   /// \brief Get the set of all diagnostic IDs.
   //void getAllDiagnostics(llvm::SmallVectorImpl<diag::kind> &Diags) const;

@@ -102,9 +102,9 @@ DiagnosticIDs::DiagnosticIDs() {
 DiagnosticIDs::~DiagnosticIDs() {
 }
 
-/// getDescription - Given a diagnostic ID, return a description of the
+/// Given a diagnostic ID, return a description of the
 /// issue.
-StringRef DiagnosticIDs::getDescription(unsigned DiagID) const {
+StringRef DiagnosticIDs::getDescription(unsigned DiagID) {
   if (const StaticDiagInfoRec *Info = GetDiagInfo(DiagID))
     return Info->getDescription();
   return StringRef();

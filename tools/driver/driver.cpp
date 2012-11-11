@@ -32,6 +32,7 @@
 #include "llvm/Support/Path.h"
 #include "llvm/Support/Program.h"
 #include "llvm/Support/Signals.h"
+#include "llvm/Support/SourceMgr.h"
 #include "llvm/Support/TargetRegistry.h"
 #include "llvm/Support/TargetSelect.h"
 #include "llvm/Support/system_error.h"
@@ -39,10 +40,12 @@
 using namespace gong;
 
 void DumpTokens(const char* FileName) {
+  llvm::SourceMgr SM;
   OwningPtr<llvm::MemoryBuffer> NewBuf;
   llvm::MemoryBuffer::getFileOrSTDIN(FileName, NewBuf);
   if (NewBuf) {
-    Lexer L(NewBuf.get());
+    unsigned id = SM.AddNewSourceBuffer(NewBuf.take(), llvm::SMLoc());
+    Lexer L(SM, SM.getMemoryBuffer(id));
     Token Tok;
     do {
       L.Lex(Tok);

@@ -20,6 +20,7 @@ DIAG(null_in_rune,         "null character(s) in rune literal")
 DIAG(null_in_file,         "null character(s) in file")
 DIAG(nested_block_comment, "'/*' within block comment")
 
+DIAG(unterminated_raw_string, "missing terminating '`' character")
 DIAG(unterminated_string,  "missing terminating '\"' character")
 DIAG(unterminated_rune,    "missing terminating ' character")
 DIAG(unterminated_block_comment, "unterminated /* comment")
@@ -27,6 +28,7 @@ DIAG(unterminated_block_comment, "unterminated /* comment")
 DIAG(conflict_marker,      "version control conflict marker in file")
 
 // Literal
+DIAG(empty_rune,           "empty rune literal")
 //def ext_unknown_escape : ExtWarn<"unknown escape sequence '\\%0'">;
 //def err_hex_escape_no_digits : Error<"\\x used with no following hex digits">;
 //def err_ucn_escape_no_digits : Error<"\\u used with no following hex digits">;

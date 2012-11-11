@@ -13,9 +13,12 @@
 
 #include "gong/Lex/Lexer.h"
 
+#include "gong/Basic/DiagnosticIDs.h"
 #include "llvm/ADT/StringSwitch.h"
+#include "llvm/ADT/Twine.h"
 #include "llvm/Support/MathExtras.h"
 #include "llvm/Support/MemoryBuffer.h"
+#include "llvm/Support/SourceMgr.h"
 #include "llvm/Support/raw_ostream.h"
 #include <cstring>
 using namespace gong;
@@ -215,7 +218,8 @@ void Lexer::InitLexer(const char *BufStart, const char *BufPtr,
 /// with the specified preprocessor managing the lexing process.  This lexer
 /// assumes that the associated file buffer and Preprocessor objects will
 /// outlive it, so it doesn't take ownership of either of them.
-Lexer::Lexer(const llvm::MemoryBuffer *InputFile) {
+Lexer::Lexer(llvm::SourceMgr& SM, const llvm::MemoryBuffer *InputFile)
+    : SM(SM) {
   InitLexer(InputFile->getBufferStart(), InputFile->getBufferStart(),
             InputFile->getBufferEnd());
 
@@ -250,6 +254,11 @@ bool Lexer::LexEndOfFile(Token &Result, const char *CurPtr) {
 
   // Finally, let the preprocessor handle this.
   return false; //PP->HandleEndOfFile(Result, isPragmaLexer());
+}
+
+void Lexer::Diag(const char *Loc, unsigned DiagID) const {
+  SM.PrintMessage(llvm::SMLoc::getFromPointer(Loc), llvm::SourceMgr::DK_Error,
+      DiagnosticIDs::getDescription(DiagID));
 }
 
 /// getSourceLocation - Return a source location identifier for the specified
@@ -430,7 +439,7 @@ void Lexer::LexRuneLiteral(Token &Result, const char *CurPtr,
 
   char C = getAndAdvanceChar(CurPtr, Result);
   if (C == '\'') {
-    //Diag(BufferPtr, diag::ext_empty_character);  // XXX
+    Diag(BufferPtr, diag::empty_rune);
     FormTokenWithChars(Result, CurPtr, tok::unknown);
     return;
   }
@@ -443,7 +452,7 @@ void Lexer::LexRuneLiteral(Token &Result, const char *CurPtr,
       getAndAdvanceChar(CurPtr, Result);
     } else if (C == '\n' || C == '\r' ||             // Newline.
                (C == 0 && CurPtr-1 == BufferEnd)) {  // End of file.
-      //Diag(BufferPtr, diag::ext_unterminated_char);  XXX
+      Diag(BufferPtr, diag::unterminated_rune);
       FormTokenWithChars(Result, CurPtr-1, tok::unknown);
       return;
     } else if (C == 0) {
@@ -453,8 +462,8 @@ void Lexer::LexRuneLiteral(Token &Result, const char *CurPtr,
   }
 
   // If a nul character existed in the character, warn about it.
-  //if (NulCharacter)
-    //Diag(NulCharacter, diag::null_in_char);  // XXX
+  if (NulCharacter)
+    Diag(NulCharacter, diag::null_in_rune);
 
   // Update the location of token as well as BufferPtr.
   const char *TokStart = BufferPtr;
@@ -477,7 +486,7 @@ void Lexer::LexStringLiteral(Token &Result, const char *CurPtr,
     
     if (C == '\n' || C == '\r' ||             // Newline.
         (C == 0 && CurPtr-1 == BufferEnd)) {  // End of file.
-      //Diag(BufferPtr, diag::ext_unterminated_string);  // XXX
+      Diag(BufferPtr, diag::unterminated_string);
       FormTokenWithChars(Result, CurPtr-1, tok::unknown);
       return;
     }
@@ -489,8 +498,8 @@ void Lexer::LexStringLiteral(Token &Result, const char *CurPtr,
   }
 
   // If a nul character existed in the string, warn about it.
-  //if (NulCharacter && !isLexingRawMode())
-    //Diag(NulCharacter, diag::null_in_string);  // XXX
+  if (NulCharacter)
+    Diag(NulCharacter, diag::null_in_string);
 
   // Update the location of the token as well as the BufferPtr instance var.
   const char *TokStart = BufferPtr;
@@ -507,7 +516,7 @@ void Lexer::LexRawStringLiteral(Token &Result, const char *CurPtr,
   char C = getAndAdvanceChar(CurPtr, Result);
   while (C != '`') {
     if (C == 0 && CurPtr-1 == BufferEnd) {  // End of file.
-      //Diag(BufferPtr, diag::ext_unterminated_string);  // XXX
+      Diag(BufferPtr, diag::unterminated_raw_string);
       FormTokenWithChars(Result, CurPtr-1, tok::unknown);
       return;
     }
@@ -519,8 +528,8 @@ void Lexer::LexRawStringLiteral(Token &Result, const char *CurPtr,
   }
 
   // If a nul character existed in the string, warn about it.
-  //if (NulCharacter && !isLexingRawMode())
-    //Diag(NulCharacter, diag::null_in_string);  // XXX
+  if (NulCharacter)
+    Diag(NulCharacter, diag::null_in_string);
 
   // Update the location of the token as well as the BufferPtr instance var.
   const char *TokStart = BufferPtr;
@@ -553,7 +562,7 @@ bool Lexer::SkipBlockComment(Token &Result, const char *CurPtr) {
   unsigned char C = getCharAndSize(CurPtr, CharSize);
   CurPtr += CharSize;
   if (C == 0 && CurPtr == BufferEnd+1) {
-    //Diag(BufferPtr, diag::err_unterminated_block_comment);  // XXX
+    Diag(BufferPtr, diag::unterminated_block_comment);
     --CurPtr;
 
     BufferPtr = CurPtr;
@@ -623,12 +632,11 @@ bool Lexer::SkipBlockComment(Token &Result, const char *CurPtr) {
 
       if (CurPtr[0] == '*' && CurPtr[1] != '/') {
         // If this is a /* inside of the comment, emit a warning.  Don't do this
-        // if this is a /*/, which will end the comment.  This misses cases with
-        // embedded escaped newlines, but oh well.
-        //Diag(CurPtr-1, diag::warn_nested_block_comment); // XXX
+        // if this is a /*/, which will end the comment.
+        Diag(CurPtr-1, diag::nested_block_comment);
       }
     } else if (C == 0 && CurPtr == BufferEnd+1) {
-      //Diag(BufferPtr, diag::err_unterminated_block_comment);  // XXX
+      Diag(BufferPtr, diag::unterminated_block_comment);
       // Note: the user probably forgot a */.  We could continue immediately
       // after the /*, but this would involve lexing a lot of what really is the
       // comment, which surely would confuse the parser.
@@ -1050,7 +1058,7 @@ bool Lexer::IsStartOfConflictMarker(const char *CurPtr) {
   if (FindConflictEnd(CurPtr, BufferEnd, Kind)) {
     // We found a match.  We are really in a conflict marker.
     // Diagnose this, and ignore to the end of line.
-    //Diag(CurPtr, diag::err_conflict_marker);  // XXX
+    Diag(CurPtr, diag::conflict_marker);
     CurrentConflictMarkerState = Kind;
     
     // Skip ahead to the end of line.  We know this exists because the
@@ -1151,7 +1159,7 @@ LexNextToken:
       assert(false);
     }
 
-    //Diag(CurPtr-1, diag::null_in_file);   // XXX
+    Diag(CurPtr-1, diag::null_in_file);
     Result.setFlag(Token::LeadingSpace);
     if (SkipWhitespace(Result, CurPtr))
       return; // KeepWhitespaceMode

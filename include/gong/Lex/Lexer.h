@@ -21,6 +21,7 @@
 
 namespace llvm {
   class MemoryBuffer;
+  class SourceMgr;
 }
 
 namespace gong {
@@ -65,6 +66,8 @@ class Lexer {
   /// including program keywords.
   mutable IdentifierTable Identifiers;
 
+  llvm::SourceMgr& SM;
+
   Lexer(const Lexer &) LLVM_DELETED_FUNCTION;
   void operator=(const Lexer &) LLVM_DELETED_FUNCTION;
 
@@ -74,7 +77,7 @@ public:
   /// Lexer constructor - Create a new lexer object for the specified buffer.
   /// This lexer assumes that the associated file buffer objects will outlive
   /// it, so it doesn't take ownership of it.
-  Lexer(const llvm::MemoryBuffer *InputBuffer);
+  Lexer(llvm::SourceMgr& SM, const llvm::MemoryBuffer *InputBuffer);
 
   /// Lex - Return the next token in the file.  If this is the end of file, it
   /// return the tok::eof token.  This implicitly involves the preprocessor.
@@ -96,11 +99,11 @@ public:
 
   const char *getBufferStart() const { return BufferStart; }
 
-  /// Diag - Forwarding function for diagnostics.  This translate a source
-  /// position in the current buffer into a SourceLocation object for rendering.
-  //DiagnosticBuilder Diag(const char *Loc, unsigned DiagID) const;
+  /// Forwarding function for diagnostics.  This translate a source position
+  /// in the current buffer into a SourceLocation object for rendering.
+  void Diag(const char *Loc, unsigned DiagID) const;
 
-  /// getSourceLocation - Return a source location identifier for the specified
+  /// Return a source location identifier for the specified
   /// offset in the current file.
   SourceLocation getSourceLocation(const char *Loc) const;
 
