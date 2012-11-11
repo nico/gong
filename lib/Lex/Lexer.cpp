@@ -1940,14 +1940,6 @@ LexNextToken:
     while ((*CurPtr == ' ') || (*CurPtr == '\t'))
       ++CurPtr;
 
-    // If we are keeping whitespace and other tokens, just return what we just
-    // skipped.  The next lexer invocation will return the token after the
-    // whitespace.
-    //if (isKeepWhitespaceMode()) {
-      //FormTokenWithChars(Result, CurPtr, tok::unknown);
-      //return;
-    //}
-
     BufferPtr = CurPtr;
     Result.setFlag(Token::LeadingSpace);
   }
@@ -1969,8 +1961,7 @@ LexNextToken:
       assert(false);
     }
 
-    //if (!isLexingRawMode())
-      //Diag(CurPtr-1, diag::null_in_file);   // XXX
+    //Diag(CurPtr-1, diag::null_in_file);   // XXX
     Result.setFlag(Token::LeadingSpace);
     if (SkipWhitespace(Result, CurPtr))
       return; // KeepWhitespaceMode
@@ -2014,47 +2005,34 @@ LexNextToken:
     }
     goto LexNextToken;   // GCC isn't tail call eliminating.
       
-  // C99 6.4.4.1: Integer Constants.
-  // C99 6.4.4.2: Floating Constants.
+  // http://golang.org/ref/spec#Integer_literals
+  // http://golang.org/ref/spec#Floating-point_literals
   case '0': case '1': case '2': case '3': case '4':
   case '5': case '6': case '7': case '8': case '9':
-    // Notify MIOpt that we read a non-whitespace/non-comment token.
     return LexNumericConstant(Result, CurPtr);
 
+  // http://golang.org/ref/spec#Identifiers
   // XXX utf8
-  case 'u':   // Identifier (uber) or C++0x UTF-8 or UTF-16 string literal
-  case 'U':   // Identifier (Uber) or C++0x UTF-32 string literal
-  case 'R': // Identifier or C++0x raw string literal
-  case 'L':   // Identifier (Loony) or wide literal (L'x' or L"xyz").
-    // treat u/U like the start of an identifier.  (XXX: delete)
-    // FALL THROUGH, treating L like the start of an identifier.
-
-  // C99 6.4.2: Identifiers.
   case 'A': case 'B': case 'C': case 'D': case 'E': case 'F': case 'G':
-  case 'H': case 'I': case 'J': case 'K':    /*'L'*/case 'M': case 'N':
-  case 'O': case 'P': case 'Q':    /*'R'*/case 'S': case 'T':    /*'U'*/
+  case 'H': case 'I': case 'J': case 'K': case 'L': case 'M': case 'N':
+  case 'O': case 'P': case 'Q': case 'R': case 'S': case 'T': case 'U':
   case 'V': case 'W': case 'X': case 'Y': case 'Z':
   case 'a': case 'b': case 'c': case 'd': case 'e': case 'f': case 'g':
   case 'h': case 'i': case 'j': case 'k': case 'l': case 'm': case 'n':
-  case 'o': case 'p': case 'q': case 'r': case 's': case 't':    /*'u'*/
+  case 'o': case 'p': case 'q': case 'r': case 's': case 't': case 'u':
   case 'v': case 'w': case 'x': case 'y': case 'z':
   case '_':
     return LexIdentifier(Result, CurPtr);
 
-  case '$':   // $ in identifiers.
-    //Diag(CurPtr-1, diag::ext_dollar_in_identifier);  // XXX
-    Kind = tok::unknown;
-    break;
-
-  // C99 6.4.4: Character Constants.
+  // http://golang.org/ref/spec#Rune_literals
   case '\'':
     return LexRuneLiteral(Result, CurPtr, tok::rune_literal);
 
-  // C99 6.4.5: String Literals.
+  // http://golang.org/ref/spec#String_literals
   case '"':
     return LexStringLiteral(Result, CurPtr, tok::string_literal);
 
-  // C99 6.4.6: Punctuators.
+  // http://golang.org/ref/spec#Operators_and_Delimiters
   case '[':
     Kind = tok::l_square;
     break;
@@ -2149,17 +2127,9 @@ LexNextToken:
     }
     break;
   case '/':
-    // 6.4.9: Comments
+    // http://golang.org/ref/spec#Comments
     Char = getCharAndSize(CurPtr, SizeTmp);
     if (Char == '/') {         // Line comment.
-      // Even if Line comments are disabled (e.g. in C89 mode), we generally
-      // want to lex this as a comment.  There is one problem with this though,
-      // that in one particular corner case, this can change the behavior of the
-      // resultant program.  For example, In  "foo //**/ bar", C89 would lex
-      // this as "foo / bar" and langauges with Line comments would lex it as
-      // "foo".  Check to see if the character after the second slash is a '*'.
-      // If so, we will lex that as a "/" instead of the start of a comment.
-      // However, we never do this in -traditional-cpp mode.
       if (SkipLineComment(Result, ConsumeChar(CurPtr, SizeTmp, Result)))
         return; // There is a token to return.
 
