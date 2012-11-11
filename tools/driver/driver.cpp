@@ -40,7 +40,7 @@ using namespace gong;
 
 void DumpTokens(const char* FileName) {
   OwningPtr<llvm::MemoryBuffer> NewBuf;
-  llvm::MemoryBuffer::getFile(FileName, NewBuf);
+  llvm::MemoryBuffer::getFileOrSTDIN(FileName, NewBuf);
   if (NewBuf) {
     Lexer L(NewBuf.get());
     Token Tok;
@@ -61,7 +61,7 @@ int main(int argc_, const char **argv_) {
 
   const char* FileName = NULL;
   for (int i = 1; i < argc_; ++i)
-    if (argv_[i][0] != '-') {
+    if (argv_[i][0] != '-' || (argv_[i][0] && !argv_[i][1])) {
       FileName = argv_[i];
       break;
     }
