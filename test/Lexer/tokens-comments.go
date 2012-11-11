@@ -2,20 +2,30 @@
 
 // http://golang.org/ref/spec#Comments
 
-// CHECK: identifier 'foo'
+// CHECK: identifier 'foo0'
 // \ at end of line doesn't escape a newline\
-foo
+foo0
 
-// CHECK: identifier 'foo'
-// CHECK: identifier 'bar'
-foo
+// CHECK: identifier 'foo1'
+// CHECK: identifier 'bar1'
+foo1
 //*
 /*/
 */
-bar
+bar1
 
 // CHECK: star '*'
 // CHECK: slash '/'
 /*
 /*/
+*/
+
+// \ at end of line doesn't escape newlines for block comments either
+// CHECK: identifier 'foo2'
+// CHECK-NOT: identifier 'bar2'
+foo2
+/*
+*\
+/
+bar2
 */

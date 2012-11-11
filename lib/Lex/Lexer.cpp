@@ -550,48 +550,6 @@ void Lexer::LexRawStringLiteral(Token &Result, const char *CurPtr,
   Result.setLiteralData(TokStart);
 }
 
-/// isBlockCommentEndOfEscapedNewLine - Return true if the specified newline
-/// character (either \\n or \\r) is part of an escaped newline sequence.  Issue
-/// a diagnostic if so.  We know that the newline is inside of a block comment.
-static bool isEndOfBlockCommentWithEscapedNewLine(const char *CurPtr,
-                                                  Lexer *L) {
-  assert(CurPtr[0] == '\n' || CurPtr[0] == '\r');
-
-  // Back up off the newline.
-  --CurPtr;
-
-  // If this is a two-character newline sequence, skip the other character.
-  if (CurPtr[0] == '\n' || CurPtr[0] == '\r') {
-    // \n\n or \r\r -> not escaped newline.
-    if (CurPtr[0] == CurPtr[1])
-      return false;
-    // \n\r or \r\n -> skip the newline.
-    --CurPtr;
-  }
-
-  // If we have horizontal whitespace, skip over it.  We allow whitespace
-  // between the slash and newline.
-  bool HasSpace = false;
-  while (isHorizontalWhitespace(*CurPtr) || *CurPtr == 0) {
-    --CurPtr;
-    HasSpace = true;
-  }
-
-  // If we have a slash, we know this is an escaped newline.
-  if (*CurPtr == '\\') {
-    if (CurPtr[-1] != '*') return false;
-  }
-
-  // Warn about having an escaped newline between the */ characters.
-  //L->Diag(CurPtr, diag::escaped_newline_block_comment_end);  // XXX?
-
-  // If there was space between the backslash and newline, warn about it.
-  //if (HasSpace)
-    //L->Diag(CurPtr, diag::backslash_newline_space);  // XXX
-
-  return true;
-}
-
 #ifdef __SSE2__
 #include <emmintrin.h>
 #elif __ALTIVEC__
@@ -601,10 +559,6 @@ static bool isEndOfBlockCommentWithEscapedNewLine(const char *CurPtr,
 
 /// We have just read from input the / and * characters that started a comment.
 /// Read until we find the * and / characters that terminate the comment.
-/// Note that we don't bother decoding trigraphs or escaped newlines in block
-/// comments, because they cannot cause the comment to end.  The only thing
-/// that can happen is the comment could end with an escaped newline between
-/// the terminating * and /.
 ///
 /// If we're in KeepCommentMode or any CommentHandler has inserted
 /// some tokens, this will store the first token and return true.
@@ -689,13 +643,6 @@ bool Lexer::SkipBlockComment(Token &Result, const char *CurPtr) {
       if (CurPtr[-2] == '*')  // We found the final */.  We're done!
         break;
 
-      if ((CurPtr[-2] == '\n' || CurPtr[-2] == '\r')) {
-        if (isEndOfBlockCommentWithEscapedNewLine(CurPtr-2, this)) {
-          // We found the final */, though it had an escaped newline between the
-          // * and /.  We're done!
-          break;
-        }
-      }
       if (CurPtr[0] == '*' && CurPtr[1] != '/') {
         // If this is a /* inside of the comment, emit a warning.  Don't do this
         // if this is a /*/, which will end the comment.  This misses cases with
