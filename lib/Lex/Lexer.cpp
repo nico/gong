@@ -336,28 +336,6 @@ bool Lexer::SkipLineComment(Token &Result, const char *CurPtr) {
       break;
     }
 
-    // If we read multiple characters, and one of those characters was a \r or
-    // \n, then we had an escaped newline within the comment.  Emit diagnostic
-    // unless the next line is also a // comment.
-    if (CurPtr != OldPtr+1 && C != '/' && CurPtr[0] != '/') {
-      for (; OldPtr != CurPtr; ++OldPtr)
-        if (OldPtr[0] == '\n' || OldPtr[0] == '\r') {
-          // Okay, we found a // comment that ends in a newline, if the next
-          // line is also a // comment, but has spaces, don't emit a diagnostic.
-          if (isWhitespace(C)) {
-            const char *ForwardPtr = CurPtr;
-            while (isWhitespace(*ForwardPtr))  // Skip whitespace.
-              ++ForwardPtr;
-            if (ForwardPtr[0] == '/' && ForwardPtr[1] == '/')
-              break;
-          }
-
-          //if (!isLexingRawMode())  // XXX
-            //Diag(OldPtr-1, diag::ext_multi_line_bcpl_comment);
-          break;
-        }
-    }
-
     if (CurPtr == BufferEnd+1) { 
       --CurPtr; 
       break; 
