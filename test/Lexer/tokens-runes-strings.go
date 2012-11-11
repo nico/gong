@@ -35,10 +35,12 @@
 // '\"'
 
 // http://golang.org/ref/spec#String_literals
-// FIXME: raw strings
-//`abc`  // same as "abc"
-//`\n
-//\n`    // same as "\\n\n\\n"
+// CHECK: string_literal '`abc`'
+`abc`  // same as "abc"
+// CHECK: string_literal '`\n
+// CHECK-NEXT: \n`'
+`\n
+\n`    // same as "\\n\n\\n"
 // CHECK: string_literal '"\n"'
 "\n"
 // CHECK: string_literal '""'

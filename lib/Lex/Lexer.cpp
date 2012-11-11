@@ -485,7 +485,7 @@ void Lexer::LexRuneLiteral(Token &Result, const char *CurPtr,
 }
 
 /// LexStringLiteral - Lex the remainder of a string literal, after having lexed
-/// either " or L" or u8" or u" or U".
+/// a ".
 void Lexer::LexStringLiteral(Token &Result, const char *CurPtr,
                              tok::TokenKind Kind) {
   const char *NulCharacter = 0; // Does this string contain the \0 character?
@@ -499,6 +499,36 @@ void Lexer::LexStringLiteral(Token &Result, const char *CurPtr,
     
     if (C == '\n' || C == '\r' ||             // Newline.
         (C == 0 && CurPtr-1 == BufferEnd)) {  // End of file.
+      //Diag(BufferPtr, diag::ext_unterminated_string);  // XXX
+      FormTokenWithChars(Result, CurPtr-1, tok::unknown);
+      return;
+    }
+    
+    if (C == 0) {
+      NulCharacter = CurPtr-1;
+    }
+    C = getAndAdvanceChar(CurPtr, Result);
+  }
+
+  // If a nul character existed in the string, warn about it.
+  //if (NulCharacter && !isLexingRawMode())
+    //Diag(NulCharacter, diag::null_in_string);  // XXX
+
+  // Update the location of the token as well as the BufferPtr instance var.
+  const char *TokStart = BufferPtr;
+  FormTokenWithChars(Result, CurPtr, Kind);
+  Result.setLiteralData(TokStart);
+}
+
+/// LexStringLiteral - Lex the remainder of a raw string literal, after having
+/// lexed a `.
+void Lexer::LexRawStringLiteral(Token &Result, const char *CurPtr,
+                                tok::TokenKind Kind) {
+  const char *NulCharacter = 0; // Does this string contain the \0 character?
+
+  char C = getAndAdvanceChar(CurPtr, Result);
+  while (C != '`') {
+    if (C == 0 && CurPtr-1 == BufferEnd) {  // End of file.
       //Diag(BufferPtr, diag::ext_unterminated_string);  // XXX
       FormTokenWithChars(Result, CurPtr-1, tok::unknown);
       return;
@@ -1266,6 +1296,8 @@ LexNextToken:
   // http://golang.org/ref/spec#String_literals
   case '"':
     return LexStringLiteral(Result, CurPtr, tok::string_literal);
+  case '`':
+    return LexRawStringLiteral(Result, CurPtr, tok::string_literal);
 
   // http://golang.org/ref/spec#Operators_and_Delimiters
   case '[':

@@ -182,8 +182,6 @@ private:
   /// getAndAdvanceChar - Read a single 'character' from the specified buffer,
   /// advance over it, and return it.
   inline char getAndAdvanceChar(const char *&Ptr, Token &Tok) {
-    // If this is not a trigraph and not a UCN or escaped newline, return
-    // quickly.
     return *Ptr++;
   }
 
@@ -209,6 +207,8 @@ private:
   void LexIdentifier         (Token &Result, const char *CurPtr);
   void LexNumericConstant    (Token &Result, const char *CurPtr);
   void LexStringLiteral      (Token &Result, const char *CurPtr,
+                              tok::TokenKind Kind);
+  void LexRawStringLiteral   (Token &Result, const char *CurPtr,
                               tok::TokenKind Kind);
   void LexRuneLiteral        (Token &Result, const char *CurPtr,
                               tok::TokenKind Kind);
