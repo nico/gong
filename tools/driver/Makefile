@@ -16,6 +16,6 @@ TOOLNAME = gong
 include $(GONG_LEVEL)/../../Makefile.config
 
 LINK_COMPONENTS := $(TARGETS_TO_BUILD)
-USEDLIBS = 
+USEDLIBS = gongBasic.a gongLex.a
 
 include $(GONG_LEVEL)/Makefile

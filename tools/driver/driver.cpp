@@ -12,7 +12,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include "gong/Basic/LLVM.h"
 #include "gong/Basic/TokenKinds.h"
+#include "gong/Lex/Lexer.h"
 
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/SmallString.h"
@@ -34,12 +36,27 @@
 #include "llvm/Support/TargetSelect.h"
 #include "llvm/Support/system_error.h"
 #include <cctype>
+using namespace gong;
 
 int main(int argc_, const char **argv_) {
   llvm::sys::PrintStackTraceOnErrorSignal();
   llvm::PrettyStackTraceProgram X(argc_, argv_);
 
   llvm::InitializeAllTargets();
+
+  if (argc_ < 2)
+    return -1;
+
+  OwningPtr<llvm::MemoryBuffer> NewBuf;
+  llvm::MemoryBuffer::getFile(argv_[1], NewBuf);
+  if (NewBuf) {
+    Lexer L(NewBuf.get());
+    Token Tok;
+    while (Tok.isNot(tok::eof)) {
+      L.Lex(Tok);
+      printf("tok: %s\n", Tok.getName());
+    }
+  }
 
   llvm::llvm_shutdown();
 

@@ -1,13 +1,17 @@
-##===- lib/Makefile ----------------------------------------*- Makefile -*-===##
-# 
+##===- gong/lib/Basic/Makefile -----------------------------*- Makefile -*-===##
+#
 #                     The LLVM Compiler Infrastructure
 #
 # This file is distributed under the University of Illinois Open Source
 # License. See LICENSE.TXT for details.
-# 
+#
 ##===----------------------------------------------------------------------===##
-GONG_LEVEL := ..
+#
+#  This implements the Basic library for gong.
+#
+##===----------------------------------------------------------------------===##
 
-PARALLEL_DIRS = Basic Lex
+GONG_LEVEL := ../..
+LIBRARYNAME := gongBasic
 
 include $(GONG_LEVEL)/Makefile
