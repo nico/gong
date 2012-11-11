@@ -92,11 +92,6 @@ public:
 
   const char *getBufferStart() const { return BufferStart; }
 
-  /// ReadToEndOfLine - Read the rest of the current preprocessor line as an
-  /// uninterpreted string.  This switches the lexer out of directive mode.
-  void ReadToEndOfLine(SmallVectorImpl<char> *Result = 0);
-
-
   /// Diag - Forwarding function for diagnostics.  This translate a source
   /// position in the current buffer into a SourceLocation object for rendering.
   //DiagnosticBuilder Diag(const char *Loc, unsigned DiagID) const;
@@ -138,25 +133,6 @@ public:
                                             //const SourceManager &SM,
                                             //const LangOptions &LangOpts);
 
-
-  /// \brief Compute the preamble of the given file.
-  ///
-  /// The preamble of a file contains the initial comments, include directives,
-  /// and other preprocessor directives that occur before the code in this
-  /// particular file actually begins. The preamble of the main source file is
-  /// a potential prefix header.
-  ///
-  /// \param Buffer The memory buffer containing the file's contents.
-  ///
-  /// \param MaxLines If non-zero, restrict the length of the preamble
-  /// to fewer than this number of lines.
-  ///
-  /// \returns The offset into the file where the preamble ends and the rest
-  /// of the file begins along with a boolean value indicating whether 
-  /// the preamble ends at the beginning of a new line.
-  //static std::pair<unsigned, bool>
-  //ComputePreamble(const llvm::MemoryBuffer *Buffer, const LangOptions &LangOpts,
-                  //unsigned MaxLines = 0);
 
   //===--------------------------------------------------------------------===//
   // Internal implementation interfaces.
