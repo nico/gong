@@ -353,6 +353,9 @@ bool Lexer::SkipLineComment(Token &Result, const char *CurPtr) {
     }
   } while (C != '\n' && C != '\r');
 
+  handleComment(Result, SourceRange(getSourceLocation(BufferPtr),
+                                    getSourceLocation(CurPtr)));
+
   // If we are inside a preprocessor directive and we see the end of line,
   // return immediately, so that the lexer can return this as an EOD token.
   if (CurPtr == BufferEnd) {
@@ -650,6 +653,9 @@ bool Lexer::SkipBlockComment(Token &Result, const char *CurPtr) {
 
     C = *CurPtr++;
   }
+
+  handleComment(Result, SourceRange(getSourceLocation(BufferPtr),
+                                    getSourceLocation(CurPtr)));
 
   // It is common for the tokens immediately after a /**/ comment to be
   // whitespace.  Instead of going through the big switch, handle it
@@ -1119,12 +1125,10 @@ bool Lexer::HandleEndOfConflictMarker(const char *CurPtr) {
   return false;
 }
 
-
-/// LexTokenInternal - This implements a simple C family lexer.  It is an
-/// extremely performance critical piece of code.  This assumes that the buffer
-/// has a null character at the end of the file.  This returns a preprocessing
-/// token, not a normal token, as such, it is an internal interface.  It assumes
-/// that the Flags of result have been cleared before calling this.
+/// This implements a simple Go lexer.  It is an extremely performance
+/// critical piece of code.  This assumes that the buffer has a null
+/// character at the end of the file.  It assumes that the Flags of result
+/// have been cleared before calling this.
 void Lexer::LexTokenInternal(Token &Result) {
 LexNextToken:
   // New token, can't need cleaning yet.
@@ -1484,3 +1488,26 @@ LexNextToken:
   // Update the location of token as well as BufferPtr.
   FormTokenWithChars(Result, CurPtr, Kind);
 }
+
+void Lexer::addCommentHandler(CommentHandler *Handler) {
+  assert(Handler && "NULL comment handler");
+  assert(std::find(CommentHandlers.begin(), CommentHandlers.end(), Handler) ==
+         CommentHandlers.end() && "Comment handler already registered");
+  CommentHandlers.push_back(Handler);
+}
+
+void Lexer::removeCommentHandler(CommentHandler *Handler) {
+  std::vector<CommentHandler *>::iterator Pos
+      = std::find(CommentHandlers.begin(), CommentHandlers.end(), Handler);
+  assert(Pos != CommentHandlers.end() && "Comment handler not registered");
+  CommentHandlers.erase(Pos);
+}
+
+void Lexer::handleComment(Token &result, SourceRange Comment) {
+  for (std::vector<CommentHandler *>::iterator H = CommentHandlers.begin(),
+       HEnd = CommentHandlers.end();
+       H != HEnd; ++H) {
+    (*H)->handleComment(*this, Comment);
+  }
+}
+CommentHandler::~CommentHandler() { }

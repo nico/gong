@@ -17,6 +17,7 @@
 #include "gong/Basic/IdentifierTable.h"
 #include "gong/Lex/Token.h"
 #include <string>
+#include <vector>
 #include <cassert>
 
 namespace llvm {
@@ -25,6 +26,7 @@ namespace llvm {
 }
 
 namespace gong {
+class CommentHandler;
 
 /// ConflictMarkerKind - Kinds of conflict marker which the lexer might be
 /// recovering from.
@@ -66,7 +68,11 @@ class Lexer {
   /// including program keywords.
   mutable IdentifierTable Identifiers;
 
-  llvm::SourceMgr& SM;
+  llvm::SourceMgr &SM;
+
+  /// \brief Tracks all of the comment handlers that the client registered
+  /// with this preprocessor.
+  std::vector<CommentHandler *> CommentHandlers;
 
   Lexer(const Lexer &) LLVM_DELETED_FUNCTION;
   void operator=(const Lexer &) LLVM_DELETED_FUNCTION;
@@ -225,10 +231,28 @@ private:
   bool IsStartOfConflictMarker(const char *CurPtr);
   bool HandleEndOfConflictMarker(const char *CurPtr);
 
+  void handleComment(Token &Token, SourceRange Comment);
+
   //bool isCodeCompletionPoint(const char *CurPtr) const;
   //void cutOffLexing() { BufferPtr = BufferEnd; }
 
   bool isHexaLiteral(const char *Start);
+
+  /// \brief Add the specified comment handler to the preprocessor.
+  void addCommentHandler(CommentHandler *Handler);
+
+  /// \brief Remove the specified comment handler.
+  ///
+  /// It is an error to remove a handler that has not been registered.
+  void removeCommentHandler(CommentHandler *Handler);
+};
+
+/// \brief Abstract base class that describes a handler that will receive
+/// source ranges for each of the comments encountered in the source file.
+class CommentHandler {
+public:
+  virtual ~CommentHandler();
+  virtual void handleComment(Lexer &L, SourceRange Comment) = 0;
 };
 
 

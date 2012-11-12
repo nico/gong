@@ -49,7 +49,6 @@ void DumpTokens(const char* FileName) {
     Token Tok;
     do {
       L.Lex(Tok);
-      //printf("tok: %s\n", Tok.getName());
       L.DumpToken(Tok, true);
       llvm::errs() << "\n";
     } while (Tok.isNot(tok::eof));
