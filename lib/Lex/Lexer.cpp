@@ -291,9 +291,11 @@ void Lexer::DumpToken(const Token &Tok, bool DumpFlags) const {
   //               << "']";
   //}
 
-  //llvm::errs() << "\tLoc=<";
-  //DumpLocation(Tok.getLocation());
-  //llvm::errs() << ">";
+  int BufID = SM.FindBufferContainingLoc(Tok.getLocation());
+  std::pair<unsigned, unsigned> Pos = SM.getLineAndColumn(Tok.getLocation());
+  llvm::errs() << "\tLoc=<" <<
+    SM.getMemoryBuffer(BufID)->getBufferIdentifier()
+    << ":" << Pos.first << ":" << Pos.second << ">";
 }
 
 
