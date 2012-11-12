@@ -218,8 +218,9 @@ void Lexer::InitLexer(const char *BufStart, const char *BufPtr,
 /// with the specified preprocessor managing the lexing process.  This lexer
 /// assumes that the associated file buffer and Preprocessor objects will
 /// outlive it, so it doesn't take ownership of either of them.
-Lexer::Lexer(llvm::SourceMgr& SM, const llvm::MemoryBuffer *InputFile)
-    : SM(SM) {
+Lexer::Lexer(DiagnosticsEngine &Diags, llvm::SourceMgr& SM,
+             const llvm::MemoryBuffer *InputFile)
+    : Diags(Diags), SM(SM) {
   InitLexer(InputFile->getBufferStart(), InputFile->getBufferStart(),
             InputFile->getBufferEnd());
 
@@ -257,8 +258,7 @@ bool Lexer::LexEndOfFile(Token &Result, const char *CurPtr) {
 }
 
 void Lexer::Diag(const char *Loc, unsigned DiagID) const {
-  SM.PrintMessage(llvm::SMLoc::getFromPointer(Loc), llvm::SourceMgr::DK_Error,
-      DiagnosticIDs::getDescription(DiagID));
+  Diags.Report(llvm::SMLoc::getFromPointer(Loc), DiagID);
 }
 
 /// getSourceLocation - Return a source location identifier for the specified
@@ -965,12 +965,6 @@ static SourceLocation GetMappedTokenLoc(Preprocessor &PP,
     SM.getImmediateExpansionRange(FileLoc);
 
   return SM.createExpansionLoc(SpellingLoc, II.first, II.second, TokLen);
-}
-
-/// Diag - Forwarding function for diagnostics.  This translate a source
-/// position in the current buffer into a SourceLocation object for rendering.
-DiagnosticBuilder Lexer::Diag(const char *Loc, unsigned DiagID) const {
-  return PP->Diag(getSourceLocation(Loc), DiagID);
 }
 
 //===----------------------------------------------------------------------===//

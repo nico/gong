@@ -14,6 +14,7 @@
 #ifndef LLVM_GONG_LEXER_H
 #define LLVM_GONG_LEXER_H
 
+#include "gong/Basic/Diagnostic.h"
 #include "gong/Basic/IdentifierTable.h"
 #include "gong/Lex/Token.h"
 #include <string>
@@ -27,6 +28,7 @@ namespace llvm {
 
 namespace gong {
 class CommentHandler;
+class DiagnosticsEngine;
 
 /// ConflictMarkerKind - Kinds of conflict marker which the lexer might be
 /// recovering from.
@@ -68,6 +70,7 @@ class Lexer {
   /// including program keywords.
   mutable IdentifierTable Identifiers;
 
+  DiagnosticsEngine &Diags;
   llvm::SourceMgr &SM;
 
   /// \brief Tracks all of the comment handlers that the client registered
@@ -83,7 +86,8 @@ public:
   /// Lexer constructor - Create a new lexer object for the specified buffer.
   /// This lexer assumes that the associated file buffer objects will outlive
   /// it, so it doesn't take ownership of it.
-  Lexer(llvm::SourceMgr& SM, const llvm::MemoryBuffer *InputBuffer);
+  Lexer(DiagnosticsEngine &Diags, llvm::SourceMgr& SM,
+        const llvm::MemoryBuffer *InputBuffer);
 
   /// Lex - Return the next token in the file.  If this is the end of file, it
   /// return the tok::eof token.  This implicitly involves the preprocessor.

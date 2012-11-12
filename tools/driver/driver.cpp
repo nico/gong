@@ -12,8 +12,11 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include "gong/Basic/Diagnostic.h"
+#include "gong/Basic/DiagnosticIDs.h"
 #include "gong/Basic/LLVM.h"
 #include "gong/Basic/TokenKinds.h"
+#include "gong/Frontend/TextDiagnosticPrinter.h"
 #include "gong/Lex/Lexer.h"
 
 #include "llvm/ADT/ArrayRef.h"
@@ -33,19 +36,22 @@
 #include "llvm/Support/Program.h"
 #include "llvm/Support/Signals.h"
 #include "llvm/Support/SourceMgr.h"
-#include "llvm/Support/TargetRegistry.h"
 #include "llvm/Support/TargetSelect.h"
-#include "llvm/Support/system_error.h"
 #include <cctype>
 using namespace gong;
 
 void DumpTokens(const char* FileName) {
   llvm::SourceMgr SM;
+
+  IntrusiveRefCntPtr<DiagnosticIDs> DiagIDs(new DiagnosticIDs);
+  DiagnosticsEngine Diags(DiagIDs, new TextDiagnosticPrinter);
+  Diags.setSourceManager(&SM);
+
   OwningPtr<llvm::MemoryBuffer> NewBuf;
   llvm::MemoryBuffer::getFileOrSTDIN(FileName, NewBuf);
   if (NewBuf) {
     unsigned id = SM.AddNewSourceBuffer(NewBuf.take(), llvm::SMLoc());
-    Lexer L(SM, SM.getMemoryBuffer(id));
+    Lexer L(Diags, SM, SM.getMemoryBuffer(id));
     Token Tok;
     do {
       L.Lex(Tok);
