@@ -40,25 +40,13 @@
 #include <cctype>
 using namespace gong;
 
-void DumpTokens(const char* FileName) {
-  llvm::SourceMgr SM;
-
-  IntrusiveRefCntPtr<DiagnosticIDs> DiagIDs(new DiagnosticIDs);
-  DiagnosticsEngine Diags(DiagIDs, new TextDiagnosticPrinter);
-  Diags.setSourceManager(&SM);
-
-  OwningPtr<llvm::MemoryBuffer> NewBuf;
-  llvm::MemoryBuffer::getFileOrSTDIN(FileName, NewBuf);
-  if (NewBuf) {
-    unsigned id = SM.AddNewSourceBuffer(NewBuf.take(), llvm::SMLoc());
-    Lexer L(Diags, SM, SM.getMemoryBuffer(id));
-    Token Tok;
-    do {
-      L.Lex(Tok);
-      L.DumpToken(Tok, true);
-      llvm::errs() << "\n";
-    } while (Tok.isNot(tok::eof));
-  }
+void DumpTokens(Lexer &L) {
+  Token Tok;
+  do {
+    L.Lex(Tok);
+    L.DumpToken(Tok, true);
+    llvm::errs() << "\n";
+  } while (Tok.isNot(tok::eof));
 }
 
 int main(int argc_, const char **argv_) {
@@ -67,15 +55,40 @@ int main(int argc_, const char **argv_) {
 
   llvm::InitializeAllTargets();
 
+  bool dumpTokens = false;
+  bool verify = false;
   const char* FileName = NULL;
   for (int i = 1; i < argc_; ++i)
     if (argv_[i][0] != '-' || (argv_[i][0] && !argv_[i][1])) {
       FileName = argv_[i];
-      break;
+    } else if (argv_[i] == std::string("-dump-tokens")) {
+      dumpTokens = true;
+    } else if (argv_[i] == std::string("-verify")) {
+      verify = true;
     }
 
-  if (FileName)
-    DumpTokens(FileName);
+  if (FileName) {
+    llvm::SourceMgr SM;
+
+    IntrusiveRefCntPtr<DiagnosticIDs> DiagIDs(new DiagnosticIDs);
+    DiagnosticsEngine Diags(DiagIDs, new TextDiagnosticPrinter);
+    Diags.setSourceManager(&SM);
+
+    OwningPtr<llvm::MemoryBuffer> NewBuf;
+    llvm::MemoryBuffer::getFileOrSTDIN(FileName, NewBuf);
+    if (NewBuf) {
+      unsigned id = SM.AddNewSourceBuffer(NewBuf.take(), llvm::SMLoc());
+      Lexer L(Diags, SM, SM.getMemoryBuffer(id));
+      if (dumpTokens)
+        DumpTokens(L);
+      else {
+        Token Tok;
+        do {
+          L.Lex(Tok);
+        } while (Tok.isNot(tok::eof));
+      }
+    }
+  }
 
   llvm::llvm_shutdown();
 
