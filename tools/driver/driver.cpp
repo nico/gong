@@ -17,6 +17,7 @@
 #include "gong/Basic/LLVM.h"
 #include "gong/Basic/TokenKinds.h"
 #include "gong/Frontend/TextDiagnosticPrinter.h"
+#include "gong/Frontend/VerifyDiagnosticConsumer.h"
 #include "gong/Lex/Lexer.h"
 
 #include "llvm/ADT/ArrayRef.h"
@@ -67,18 +68,26 @@ int main(int argc_, const char **argv_) {
       verify = true;
     }
 
+  llvm::SourceMgr SM;
+
+  IntrusiveRefCntPtr<DiagnosticIDs> DiagIDs(new DiagnosticIDs);
+  DiagnosticsEngine Diags(DiagIDs, new TextDiagnosticPrinter);
+  Diags.setSourceManager(&SM);
+
   if (FileName) {
-    llvm::SourceMgr SM;
-
-    IntrusiveRefCntPtr<DiagnosticIDs> DiagIDs(new DiagnosticIDs);
-    DiagnosticsEngine Diags(DiagIDs, new TextDiagnosticPrinter);
-    Diags.setSourceManager(&SM);
-
     OwningPtr<llvm::MemoryBuffer> NewBuf;
     llvm::MemoryBuffer::getFileOrSTDIN(FileName, NewBuf);
     if (NewBuf) {
       unsigned id = SM.AddNewSourceBuffer(NewBuf.take(), llvm::SMLoc());
       Lexer L(Diags, SM, SM.getMemoryBuffer(id));
+
+      if (verify) {
+        VerifyDiagnosticConsumer* verifier =
+            new VerifyDiagnosticConsumer(Diags);
+        Diags.setClient(verifier);  // Takes ownership.
+        L.addCommentHandler(verifier);
+      }
+
       if (dumpTokens)
         DumpTokens(L);
       else {
@@ -87,12 +96,17 @@ int main(int argc_, const char **argv_) {
           L.Lex(Tok);
         } while (Tok.isNot(tok::eof));
       }
+
+      Diags.getClient()->finish();
     }
   }
 
   llvm::llvm_shutdown();
 
   int Res = 0;
+
+  if (Diags.getClient()->getNumDiags())
+    Res = 1;
 
 #ifdef _WIN32
   // Exit status should not be negative on Win32, unless abnormal termination.

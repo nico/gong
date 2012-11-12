@@ -51,3 +51,15 @@ DIAG(empty_rune,           "empty rune literal")
 //
 //}
 //
+
+
+// FIXME: move to DiagnosticFrontendKinds
+DIAG(verify_inconsistent_diags, "FIXME verify_inconsistent_diags")
+DIAG(verify_invalid_content, "FIXME verify_invalid_content")
+DIAG(verify_invalid_line, "FIXME verify_invalid_line")
+DIAG(verify_invalid_no_diags, "FIXME verify_invalid_no_diags")
+DIAG(verify_invalid_range, "FIXME verify_invalid_range")
+DIAG(verify_missing_line, "FIXME verify_missing_line")
+DIAG(verify_missing_start, "FIXME verify_missing_start")
+DIAG(verify_missing_end, "FIXME")
+DIAG(verify_no_directives, "FIXME")

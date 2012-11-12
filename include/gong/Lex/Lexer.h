@@ -117,6 +117,9 @@ public:
   /// offset in the current file.
   SourceLocation getSourceLocation(const char *Loc) const;
 
+  llvm::SourceMgr &getSourceManager() { return SM; }
+  DiagnosticsEngine &getDiagnostics() { return Diags; }
+
   StringRef getSpelling(const Token &Tok) const;
   void DumpToken(const Token &Tok, bool DumpFlags) const;
 
@@ -242,6 +245,7 @@ private:
 
   bool isHexaLiteral(const char *Start);
 
+public:
   /// \brief Add the specified comment handler to the preprocessor.
   void addCommentHandler(CommentHandler *Handler);
 

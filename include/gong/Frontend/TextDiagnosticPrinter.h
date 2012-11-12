@@ -7,8 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 //
-// This is a concrete diagnostic client, which prints the diagnostics to
-// standard error.
+// This diagnositc client verifies diagnostics agains special comments.
 //
 //===----------------------------------------------------------------------===//
 
