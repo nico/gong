@@ -213,7 +213,8 @@ static bool ParseDirective(StringRef S, ExpectedData *ED, llvm::SourceMgr &SM,
       DL = ED ? &ED->Errors : NULL;
     else if (PH.Next("no-diagnostics")) {
       if (Status == VerifyDiagnosticConsumer::HasOtherExpectedDirectives)
-        Diags.Report(Pos, diag::verify_invalid_no_diags);
+        Diags.Report(Pos, diag::verify_invalid_no_diags)
+          << /*IsExpectedNoDiagnostics=*/true;
       else
         Status = VerifyDiagnosticConsumer::HasExpectedNoDiagnostics;
       continue;
@@ -222,7 +223,8 @@ static bool ParseDirective(StringRef S, ExpectedData *ED, llvm::SourceMgr &SM,
     PH.Advance();
 
     if (Status == VerifyDiagnosticConsumer::HasExpectedNoDiagnostics) {
-      Diags.Report(Pos, diag::verify_invalid_no_diags);
+      Diags.Report(Pos, diag::verify_invalid_no_diags)
+          << /*IsExpectedNoDiagnostics=*/false;
       continue;
     }
     Status = VerifyDiagnosticConsumer::HasOtherExpectedDirectives;
@@ -314,7 +316,7 @@ static bool ParseDirective(StringRef S, ExpectedData *ED, llvm::SourceMgr &SM,
       DL->push_back(D);
       FoundDirective = true;
     } else {
-      Diags.Report(Pos, diag::verify_invalid_content);
+      Diags.Report(Pos, diag::verify_invalid_content) << Error;
     }
   }
 
@@ -356,10 +358,11 @@ static unsigned PrintUnexpected(DiagnosticsEngine &Diags,
       OS << "\n  (frontend)";
     else
       OS << "\n  Line " << SourceMgr->getLineAndColumn(I->first).first;
-    OS << ": " << I->second;
+    OS << ": " << 14; //I->second;
   }
 
-  Diags.Report(SourceLocation(), diag::verify_inconsistent_diags);
+  Diags.Report(SourceLocation(), diag::verify_inconsistent_diags)
+    << /*Unexpected=*/true << OS.str();
   return std::distance(diag_begin, diag_end);
 }
 
@@ -384,7 +387,8 @@ static unsigned PrintExpected(DiagnosticsEngine &Diags, llvm::SourceMgr &SourceM
     OS << ": " << D.Text;
   }
 
-  Diags.Report(SourceLocation(), diag::verify_inconsistent_diags);
+  Diags.Report(SourceLocation(), diag::verify_inconsistent_diags)
+    << /*Unexpected=*/false << OS.str();
   return DL.size();
 }
 

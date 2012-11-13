@@ -54,12 +54,14 @@ DIAG(empty_rune,           "empty rune literal")
 
 
 // FIXME: move to DiagnosticFrontendKinds
-DIAG(verify_inconsistent_diags, "FIXME verify_inconsistent_diags")
-DIAG(verify_invalid_content, "FIXME verify_invalid_content")
-DIAG(verify_invalid_line, "FIXME verify_invalid_line")
-DIAG(verify_invalid_no_diags, "FIXME verify_invalid_no_diags")
-DIAG(verify_invalid_range, "FIXME verify_invalid_range")
-DIAG(verify_missing_line, "FIXME verify_missing_line")
-DIAG(verify_missing_start, "FIXME verify_missing_start")
-DIAG(verify_missing_end, "FIXME")
-DIAG(verify_no_directives, "FIXME")
+DIAG(verify_inconsistent_diags,
+    "diagnostic %select{expected|seen}0 but not %select{seen|expected}0: %1")
+DIAG(verify_invalid_content, "invalid expected diag: %0")
+DIAG(verify_invalid_no_diags,
+    "select{expected|'expected-no-diagnostics'}0 directive cannot follow "
+    "%select{'expected-no-diagnostics' directive|other expected directives}0")
+DIAG(verify_invalid_range, "invalid range following '-' in expected diag")
+DIAG(verify_missing_start, "cannot find start ('{{') of expected diag")
+DIAG(verify_missing_end, "cannot find end ('}}') of expected diag")
+DIAG(verify_no_directives,
+    "no expected directives found: consider use of 'expected-no-diagnostics'")
