@@ -21,10 +21,12 @@ void TextDiagnosticBuffer::handleDiagnostic(const Diagnostic &Info) {
   // Default implementation (Warnings/errors count).
   DiagnosticConsumer::handleDiagnostic(Info);
 
-  Errors.push_back(std::make_pair(Info.getLocation(), Info.getID()));
+  SmallString<100> Buf;
+  Info.FormatDiagnostic(Buf);
+  Errors.push_back(std::make_pair(Info.getLocation(), Buf.str()));
 }
 
 void TextDiagnosticBuffer::FlushDiagnostics(DiagnosticsEngine &Diags) const {
   for (const_iterator it = err_begin(), ie = err_end(); it != ie; ++it)
-    Diags.Report(it->first, it->second);
+    Diags.Report(SourceLocation(), Diags.getCustomDiagID(it->second.c_str()));
 }

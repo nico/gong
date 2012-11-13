@@ -23,6 +23,13 @@ namespace gong {
 
   // Import the diagnostic enums themselves.
   namespace diag {
+    // Start position for diagnostics.
+    enum {
+      DIAG_UPPER_LIMIT         = 1000
+    };
+
+    class CustomDiagInfo;
+
     /// \brief All of the diagnostics that can be emitted by the frontend.
     typedef unsigned kind;
 
@@ -38,10 +45,19 @@ namespace gong {
 /// \brief Used for handling and querying diagnostic IDs. Can be used and shared
 /// by multiple Diagnostics for multiple translation units.
 class DiagnosticIDs : public RefCountedBase<DiagnosticIDs> {
-public:
+private:
+  /// \brief Information for uniquing and looking up custom diags.
+  diag::CustomDiagInfo *CustomDiagInfo;
+
 public:
   DiagnosticIDs();
   ~DiagnosticIDs();
+
+  /// \brief Return an ID for a diagnostic with the specified message and level.
+  ///
+  /// If this is the first request for this diagnosic, it is registered and
+  /// created, otherwise the existing ID is returned.
+  unsigned getCustomDiagID(StringRef Message);
 
   //===--------------------------------------------------------------------===//
   // Diagnostic classification and reporting interfaces.

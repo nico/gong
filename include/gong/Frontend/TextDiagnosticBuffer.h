@@ -15,13 +15,14 @@
 #define LLVM_GONG_FRONTEND_TEXT_DIAGNOSTIC_BUFFER_H_
 
 #include "gong/Basic/Diagnostic.h"
+#include <string>
 #include <vector>
 
 namespace gong {
 
 class TextDiagnosticBuffer : public DiagnosticConsumer {
 public:
-  typedef std::vector<std::pair<SourceLocation, unsigned> > DiagList;
+  typedef std::vector<std::pair<SourceLocation, std::string> > DiagList;
   typedef DiagList::iterator iterator;
   typedef DiagList::const_iterator const_iterator;
 private:

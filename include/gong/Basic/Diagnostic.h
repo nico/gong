@@ -145,9 +145,9 @@ public:
   ///
   /// If this is the first request for this diagnosic, it is registered and
   /// created, otherwise the existing ID is returned.
-  //unsigned getCustomDiagID(Level L, StringRef Message) {
-    //return Diags->getCustomDiagID((DiagnosticIDs::Level)L, Message);
-  //}
+  unsigned getCustomDiagID(StringRef Message) {
+    return Diags->getCustomDiagID(Message);
+  }
 
   /// \brief Reset the state of the diagnostic object to its initial 
   /// configuration.

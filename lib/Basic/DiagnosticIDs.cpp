@@ -15,7 +15,9 @@
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/Support/ErrorHandling.h"
 
+#include <map>
 #include <stdint.h>
+#include <vector>
 using namespace gong;
 
 //===----------------------------------------------------------------------===//
@@ -93,13 +95,62 @@ static const StaticDiagInfoRec *GetDiagInfo(unsigned DiagID) {
 }
 
 //===----------------------------------------------------------------------===//
+// Custom Diagnostic information
+//===----------------------------------------------------------------------===//
+
+namespace gong {
+  namespace diag {
+    class CustomDiagInfo {
+      typedef std::string DiagDesc;
+      std::vector<DiagDesc> DiagInfo;
+      std::map<DiagDesc, unsigned> DiagIDs;
+    public:
+
+      /// getDescription - Return the description of the specified custom
+      /// diagnostic.
+      StringRef getDescription(unsigned DiagID) const {
+        assert(this && DiagID-DIAG_UPPER_LIMIT < DiagInfo.size() &&
+               "Invalid diagnosic ID");
+        return DiagInfo[DiagID-DIAG_UPPER_LIMIT];
+      }
+
+      unsigned getOrCreateDiagID(StringRef Message, DiagnosticIDs &Diags) {
+        DiagDesc D(Message);
+        // Check to see if it already exists.
+        std::map<DiagDesc, unsigned>::iterator I = DiagIDs.lower_bound(D);
+        if (I != DiagIDs.end() && I->first == D)
+          return I->second;
+
+        // If not, assign a new ID.
+        unsigned ID = DiagInfo.size()+DIAG_UPPER_LIMIT;
+        DiagIDs.insert(std::make_pair(D, ID));
+        DiagInfo.push_back(D);
+        return ID;
+      }
+    };
+
+  } // end diag namespace
+} // end gong namespace
+
+//===----------------------------------------------------------------------===//
 // Common Diagnostic implementation
 //===----------------------------------------------------------------------===//
 
 DiagnosticIDs::DiagnosticIDs() {
+  CustomDiagInfo = 0;
 }
 
 DiagnosticIDs::~DiagnosticIDs() {
+  delete CustomDiagInfo;
+}
+
+/// getCustomDiagID - Return an ID for a diagnostic with the specified message
+/// and level.  If this is the first request for this diagnosic, it is
+/// registered and created, otherwise the existing ID is returned.
+unsigned DiagnosticIDs::getCustomDiagID(StringRef Message) {
+  if (CustomDiagInfo == 0)
+    CustomDiagInfo = new diag::CustomDiagInfo();
+  return CustomDiagInfo->getOrCreateDiagID(Message, *this);
 }
 
 /// Given a diagnostic ID, return a description of the

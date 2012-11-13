@@ -358,7 +358,7 @@ static unsigned PrintUnexpected(DiagnosticsEngine &Diags,
       OS << "\n  (frontend)";
     else
       OS << "\n  Line " << SourceMgr->getLineAndColumn(I->first).first;
-    OS << ": " << 14; //I->second;
+    OS << ": " << I->second;
   }
 
   Diags.Report(SourceLocation(), diag::verify_inconsistent_diags)
@@ -413,8 +413,7 @@ static unsigned CheckLists(DiagnosticsEngine &Diags, llvm::SourceMgr &SourceMgr,
         if (LineNo1 != LineNo2)
           continue;
 
-        const std::string &RightText =
-            DiagnosticIDs::getDescription(II->second);
+        const std::string &RightText = II->second;
         if (D.match(RightText))
           break;
       }
