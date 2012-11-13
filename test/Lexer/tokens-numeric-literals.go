@@ -36,6 +36,10 @@
 // FIXME: Should be two tokens:
 0x4.5
 
+// CHECK: numeric_literal '0x1234567e'
+// CHECK-NEXT: plus '+'
+// CHECK-NEXT: numeric_literal '1'
+0x1234567e+1
 
 // http://golang.org/ref/spec#Imaginary_literals
 // CHECK: numeric_literal '0i'

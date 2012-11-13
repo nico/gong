@@ -699,8 +699,6 @@ void Lexer::LexNumericConstant(Token &Result, const char *CurPtr) {
 
   // If we fell out, check for a sign, due to 1e+12.  If we have one, continue.
   if ((C == '-' || C == '+') && (PrevCh == 'E' || PrevCh == 'e')) {
-    // If we are in Microsoft mode, don't continue if the constant is hex.
-    // For example, MSVC will accept the following as 3 tokens: 0x1234567e+1
     if (!isHexaLiteral(BufferPtr))
       return LexNumericConstant(Result, ConsumeChar(CurPtr, Size, Result));
   }
