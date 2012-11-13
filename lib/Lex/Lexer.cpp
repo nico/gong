@@ -165,7 +165,7 @@ static inline bool isWhitespace(unsigned char c) {
 /// isNumberBody - Return true if this is the body character of an
 /// preprocessing number, which is [a-zA-Z0-9_.].
 static inline bool isNumberBody(unsigned char c) {
-  return (CharInfo[c] & (CHAR_LETTER|CHAR_NUMBER|CHAR_UNDER|CHAR_PERIOD)) ?
+  return (CharInfo[c] & (CHAR_LETTER|CHAR_NUMBER|CHAR_PERIOD)) ?
     true : false;
 }
 

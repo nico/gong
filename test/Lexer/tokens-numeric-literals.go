@@ -60,3 +60,7 @@
 .25i
 // CHECK: numeric_literal '.12345E+5i'
 .12345E+5i
+
+// CHECK: numeric_literal '42'
+// CHECK-NEXT: identifier '_32'
+42_32
