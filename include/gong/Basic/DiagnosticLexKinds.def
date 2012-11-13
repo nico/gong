@@ -58,7 +58,7 @@ DIAG(verify_inconsistent_diags,
     "diagnostic %select{expected|seen}0 but not %select{seen|expected}0: %1")
 DIAG(verify_invalid_content, "invalid expected diag: %0")
 DIAG(verify_invalid_no_diags,
-    "select{expected|'expected-no-diagnostics'}0 directive cannot follow "
+    "%select{expected|'expected-no-diagnostics'}0 directive cannot follow "
     "%select{'expected-no-diagnostics' directive|other expected directives}0")
 DIAG(verify_invalid_range, "invalid range following '-' in expected diag")
 DIAG(verify_missing_start, "cannot find start ('{{') of expected diag")
