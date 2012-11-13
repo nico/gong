@@ -129,13 +129,6 @@ static void InitCharacterInfo() {
   isInited = true;
 }
 
-
-/// isIdentifierHead - Return true if this is the first character of an
-/// identifier, which is [a-zA-Z_].
-static inline bool isIdentifierHead(unsigned char c) {
-  return (CharInfo[c] & (CHAR_LETTER|CHAR_UNDER)) ? true : false;
-}
-
 /// isIdentifierBody - Return true if this is the body character of an
 /// identifier, which is [a-zA-Z0-9_].
 static inline bool isIdentifierBody(unsigned char c) {
@@ -149,12 +142,6 @@ static inline bool isHorizontalWhitespace(unsigned char c) {
   return (CharInfo[c] & CHAR_HORZ_WS) ? true : false;
 }
 
-/// isVerticalWhitespace - Return true if this character is vertical
-/// whitespace: '\\n', '\\r'.  Note that this returns false for '\\0'.
-static inline bool isVerticalWhitespace(unsigned char c) {
-  return (CharInfo[c] & CHAR_VERT_WS) ? true : false;
-}
-
 /// isWhitespace - Return true if this character is horizontal or vertical
 /// whitespace: ' ', '\\t', '\\f', '\\v', '\\n', '\\r'.  Note that this returns
 /// false for '\\0'.
@@ -166,14 +153,6 @@ static inline bool isWhitespace(unsigned char c) {
 /// preprocessing number, which is [a-zA-Z0-9_.].
 static inline bool isNumberBody(unsigned char c) {
   return (CharInfo[c] & (CHAR_LETTER|CHAR_NUMBER)) ?  true : false;
-}
-
-/// isRawStringDelimBody - Return true if this is the body character of a
-/// raw string delimiter.
-static inline bool isRawStringDelimBody(unsigned char c) {
-  return (CharInfo[c] &
-          (CHAR_LETTER|CHAR_NUMBER|CHAR_UNDER|CHAR_PERIOD|CHAR_RAWDEL)) ?
-    true : false;
 }
 
 
@@ -436,7 +415,7 @@ void Lexer::LexIdentifier(Token &Result, const char *CurPtr) {
 }
 
 /// LexRuneLiteral - Lex the remainder of a character constant, after having
-/// lexed either ' or L' or u' or U'.
+/// lexed '.
 void Lexer::LexRuneLiteral(Token &Result, const char *CurPtr,
                            tok::TokenKind Kind) {
   const char *NulCharacter = 0; // Does this character contain the \0 character?
@@ -452,7 +431,6 @@ void Lexer::LexRuneLiteral(Token &Result, const char *CurPtr,
     // Skip escaped characters.
     if (C == '\\') {
       // Skip the escaped character.
-      // FIXME: UCN's
       getAndAdvanceChar(CurPtr, Result);
     } else if (C == '\n' || C == '\r' ||             // Newline.
                (C == 0 && CurPtr-1 == BufferEnd)) {  // End of file.
@@ -483,8 +461,7 @@ void Lexer::LexStringLiteral(Token &Result, const char *CurPtr,
 
   char C = getAndAdvanceChar(CurPtr, Result);
   while (C != '"') {
-    // Skip escaped characters.  Escaped newlines will already be processed by
-    // getAndAdvanceChar.
+    // Skip escaped characters.
     if (C == '\\')
       C = getAndAdvanceChar(CurPtr, Result);
     
@@ -690,7 +667,7 @@ void Lexer::LexNumericConstant(Token &Result, const char *CurPtr) {
   unsigned Size;
   char C = getCharAndSize(CurPtr, Size);
   char PrevCh = 0;
-  while (isNumberBody(C)) { // FIXME: UCNs.
+  while (isNumberBody(C)) {
     CurPtr = ConsumeChar(CurPtr, Size, Result);
     PrevCh = C;
     C = getCharAndSize(CurPtr, Size);
@@ -1472,9 +1449,6 @@ LexNextToken:
     Kind = tok::comma;
     break;
 
-  case '\\':
-    // FIXME: UCN's.
-    // FALL THROUGH.
   default:
     Kind = tok::unknown;
     break;

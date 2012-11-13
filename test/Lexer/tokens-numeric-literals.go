@@ -1,5 +1,7 @@
 // RUN: %gong_cc1 -dump-tokens %s 2>&1 | FileCheck %s
 
+// FIXME: check that '078' gives an error, but '078.' doesn't.
+
 // http://golang.org/ref/spec#Integer_literals
 
 // CHECK: numeric_literal '42'
