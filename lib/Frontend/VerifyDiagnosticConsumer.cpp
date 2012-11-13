@@ -354,10 +354,8 @@ static unsigned PrintUnexpected(DiagnosticsEngine &Diags,
   for (const_diag_iterator I = diag_begin, E = diag_end; I != E; ++I) {
     if (!I->first.isValid() || !SourceMgr)
       OS << "\n  (frontend)";
-    else {
-      std::pair<unsigned, unsigned> lc = SourceMgr->getLineAndColumn(I->first);
-      OS << "\n  Line " << lc.first;
-    }
+    else
+      OS << "\n  Line " << SourceMgr->getLineAndColumn(I->first).first;
     OS << ": " << I->second;
   }
 
@@ -376,15 +374,12 @@ static unsigned PrintExpected(DiagnosticsEngine &Diags, llvm::SourceMgr &SourceM
   llvm::raw_svector_ostream OS(Fmt);
   for (DirectiveList::iterator I = DL.begin(), E = DL.end(); I != E; ++I) {
     Directive &D = **I;
-    std::pair<unsigned, unsigned> lc =
-        SourceMgr.getLineAndColumn(D.DiagnosticLoc);
-    OS << "\n  Line " << lc.first;
+    OS << "\n  Line " << SourceMgr.getLineAndColumn(D.DiagnosticLoc).first;
     if (D.DirectiveLoc != D.DiagnosticLoc) {
       int BufID = SourceMgr.FindBufferContainingLoc(D.DirectiveLoc);
-      lc = SourceMgr.getLineAndColumn(D.DirectiveLoc);
       OS << " (directive at "
          << SourceMgr.getMemoryBuffer(BufID)->getBufferIdentifier()
-         << lc.first << ")";
+         << SourceMgr.getLineAndColumn(D.DirectiveLoc).first << ")";
     }
     OS << ": " << D.Text;
   }
