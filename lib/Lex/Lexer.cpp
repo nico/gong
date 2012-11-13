@@ -165,8 +165,7 @@ static inline bool isWhitespace(unsigned char c) {
 /// isNumberBody - Return true if this is the body character of an
 /// preprocessing number, which is [a-zA-Z0-9_.].
 static inline bool isNumberBody(unsigned char c) {
-  return (CharInfo[c] & (CHAR_LETTER|CHAR_NUMBER|CHAR_PERIOD)) ?
-    true : false;
+  return (CharInfo[c] & (CHAR_LETTER|CHAR_NUMBER)) ?  true : false;
 }
 
 /// isRawStringDelimBody - Return true if this is the body character of a
@@ -697,8 +696,12 @@ void Lexer::LexNumericConstant(Token &Result, const char *CurPtr) {
     C = getCharAndSize(CurPtr, Size);
   }
 
-  // If we fell out, check for a sign, due to 1e+12.  If we have one, continue.
-  if ((C == '-' || C == '+') && (PrevCh == 'E' || PrevCh == 'e')) {
+  if (C == '.') {
+    // 0x1.2 is two tokens in Go.
+    if (!isHexaLiteral(BufferPtr))
+      return LexNumericConstant(Result, ConsumeChar(CurPtr, Size, Result));
+  } else if ((C == '-' || C == '+') && (PrevCh == 'E' || PrevCh == 'e')) {
+    // If we fell out, check for a sign, due to 1e+12. If we have one, continue.
     if (!isHexaLiteral(BufferPtr))
       return LexNumericConstant(Result, ConsumeChar(CurPtr, Size, Result));
   }

@@ -33,7 +33,8 @@
 // CHECK: numeric_literal '.12345E+5'
 .12345E+5
 
-// FIXME: Should be two tokens:
+// CHECK: numeric_literal '0x4'
+// CHECK-NEXT: numeric_literal '.5'
 0x4.5
 
 // CHECK: numeric_literal '0x1234567e'
