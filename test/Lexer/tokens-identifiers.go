@@ -40,3 +40,9 @@ aβ੩
 // CHECK: unknown '੩'
 // CHECK: identifier 'aβ'
 ੩aβ
+
+// CHECK: identifier 'α_β'
+α_β
+
+// CHECK: identifier 'a_b'
+a_b

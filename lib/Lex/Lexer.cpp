@@ -387,7 +387,7 @@ void Lexer::LexUtfIdentifier(Token &Result, const char *CurPtr) {
   int len = chartorune(&C, CurPtr);
   CurPtr += len;
 
-  while (isalpharune(C) || isdigitrune(C)) {
+  while (isalpharune(C) || isdigitrune(C) || C == '_') {
     len = chartorune(&C, CurPtr);
     CurPtr += len;
   }
