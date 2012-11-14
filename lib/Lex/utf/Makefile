@@ -1,4 +1,4 @@
-##===- gong/lib/Lex/Makefile -------------------------------*- Makefile -*-===##
+##===- gong/lib/Lex/utf/Makefile ---------------------------*- Makefile -*-===##
 # 
 #                     The LLVM Compiler Infrastructure
 #
@@ -7,15 +7,12 @@
 # 
 ##===----------------------------------------------------------------------===##
 #
-#  This implements the Lexer library for gong.
+#  plan9's utf library.
 #
 ##===----------------------------------------------------------------------===##
 
-GONG_LEVEL := ../..
-include $(GONG_LEVEL)/../../Makefile.config
+GONG_LEVEL := ../../..
 
-LIBRARYNAME := gongLex
-
-PARALLEL_DIRS = utf
+LIBRARYNAME := gongUtf
 
 include $(GONG_LEVEL)/Makefile
