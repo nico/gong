@@ -206,33 +206,15 @@ Lexer::Lexer(DiagnosticsEngine &Diags, llvm::SourceMgr& SM,
   //SetCommentRetentionState(PP.getCommentRetentionState());
 }
 
-/// LexEndOfFile - CurPtr points to the end of this file.  Handle this
+/// CurPtr points to the end of this file.  Handle this
 /// condition, reporting diagnostics and handling other edge cases as required.
 /// This returns true if Result contains a token, false if PP.Lex should be
 /// called again.
 bool Lexer::LexEndOfFile(Token &Result, const char *CurPtr) {
-  // If we are in raw mode, return this event as an EOF token.  Let the caller
-  // that put us in raw mode handle the event.
-  //if (isLexingRawMode()) {
-    Result.startToken();
-    BufferPtr = BufferEnd;
-    FormTokenWithChars(Result, BufferEnd, tok::eof);
-    return true;
-  //}
-  
-  // C99 5.1.1.2p2: If the file is non-empty and didn't end in a newline, issue
-  // a pedwarn.
-  if (CurPtr != BufferStart && (CurPtr[-1] != '\n' && CurPtr[-1] != '\r')) {
-    // XXX test
-    //Diag(BufferEnd, LangOpts.CPlusPlus0x ? // C++11 [lex.phases] 2.2 p2
-         //diag::warn_cxx98_compat_no_newline_eof : diag::ext_no_newline_eof)
-    //<< FixItHint::CreateInsertion(getSourceLocation(BufferEnd), "\n");
-  }
-
-  BufferPtr = CurPtr;
-
-  // Finally, let the preprocessor handle this.
-  return false; //PP->HandleEndOfFile(Result, isPragmaLexer());
+  Result.startToken();
+  BufferPtr = BufferEnd;
+  FormTokenWithChars(Result, BufferEnd, tok::eof);
+  return true;
 }
 
 void Lexer::Diag(const char *Loc, unsigned DiagID) const {
