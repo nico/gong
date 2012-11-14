@@ -67,6 +67,28 @@ typedef TextDiagnosticBuffer::const_iterator const_diag_iterator;
 
 namespace {
 
+// FIXME: This doesn't belong here.
+SourceLocation locForLine(llvm::SourceMgr& SM, SourceLocation B,
+                          unsigned Line) {
+  int ID = SM.FindBufferContainingLoc(B);
+  if (ID == -1)
+    return SourceLocation();
+
+  const llvm::MemoryBuffer *Buf = SM.getMemoryBuffer(ID);
+  const char *Cur = Buf->getBufferStart();
+  const char *End = Buf->getBufferEnd();
+
+  unsigned CurLine = 1;
+  while (CurLine != Line && Cur != End) {
+    if (*Cur == '\n')
+      ++CurLine;
+    ++Cur;
+  }
+  if (CurLine == Line)
+    return SourceLocation::getFromPointer(Cur);
+  return SourceLocation();
+}
+
 /// StandardDirective - Directive with string matching.
 ///
 class StandardDirective : public Directive {
@@ -245,7 +267,35 @@ static bool ParseDirective(StringRef S, ExpectedData *ED, llvm::SourceMgr &SM,
       KindStr = "regex";
     }
 
-    // Note: @ and relative / absolute line numbers are not implemented.
+    // Next optional token: @
+    SourceLocation ExpectedLoc;
+    if (!PH.Next("@")) {
+      ExpectedLoc = Pos;
+    } else {
+      PH.Advance();
+      unsigned Line = 0;
+      bool FoundPlus = PH.Next("+");
+      if (FoundPlus || PH.Next("-")) {
+        // Relative to current line.
+        PH.Advance();
+        unsigned ExpectedLine = SM.getLineAndColumn(Pos).first;
+        if (PH.Next(Line) && (FoundPlus || Line < ExpectedLine)) {
+          if (FoundPlus) ExpectedLine += Line;
+          else ExpectedLine -= Line;
+          ExpectedLoc = locForLine(SM, Pos, ExpectedLine);
+        }
+      } else {
+        // Absolute line number.
+        if (PH.Next(Line) && Line > 0)
+          ExpectedLoc = locForLine(SM, Pos, Line);
+      }
+
+      if (!ExpectedLoc.isValid()) {
+        Diags.Report(Pos, diag::verify_missing_line) << KindStr;
+        continue;
+      }
+      PH.Advance();
+    }
 
     // Skip optional whitespace.
     PH.SkipWhitespace();
@@ -310,7 +360,8 @@ static bool ParseDirective(StringRef S, ExpectedData *ED, llvm::SourceMgr &SM,
       Text.assign(ContentBegin, ContentEnd);
 
     // Construct new directive.
-    Directive *D = Directive::create(RegexKind, Pos, Pos, Text, Min, Max);
+    Directive *D = Directive::create(RegexKind, Pos, ExpectedLoc, Text,
+                                     Min, Max);
     std::string Error;
     if (D->isValid(Error)) {
       DL->push_back(D);

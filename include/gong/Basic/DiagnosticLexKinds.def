@@ -61,6 +61,8 @@ DIAG(verify_invalid_no_diags,
     "%select{expected|'expected-no-diagnostics'}0 directive cannot follow "
     "%select{'expected-no-diagnostics' directive|other expected directives}0")
 DIAG(verify_invalid_range, "invalid range following '-' in expected diag")
+DIAG(verify_missing_line,
+    "missing or invalid line number following '@' in expected diag")
 DIAG(verify_missing_start, "cannot find start ('{{') of expected diag")
 DIAG(verify_missing_end, "cannot find end ('}}') of expected diag")
 DIAG(verify_no_directives,
