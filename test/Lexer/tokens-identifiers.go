@@ -9,11 +9,34 @@ _x9
 // CHECK: identifier 'ThisVariableIsExported'
 ThisVariableIsExported
 
-// FIXME: utf8
-//αβ
+// CHECK: identifier 'αβ'
+αβ
 
 // CHECK: identifier '_00'
 _00
 
 // CHECK: numeric_literal '00'
 00
+
+// CHECK: identifier 'αβɣ'
+αβɣ
+
+// CHECK: identifier '_βɣ'
+_βɣ
+
+// CHECK: identifier '_βɣ0'
+_βɣ0
+
+// CHECK: numeric_literal '0'
+// CHECK-NEXT: identifier '_βɣ'
+0_βɣ
+
+// CHECK: identifier 'ab੩'
+ab੩
+
+// CHECK: identifier 'aβ੩'
+aβ੩
+
+// CHECK: unknown '੩'
+// CHECK: identifier 'aβ'
+੩aβ

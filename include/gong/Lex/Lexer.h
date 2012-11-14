@@ -221,6 +221,7 @@ private:
 
   // Helper functions to lex the remainder of a token of the specific type.
   void LexIdentifier         (Token &Result, const char *CurPtr);
+  void LexUtfIdentifier      (Token &Result, const char *CurPtr);
   void LexNumericConstant    (Token &Result, const char *CurPtr);
   void LexStringLiteral      (Token &Result, const char *CurPtr,
                               tok::TokenKind Kind);

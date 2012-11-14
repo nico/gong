@@ -14,6 +14,9 @@
 #include "gong/Lex/Lexer.h"
 
 #include "gong/Basic/DiagnosticIDs.h"
+
+#include "utf/utf.h"
+
 #include "llvm/ADT/StringSwitch.h"
 #include "llvm/ADT/Twine.h"
 #include "llvm/Support/MathExtras.h"
@@ -378,14 +381,40 @@ bool Lexer::SkipWhitespace(Token &Result, const char *CurPtr) {
   return false;
 }
 
+void Lexer::LexUtfIdentifier(Token &Result, const char *CurPtr) {
+  Rune C;
+  // XXX errors
+  int len = chartorune(&C, CurPtr);
+  CurPtr += len;
+
+  while (isalpharune(C) || isdigitrune(C)) {
+    len = chartorune(&C, CurPtr);
+    CurPtr += len;
+  }
+
+  CurPtr -= len;   // Back up over the skipped character.
+
+  const char *IdStart = BufferPtr;
+
+  FormTokenWithChars(Result, CurPtr, tok::identifier);
+
+  // Update the token info (identifier info and appropriate token kind).
+  IdentifierInfo *II = &Identifiers.get(StringRef(IdStart, Result.getLength()));
+  Result.setIdentifierInfo(II);
+  Result.setKind(II->getTokenID());
+}
+
 void Lexer::LexIdentifier(Token &Result, const char *CurPtr) {
-  // XXX utf
   // Match [_A-Za-z0-9]*, we have already matched [_A-Za-z$]
   unsigned char C = *CurPtr++;
   while (isIdentifierBody(C))
     C = *CurPtr++;
 
   --CurPtr;   // Back up over the skipped character.
+
+  if (C >= 128)
+    return LexUtfIdentifier(Result, CurPtr);
+
   const char *IdStart = BufferPtr;
 
   FormTokenWithChars(Result, CurPtr, tok::identifier);
@@ -1105,7 +1134,7 @@ LexNextToken:
   unsigned SizeTmp, SizeTmp2;   // Temporaries for use in cases below.
 
   // Read a character, advancing over it.
-  char Char = getAndAdvanceChar(CurPtr, Result);
+  unsigned char Char = getAndAdvanceChar(CurPtr, Result);
   tok::TokenKind Kind;
 
   switch (Char) {
@@ -1432,6 +1461,15 @@ LexNextToken:
     break;
 
   default:
+    if (Char >= 128) {
+      Rune r;
+      // XXX errors
+      int len = chartorune(&r, CurPtr - 1);
+      CurPtr = CurPtr - 1 + len;
+      if (isalpharune(r)) {
+        return LexUtfIdentifier(Result, CurPtr);
+      }
+    }
     Kind = tok::unknown;
     break;
   }
