@@ -60,7 +60,7 @@ int main(int argc_, const char **argv_) {
   bool verify = false;
   const char* FileName = NULL;
   for (int i = 1; i < argc_; ++i)
-    if (argv_[i][0] != '-' || (argv_[i][0] && !argv_[i][1])) {
+    if (argv_[i][0] != '-' || !argv_[i][1]) {
       FileName = argv_[i];
     } else if (argv_[i] == std::string("-dump-tokens")) {
       dumpTokens = true;
