@@ -1,4 +1,4 @@
-##===- lib/Makefile ----------------------------------------*- Makefile -*-===##
+##===- gong/lib/Parse/Makefile -----------------------------*- Makefile -*-===##
 # 
 #                     The LLVM Compiler Infrastructure
 #
@@ -6,8 +6,9 @@
 # License. See LICENSE.TXT for details.
 # 
 ##===----------------------------------------------------------------------===##
-GONG_LEVEL := ..
 
-PARALLEL_DIRS = Basic Frontend Lex Parse
+GONG_LEVEL := ../..
+LIBRARYNAME := gongParse
 
 include $(GONG_LEVEL)/Makefile
+

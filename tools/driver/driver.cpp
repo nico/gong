@@ -19,6 +19,7 @@
 #include "gong/Frontend/TextDiagnosticPrinter.h"
 #include "gong/Frontend/VerifyDiagnosticConsumer.h"
 #include "gong/Lex/Lexer.h"
+#include "gong/Parse/Parser.h"
 
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/SmallString.h"
@@ -91,10 +92,12 @@ int main(int argc_, const char **argv_) {
       if (dumpTokens)
         DumpTokens(L);
       else {
-        Token Tok;
+        Parser P(L);
+        P.ParseSourceFile();
+        /*Token Tok;
         do {
           L.Lex(Tok);
-        } while (Tok.isNot(tok::eof));
+        } while (Tok.isNot(tok::eof));*/
       }
 
       Diags.getClient()->finish();

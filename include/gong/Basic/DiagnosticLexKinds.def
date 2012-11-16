@@ -69,3 +69,6 @@ DIAG(verify_missing_start, "cannot find start ('{{') of expected diag")
 DIAG(verify_missing_end, "cannot find end ('}}') of expected diag")
 DIAG(verify_no_directives,
     "no expected directives found: consider use of 'expected-no-diagnostics'")
+
+// FIXME: move to DiagnosticParseKinds
+DIAG(expected_package,     "expected 'package'")
