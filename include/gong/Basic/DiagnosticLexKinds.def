@@ -27,6 +27,8 @@ DIAG(unterminated_block_comment, "unterminated /* comment")
 
 DIAG(conflict_marker,      "version control conflict marker in file")
 
+DIAG(invalid_utf_sequence, "invalid utf8 sequence")
+
 // Literal
 DIAG(empty_rune,           "empty rune literal")
 //def ext_unknown_escape : ExtWarn<"unknown escape sequence '\\%0'">;

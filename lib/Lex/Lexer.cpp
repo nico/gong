@@ -383,7 +383,6 @@ bool Lexer::SkipWhitespace(Token &Result, const char *CurPtr) {
 
 void Lexer::LexUtfIdentifier(Token &Result, const char *CurPtr) {
   Rune C;
-  // XXX errors
   int len = chartorune(&C, CurPtr);
   CurPtr += len;
 
@@ -392,7 +391,11 @@ void Lexer::LexUtfIdentifier(Token &Result, const char *CurPtr) {
     CurPtr += len;
   }
 
-  CurPtr -= len;   // Back up over the skipped character.
+  if (C == Runeerror && len == 1)
+    Diag(CurPtr, diag::invalid_utf_sequence);
+  else
+    CurPtr -= len;   // Back up over the skipped character.
+
 
   const char *IdStart = BufferPtr;
 
@@ -1199,7 +1202,6 @@ LexNextToken:
     return LexNumericConstant(Result, CurPtr);
 
   // http://golang.org/ref/spec#Identifiers
-  // XXX utf8
   case 'A': case 'B': case 'C': case 'D': case 'E': case 'F': case 'G':
   case 'H': case 'I': case 'J': case 'K': case 'L': case 'M': case 'N':
   case 'O': case 'P': case 'Q': case 'R': case 'S': case 'T': case 'U':
@@ -1463,11 +1465,13 @@ LexNextToken:
   default:
     if (Char >= 128) {
       Rune r;
-      // XXX errors
       int len = chartorune(&r, CurPtr - 1);
       CurPtr = CurPtr - 1 + len;
       if (isalpharune(r)) {
         return LexUtfIdentifier(Result, CurPtr);
+      }
+      if (r == Runeerror && len == 1) {
+        Diag(CurPtr - 1, diag::invalid_utf_sequence);
       }
     }
     Kind = tok::unknown;
