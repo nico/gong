@@ -80,6 +80,8 @@ void Parser::ParseSourceFile() {
     Diag(diag::expected_package);
     return;
   }
+  ParsePackageClause();
+
   while (Tok.isNot(tok::eof)) {
     L.Lex(Tok);
   }
@@ -88,163 +90,32 @@ void Parser::ParseSourceFile() {
   //assert(getCurScope() == 0 && "Scope imbalance!");
 }
 
+bool Parser::ParsePackageClause() {
+  assert(Tok.is(tok::kw_package) && "Not 'package'!");
+  SourceLocation PackageLoc = ConsumeToken();
+  if (Tok.isNot(tok::identifier)) {
+    Diag(diag::expected_ident);
+    SkipUntil(tok::semi);
+    return true;
+  }
+  IdentifierInfo *II = Tok.getIdentifierInfo();
+  ConsumeToken();
+  if (II->getName() == "_") {
+    // FIXME: this check belongs in sema
+    Diag(diag::invalid_package_name) << II;
+    SkipUntil(tok::semi);
+    return true;
+  }
+
+  return ExpectAndConsumeSemi(diag::expected_semi_package);
+}
+
 DiagnosticBuilder Parser::Diag(SourceLocation Loc, unsigned DiagID) {
   return Diags.Report(Loc, DiagID);
 }
 
 DiagnosticBuilder Parser::Diag(const Token &Tok, unsigned DiagID) {
   return Diag(Tok.getLocation(), DiagID);
-}
-
-#if 0
-
-/// If a crash happens while the parser is active, print out a line indicating
-/// what the current token is.
-void PrettyStackTraceParserEntry::print(raw_ostream &OS) const {
-  const Token &Tok = P.getCurToken();
-  if (Tok.is(tok::eof)) {
-    OS << "<eof> parser at end of file\n";
-    return;
-  }
-
-  if (Tok.getLocation().isInvalid()) {
-    OS << "<unknown> parser at unknown location\n";
-    return;
-  }
-
-  const Preprocessor &PP = P.getPreprocessor();
-  Tok.getLocation().print(OS, PP.getSourceManager());
-  if (Tok.isAnnotation())
-    OS << ": at annotation token \n";
-  else
-    OS << ": current parser token '" << PP.getSpelling(Tok) << "'\n";
-}
-
-
-/// \brief Emits a diagnostic suggesting parentheses surrounding a
-/// given range.
-///
-/// \param Loc The location where we'll emit the diagnostic.
-/// \param DK The kind of diagnostic to emit.
-/// \param ParenRange Source range enclosing code that should be parenthesized.
-void Parser::SuggestParentheses(SourceLocation Loc, unsigned DK,
-                                SourceRange ParenRange) {
-  SourceLocation EndLoc = PP.getLocForEndOfToken(ParenRange.getEnd());
-  if (!ParenRange.getEnd().isFileID() || EndLoc.isInvalid()) {
-    // We can't display the parentheses, so just dig the
-    // warning/error and return.
-    Diag(Loc, DK);
-    return;
-  }
-
-  Diag(Loc, DK)
-    << FixItHint::CreateInsertion(ParenRange.getBegin(), "(")
-    << FixItHint::CreateInsertion(EndLoc, ")");
-}
-
-static bool IsCommonTypo(tok::TokenKind ExpectedTok, const Token &Tok) {
-  switch (ExpectedTok) {
-  case tok::semi:
-    return Tok.is(tok::colon) || Tok.is(tok::comma); // : or , for ;
-  default: return false;
-  }
-}
-
-/// ExpectAndConsume - The parser expects that 'ExpectedTok' is next in the
-/// input.  If so, it is consumed and false is returned.
-///
-/// If the input is malformed, this emits the specified diagnostic.  Next, if
-/// SkipToTok is specified, it calls SkipUntil(SkipToTok).  Finally, true is
-/// returned.
-bool Parser::ExpectAndConsume(tok::TokenKind ExpectedTok, unsigned DiagID,
-                              const char *Msg, tok::TokenKind SkipToTok) {
-  if (Tok.is(ExpectedTok) || Tok.is(tok::code_completion)) {
-    ConsumeAnyToken();
-    return false;
-  }
-
-  // Detect common single-character typos and resume.
-  if (IsCommonTypo(ExpectedTok, Tok)) {
-    SourceLocation Loc = Tok.getLocation();
-    Diag(Loc, DiagID)
-      << Msg
-      << FixItHint::CreateReplacement(SourceRange(Loc),
-                                      getTokenSimpleSpelling(ExpectedTok));
-    ConsumeAnyToken();
-
-    // Pretend there wasn't a problem.
-    return false;
-  }
-
-  const char *Spelling = 0;
-  SourceLocation EndLoc = PP.getLocForEndOfToken(PrevTokLocation);
-  if (EndLoc.isValid() &&
-      (Spelling = tok::getTokenSimpleSpelling(ExpectedTok))) {
-    // Show what code to insert to fix this problem.
-    Diag(EndLoc, DiagID)
-      << Msg
-      << FixItHint::CreateInsertion(EndLoc, Spelling);
-  } else
-    Diag(Tok, DiagID) << Msg;
-
-  if (SkipToTok != tok::unknown)
-    SkipUntil(SkipToTok);
-  return true;
-}
-
-bool Parser::ExpectAndConsumeSemi(unsigned DiagID) {
-  if (Tok.is(tok::semi) || Tok.is(tok::code_completion)) {
-    ConsumeToken();
-    return false;
-  }
-  
-  if ((Tok.is(tok::r_paren) || Tok.is(tok::r_square)) && 
-      NextToken().is(tok::semi)) {
-    Diag(Tok, diag::err_extraneous_token_before_semi)
-      << PP.getSpelling(Tok)
-      << FixItHint::CreateRemoval(Tok.getLocation());
-    ConsumeAnyToken(); // The ')' or ']'.
-    ConsumeToken(); // The ';'.
-    return false;
-  }
-  
-  return ExpectAndConsume(tok::semi, DiagID);
-}
-
-void Parser::ConsumeExtraSemi(ExtraSemiKind Kind, unsigned TST) {
-  if (!Tok.is(tok::semi)) return;
-
-  bool HadMultipleSemis = false;
-  SourceLocation StartLoc = Tok.getLocation();
-  SourceLocation EndLoc = Tok.getLocation();
-  ConsumeToken();
-
-  while ((Tok.is(tok::semi) && !Tok.isAtStartOfLine())) {
-    HadMultipleSemis = true;
-    EndLoc = Tok.getLocation();
-    ConsumeToken();
-  }
-
-  // C++11 allows extra semicolons at namespace scope, but not in any of the
-  // other contexts.
-  if (Kind == OutsideFunction && getLangOpts().CPlusPlus) {
-    if (getLangOpts().CPlusPlus0x)
-      Diag(StartLoc, diag::warn_cxx98_compat_top_level_semi)
-          << FixItHint::CreateRemoval(SourceRange(StartLoc, EndLoc));
-    else
-      Diag(StartLoc, diag::ext_extra_semi_cxx11)
-          << FixItHint::CreateRemoval(SourceRange(StartLoc, EndLoc));
-    return;
-  }
-
-  if (Kind != AfterMemberFunctionDefinition || HadMultipleSemis)
-    Diag(StartLoc, diag::ext_extra_semi)
-        << Kind << DeclSpec::getSpecifierName((DeclSpec::TST)TST)
-        << FixItHint::CreateRemoval(SourceRange(StartLoc, EndLoc));
-  else
-    // A single semicolon is valid after a member function definition.
-    Diag(StartLoc, diag::warn_extra_semi_after_mem_fn_def)
-      << FixItHint::CreateRemoval(SourceRange(StartLoc, EndLoc));
 }
 
 //===----------------------------------------------------------------------===//
@@ -325,10 +196,6 @@ bool Parser::SkipUntil(ArrayRef<tok::TokenKind> Toks, bool StopAtSemi,
       break;
 
     case tok::string_literal:
-    case tok::wide_string_literal:
-    case tok::utf8_string_literal:
-    case tok::utf16_string_literal:
-    case tok::utf32_string_literal:
       ConsumeStringToken();
       break;
         
@@ -345,6 +212,161 @@ bool Parser::SkipUntil(ArrayRef<tok::TokenKind> Toks, bool StopAtSemi,
   }
 }
 
+#if 0
+
+/// If a crash happens while the parser is active, print out a line indicating
+/// what the current token is.
+void PrettyStackTraceParserEntry::print(raw_ostream &OS) const {
+  const Token &Tok = P.getCurToken();
+  if (Tok.is(tok::eof)) {
+    OS << "<eof> parser at end of file\n";
+    return;
+  }
+
+  if (Tok.getLocation().isInvalid()) {
+    OS << "<unknown> parser at unknown location\n";
+    return;
+  }
+
+  const Preprocessor &PP = P.getPreprocessor();
+  Tok.getLocation().print(OS, PP.getSourceManager());
+  if (Tok.isAnnotation())
+    OS << ": at annotation token \n";
+  else
+    OS << ": current parser token '" << PP.getSpelling(Tok) << "'\n";
+}
+
+
+/// \brief Emits a diagnostic suggesting parentheses surrounding a
+/// given range.
+///
+/// \param Loc The location where we'll emit the diagnostic.
+/// \param DK The kind of diagnostic to emit.
+/// \param ParenRange Source range enclosing code that should be parenthesized.
+void Parser::SuggestParentheses(SourceLocation Loc, unsigned DK,
+                                SourceRange ParenRange) {
+  SourceLocation EndLoc = PP.getLocForEndOfToken(ParenRange.getEnd());
+  if (!ParenRange.getEnd().isFileID() || EndLoc.isInvalid()) {
+    // We can't display the parentheses, so just dig the
+    // warning/error and return.
+    Diag(Loc, DK);
+    return;
+  }
+
+  Diag(Loc, DK)
+    << FixItHint::CreateInsertion(ParenRange.getBegin(), "(")
+    << FixItHint::CreateInsertion(EndLoc, ")");
+}
+#endif
+
+static bool IsCommonTypo(tok::TokenKind ExpectedTok, const Token &Tok) {
+  switch (ExpectedTok) {
+  case tok::semi:
+    return Tok.is(tok::colon) || Tok.is(tok::comma); // : or , for ;
+  default: return false;
+  }
+}
+
+/// ExpectAndConsume - The parser expects that 'ExpectedTok' is next in the
+/// input.  If so, it is consumed and false is returned.
+///
+/// If the input is malformed, this emits the specified diagnostic.  Next, if
+/// SkipToTok is specified, it calls SkipUntil(SkipToTok).  Finally, true is
+/// returned.
+bool Parser::ExpectAndConsume(tok::TokenKind ExpectedTok, unsigned DiagID,
+                              const char *Msg, tok::TokenKind SkipToTok) {
+  if (Tok.is(ExpectedTok) || Tok.is(tok::code_completion)) {
+    ConsumeAnyToken();
+    return false;
+  }
+
+  // Detect common single-character typos and resume.
+  if (IsCommonTypo(ExpectedTok, Tok)) {
+    SourceLocation Loc = Tok.getLocation();
+    Diag(Loc, DiagID)
+      << Msg
+      /*<< FixItHint::CreateReplacement(SourceRange(Loc),
+                                      getTokenSimpleSpelling(ExpectedTok))*/;
+    ConsumeAnyToken();
+
+    // Pretend there wasn't a problem.
+    return false;
+  }
+
+  // FIXME
+  //const char *Spelling = 0;
+  //SourceLocation EndLoc = L.getLocForEndOfToken(PrevTokLocation);
+  //if (EndLoc.isValid() &&
+  //    (Spelling = tok::getTokenSimpleSpelling(ExpectedTok))) {
+  //  // Show what code to insert to fix this problem.
+  //  Diag(EndLoc, DiagID)
+  //    << Msg
+  //    /*<< FixItHint::CreateInsertion(EndLoc, Spelling)*/;
+  //} else
+    Diag(Tok, DiagID) << Msg;
+
+  if (SkipToTok != tok::unknown)
+    SkipUntil(SkipToTok);
+  return true;
+}
+
+bool Parser::ExpectAndConsumeSemi(unsigned DiagID) {
+  if (Tok.is(tok::semi) || Tok.is(tok::code_completion)) {
+    ConsumeToken();
+    return false;
+  }
+  
+  // FIXME
+  //if ((Tok.is(tok::r_paren) || Tok.is(tok::r_square)) && 
+  //    NextToken().is(tok::semi)) {
+  //  Diag(Tok, diag::err_extraneous_token_before_semi)
+  //    << PP.getSpelling(Tok)
+  //    << FixItHint::CreateRemoval(Tok.getLocation());
+  //  ConsumeAnyToken(); // The ')' or ']'.
+  //  ConsumeToken(); // The ';'.
+  //  return false;
+  //}
+  
+  return ExpectAndConsume(tok::semi, DiagID);
+}
+
+void Parser::ConsumeExtraSemi(ExtraSemiKind Kind/*, unsigned TST*/) {
+  if (!Tok.is(tok::semi)) return;
+
+  bool HadMultipleSemis = false;
+  //SourceLocation StartLoc = Tok.getLocation();
+  SourceLocation EndLoc = Tok.getLocation();
+  ConsumeToken();
+
+  while ((Tok.is(tok::semi) && !Tok.isAtStartOfLine())) {
+    HadMultipleSemis = true;
+    EndLoc = Tok.getLocation();
+    ConsumeToken();
+  }
+
+  //// C++11 allows extra semicolons at namespace scope, but not in any of the
+  //// other contexts.
+  //if (Kind == OutsideFunction && getLangOpts().CPlusPlus) {
+  //  if (getLangOpts().CPlusPlus0x)
+  //    Diag(StartLoc, diag::warn_cxx98_compat_top_level_semi)
+  //        << FixItHint::CreateRemoval(SourceRange(StartLoc, EndLoc));
+  //  else
+  //    Diag(StartLoc, diag::ext_extra_semi_cxx11)
+  //        << FixItHint::CreateRemoval(SourceRange(StartLoc, EndLoc));
+  //  return;
+  //}
+
+  //if (Kind != AfterMemberFunctionDefinition || HadMultipleSemis)
+  //  Diag(StartLoc, diag::ext_extra_semi)
+  //      << Kind << DeclSpec::getSpecifierName((DeclSpec::TST)TST)
+  //      << FixItHint::CreateRemoval(SourceRange(StartLoc, EndLoc));
+  //else
+  //  // A single semicolon is valid after a member function definition.
+  //  Diag(StartLoc, diag::warn_extra_semi_after_mem_fn_def)
+  //    << FixItHint::CreateRemoval(SourceRange(StartLoc, EndLoc));
+}
+
+#if 0
 //===----------------------------------------------------------------------===//
 // Scope manipulation
 //===----------------------------------------------------------------------===//

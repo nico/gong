@@ -171,6 +171,9 @@ public:
   ///
   void Initialize();
 
+  /// Parse the package clause.  Returns true on error.
+  bool ParsePackageClause();
+
   /// ParseTopLevelDecl - Parse one top-level declaration. Returns true if
   /// the EOF was encountered.
   bool ParseTopLevelDecl(/*DeclGroupPtrTy &Result*/);
@@ -334,7 +337,6 @@ public:
     //return PP.LookAhead(0);
   //}
 
-#if 0
 private:
   /// ExpectAndConsume - The parser expects that 'ExpectedTok' is next in the
   /// input.  If so, it is consumed and false is returned.
@@ -362,8 +364,9 @@ private:
   };
 
   /// \brief Consume any extra semi-colons until the end of the line.
-  void ConsumeExtraSemi(ExtraSemiKind Kind, unsigned TST = TST_unspecified);
+  void ConsumeExtraSemi(ExtraSemiKind Kind/*, unsigned TST = TST_unspecified*/);
 
+#if 0
 public:
   //===--------------------------------------------------------------------===//
   // Scope manipulation

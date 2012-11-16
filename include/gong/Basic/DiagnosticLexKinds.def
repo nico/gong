@@ -72,3 +72,6 @@ DIAG(verify_no_directives,
 
 // FIXME: move to DiagnosticParseKinds
 DIAG(expected_package,     "expected 'package'")
+DIAG(expected_ident,       "expected identifier")
+DIAG(invalid_package_name, "invalid package name %0")
+DIAG(expected_semi_package,"expected ';' after package name")
