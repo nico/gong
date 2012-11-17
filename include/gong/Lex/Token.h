@@ -64,7 +64,6 @@ public:
   enum TokenFlags {
     StartOfLine   = 0x01,  // At start of line or only after whitespace.
     LeadingSpace  = 0x02,  // Whitespace exists before this token.
-    NeedsCleaning = 0x08,  // Contained an escaped newline or trigraph.
     LeadingEmptyMacro = 0x10, // Empty macro exists before this token.
     InsertedSemi  = 0x20   // For automatically inserted semicolons.
   };
@@ -169,9 +168,7 @@ public:
   ///
   bool hasLeadingSpace() const { return (Flags & LeadingSpace) ? true : false; }
 
-  /// \brief Return true if this token has trigraphs or escaped newlines in it.
-  bool needsCleaning() const { return (Flags & NeedsCleaning) ? true : false; }
-
+  /// \brief Return true if this token was injected due to semicolon insertion.
   bool isInsertedSemi() const { return (Flags & InsertedSemi) ? true : false; }
 };
 

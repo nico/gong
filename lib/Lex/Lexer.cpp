@@ -252,11 +252,6 @@ void Lexer::DumpToken(const Token &Tok, bool DumpFlags) const {
     llvm::errs() << " [LeadingSpace]";
   if (Tok.isInsertedSemi())
     llvm::errs() << " [InsertedSemi]";
-  //if (Tok.needsCleaning()) {
-  //  const char *Start = SourceMgr.getCharacterData(Tok.getLocation());
-  //  llvm::errs() << " [UnClean='" << StringRef(Start, Tok.getLength())
-  //               << "']";
-  //}
 
   int BufID = SM.FindBufferContainingLoc(Tok.getLocation());
   std::pair<unsigned, unsigned> Pos = SM.getLineAndColumn(Tok.getLocation());
@@ -1135,8 +1130,6 @@ bool Lexer::HandleEndOfConflictMarker(const char *CurPtr) {
 /// have been cleared before calling this.
 void Lexer::LexTokenInternal(Token &Result) {
 LexNextToken:
-  // New token, can't need cleaning yet.
-  Result.clearFlag(Token::NeedsCleaning);
   Result.setIdentifierInfo(0);
 
   // CurPtr - Cache BufferPtr in an automatic variable.
