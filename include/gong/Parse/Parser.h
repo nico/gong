@@ -174,6 +174,12 @@ public:
   /// Parse the package clause.  Returns true on error.
   bool ParsePackageClause();
 
+  /// Parse one import decl.  Returns true on error.
+  bool ParseImportDecl();
+
+  /// Parse one import spec.  Returns true on error.
+  bool ParseImportSpec();
+
   /// ParseTopLevelDecl - Parse one top-level declaration. Returns true if
   /// the EOF was encountered.
   bool ParseTopLevelDecl(/*DeclGroupPtrTy &Result*/);

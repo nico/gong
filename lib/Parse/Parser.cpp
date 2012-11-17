@@ -80,7 +80,16 @@ void Parser::ParseSourceFile() {
     Diag(diag::expected_package);
     return;
   }
+  // FIXME: return if this fails (?)
   ParsePackageClause();
+
+  while (Tok.is(tok::kw_import)) {
+    // FIXME: check if this succeeds
+    ParseImportDecl();
+
+    // FIXME: fixit?
+    ExpectAndConsumeSemi(diag::expected_semi_import);
+  }
 
   while (Tok.isNot(tok::eof)) {
     L.Lex(Tok);
@@ -90,6 +99,8 @@ void Parser::ParseSourceFile() {
   //assert(getCurScope() == 0 && "Scope imbalance!");
 }
 
+/// PackageClause  = "package" PackageName .
+/// PackageName    = identifier .
 bool Parser::ParsePackageClause() {
   assert(Tok.is(tok::kw_package) && "Not 'package'!");
   SourceLocation PackageLoc = ConsumeToken();
@@ -99,15 +110,71 @@ bool Parser::ParsePackageClause() {
     return true;
   }
   IdentifierInfo *II = Tok.getIdentifierInfo();
-  ConsumeToken();
+  SourceLocation IdentLoc = ConsumeToken();
   if (II->getName() == "_") {
     // FIXME: this check belongs in sema
     Diag(diag::invalid_package_name) << II;
-    SkipUntil(tok::semi);
+    SkipUntil(tok::semi);  // FIXME: ?
     return true;
   }
 
+  // FIXME: use
+  (void)PackageLoc;
+  (void)IdentLoc;
+
   return ExpectAndConsumeSemi(diag::expected_semi_package);
+}
+
+/// ImportDecl       = "import" ( ImportSpec | "(" { ImportSpec ";" } ")" ) .
+bool Parser::ParseImportDecl() {
+  assert(Tok.is(tok::kw_import) && "Not 'import'!");
+  SourceLocation ImportLoc = ConsumeToken();
+
+  // FIXME: use
+  (void)ImportLoc;
+
+  if (Tok.is(tok::l_paren)) {
+    // FIXME (BalancedDelimiterTracker?)
+    return true;
+  } else {
+    bool Fail = ParseImportSpec();
+    if (Fail) {
+      SkipUntil(tok::semi, /*StopAtSemi=*/false, /*DontConsume=*/true);
+      return true;
+    }
+  }
+
+  return false;
+}
+
+/// ImportSpec       = [ "." | PackageName ] ImportPath .
+/// ImportPath       = string_lit .
+bool Parser::ParseImportSpec() {
+  assert((Tok.is(tok::period) || Tok.is(tok::identifier) ||
+          Tok.is(tok::string_literal)) && "Invalid ParseImportDecl start");
+
+  bool IsDot = false;
+  IdentifierInfo *II = NULL;
+  if (Tok.is(tok::period)) {
+    IsDot = true;
+    ConsumeToken();
+  } else if (Tok.is(tok::identifier)) {
+    II = Tok.getIdentifierInfo();
+    ConsumeToken();
+  }
+
+  if (Tok.isNot(tok::string_literal)) {
+    Diag(diag::expected_string_literal);
+    return true;
+  }
+  const char* Import = Tok.getLiteralData();
+  SourceLocation ImportLoc = ConsumeStringToken();
+
+  // FIXME: pass on
+  (void)ImportLoc;
+  (void)Import;
+
+  return false;
 }
 
 DiagnosticBuilder Parser::Diag(SourceLocation Loc, unsigned DiagID) {
