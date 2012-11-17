@@ -160,12 +160,10 @@ public:
       clearFlag(Flag);
   }
 
-  /// isAtStartOfLine - Return true if this token is at the start of a line.
-  ///
+  /// \brief Return true if this token is at the start of a line.
   bool isAtStartOfLine() const { return (Flags & StartOfLine) ? true : false; }
 
   /// \brief Return true if this token has whitespace before it.
-  ///
   bool hasLeadingSpace() const { return (Flags & LeadingSpace) ? true : false; }
 
   /// \brief Return true if this token was injected due to semicolon insertion.
