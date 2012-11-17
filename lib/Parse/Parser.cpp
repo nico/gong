@@ -87,8 +87,14 @@ void Parser::ParseSourceFile() {
     // FIXME: check if this succeeds
     ParseImportDecl();
 
+    // FIXME: check if this succeeds
     // FIXME: fixit?
-    ExpectAndConsumeSemi(diag::expected_semi_import);
+    //ExpectAndConsumeSemi(diag::expected_semi_import);
+    if (Tok.isNot(tok::semi)) {
+      Diag(diag::expected_semi_import);
+      SkipUntil(tok::semi);
+    } else
+      ConsumeToken();
   }
 
   while (Tok.isNot(tok::eof)) {
@@ -134,8 +140,29 @@ bool Parser::ParseImportDecl() {
   (void)ImportLoc;
 
   if (Tok.is(tok::l_paren)) {
+    ConsumeParen();
     // FIXME (BalancedDelimiterTracker?)
-    return true;
+    bool Fails = false;
+    while (Tok.isNot(tok::r_paren) && Tok.isNot(tok::eof)) {
+      bool Fail = ParseImportSpec();
+      if (Fail) {
+        SkipUntil(tok::semi, /*StopAtSemi=*/false, /*DontConsume=*/true);
+        Fails = true;
+      }
+
+      // FIXME: check if this succeeds
+      // FIXME: fixit?
+      //ExpectAndConsumeSemi(diag::expected_semi_import);
+      if (Tok.isNot(tok::semi)) {
+        Fails = true;
+        Diag(diag::expected_semi_import);
+        SkipUntil(tok::semi);
+      } else
+        ConsumeToken();
+    }
+    if (Tok.is(tok::r_paren))
+      ConsumeParen();
+    return Fails;
   } else {
     bool Fail = ParseImportSpec();
     if (Fail) {
