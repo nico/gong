@@ -97,8 +97,18 @@ void Parser::ParseSourceFile() {
       ConsumeToken();
   }
 
-  while (Tok.isNot(tok::eof)) {
-    L.Lex(Tok);
+  while (Tok.isNot(tok::eof)) {  // FXIME
+    // FIXME: check if this succeeds
+    ParseTopLevelDecl();
+
+    // FIXME: check if this succeeds
+    // FIXME: fixit?
+    //ExpectAndConsumeSemi(diag::expected_semi_import);
+    if (Tok.isNot(tok::semi)) {
+      Diag(diag::expected_semi);  // FIXME "...after 'func'"
+      SkipUntil(tok::semi);
+    } else
+      ConsumeToken();
   }
 
   //ExitScope();
@@ -202,6 +212,38 @@ bool Parser::ParseImportSpec() {
   (void)Import;
 
   return false;
+}
+
+/// TopLevelDecl  = Declaration | FunctionDecl | MethodDecl .
+bool Parser::ParseTopLevelDecl(/*DeclGroupPtrTy &Result*/) {
+  if (Tok.is(tok::kw_func)) {
+    return ParseFunctionOrMethodDecl();
+  } else if (Tok.is(tok::kw_const) || Tok.is(tok::kw_type) ||
+             Tok.is(tok::kw_var)) {
+    return ParseDeclaration();
+  } else {
+    // FIXME: diag something
+    return true;
+  }
+}
+
+bool Parser::ParseFunctionOrMethodDecl() {
+  assert(Tok.is(tok::kw_func) && "Expected 'func'");
+  ConsumeToken();
+
+  // FIXME
+  SkipUntil(tok::semi, /*StopAtSemi=*/false, /*DontConsume=*/true);
+  return true;
+}
+
+bool Parser::ParseDeclaration() {
+  assert((Tok.is(tok::kw_const) || Tok.is(tok::kw_type) ||
+          Tok.is(tok::kw_var)) && "Expected 'const', 'type', or 'var'");
+  ConsumeToken();
+
+  // FIXME
+  SkipUntil(tok::semi, /*StopAtSemi=*/false, /*DontConsume=*/true);
+  return true;
 }
 
 DiagnosticBuilder Parser::Diag(SourceLocation Loc, unsigned DiagID) {

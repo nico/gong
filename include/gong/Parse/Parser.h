@@ -180,9 +180,11 @@ public:
   /// Parse one import spec.  Returns true on error.
   bool ParseImportSpec();
 
-  /// ParseTopLevelDecl - Parse one top-level declaration. Returns true if
-  /// the EOF was encountered.
+  /// Parse one top-level declaration.  Returns true if the EOF was encountered.
   bool ParseTopLevelDecl(/*DeclGroupPtrTy &Result*/);
+
+  bool ParseFunctionOrMethodDecl();
+  bool ParseDeclaration();
 
   /// ConsumeToken - Consume the current 'peek token' and lex the next one.
   /// This does not work with all kinds of tokens: strings and specific other

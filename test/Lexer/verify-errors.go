@@ -2,4 +2,4 @@
 
 package p;
 
-''  // expected-diag {{empty rune literal}}
+var a = '';  // expected-diag {{empty rune literal}}
