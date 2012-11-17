@@ -451,15 +451,17 @@ void Lexer::LexRuneLiteral(Token &Result, const char *CurPtr,
 
   while (C != '\'') {
     // Skip escaped characters.
-    if (C == '\\') {
-      // Skip the escaped character.
-      getAndAdvanceChar(CurPtr, Result);
-    } else if (C == '\n' || C == '\r' ||             // Newline.
-               (C == 0 && CurPtr-1 == BufferEnd)) {  // End of file.
+    if (C == '\\')
+      C = getAndAdvanceChar(CurPtr, Result);
+
+    if (C == '\n' || C == '\r' ||             // Newline.
+        (C == 0 && CurPtr-1 == BufferEnd)) {  // End of file.
       Diag(BufferPtr, diag::unterminated_rune);
       FormTokenWithChars(Result, CurPtr-1, tok::unknown);
       return;
-    } else if (C == 0) {
+    }
+
+    if (C == 0) {
       NulCharacter = CurPtr-1;
     }
     C = getAndAdvanceChar(CurPtr, Result);
