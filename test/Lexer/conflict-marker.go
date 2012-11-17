@@ -34,4 +34,4 @@ var y b;
 
 func foo() int {
   return x + z
-};  // FIXME ugh, remove
+}

@@ -72,7 +72,6 @@ break continue
 // CHECK: break 'break'
 // CHECK-NEXT: semi '
 break // end-of-line comment
-
 // CHECK: break 'break'
 // CHECK-NEXT: continue 'continue'
 // CHECK-NEXT: semi '
