@@ -193,6 +193,8 @@ void Lexer::InitLexer(const char *BufStart, const char *BufPtr,
 
   // Start of the file is a start of line.
   IsAtStartOfLine = true;
+
+  LastTokenKind = tok::eof;
 }
 
 /// Lexer constructor - Create a new lexer object for the specified buffer
@@ -248,6 +250,8 @@ void Lexer::DumpToken(const Token &Tok, bool DumpFlags) const {
     llvm::errs() << " [StartOfLine]";
   if (Tok.hasLeadingSpace())
     llvm::errs() << " [LeadingSpace]";
+  if (Tok.isInsertedSemi())
+    llvm::errs() << " [InsertedSemi]";
   //if (Tok.needsCleaning()) {
   //  const char *Start = SourceMgr.getCharacterData(Tok.getLocation());
   //  llvm::errs() << " [UnClean='" << StringRef(Start, Tok.getLength())
@@ -319,7 +323,7 @@ bool Lexer::SkipLineComment(Token &Result, const char *CurPtr) {
   handleComment(Result, SourceRange(getSourceLocation(BufferPtr),
                                     getSourceLocation(CurPtr)));
 
-  // If we are inside a preprocessor directive and we see the end of line,
+  // If we are inside a line comment and we see the end of line,
   // return immediately, so that the lexer can return this as an EOD token.
   if (CurPtr == BufferEnd) {
     BufferPtr = CurPtr;
@@ -334,6 +338,8 @@ bool Lexer::SkipLineComment(Token &Result, const char *CurPtr) {
   ++CurPtr;
 
   // The next returned token is at the start of the line.
+  if (InsertSemi(Result, CurPtr))
+    return true;
   Result.setFlag(Token::StartOfLine);
   // No leading whitespace seen so far.
   Result.clearFlag(Token::LeadingSpace);
@@ -359,6 +365,8 @@ bool Lexer::SkipWhitespace(Token &Result, const char *CurPtr) {
       break;
 
     // ok, but handle newline.
+    if (InsertSemi(Result, CurPtr))
+      return true;
     // The returned token is at the start of the line.
     Result.setFlag(Token::StartOfLine);
     // No leading whitespace seen so far.
@@ -550,6 +558,8 @@ bool Lexer::SkipBlockComment(Token &Result, const char *CurPtr) {
   // optimization helps people who like to put a lot of * characters in their
   // comments.
 
+  const char* CommentStart = CurPtr;
+
   // The first character we get with newlines and trigraphs skipped to handle
   // the degenerate /*/ case below correctly if the * has an escaped newline
   // after it.
@@ -646,6 +656,12 @@ bool Lexer::SkipBlockComment(Token &Result, const char *CurPtr) {
 
   handleComment(Result, SourceRange(getSourceLocation(BufferPtr),
                                     getSourceLocation(CurPtr)));
+
+  // Check if there was a newline in the block comment.  Most lines are short,
+  // so this should be fast.
+  if (memchr(CommentStart, '\n', CurPtr - CommentStart))
+    if (InsertSemi(Result, CurPtr))
+      return true;
 
   // It is common for the tokens immediately after a /**/ comment to be
   // whitespace.  Instead of going through the big switch, handle it
@@ -1161,6 +1177,8 @@ LexNextToken:
   case '\n':
   case '\r':
     // The returned token is at the start of the line.
+    if (InsertSemi(Result, BufferPtr))
+      return;
     Result.setFlag(Token::StartOfLine);
     // No leading whitespace seen so far.
     Result.clearFlag(Token::LeadingSpace);
@@ -1480,6 +1498,30 @@ LexNextToken:
 
   // Update the location of token as well as BufferPtr.
   FormTokenWithChars(Result, CurPtr, Kind);
+}
+
+bool Lexer::InsertSemi(Token &Result, const char *TokEnd) {
+  // http://golang.org/ref/spec#Semicolons
+  if (LastTokenKind == tok::identifier ||
+      LastTokenKind == tok::numeric_literal ||
+      LastTokenKind == tok::rune_literal ||
+      LastTokenKind == tok::string_literal ||
+      LastTokenKind == tok::kw_break ||
+      LastTokenKind == tok::kw_continue ||
+      LastTokenKind == tok::kw_fallthrough ||
+      LastTokenKind == tok::kw_return ||
+      LastTokenKind == tok::plusplus ||
+      LastTokenKind == tok::minusminus ||
+      LastTokenKind == tok::r_paren ||
+      LastTokenKind == tok::r_square ||
+      LastTokenKind == tok::r_brace) {
+    // FormTokenWithChars() will set LastTokenKind to tok::semi, which will 
+    // prevert insertion of more than one semicolon.
+    Result.setFlag(Token::InsertedSemi);
+    FormTokenWithChars(Result, TokEnd, tok::semi);
+    return true;
+  }
+  return false;
 }
 
 void Lexer::addCommentHandler(CommentHandler *Handler) {

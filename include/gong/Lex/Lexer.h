@@ -66,6 +66,9 @@ class Lexer {
   // line" flag set on it.
   bool IsAtStartOfLine;
 
+  // The Kind of the last token that was emitted. Used for semicolon insertion.
+  unsigned short LastTokenKind;
+
   /// This is mapping/lookup information for all identifiers in / the program,
   /// including program keywords.
   mutable IdentifierTable Identifiers;
@@ -174,8 +177,13 @@ private:
     Result.setLength(TokLen);
     Result.setLocation(getSourceLocation(BufferPtr));
     Result.setKind(Kind);
+    LastTokenKind = Kind;
     BufferPtr = TokEnd;
   }
+
+  /// Possibly inserts a semicolon.  Called after reading a newline character.
+  /// Returns true if a semicolon was inserted.
+  bool InsertSemi(Token &Result, const char *TokEnd);
 
   //===--------------------------------------------------------------------===//
   // Lexer character reading interfaces.
