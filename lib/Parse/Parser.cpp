@@ -483,7 +483,7 @@ bool Parser::ParseTypeLit() {
   case tok::kw_interface: return ParseInterfaceType();
   case tok::kw_map:       return ParseMapType();
   case tok::kw_chan:
-  case tok::lessminus:    return ParseChanType();
+  case tok::lessminus:    return ParseChannelType();
   default: llvm_unreachable("unexpected token kind");
   }
 }
@@ -596,9 +596,29 @@ bool Parser::ParseMapType() {
 }
 
 /// ChannelType = ( "chan" [ "<-" ] | "<-" "chan" ) ElementType .
-bool Parser::ParseChanType() {
-  assert(false && "FIXME implement");
-  return true;
+bool Parser::ParseChannelType() {
+  assert((Tok.is(tok::kw_chan) || Tok.is(tok::lessminus)) && "Expected 'map'");
+  if (Tok.is(tok::kw_chan)) {
+    // "chan" [ "<-" ]
+    ConsumeToken();
+    if (Tok.is(tok::lessminus))
+      ConsumeToken();
+  } else {
+    // "<-" "chan"
+    ConsumeToken();
+
+    if (ExpectAndConsume(tok::kw_chan, diag::expected_chan)) {
+      SkipUntil(tok::semi, /*StopAtSemi=*/false, /*DontConsume=*/true);
+      return true;
+    }
+  }
+
+  if (!IsElementType()) {
+    Diag(Tok, diag::expected_element_type);
+    SkipUntil(tok::semi, /*StopAtSemi=*/false, /*DontConsume=*/true);
+    return true;
+  }
+  return ParseElementType();
 }
 
 /// ElementType = Type .
@@ -707,7 +727,7 @@ bool Parser::IsType() {
          Tok.is(tok::kw_func) ||
          Tok.is(tok::kw_interface) ||
          Tok.is(tok::kw_map) ||
-         Tok.is(tok::kw_chan);
+         Tok.is(tok::kw_chan) || Tok.is(tok::lessminus);
 }
 
 DiagnosticBuilder Parser::Diag(SourceLocation Loc, unsigned DiagID) {

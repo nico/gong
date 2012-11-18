@@ -30,6 +30,11 @@ type t map;  // expected-diag{{expected '['}}
 type t map[;  // expected-diag{{expected type}}
 type t map[string  // expected-diag{{expected ']'}}
 type t map[string]  // expected-diag{{expected type}}
+type t map[string]map[foo]int
 
 // ChannelType
-//FIXME
+type t chan int
+type t chan<- int
+type t <-chan int
+type t <-int  // expected-diag{{expected 'chan'}}
+type t <-chan<-chan int

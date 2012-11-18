@@ -197,7 +197,7 @@ public:
   bool ParseFunctionType();
   bool ParseInterfaceType();
   bool ParseMapType();
-  bool ParseChanType();
+  bool ParseChannelType();
   bool IsElementType() { return IsType(); }
   bool ParseElementType();
 
