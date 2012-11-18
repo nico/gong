@@ -263,8 +263,6 @@ bool Parser::ParseFunctionDecl() {
 
   if (Tok.is(tok::l_brace)) {
     ParseBlock();
-  } else {
-    SkipUntil(tok::r_brace, /*StopAtSemi=*/false);
   }
 
   return false;
@@ -361,9 +359,35 @@ bool Parser::ParseParameterList() {
 
 /// ParameterDecl  = [ IdentifierList ] [ "..." ] Type .
 bool Parser::ParseParameterDecl() {
-  // FIXME
-  SkipUntil(tok::r_paren, /*StopAtSemi=*/true, /*DontConsume=*/true);
-  return true;
+
+  if (Tok.is(tok::identifier)) {
+    // FIXME: This would be nicer if the lexer had 1 lookahead.
+    IdentifierInfo *II = Tok.getIdentifierInfo();
+    ConsumeToken();
+
+    if (Tok.is(tok::comma) || Tok.is(tok::ellipsis) || IsType()) {
+      ParseIdentifierListTail(II);
+      if (Tok.is(tok::ellipsis))
+        ConsumeToken();
+
+      if (!IsType()) {
+        Diag(Tok, diag::expected_type);
+        return true;
+      }
+      return ParseType();
+    } else {
+      return ParseTypeNameTail(II);
+    }
+  }
+
+  if (Tok.is(tok::ellipsis))
+    ConsumeToken();
+
+  if (!IsType()) {
+    Diag(Tok, diag::expected_type);
+    return true;
+  }
+  return ParseType();
 }
 
 /// Receiver     = "(" [ identifier ] [ "*" ] BaseTypeName ")" .
@@ -409,10 +433,47 @@ bool Parser::ParseReceiver() {
 }
 
 /// Type      = TypeName | TypeLit | "(" Type ")" .
-/// TypeName  = identifier | QualifiedIdent .
 /// TypeLit   = ArrayType | StructType | PointerType | FunctionType |
 ///             InterfaceType | SliceType | MapType | ChannelType .
 bool Parser::ParseType() {
+  assert(Tok.isNot(tok::l_paren) && "FIXME: not yet implemented");
+
+  if (Tok.is(tok::identifier))
+    return ParseTypeName();
+  return ParseTypeLit();
+}
+
+/// TypeName  = identifier | QualifiedIdent .
+/// QualifiedIdent = PackageName "." identifier .
+bool Parser::ParseTypeName() {
+  assert(Tok.is(tok::identifier) && "Expected identifier");
+  IdentifierInfo *TypeII = Tok.getIdentifierInfo();
+  ConsumeToken();
+  return ParseTypeNameTail(TypeII);
+}
+
+/// This is called for TypeName after the initial identifier has been read.
+bool Parser::ParseTypeNameTail(IdentifierInfo *Head) {
+  if (Tok.isNot(tok::period))
+    return false;  // The type name was just the identifier.
+
+  // It's a QualifiedIdent.
+  ConsumeToken();
+
+  if (Tok.isNot(tok::identifier)) {
+    Diag(Tok, diag::expected_ident);
+    SkipUntil(tok::l_brace, tok::semi,
+              /*StopAtSemi=*/false, /*DontConsume=*/true);
+    return true;
+  }
+  IdentifierInfo *Qualified = Tok.getIdentifierInfo();
+  (void)Qualified;
+  ConsumeToken();
+  return false;
+}
+
+bool Parser::ParseTypeLit() {
+  // FIXME
   SkipUntil(tok::l_brace, /*StopAtSemi=*/false, /*DontConsume=*/true);
   return true;
 }
@@ -424,6 +485,30 @@ bool Parser::ParseBlock() {
   // FIXME
   SkipUntil(tok::r_brace, /*StopAtSemi=*/false);
   return true;
+}
+
+/// IdentifierList = identifier { "," identifier } .
+bool Parser::ParseIdentifierList() {
+  assert(Tok.is(tok::identifier) && "Expected identifier");
+  IdentifierInfo *Ident = Tok.getIdentifierInfo();
+  ConsumeToken();
+  return ParseIdentifierListTail(Ident);
+}
+
+/// This is called for IdentifierInfo after the initial identifier has been read
+bool Parser::ParseIdentifierListTail(IdentifierInfo *Head) {
+  while (Tok.is(tok::comma)) {
+    ConsumeToken();
+
+    if (Tok.isNot(tok::identifier)) {
+      Diag(Tok, diag::expected_ident);
+      return true;
+    }
+    IdentifierInfo *Ident = Tok.getIdentifierInfo();
+    (void)Ident;  // FIXME
+    ConsumeToken();
+  }
+  return false;
 }
 
 bool Parser::ParseDeclaration() {

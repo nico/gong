@@ -186,7 +186,14 @@ public:
   bool ParseReceiver();
 
   bool ParseType();
+  bool ParseTypeName();
+  bool ParseTypeNameTail(IdentifierInfo *Head);
+  bool ParseTypeLit();
+
   bool ParseBlock();
+
+  bool ParseIdentifierList();
+  bool ParseIdentifierListTail(IdentifierInfo *Head);
 
   bool ParseDeclaration();
 
