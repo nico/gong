@@ -13,6 +13,7 @@
 
 #include "gong/Parse/Parser.h"
 
+#include "llvm/Support/ErrorHandling.h"
 #if 0
 #include "clang/Parse/ParseDiagnostic.h"
 #include "clang/Sema/DeclSpec.h"
@@ -473,9 +474,88 @@ bool Parser::ParseTypeNameTail(IdentifierInfo *Head) {
 }
 
 bool Parser::ParseTypeLit() {
+  switch (Tok.getKind()) {
+  case tok::l_square:     return ParseArrayOrSliceType();
+  case tok::star:         return ParsePointerType();
+  case tok::kw_func:      return ParseFunctionType();
+  case tok::kw_interface: return ParseInterfaceType();
+  case tok::kw_map:       return ParseMapType();
+  case tok::kw_chan:
+  case tok::lessminus:    return ParseChanType();
+  default:
+    llvm_unreachable("Should only be called for kinds covered by that switch");
+  }
   // FIXME
-  SkipUntil(tok::l_brace, /*StopAtSemi=*/false, /*DontConsume=*/true);
+  //SkipUntil(tok::l_brace, /*StopAtSemi=*/false, /*DontConsume=*/true);
+  //return true;
+}
+
+/// ArrayType   = "[" ArrayLength "]" ElementType .
+/// ArrayLength = Expression .
+/// SliceType = "[" "]" ElementType .
+bool Parser::ParseArrayOrSliceType() {
+  assert(Tok.is(tok::l_square) && "Expected '['");
+  ConsumeBracket(); 
+  
+  if (Tok.is(tok::r_square))
+    return ParseSliceType();
+  return ParseArrayType();
+}
+
+bool Parser::ParseArrayType() {
+  assert(false && "FIXME: implement");
   return true;
+}
+
+/// Tok points at the ']' when this is called.
+bool Parser::ParseSliceType() {
+  assert(Tok.is(tok::r_square) && "Expected ']'");
+  ConsumeBracket();
+  return ParseElementType();
+}
+
+/// PointerType = "*" BaseType .
+/// BaseType = Type .
+bool Parser::ParsePointerType() {
+  assert(Tok.is(tok::star) && "Expected '*'");
+  ConsumeToken();
+  return ParseType();
+}
+
+/// FunctionType   = "func" Signature .
+bool Parser::ParseFunctionType() {
+  assert(Tok.is(tok::kw_func) && "Expected 'func'");
+  ConsumeToken();
+  return ParseSignature();
+}
+
+/// InterfaceType      = "interface" "{" { MethodSpec ";" } "}" .
+/// MethodSpec         = MethodName Signature | InterfaceTypeName .
+/// MethodName         = identifier .
+/// InterfaceTypeName  = TypeName .
+bool Parser::ParseInterfaceType() {
+  assert(Tok.is(tok::kw_interface) && "Expected 'interface'");
+  ConsumeToken();
+  assert(false && "FIXME implement");
+  return true;
+}
+
+/// MapType     = "map" "[" KeyType "]" ElementType .
+// KeyType     = Type .
+bool Parser::ParseMapType() {
+  assert(false && "FIXME implement");
+  return true;
+}
+
+/// ChannelType = ( "chan" [ "<-" ] | "<-" "chan" ) ElementType .
+bool Parser::ParseChanType() {
+  assert(false && "FIXME implement");
+  return true;
+}
+
+/// ElementType = Type .
+bool Parser::ParseElementType() {
+  return ParseType();
 }
 
 /// Block = "{" { Statement ";" } "}" .

@@ -189,6 +189,15 @@ public:
   bool ParseTypeName();
   bool ParseTypeNameTail(IdentifierInfo *Head);
   bool ParseTypeLit();
+  bool ParseArrayOrSliceType();
+  bool ParseArrayType();
+  bool ParseSliceType();
+  bool ParsePointerType();
+  bool ParseFunctionType();
+  bool ParseInterfaceType();
+  bool ParseMapType();
+  bool ParseChanType();
+  bool ParseElementType();
 
   bool ParseBlock();
 

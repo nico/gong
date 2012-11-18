@@ -30,6 +30,11 @@ func foo(foo bar) foo.4 {}  // expected-diag {{expected ';'}}
 
 func foo(foo bar) (bar... foo.bar) {}
 
+// Function and method bodies can be omitted.
+func a()
+func (foo) a()
+func (foo) a() int
+
 func a {}  // expected-diag {{expected '('}}
 
 // FIXME: `func a()` without {} is valid, test once signature parsing is done
