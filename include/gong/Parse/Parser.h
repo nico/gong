@@ -198,6 +198,7 @@ public:
   bool ParseInterfaceType();
   bool ParseMapType();
   bool ParseChanType();
+  bool IsElementType() { return IsType(); }
   bool ParseElementType();
 
   bool ParseBlock();

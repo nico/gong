@@ -509,7 +509,10 @@ bool Parser::ParseArrayType() {
 bool Parser::ParseSliceType() {
   assert(Tok.is(tok::r_square) && "Expected ']'");
   ConsumeBracket();
-  return ParseElementType();
+  if (IsElementType())
+    return ParseElementType();
+  Diag(Tok, diag::expected_element_type);
+  return false;
 }
 
 /// StructType     = "struct" "{" { FieldDecl ";" } "}" .
@@ -533,16 +536,22 @@ bool Parser::ParseStructType() {
 bool Parser::ParsePointerType() {
   assert(Tok.is(tok::star) && "Expected '*'");
   ConsumeToken();
-  // FIXME: check IsType()
-  return ParseType();
+  if (IsType())
+    return ParseType();
+  Diag(Tok, diag::expected_type);
+  SkipUntil(tok::semi, /*StopAtSemi=*/false, /*DontConsume=*/true);
+  return true;
 }
 
 /// FunctionType   = "func" Signature .
 bool Parser::ParseFunctionType() {
   assert(Tok.is(tok::kw_func) && "Expected 'func'");
   ConsumeToken();
-  // FIXME: check Signature prefix
-  return ParseSignature();
+  if (Tok.is(tok::l_paren))
+    return ParseSignature();
+  Diag(Tok, diag::expected_l_paren);
+  SkipUntil(tok::semi, /*StopAtSemi=*/false, /*DontConsume=*/true);
+  return true;
 }
 
 /// InterfaceType      = "interface" "{" { MethodSpec ";" } "}" .
