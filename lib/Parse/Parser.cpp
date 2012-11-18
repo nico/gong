@@ -317,6 +317,7 @@ bool Parser::ParseResult() {
   // go down ParseParameters() when a '(' is found.
   if (Tok.is(tok::l_paren))
     return ParseParameters();
+  // FIXME: check IsType()
   return ParseType();
 }
 
@@ -476,18 +477,15 @@ bool Parser::ParseTypeNameTail(IdentifierInfo *Head) {
 bool Parser::ParseTypeLit() {
   switch (Tok.getKind()) {
   case tok::l_square:     return ParseArrayOrSliceType();
+  case tok::kw_struct:    return ParseStructType();
   case tok::star:         return ParsePointerType();
   case tok::kw_func:      return ParseFunctionType();
   case tok::kw_interface: return ParseInterfaceType();
   case tok::kw_map:       return ParseMapType();
   case tok::kw_chan:
   case tok::lessminus:    return ParseChanType();
-  default:
-    llvm_unreachable("Should only be called for kinds covered by that switch");
+  default: llvm_unreachable("unexpected token kind");
   }
-  // FIXME
-  //SkipUntil(tok::l_brace, /*StopAtSemi=*/false, /*DontConsume=*/true);
-  //return true;
 }
 
 /// ArrayType   = "[" ArrayLength "]" ElementType .
@@ -514,11 +512,28 @@ bool Parser::ParseSliceType() {
   return ParseElementType();
 }
 
+/// StructType     = "struct" "{" { FieldDecl ";" } "}" .
+/// FieldDecl      = (IdentifierList Type | AnonymousField) [ Tag ] .
+/// AnonymousField = [ "*" ] TypeName .
+/// Tag            = string_lit .
+bool Parser::ParseStructType() {
+  assert(Tok.is(tok::kw_struct) && "Expected 'struct'");
+  ConsumeToken();
+
+  // FIXME: ...after 'struct'
+  ExpectAndConsume(tok::l_brace, diag::expected_l_brace);
+
+  // FIXME
+  SkipUntil(tok::r_brace, /*StopAtSemi=*/false, /*DontConsume=*/false);
+  return true;
+}
+
 /// PointerType = "*" BaseType .
 /// BaseType = Type .
 bool Parser::ParsePointerType() {
   assert(Tok.is(tok::star) && "Expected '*'");
   ConsumeToken();
+  // FIXME: check IsType()
   return ParseType();
 }
 
@@ -526,6 +541,7 @@ bool Parser::ParsePointerType() {
 bool Parser::ParseFunctionType() {
   assert(Tok.is(tok::kw_func) && "Expected 'func'");
   ConsumeToken();
+  // FIXME: check Signature prefix
   return ParseSignature();
 }
 
@@ -594,10 +610,59 @@ bool Parser::ParseIdentifierListTail(IdentifierInfo *Head) {
 bool Parser::ParseDeclaration() {
   assert((Tok.is(tok::kw_const) || Tok.is(tok::kw_type) ||
           Tok.is(tok::kw_var)) && "Expected 'const', 'type', or 'var'");
+  switch (Tok.getKind()) {
+    case tok::kw_const: return ParseConstDecl();
+    case tok::kw_type:  return ParseTypeDecl();
+    case tok::kw_var:   return ParseVarDecl();
+    default: llvm_unreachable("unexpected token kind");
+  }
+}
+
+/// ConstDecl      = "const" ( ConstSpec | "(" { ConstSpec ";" } ")" ) .
+/// ConstSpec      = IdentifierList [ [ Type ] "=" ExpressionList ] .
+/// ExpressionList = Expression { "," Expression } .
+bool Parser::ParseConstDecl() {
+  assert(Tok.is(tok::kw_const) && "Expected 'const'");
   ConsumeToken();
+  // FIXME
+  SkipUntil(tok::semi, /*StopAtSemi=*/false, /*DontConsume=*/true);
+  assert(false && "FIXME: implement const");
+  return true;
+}
+
+/// TypeDecl     = "type" ( TypeSpec | "(" { TypeSpec ";" } ")" ) .
+bool Parser::ParseTypeDecl() {
+  assert(Tok.is(tok::kw_type) && "Expected 'type'");
+  ConsumeToken();
+  if (Tok.is(tok::identifier))
+    return ParseTypeSpec();
 
   // FIXME
   SkipUntil(tok::semi, /*StopAtSemi=*/false, /*DontConsume=*/true);
+  assert(false && "FIXME: implement typespec groups");
+  return true;
+}
+
+/// TypeSpec     = identifier Type .
+bool Parser::ParseTypeSpec() {
+  assert(Tok.is(tok::identifier) && "Expected identifier");
+  ConsumeToken();
+  if (!IsType()) {
+    Diag(Tok, diag::expected_type);
+    return true;
+  }
+  return ParseType();
+}
+
+/// VarDecl     = "var" ( VarSpec | "(" { VarSpec ";" } ")" ) .
+/// VarSpec     = IdentifierList
+///               ( Type [ "=" ExpressionList ] | "=" ExpressionList ) .
+bool Parser::ParseVarDecl() {
+  assert(Tok.is(tok::kw_var) && "Expected 'var'");
+  ConsumeToken();
+  // FIXME
+  SkipUntil(tok::semi, /*StopAtSemi=*/false, /*DontConsume=*/true);
+  //assert(false && "FIXME: implement var");
   return true;
 }
 
@@ -605,6 +670,7 @@ bool Parser::IsType() {
   return Tok.is(tok::identifier) ||
          Tok.is(tok::l_paren) ||
          Tok.is(tok::l_square) ||
+         Tok.is(tok::kw_struct) ||
          Tok.is(tok::star) ||
          Tok.is(tok::kw_func) ||
          Tok.is(tok::kw_interface) ||

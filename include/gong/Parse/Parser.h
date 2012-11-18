@@ -192,6 +192,7 @@ public:
   bool ParseArrayOrSliceType();
   bool ParseArrayType();
   bool ParseSliceType();
+  bool ParseStructType();
   bool ParsePointerType();
   bool ParseFunctionType();
   bool ParseInterfaceType();
@@ -205,6 +206,10 @@ public:
   bool ParseIdentifierListTail(IdentifierInfo *Head);
 
   bool ParseDeclaration();
+  bool ParseConstDecl();
+  bool ParseTypeDecl();
+  bool ParseTypeSpec();
+  bool ParseVarDecl();
 
   bool IsType();
 
