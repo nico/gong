@@ -178,10 +178,19 @@ public:
 
   /// Parses a function or method signature.
   bool ParseSignature();
+  bool ParseResult();
+  bool ParseParameters();
+  bool IsParameterList();
+  bool ParseParameterList();
+  bool ParseParameterDecl();
   bool ParseReceiver();
+
+  bool ParseType();
   bool ParseBlock();
 
   bool ParseDeclaration();
+
+  bool IsType();
 
   /// ConsumeToken - Consume the current 'peek token' and lex the next one.
   /// This does not work with all kinds of tokens: strings and specific other

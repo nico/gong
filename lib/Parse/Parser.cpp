@@ -297,14 +297,72 @@ bool Parser::ParseMethodDecl() {
 }
 
 /// Signature      = Parameters [ Result ] .
-/// Result         = Parameters | Type .
-/// Parameters     = "(" [ ParameterList [ "," ] ] ")" .
-/// ParameterList  = ParameterDecl { "," ParameterDecl } .
-/// ParameterDecl  = [ IdentifierList ] [ "..." ] Type .
 bool Parser::ParseSignature() {
   assert(Tok.is(tok::l_paren) && "Expected '('");
+
+  ParseParameters();
+
+  if (Tok.is(tok::l_paren) || IsType()) {
+    ParseResult();
+  }
+
+  return false;
+}
+
+/// Result         = Parameters | Type .
+bool Parser::ParseResult() {
+  assert(Tok.is(tok::l_paren) | IsType());
+
+  // Note: '(' could also be the start of a type, but ParseParameters() accepts
+  // a superset of the type productions starting with '(', so it's ok to always
+  // go down ParseParameters() when a '(' is found.
+  if (Tok.is(tok::l_paren))
+    return ParseParameters();
+  return ParseType();
+}
+
+/// Parameters     = "(" [ ParameterList [ "," ] ] ")" .
+bool Parser::ParseParameters() {
+  assert(Tok.is(tok::l_paren) && "Expected '('");
+  ConsumeParen();
+
+  if (IsParameterList()) {
+    ParseParameterList();
+  }
+
+  if (Tok.is(tok::comma))
+    ConsumeToken();
+
+  if (Tok.is(tok::r_paren)) {
+    ConsumeParen();
+    return false;
+  } else {
+    Diag(Tok, diag::expected_r_paren);
+    SkipUntil(tok::r_paren, /*StopAtSemi=*/true, /*DontConsume=*/true);
+    return true;
+  }
+}
+
+bool Parser::IsParameterList() {
+  return Tok.is(tok::identifier) || Tok.is(tok::ellipsis) || IsType();
+}
+
+/// ParameterList  = ParameterDecl { "," ParameterDecl } .
+bool Parser::ParseParameterList() {
+  assert(IsParameterList());
+
+  ParseParameterDecl();
+  while (Tok.is(tok::comma)) {
+    ConsumeToken();
+    ParseParameterDecl();
+  }
+  return false;
+}
+
+/// ParameterDecl  = [ IdentifierList ] [ "..." ] Type .
+bool Parser::ParseParameterDecl() {
   // FIXME
-  SkipUntil(tok::l_brace, /*StopAtSemi=*/false, /*DontConsume=*/true);
+  SkipUntil(tok::r_paren, /*StopAtSemi=*/true, /*DontConsume=*/true);
   return true;
 }
 
@@ -350,6 +408,15 @@ bool Parser::ParseReceiver() {
   return true;
 }
 
+/// Type      = TypeName | TypeLit | "(" Type ")" .
+/// TypeName  = identifier | QualifiedIdent .
+/// TypeLit   = ArrayType | StructType | PointerType | FunctionType |
+///             InterfaceType | SliceType | MapType | ChannelType .
+bool Parser::ParseType() {
+  SkipUntil(tok::l_brace, /*StopAtSemi=*/false, /*DontConsume=*/true);
+  return true;
+}
+
 /// Block = "{" { Statement ";" } "}" .
 bool Parser::ParseBlock() {
   assert(Tok.is(tok::l_brace) && "Expected '{'");
@@ -367,6 +434,17 @@ bool Parser::ParseDeclaration() {
   // FIXME
   SkipUntil(tok::semi, /*StopAtSemi=*/false, /*DontConsume=*/true);
   return true;
+}
+
+bool Parser::IsType() {
+  return Tok.is(tok::identifier) ||
+         Tok.is(tok::l_paren) ||
+         Tok.is(tok::l_square) ||
+         Tok.is(tok::star) ||
+         Tok.is(tok::kw_func) ||
+         Tok.is(tok::kw_interface) ||
+         Tok.is(tok::kw_map) ||
+         Tok.is(tok::kw_chan);
 }
 
 DiagnosticBuilder Parser::Diag(SourceLocation Loc, unsigned DiagID) {
