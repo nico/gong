@@ -173,6 +173,14 @@ public:
   bool ParseTopLevelDecl(/*DeclGroupPtrTy &Result*/);
 
   bool ParseFunctionOrMethodDecl();
+  bool ParseFunctionDecl();
+  bool ParseMethodDecl();
+
+  /// Parses a function or method signature.
+  bool ParseSignature();
+  bool ParseReceiver();
+  bool ParseBlock();
+
   bool ParseDeclaration();
 
   /// ConsumeToken - Consume the current 'peek token' and lex the next one.

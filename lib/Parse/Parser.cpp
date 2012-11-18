@@ -99,7 +99,7 @@ void Parser::ParseSourceFile() {
       ConsumeToken();
   }
 
-  while (Tok.isNot(tok::eof)) {  // FXIME
+  while (Tok.isNot(tok::eof)) {  // FIXME
     // FIXME: check if this succeeds
     ParseTopLevelDecl();
 
@@ -231,10 +231,84 @@ bool Parser::ParseTopLevelDecl(/*DeclGroupPtrTy &Result*/) {
 
 bool Parser::ParseFunctionOrMethodDecl() {
   assert(Tok.is(tok::kw_func) && "Expected 'func'");
+  SourceLocation FuncLoc = ConsumeToken();
+
+  if (Tok.is(tok::identifier))
+    return ParseFunctionDecl();
+  else if (Tok.is(tok::l_paren))
+    return ParseMethodDecl();
+  else {
+    Diag(FuncLoc, diag::expected_ident_or_l_paren);
+    SkipUntil(tok::semi, /*StopAtSemi=*/false, /*DontConsume=*/true);
+    return true;
+  }
+}
+
+/// The current token points at FunctionName when this is called.
+/// FunctionDecl = "func" FunctionName Signature [ Body ] .
+/// FunctionName = identifier .
+/// Body         = Block .
+bool Parser::ParseFunctionDecl() {
+  assert(Tok.is(tok::identifier) && "Expected identifier");
+  IdentifierInfo *FunctionName = Tok.getIdentifierInfo();
+  SourceLocation FuncLoc = ConsumeToken();
+  (void)FunctionName;  // FIXME
+  (void)FuncLoc;  // FIXME
+
+  ParseSignature();
+
+  if (Tok.is(tok::l_brace)) {
+    ParseBlock();
+  }
+
+  return false;
+}
+
+/// The current token points at Receiver when this is called.
+/// MethodDecl   = "func" Receiver MethodName Signature [ Body ] .
+/// BaseTypeName = identifier .
+bool Parser::ParseMethodDecl() {
+  ParseReceiver();
+  IdentifierInfo *MethodName = Tok.getIdentifierInfo();
+  SourceLocation MethodLoc = ConsumeToken();
+  (void)MethodName;  // FIXME
+  (void)MethodLoc;  // FIXME
   ConsumeToken();
 
+  ParseSignature();
+
+  if (Tok.is(tok::l_brace)) {
+    ParseBlock();
+  }
+
+  return false;
+}
+
+/// Signature      = Parameters [ Result ] .
+/// Result         = Parameters | Type .
+/// Parameters     = "(" [ ParameterList [ "," ] ] ")" .
+/// ParameterList  = ParameterDecl { "," ParameterDecl } .
+/// ParameterDecl  = [ IdentifierList ] [ "..." ] Type .
+bool Parser::ParseSignature() {
   // FIXME
-  SkipUntil(tok::semi, /*StopAtSemi=*/false, /*DontConsume=*/true);
+  SkipUntil(tok::l_brace, /*StopAtSemi=*/false, /*DontConsume=*/true);
+  return true;
+}
+
+/// Receiver     = "(" [ identifier ] [ "*" ] BaseTypeName ")" .
+bool Parser::ParseReceiver() {
+  assert(Tok.is(tok::l_paren) && "Expected '('");
+  // FIXME
+  SkipUntil(tok::r_paren);
+  return true;
+}
+
+/// Block = "{" { Statement ";" } "}" .
+bool Parser::ParseBlock() {
+  assert(Tok.is(tok::l_brace) && "Expected '{'");
+  ConsumeBrace();
+  // FIXME
+  SkipUntil(tok::r_brace, /*StopAtSemi=*/false);
   return true;
 }
 
