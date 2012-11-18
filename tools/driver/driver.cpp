@@ -92,7 +92,8 @@ int main(int argc_, const char **argv_) {
       if (dumpTokens)
         DumpTokens(L);
       else {
-        Parser P(L);
+        Action ParseActions;
+        Parser P(L, ParseActions);
         P.ParseSourceFile();
         /*Token Tok;
         do {

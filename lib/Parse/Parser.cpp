@@ -26,9 +26,11 @@
 #endif
 using namespace gong;
 
+ActionBase::~ActionBase() {}
+Action::~Action() {}
 
-Parser::Parser(Lexer &l/*, Sema &actions, bool skipFunctionBodies*/)
-  : L(l), /*Actions(actions),*/ Diags(L.getDiagnostics()) {
+Parser::Parser(Lexer &l, Action &actions/*, bool skipFunctionBodies*/)
+  : L(l), Actions(actions), Diags(L.getDiagnostics()) {
   //SkipFunctionBodies = pp.isCodeCompletionEnabled() || skipFunctionBodies;
   Tok.startToken();
   Tok.setKind(tok::eof);

@@ -16,6 +16,7 @@
 
 //#include "gong/Basic/Specifiers.h"
 #include "gong/Lex/Lexer.h"
+#include "gong/Parse/Action.h"
 //#include "llvm/ADT/OwningPtr.h"
 //#include "llvm/ADT/SmallVector.h"
 //#include "llvm/Support/Compiler.h"
@@ -83,7 +84,7 @@ class Parser /*: public CodeCompletionHandler */ {
   
   /// Actions - These are the callbacks we invoke as we parse various constructs
   /// in the file.
-  //Sema &Actions;
+  Action &Actions;
 
   DiagnosticsEngine &Diags;
 
@@ -104,7 +105,7 @@ class Parser /*: public CodeCompletionHandler */ {
   //bool SkipFunctionBodies;
 
 public:
-  Parser(Lexer &L/*, Sema &Actions, bool SkipFunctionBodies*/);
+  Parser(Lexer &L, Action &Actions/*, bool SkipFunctionBodies*/);
   ~Parser();
 
   //const LangOptions &getLangOpts() const { return PP.getLangOpts(); }
@@ -115,23 +116,22 @@ public:
   const Token &getCurToken() const { return Tok; }
   //Scope *getCurScope() const { return Actions.getCurScope(); }
 
-#if 0
   // Type forwarding.  All of these are statically 'void*', but they may all be
   // different actual classes based on the actions in place.
-  typedef OpaquePtr<DeclGroupRef> DeclGroupPtrTy;
-  typedef OpaquePtr<TemplateName> TemplateTy;
+  //typedef OpaquePtr<DeclGroupRef> DeclGroupPtrTy;
+  //typedef OpaquePtr<TemplateName> TemplateTy;
 
-  typedef SmallVector<TemplateParameterList *, 4> TemplateParameterLists;
+  //typedef SmallVector<TemplateParameterList *, 4> TemplateParameterLists;
 
-  typedef gong::ExprResult        ExprResult;
-  typedef gong::StmtResult        StmtResult;
-  typedef gong::BaseResult        BaseResult;
-  typedef gong::MemInitResult     MemInitResult;
-  typedef gong::TypeResult        TypeResult;
+  typedef Action::ExprResult        ExprResult;
+  typedef Action::StmtResult        StmtResult;
+  typedef Action::BaseResult        BaseResult;
+  typedef Action::MemInitResult     MemInitResult;
+  typedef Action::TypeResult        TypeResult;
 
-  typedef Expr *ExprArg;
-  typedef llvm::MutableArrayRef<Stmt*> MultiStmtArg;
-  typedef Sema::FullExprArg FullExprArg;
+  //typedef Expr *ExprArg;
+  //typedef llvm::MutableArrayRef<Stmt*> MultiStmtArg;
+  //typedef Sema::FullExprArg FullExprArg;
 
   /// Adorns a ExprResult with Actions to make it an ExprResult
   ExprResult Owned(ExprResult res) {
@@ -149,7 +149,6 @@ public:
   StmtResult StmtError(const DiagnosticBuilder &) { return StmtError(); }
 
   ExprResult ExprEmpty() { return ExprResult(false); }
-#endif
 
   // Parsing methods.
 
