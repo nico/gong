@@ -255,10 +255,16 @@ bool Parser::ParseFunctionDecl() {
   (void)FunctionName;  // FIXME
   (void)FuncLoc;  // FIXME
 
-  ParseSignature();
+  if (Tok.is(tok::l_paren)) {
+    ParseSignature();
+  } else {
+    Diag(Tok, diag::expected_l_paren);
+  }
 
   if (Tok.is(tok::l_brace)) {
     ParseBlock();
+  } else {
+    SkipUntil(tok::r_brace, /*StopAtSemi=*/false);
   }
 
   return false;
@@ -296,6 +302,7 @@ bool Parser::ParseMethodDecl() {
 /// ParameterList  = ParameterDecl { "," ParameterDecl } .
 /// ParameterDecl  = [ IdentifierList ] [ "..." ] Type .
 bool Parser::ParseSignature() {
+  assert(Tok.is(tok::l_paren) && "Expected '('");
   // FIXME
   SkipUntil(tok::l_brace, /*StopAtSemi=*/false, /*DontConsume=*/true);
   return true;

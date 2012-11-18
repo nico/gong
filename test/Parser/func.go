@@ -12,4 +12,4 @@ func (foo *bar) foo() {}
 
 func (foo, bar) foo() {}  // expected-diag {{expected ')'}}
 
-func a {}
+func a {}  // expected-diag {{expected '('}}
