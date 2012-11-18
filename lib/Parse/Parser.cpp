@@ -566,10 +566,33 @@ bool Parser::ParseInterfaceType() {
 }
 
 /// MapType     = "map" "[" KeyType "]" ElementType .
-// KeyType     = Type .
+/// KeyType     = Type .
 bool Parser::ParseMapType() {
-  assert(false && "FIXME implement");
-  return true;
+  assert(Tok.is(tok::kw_map) && "Expected 'map'");
+  ConsumeToken();
+  if (Tok.isNot(tok::l_square)) {
+    Diag(Tok, diag::expected_l_square);
+    SkipUntil(tok::semi, /*StopAtSemi=*/false, /*DontConsume=*/true);
+    return true;
+  }
+  ConsumeBracket();
+
+  if (!IsType()) {
+    Diag(Tok, diag::expected_type);
+    SkipUntil(tok::semi, /*StopAtSemi=*/false, /*DontConsume=*/true);
+    return true;
+  }
+  ParseType();
+
+  if (ExpectAndConsume(tok::r_square, diag::expected_r_square))
+    return true;
+
+  if (!IsElementType()) {
+    Diag(Tok, diag::expected_type);
+    SkipUntil(tok::semi, /*StopAtSemi=*/false, /*DontConsume=*/true);
+    return true;
+  }
+  return ParseElementType();
 }
 
 /// ChannelType = ( "chan" [ "<-" ] | "<-" "chan" ) ElementType .

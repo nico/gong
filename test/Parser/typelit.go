@@ -25,7 +25,11 @@ type t []int
 type t []  // expected-diag{{expected element type}}
 
 // MapType
-//FIXME
+type t map[string]int
+type t map;  // expected-diag{{expected '['}}
+type t map[;  // expected-diag{{expected type}}
+type t map[string  // expected-diag{{expected ']'}}
+type t map[string]  // expected-diag{{expected type}}
 
 // ChannelType
 //FIXME
