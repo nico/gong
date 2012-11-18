@@ -269,11 +269,17 @@ bool Parser::ParseFunctionDecl() {
 /// BaseTypeName = identifier .
 bool Parser::ParseMethodDecl() {
   ParseReceiver();
-  IdentifierInfo *MethodName = Tok.getIdentifierInfo();
-  SourceLocation MethodLoc = ConsumeToken();
+
+  IdentifierInfo *MethodName = NULL;;
+  SourceLocation MethodLoc;
+  if (Tok.is(tok::identifier)) {
+    MethodName = Tok.getIdentifierInfo();
+    MethodLoc = ConsumeToken();
+  } else {
+    Diag(Tok, diag::expected_ident);
+  }
   (void)MethodName;  // FIXME
   (void)MethodLoc;  // FIXME
-  ConsumeToken();
 
   ParseSignature();
 
@@ -298,8 +304,42 @@ bool Parser::ParseSignature() {
 /// Receiver     = "(" [ identifier ] [ "*" ] BaseTypeName ")" .
 bool Parser::ParseReceiver() {
   assert(Tok.is(tok::l_paren) && "Expected '('");
+  ConsumeParen();
+
+  IdentifierInfo *FirstII = NULL;
+  if (Tok.is(tok::identifier)) {
+    FirstII = Tok.getIdentifierInfo();
+    ConsumeToken();
+  }
+
+  bool IsStar = false;
+  if (Tok.is(tok::star)) {
+    IsStar = true;
+    ConsumeToken();
+  }
+
+  IdentifierInfo *TypeII = NULL;
+  if (Tok.is(tok::identifier)) {
+    TypeII = Tok.getIdentifierInfo();
+    ConsumeToken();
+  } else if (!IsStar) {
+    TypeII = FirstII;
+    FirstII = NULL;
+  }
+
+  if (!TypeII) {
+    Diag(Tok.getLocation(), diag::expected_ident);
+    SkipUntil(tok::r_paren, /*StopAtSemi=*/true, /*DontConsume=*/true);
+  }
+
+  if (Tok.is(tok::r_paren)) {
+    ConsumeParen();
+  } else {
+    Diag(Tok.getLocation(), diag::expected_r_paren);
+    SkipUntil(tok::r_paren);
+  }
+
   // FIXME
-  SkipUntil(tok::r_paren);
   return true;
 }
 
