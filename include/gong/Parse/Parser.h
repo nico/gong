@@ -214,6 +214,20 @@ public:
 
   bool IsType();
 
+  bool ParseStatement();
+  bool ParseGoStmnt();
+  bool ParseReturnStmnt();
+  bool ParseBreakStmnt();
+  bool ParseContinueStmnt();
+  bool ParseGotoStmnt();
+  bool ParseFallthroughStmnt();
+  bool ParseIfStmt();
+  bool ParseSwitchStmt();
+  bool ParseSelectStmt();
+  bool ParseForStmt();
+  bool ParseDeferStmt();
+  bool ParseEmptyStmt();
+
   /// ConsumeToken - Consume the current 'peek token' and lex the next one.
   /// This does not work with all kinds of tokens: strings and specific other
   /// tokens must be consumed with custom methods below.  This returns the
