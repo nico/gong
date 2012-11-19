@@ -201,8 +201,6 @@ public:
   bool IsElementType() { return IsType(); }
   bool ParseElementType();
 
-  bool ParseBlock();
-
   bool ParseIdentifierList();
   bool ParseIdentifierListTail(IdentifierInfo *Head);
 
@@ -214,6 +212,7 @@ public:
 
   bool IsType();
 
+  // Statements
   bool ParseStatement();
   bool ParseGoStmnt();
   bool ParseReturnStmnt();
@@ -227,6 +226,7 @@ public:
   bool ParseForStmt();
   bool ParseDeferStmt();
   bool ParseEmptyStmt();
+  bool ParseBlock();
 
   /// ConsumeToken - Consume the current 'peek token' and lex the next one.
   /// This does not work with all kinds of tokens: strings and specific other

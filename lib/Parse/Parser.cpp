@@ -626,18 +626,6 @@ bool Parser::ParseElementType() {
   return ParseType();
 }
 
-/// Block = "{" { Statement ";" } "}" .
-bool Parser::ParseBlock() {
-  assert(Tok.is(tok::l_brace) && "Expected '{'");
-  ConsumeBrace();
-  // FIXME: scoping, better recovery, check IsStatment() first
-  while (Tok.isNot(tok::r_brace) && Tok.isNot(tok::eof)) {
-    ParseStatement();
-    ExpectAndConsumeSemi(diag::expected_semi_import);
-  }
-  return ExpectAndConsume(tok::r_brace, diag::expected_r_brace);
-}
-
 /// IdentifierList = identifier { "," identifier } .
 bool Parser::ParseIdentifierList() {
   assert(Tok.is(tok::identifier) && "Expected identifier");
