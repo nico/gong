@@ -500,8 +500,17 @@ bool Parser::ParseArrayOrSliceType() {
   return ParseArrayType();
 }
 
+/// Tok points at ArrayLength when this is called.
 bool Parser::ParseArrayType() {
-  assert(false && "FIXME: implement");
+  ExprResult Expr = ParseExpression();
+  (void)Expr;  // FIXME
+  if (ExpectAndConsume(tok::r_square, diag::expected_r_square)) {
+    SkipUntil(tok::semi, /*StopAtSemi=*/false, /*DontConsume=*/true);
+    return true;
+  }
+  if (IsElementType())
+    return ParseElementType();
+  Diag(Tok, diag::expected_element_type);
   return true;
 }
 

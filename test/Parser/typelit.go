@@ -3,7 +3,10 @@
 package p
 
 // ArrayType
-//FIXME
+type t [4]int;
+type t [+4]int;
+type t [-4]int;
+type t [4 int;  // expected-diag{{expected ']'}}
 
 // StructType
 //FIXME

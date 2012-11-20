@@ -18,46 +18,6 @@
 //#include "llvm/ADT/SmallString.h"
 using namespace gong;
 
-/// Expression = UnaryExpr | Expression binary_op UnaryExpr .
-/// UnaryExpr  = PrimaryExpr | unary_op UnaryExpr .
-/// 
-/// binary_op  = "||" | "&&" | rel_op | add_op | mul_op .
-/// rel_op     = "==" | "!=" | "<" | "<=" | ">" | ">=" .
-/// add_op     = "+" | "-" | "|" | "^" .
-/// mul_op     = "*" | "/" | "%" | "<<" | ">>" | "&" | "&^" .
-/// 
-/// unary_op   = "+" | "-" | "!" | "^" | "*" | "&" | "<-" .
-
-/// PrimaryExpr =
-///   Operand |
-///   Conversion |
-///   BuiltinCall |
-///   PrimaryExpr Selector |
-///   PrimaryExpr Index |
-///   PrimaryExpr Slice |
-///   PrimaryExpr TypeAssertion |
-///   PrimaryExpr Call .
-
-/// Operand    = Literal | OperandName | MethodExpr | "(" Expression ")" .
-/// Literal    = BasicLit | CompositeLit | FunctionLit .
-/// BasicLit   = int_lit | float_lit | imaginary_lit | char_lit | string_lit .
-/// OperandName = identifier | QualifiedIdent.
-
-/// CompositeLit  = LiteralType LiteralValue .
-/// LiteralType   = StructType | ArrayType | "[" "..." "]" ElementType |
-///                 "{" [ ElementList [ "," ] ] "}" .
-/// ElementList   = Element { "," Element } .
-/// Element       = [ Key ":" ] Value .
-/// Key           = FieldName | ElementIndex .
-/// FieldName     = identifier .
-/// ElementIndex  = Expression .
-/// Value         = Expression | LiteralValue .
-
-/// Conversion = Type "(" Expression ")" .
-
-/// BuiltinCall = identifier "(" [ BuiltinArgs [ "," ] ] ")" .
-/// BuiltinArgs = Type [ "," ExpressionList ] | ExpressionList .
-
 /// \brief Return the precedence of the specified binary operator token.
 static prec::Level getBinOpPrecedence(tok::TokenKind Kind) {
   switch (Kind) {
@@ -87,6 +47,11 @@ static prec::Level getBinOpPrecedence(tok::TokenKind Kind) {
   }
 }
 
+/// Expression = UnaryExpr | Expression binary_op UnaryExpr .
+/// binary_op  = "||" | "&&" | rel_op | add_op | mul_op .
+/// rel_op     = "==" | "!=" | "<" | "<=" | ">" | ">=" .
+/// add_op     = "+" | "-" | "|" | "^" .
+/// mul_op     = "*" | "/" | "%" | "<<" | ">>" | "&" | "&^" .
 Parser::ExprResult
 Parser::ParseExpression() {
   ExprResult LHS = ParseUnaryExpr();
@@ -145,11 +110,72 @@ Parser::ParseRHSOfBinaryExpression(ExprResult LHS, prec::Level MinPrec) {
   }
 }
 
+bool Parser::IsUnaryOp() {
+  switch (Tok.getKind()) {
+  default:
+    return false;
+  case tok::plus:
+  case tok::minus:
+  case tok::exclaim:
+  case tok::caret:
+  case tok::star:
+  case tok::amp:
+  case tok::lessminus:
+    return true;
+  }
+}
+
+/// UnaryExpr  = PrimaryExpr | unary_op UnaryExpr .
+/// unary_op   = "+" | "-" | "!" | "^" | "*" | "&" | "<-" .
 Action::ExprResult
-ParseUnaryExpr() {
+Parser::ParseUnaryExpr() {
+  if (IsUnaryOp())
+    ConsumeToken();  // FIXME: use
+  return ParsePrimaryExpr();
+}
+
+/// PrimaryExpr =
+///   Operand |
+///   Conversion |
+///   BuiltinCall |
+///   PrimaryExpr Selector |
+///   PrimaryExpr Index |
+///   PrimaryExpr Slice |
+///   PrimaryExpr TypeAssertion |
+///   PrimaryExpr Call .
+Action::ExprResult
+Parser::ParsePrimaryExpr() {
   // FIXME
+  if (Tok.is(tok::numeric_literal)) {
+    // FIXME
+    ConsumeToken();
+    return false;
+  }
   return true;
 }
+
+/// Operand    = Literal | OperandName | MethodExpr | "(" Expression ")" .
+/// Literal    = BasicLit | CompositeLit | FunctionLit .
+/// BasicLit   = int_lit | float_lit | imaginary_lit | char_lit | string_lit .
+/// OperandName = identifier | QualifiedIdent.
+
+/// CompositeLit  = LiteralType LiteralValue .
+/// LiteralType   = StructType | ArrayType | "[" "..." "]" ElementType |
+///                 "{" [ ElementList [ "," ] ] "}" .
+/// ElementList   = Element { "," Element } .
+/// Element       = [ Key ":" ] Value .
+/// Key           = FieldName | ElementIndex .
+/// FieldName     = identifier .
+/// ElementIndex  = Expression .
+/// Value         = Expression | LiteralValue .
+
+/// Conversion = Type "(" Expression ")" .
+
+/// BuiltinCall = identifier "(" [ BuiltinArgs [ "," ] ] ")" .
+/// BuiltinArgs = Type [ "," ExpressionList ] | ExpressionList .
+
+/// MethodExpr    = ReceiverType "." MethodName .
+/// ReceiverType  = TypeName | "(" "*" TypeName ")" .
 
 #if 0
 /// \brief Simple precedence-based parser for binary/ternary operators.

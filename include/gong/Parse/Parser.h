@@ -221,7 +221,9 @@ public:
   ExprResult ParseExpression();
   ExprResult ParseRHSOfBinaryExpression(ExprResult LHS,
                                         prec::Level MinPrec);
+  bool IsUnaryOp();
   ExprResult ParseUnaryExpr();
+  ExprResult ParsePrimaryExpr();
 
 
   // Statements
