@@ -51,6 +51,7 @@ public:
 namespace prec {
   enum Level {
     Unknown         = 0,    // Not binary operator.
+    Lowest          = 1,
     LogicalOr       = 1,    // ||
     LogicalAnd      = 2,    // &&
     Equality        = 3,    // ==, !=, <, <=, >, >=
@@ -128,6 +129,9 @@ public:
   typedef Action::BaseResult        BaseResult;
   typedef Action::MemInitResult     MemInitResult;
   typedef Action::TypeResult        TypeResult;
+
+  typedef Action::OwningExprResult OwningExprResult;
+  typedef Action::OwningStmtResult OwningStmtResult;
 
   //typedef Expr *ExprArg;
   //typedef llvm::MutableArrayRef<Stmt*> MultiStmtArg;
@@ -211,6 +215,14 @@ public:
   bool ParseVarDecl();
 
   bool IsType();
+
+  // Expressions
+  //FIXME: These should likely be OwningExprResult
+  ExprResult ParseExpression();
+  ExprResult ParseRHSOfBinaryExpression(ExprResult LHS,
+                                        prec::Level MinPrec);
+  ExprResult ParseUnaryExpr();
+
 
   // Statements
   bool ParseStatement();
