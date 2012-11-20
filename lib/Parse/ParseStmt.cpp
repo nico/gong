@@ -58,10 +58,11 @@ bool Parser::ParseStatement() {
   return true;
 }
 
+/// GoStmt = "go" Expression .
 bool Parser::ParseGoStmnt() {
-  // FIXME
-  SkipUntil(tok::semi, /*StopAtSemi=*/false, /*DontConsume=*/true);
-  return true;
+  assert(Tok.is(tok::kw_go) && "expected 'go'");
+  ConsumeToken();
+  return ParseExpression().isInvalid();
 }
 
 bool Parser::ParseReturnStmnt() {
@@ -128,10 +129,11 @@ bool Parser::ParseForStmt() {
   return true;
 }
 
+/// DeferStmt = "defer" Expression .
 bool Parser::ParseDeferStmt() {
-  // FIXME
-  SkipUntil(tok::semi, /*StopAtSemi=*/false, /*DontConsume=*/true);
-  return true;
+  assert(Tok.is(tok::kw_defer) && "expected 'defer'");
+  ConsumeToken();
+  return ParseExpression().isInvalid();
 }
 
 bool Parser::ParseEmptyStmt() {
