@@ -200,6 +200,7 @@ public:
   bool ParsePointerType();
   bool ParseFunctionType();
   bool ParseInterfaceType();
+  bool ParseMethodSpec();
   bool ParseMapType();
   bool ParseChannelType();
   bool IsElementType() { return IsType(); }

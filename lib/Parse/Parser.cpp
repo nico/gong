@@ -108,7 +108,7 @@ void Parser::ParseSourceFile() {
     // FIXME: fixit?
     //ExpectAndConsumeSemi(diag::expected_semi_import);
     if (Tok.isNot(tok::semi)) {
-      Diag(diag::expected_semi);  // FIXME "...after 'func'"
+      Diag(diag::expected_semi);
       SkipUntil(tok::semi);
     } else
       ConsumeToken();
@@ -464,6 +464,8 @@ bool Parser::ParseTypeNameTail(IdentifierInfo *Head) {
 
   if (Tok.isNot(tok::identifier)) {
     Diag(Tok, diag::expected_ident);
+    // FIXME: This doesn't recover well when called from ParseMethodSpec() for
+    // interface{} types.
     SkipUntil(tok::l_brace, tok::semi,
               /*StopAtSemi=*/false, /*DontConsume=*/true);
     return true;
@@ -564,14 +566,56 @@ bool Parser::ParseFunctionType() {
 }
 
 /// InterfaceType      = "interface" "{" { MethodSpec ";" } "}" .
-/// MethodSpec         = MethodName Signature | InterfaceTypeName .
-/// MethodName         = identifier .
-/// InterfaceTypeName  = TypeName .
 bool Parser::ParseInterfaceType() {
   assert(Tok.is(tok::kw_interface) && "Expected 'interface'");
   ConsumeToken();
-  assert(false && "FIXME implement");
-  return true;
+  if (Tok.isNot(tok::l_brace)) {
+    Diag(Tok, diag::expected_l_brace);
+    SkipUntil(tok::semi, /*StopAtSemi=*/false, /*DontConsume=*/true);
+    return true;
+  }
+  ConsumeBrace();
+
+  while (Tok.isNot(tok::r_brace) && Tok.isNot(tok::eof)) {
+    if (Tok.isNot(tok::identifier)) {
+      Diag(Tok, diag::expected_ident);
+      SkipUntil(tok::r_brace, /*StopAtSemi=*/false);
+      return true;
+    }
+    if (ParseMethodSpec()) {
+      SkipUntil(tok::r_brace, /*StopAtSemi=*/false);
+      return true;
+    }
+
+    if (Tok.isNot(tok::semi)) {
+      Diag(diag::expected_semi);  // FIXME "...in 'interface'"
+      SkipUntil(tok::r_brace, /*StopAtSemi=*/true, /*DontConsume=*/true);
+    }
+    if (Tok.is(tok::semi))
+      ConsumeToken();
+  }
+  if (Tok.is(tok::r_brace))
+    ConsumeBrace();
+  return false;
+}
+
+/// MethodSpec         = MethodName Signature | InterfaceTypeName .
+/// MethodName         = identifier .
+/// InterfaceTypeName  = TypeName .
+bool Parser::ParseMethodSpec() {
+  assert(Tok.is(tok::identifier) && "Expected identifier");
+
+  // If next is:
+  // '(' identifier was MethodName, next is signature
+  // '.' identifier was head of InterfaceTypeName as part of a QualifiedIdent
+  // else: InterfaceTypeName as identifier
+  IdentifierInfo *II = Tok.getIdentifierInfo();
+  ConsumeToken();
+
+  if (Tok.is(tok::l_paren))
+    return ParseSignature();
+  else
+    return ParseTypeNameTail(II);
 }
 
 /// MapType     = "map" "[" KeyType "]" ElementType .

@@ -21,7 +21,19 @@ type t func a()  // expected-diag{{expected '('}}
 type t func() int
 
 // InterfaceType
-//FIXME
+type t interface{}
+type t interface{
+  4 // expected-diag{{expected identifier}}
+}
+type t interface{
+  foo
+  foo.bar
+  baz(foo, bar quux)
+}
+// FIXME
+//type t interface{
+  //foo.  // exected-diag{{expected identifier}}
+//}
 
 // SliceType
 type t []int
