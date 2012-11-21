@@ -527,19 +527,95 @@ bool Parser::ParseSliceType() {
 }
 
 /// StructType     = "struct" "{" { FieldDecl ";" } "}" .
-/// FieldDecl      = (IdentifierList Type | AnonymousField) [ Tag ] .
-/// AnonymousField = [ "*" ] TypeName .
-/// Tag            = string_lit .
 bool Parser::ParseStructType() {
   assert(Tok.is(tok::kw_struct) && "Expected 'struct'");
   ConsumeToken();
 
-  // FIXME: ...after 'struct'
-  ExpectAndConsume(tok::l_brace, diag::expected_l_brace);
+  // FIXME: This is very similar to ParseInterfaceType
+  if (Tok.isNot(tok::l_brace)) {
+    // FIXME: ...after 'struct'
+    Diag(Tok, diag::expected_l_brace);
+    SkipUntil(tok::semi, /*StopAtSemi=*/false, /*DontConsume=*/true);
+    return true;
+  }
+  ConsumeBrace();
 
-  // FIXME
-  SkipUntil(tok::r_brace, /*StopAtSemi=*/false, /*DontConsume=*/false);
-  return true;
+  while (Tok.isNot(tok::r_brace) && Tok.isNot(tok::eof)) {
+    if (Tok.isNot(tok::identifier) && Tok.isNot(tok::star)) {
+      Diag(Tok, diag::expected_ident_or_star);
+      SkipUntil(tok::r_brace, /*StopAtSemi=*/false);
+      return true;
+    }
+    if (ParseFieldDecl()) {
+      SkipUntil(tok::r_brace, /*StopAtSemi=*/false);
+      return true;
+    }
+
+    if (Tok.isNot(tok::semi)) {
+      Diag(diag::expected_semi);  // FIXME "...in 'interface'"
+      SkipUntil(tok::r_brace, /*StopAtSemi=*/true, /*DontConsume=*/true);
+    }
+    if (Tok.is(tok::semi))
+      ConsumeToken();
+  }
+  if (Tok.is(tok::r_brace))
+    ConsumeBrace();
+  return false;
+}
+
+/// FieldDecl      = (IdentifierList Type | AnonymousField) [ Tag ] .
+/// Tag            = string_lit .
+bool Parser::ParseFieldDecl() {
+  assert((Tok.is(tok::identifier) || Tok.is(tok::star)) &&
+      "Expected identifier or '*'");
+
+  if (Tok.is(tok::star))
+    ParseAnonymousField();
+  else {
+    // tok::identifier
+    IdentifierInfo *II = Tok.getIdentifierInfo();
+    ConsumeToken();
+
+    // If next is:
+    // ',': IdentifierListTail Type
+    // IsType(): Indentifier Type
+    // else: AnonymousField
+    if (Tok.is(tok::comma)) {
+      ParseIdentifierListTail(II);
+      if (!IsType()) {
+        Diag(Tok, diag::expected_type);
+        return true;
+      }
+      ParseType();
+    } else if (IsType()) {
+      ParseType();
+    } else {
+      ParseAnonymousFieldTail(II);
+    }
+  }
+
+  if (Tok.is(tok::string_literal))
+    ConsumeStringToken();
+  return false;
+}
+
+/// AnonymousField = [ "*" ] TypeName .
+bool Parser::ParseAnonymousField() {
+  assert((Tok.is(tok::star) || Tok.is(tok::identifier)) &&
+      "Expected '*' or identifier");
+  if (Tok.is(tok::star))
+    ConsumeToken();
+  if (Tok.isNot(tok::identifier)) {
+    Diag(Tok, diag::expected_ident);
+    return true;
+  }
+  IdentifierInfo* II = Tok.getIdentifierInfo();
+  ConsumeToken();
+  return ParseAnonymousFieldTail(II);
+}
+
+bool Parser::ParseAnonymousFieldTail(IdentifierInfo* II) {
+  return ParseTypeNameTail(II);
 }
 
 /// PointerType = "*" BaseType .
@@ -570,6 +646,7 @@ bool Parser::ParseInterfaceType() {
   assert(Tok.is(tok::kw_interface) && "Expected 'interface'");
   ConsumeToken();
   if (Tok.isNot(tok::l_brace)) {
+    // FIXME: ... after 'interface'
     Diag(Tok, diag::expected_l_brace);
     SkipUntil(tok::semi, /*StopAtSemi=*/false, /*DontConsume=*/true);
     return true;

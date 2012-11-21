@@ -197,6 +197,9 @@ public:
   bool ParseArrayType();
   bool ParseSliceType();
   bool ParseStructType();
+  bool ParseFieldDecl();
+  bool ParseAnonymousField();
+  bool ParseAnonymousFieldTail(IdentifierInfo* II);
   bool ParsePointerType();
   bool ParseFunctionType();
   bool ParseInterfaceType();

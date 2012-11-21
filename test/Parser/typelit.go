@@ -9,7 +9,23 @@ type t [-4]int;
 type t [4 int;  // expected-diag{{expected ']'}}
 
 // StructType
-//FIXME
+type t struct {}
+type t struct {
+  anontype
+  *anontype2
+  anontype3.qual
+  *anontype4.qual
+  anontype "stringlit"
+  foo bar
+  bar, baz *quux
+  bar2, baz2 *quux2 "stringlit"
+
+  bar, baz []int
+  *anon5000 []int  // expected-diag{{expected ';'}}
+}
+type t struct {
+  4  // expected-diag{{expected identifier}}
+}
 
 // PointerType
 type t *int
