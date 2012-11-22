@@ -10,6 +10,7 @@ type t [4 int;  // expected-diag{{expected ']'}}
 
 // StructType
 type t struct {}
+type t struct { foo int }
 type t struct {
   anontype
   *anontype2
@@ -38,6 +39,7 @@ type t func() int
 
 // InterfaceType
 type t interface{}
+type t interface{ foo }
 type t interface{
   4 // expected-diag{{expected identifier}}
 }

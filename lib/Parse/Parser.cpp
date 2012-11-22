@@ -551,7 +551,7 @@ bool Parser::ParseStructType() {
       return true;
     }
 
-    if (Tok.isNot(tok::semi)) {
+    if (Tok.isNot(tok::semi) && Tok.isNot(tok::r_brace)) {
       Diag(diag::expected_semi);  // FIXME "...in 'interface'"
       SkipUntil(tok::r_brace, /*StopAtSemi=*/true, /*DontConsume=*/true);
     }
@@ -664,7 +664,7 @@ bool Parser::ParseInterfaceType() {
       return true;
     }
 
-    if (Tok.isNot(tok::semi)) {
+    if (Tok.isNot(tok::semi) && Tok.isNot(tok::r_brace)) {
       Diag(diag::expected_semi);  // FIXME "...in 'interface'"
       SkipUntil(tok::r_brace, /*StopAtSemi=*/true, /*DontConsume=*/true);
     }
