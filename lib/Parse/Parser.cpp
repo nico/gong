@@ -263,7 +263,7 @@ bool Parser::ParseFunctionDecl() {
   }
 
   if (Tok.is(tok::l_brace)) {
-    ParseBlock();
+    ParseBody();
   }
 
   return false;
@@ -289,7 +289,7 @@ bool Parser::ParseMethodDecl() {
   ParseSignature();
 
   if (Tok.is(tok::l_brace)) {
-    ParseBlock();
+    ParseBody();
   }
 
   return false;

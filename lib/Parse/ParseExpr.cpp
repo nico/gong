@@ -143,31 +143,94 @@ Parser::ParseUnaryExpr() {
 ///   PrimaryExpr Slice |
 ///   PrimaryExpr TypeAssertion |
 ///   PrimaryExpr Call .
-Action::ExprResult
-Parser::ParsePrimaryExpr() {
-  // FIXME
-  if (Tok.is(tok::numeric_literal)) {
-    // FIXME
-    ConsumeToken();
-    return false;
-  }
-  return true;
-}
-
 /// Operand    = Literal | OperandName | MethodExpr | "(" Expression ")" .
 /// Literal    = BasicLit | CompositeLit | FunctionLit .
 /// BasicLit   = int_lit | float_lit | imaginary_lit | char_lit | string_lit .
 /// OperandName = identifier | QualifiedIdent.
+Action::ExprResult
+Parser::ParsePrimaryExpr() {
+  // FIXME
+  //if (Tok.is(tok::numeric_literal)) {
+  //  // FIXME
+  //  ConsumeToken();
+  //  return false;
+  //}
+  //return true;
+  ExprResult Res;
+
+  switch (Tok.getKind()) {
+  default: return ExprError();
+  case tok::numeric_literal:
+  case tok::rune_literal:
+  case tok::string_literal:
+    Res = ParseBasicLit();
+    break;
+  case tok::kw_struct:
+  case tok::l_square:
+  case tok::kw_map:
+    Res = ParseCompositeLit();  // FIXME: TypeName lits
+    break;
+  case tok::kw_func:
+    Res = ParseFunctionLit();
+    break;
+  }
+  return ParsePrimaryExprSuffix(Res);
+}
+
+/// Selector       = "." identifier .
+/// Index          = "[" Expression "]" .
+/// Slice          = "[" [ Expression ] ":" [ Expression ] "]" .
+/// TypeAssertion  = "." "(" Type ")" .
+/// Call           = "(" [ ArgumentList [ "," ] ] ")" .
+/// ArgumentList   = ExpressionList [ "..." ] .
+Action::ExprResult
+Parser::ParsePrimaryExprSuffix(ExprResult &LHS) {
+  // FIXME
+  return LHS;
+}
+
+Action::ExprResult
+Parser::ParseBasicLit() {
+  assert((Tok.is(tok::numeric_literal) || Tok.is(tok::rune_literal) ||
+        Tok.is(tok::string_literal)) && "Unexpected basic literal start");
+  ConsumeAnyToken();
+  return false;
+}
 
 /// CompositeLit  = LiteralType LiteralValue .
 /// LiteralType   = StructType | ArrayType | "[" "..." "]" ElementType |
-///                 "{" [ ElementList [ "," ] ] "}" .
+///                 SliceType | MapType | TypeName .
+/// LiteralValue  = "{" [ ElementList [ "," ] ] "}" .
 /// ElementList   = Element { "," Element } .
 /// Element       = [ Key ":" ] Value .
 /// Key           = FieldName | ElementIndex .
 /// FieldName     = identifier .
 /// ElementIndex  = Expression .
 /// Value         = Expression | LiteralValue .
+Action::ExprResult
+Parser::ParseCompositeLit() {
+  // FIXME: TypeName lits (Tok.is(tok::identifier)
+  assert((Tok.is(tok::kw_struct) || Tok.is(tok::l_square) ||
+        Tok.is(tok::kw_map)) && "Unexpected composite literal start");
+  ConsumeAnyToken();
+  return ExprError();  // FIXME
+}
+
+/// FunctionLit = FunctionType Body .
+Action::ExprResult
+Parser::ParseFunctionLit() {
+  assert(Tok.is(tok::kw_func) && "expected 'func'");
+  if (ParseFunctionType())
+    return ExprError();
+  if (Tok.isNot(tok::l_brace)) {
+    Diag(Tok, diag::expected_l_brace);
+    return ExprError();
+  }
+  if (!ParseBody())
+    return ExprError();
+  return false;
+}
+
 
 /// Conversion = Type "(" Expression ")" .
 

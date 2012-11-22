@@ -179,6 +179,7 @@ public:
   bool ParseFunctionOrMethodDecl();
   bool ParseFunctionDecl();
   bool ParseMethodDecl();
+  bool ParseBody() { return ParseBlock(); }
 
   /// Parses a function or method signature.
   bool ParseSignature();
@@ -228,6 +229,10 @@ public:
   bool IsUnaryOp();
   ExprResult ParseUnaryExpr();
   ExprResult ParsePrimaryExpr();
+  ExprResult ParsePrimaryExprSuffix(ExprResult &LHS);
+  ExprResult ParseBasicLit();
+  ExprResult ParseCompositeLit();
+  ExprResult ParseFunctionLit();
 
 
   // Statements
