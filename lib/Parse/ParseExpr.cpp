@@ -13,6 +13,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "gong/Parse/Parser.h"
+#include "llvm/Support/ErrorHandling.h"
 //#include "RAIIObjectsForParser.h"
 //#include "llvm/ADT/SmallVector.h"
 //#include "llvm/ADT/SmallString.h"
@@ -212,8 +213,62 @@ Parser::ParseCompositeLit() {
   // FIXME: TypeName lits (Tok.is(tok::identifier)
   assert((Tok.is(tok::kw_struct) || Tok.is(tok::l_square) ||
         Tok.is(tok::kw_map)) && "Unexpected composite literal start");
-  ConsumeAnyToken();
-  return ExprError();  // FIXME
+
+  // Type
+  enum {
+    Ints,
+    RequiredStrings,
+    OptionalStrings
+  } KeyKind;
+
+  switch (Tok.getKind()) {
+  default: llvm_unreachable("unexpected token kind");
+  case tok::kw_struct:
+    KeyKind = OptionalStrings;
+    if (ParseStructType())
+      return ExprError();
+    break;
+  case tok::l_square: {
+    KeyKind = Ints;
+    ConsumeBracket();
+    if (Tok.is(tok::ellipsis)) {
+      ConsumeToken();
+      if (Tok.isNot(tok::r_square))
+        Diag(Tok, diag::expected_r_square);
+      else
+        ParseSliceType();
+    } else if (Tok.is(tok::r_square))
+      ParseSliceType();
+    else
+      ParseArrayType();
+    break;
+  }
+  case tok::kw_map:
+    KeyKind = RequiredStrings;
+    if (ParseMapType())
+      return ExprError();
+    break;
+  }
+
+  // Value
+
+  // FIXME: This is very similar to ParseInterfaceType
+  if (Tok.isNot(tok::l_brace)) {
+    // FIXME: ...after 'struct'
+    Diag(Tok, diag::expected_l_brace);
+    SkipUntil(tok::semi, /*StopAtSemi=*/false, /*DontConsume=*/true);
+    return true;
+  }
+  ConsumeBrace();
+
+  while (Tok.isNot(tok::r_brace) && Tok.isNot(tok::eof)) {
+    assert(false && "FIXME");
+    ConsumeToken();
+  }
+  if (Tok.is(tok::r_brace))
+    ConsumeBrace();
+
+  return false;
 }
 
 /// FunctionLit = FunctionType Body .
