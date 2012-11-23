@@ -26,6 +26,13 @@ import (
   "foo" bar;  // expected-diag {{expected ';' after import line}}
 );
 
+// FIXME:
+//import ( foo )
+import (
+  package  // expected-diag {{expected '.' or identifier or string literal}}
+)
+
+
 // This checks for handling of eof. Don't put anything after it.
 // expected-diag@+2 {{expected ';' after import line}}
 import (

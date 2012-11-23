@@ -157,7 +157,15 @@ bool Parser::ParseImportDecl() {
     // FIXME (BalancedDelimiterTracker?)
     bool Fails = false;
     while (Tok.isNot(tok::r_paren) && Tok.isNot(tok::eof)) {
-      bool Fail = ParseImportSpec();
+      bool Fail;
+      if (Tok.isNot(tok::period) &&
+          Tok.isNot(tok::identifier) &&
+          Tok.isNot(tok::string_literal)) {
+        Diag(Tok, diag::expected_dot_or_ident_or_string);
+        Fail = true;
+      } else
+        Fail = ParseImportSpec();
+
       if (Fail) {
         SkipUntil(tok::semi, /*StopAtSemi=*/false, /*DontConsume=*/true);
         Fails = true;
