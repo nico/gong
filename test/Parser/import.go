@@ -26,10 +26,13 @@ import (
   "foo" bar;  // expected-diag {{expected ';' after import line}}
 );
 
+import ( foo "foo" )
+
 import (
   package  // expected-diag {{expected '.' or identifier or string literal}}
 )
-import ( foo "foo" )
+import ( package )  // expected-diag {{expected '.' or identifier or string literal}}
+
 
 
 // This checks for handling of eof. Don't put anything after it.

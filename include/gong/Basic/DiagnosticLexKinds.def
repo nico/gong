@@ -89,3 +89,5 @@ DIAG(expected_r_brace,     "expected '}'")
 DIAG(expected_type,        "expected type")
 DIAG(expected_element_type,"expected element type")
 DIAG(expected_chan,        "expected 'chan'")
+DIAG(expected_dot_or_ident_or_string,
+    "expected '.' or identifier or string literal")
