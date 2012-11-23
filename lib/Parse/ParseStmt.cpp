@@ -65,6 +65,7 @@ bool Parser::ParseGoStmnt() {
   return ParseExpression().isInvalid();
 }
 
+/// ReturnStmt = "return" [ ExpressionList ] .
 bool Parser::ParseReturnStmnt() {
   // FIXME
   SkipUntil(tok::semi, /*StopAtSemi=*/false, /*DontConsume=*/true);
@@ -144,7 +145,8 @@ bool Parser::ParseEmptyStmt() {
 bool Parser::ParseBlock() {
   assert(Tok.is(tok::l_brace) && "Expected '{'");
   ConsumeBrace();
-  // FIXME: scoping, better recovery, check IsStatment() first
+  // FIXME: scoping, better recovery, check IsStatment() first,
+  //        semicolon insertion after last statement
   // See Parser::ParseCompoundStatementBody() in clang.
   while (Tok.isNot(tok::r_brace) && Tok.isNot(tok::eof)) {
     ParseStatement();

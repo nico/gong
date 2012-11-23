@@ -178,15 +178,90 @@ Parser::ParsePrimaryExpr() {
   return ParsePrimaryExprSuffix(Res);
 }
 
-/// Selector       = "." identifier .
-/// Index          = "[" Expression "]" .
-/// Slice          = "[" [ Expression ] ":" [ Expression ] "]" .
-/// TypeAssertion  = "." "(" Type ")" .
 /// Call           = "(" [ ArgumentList [ "," ] ] ")" .
 /// ArgumentList   = ExpressionList [ "..." ] .
 Action::ExprResult
 Parser::ParsePrimaryExprSuffix(ExprResult &LHS) {
-  // FIXME
+  while (1) {
+    switch (Tok.getKind()) {
+    default:  // Not a postfix-expression suffix.
+      return LHS;
+    case tok::period: {  // Selector or TypeAssertion
+      LHS = ParseSelectorOrTypeAssertionSuffix(LHS);
+      break;
+    }
+    case tok::l_square: {  // Index or Slice
+      LHS = ParseIndexOrSliceSuffix(LHS);
+      break;
+    }
+    case tok::l_paren: {  // Call
+      assert(false && "FIXME");
+      ConsumeParen();
+      break;
+    }
+    }
+  }
+}
+
+/// Selector       = "." identifier .
+/// TypeAssertion  = "." "(" Type ")" .
+Action::ExprResult
+Parser::ParseSelectorOrTypeAssertionSuffix(ExprResult &LHS) {
+  assert(Tok.is(tok::period) && "expected '.'");
+  ConsumeToken();
+
+  if (Tok.is(tok::identifier)) {
+    ConsumeToken();
+    return LHS;
+  } else if(Tok.is(tok::l_paren)) {
+    ConsumeParen();
+    if (!IsType()) {
+      Diag(Tok, diag::expected_type);
+      SkipUntil(tok::r_paren);
+      return ExprError();
+    }
+    ParseType();
+    if (Tok.is(tok::r_paren))
+      ConsumeParen();
+    else {
+      Diag(Tok, diag::expected_r_paren);
+      SkipUntil(tok::r_paren);
+      return ExprError();
+    }
+    return LHS;
+  } else {
+    Diag(Tok, diag::expected_ident_or_l_paren);
+    return ExprError();
+  }
+}
+
+/// Index          = "[" Expression "]" .
+/// Slice          = "[" [ Expression ] ":" [ Expression ] "]" .
+Action::ExprResult
+Parser::ParseIndexOrSliceSuffix(ExprResult &LHS) {
+  assert(Tok.is(tok::l_square) && "expected '['");
+  ConsumeBracket();
+
+  if (Tok.is(tok::r_square)) {
+    Diag(Tok, diag::expected_expr);
+    ConsumeBracket();
+    return ExprError();
+  }
+
+  if (Tok.isNot(tok::colon))
+    ParseExpression();
+
+  if (Tok.is(tok::colon)) {
+    ConsumeToken();
+    if (Tok.isNot(tok::r_square))
+      ParseExpression();
+  }
+
+  if (Tok.isNot(tok::r_square)) {
+    Diag(Tok, diag::expected_r_square);
+    return ExprError();
+  }
+  ConsumeBracket();
   return LHS;
 }
 

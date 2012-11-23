@@ -2,7 +2,7 @@
 
 package p
 
-func }  // expected-diag {{expected identifier or '(' after 'func'}}
+func }  // expected-diag {{expected identifier or '('}}
 
 func (4) foo() {}  // expected-diag {{expected identifier}}
 

@@ -230,6 +230,8 @@ public:
   ExprResult ParseUnaryExpr();
   ExprResult ParsePrimaryExpr();
   ExprResult ParsePrimaryExprSuffix(ExprResult &LHS);
+  ExprResult ParseSelectorOrTypeAssertionSuffix(ExprResult &LHS);
+  ExprResult ParseIndexOrSliceSuffix(ExprResult &LHS);
   ExprResult ParseBasicLit();
   ExprResult ParseCompositeLit();
   ExprResult ParseFunctionLit();
