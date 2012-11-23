@@ -171,6 +171,10 @@ bool Parser::ParseImportDecl() {
         Fails = true;
       }
 
+      // A semicolon may be omitted before a closing ')' or '}'.
+      if (Tok.is(tok::r_paren))
+        break;
+
       // FIXME: check if this succeeds
       // FIXME: fixit?
       //ExpectAndConsumeSemi(diag::expected_semi_import);
