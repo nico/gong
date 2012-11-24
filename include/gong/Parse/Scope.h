@@ -56,20 +56,10 @@ public:
     /// the FnScope, BreakScope, ContinueScope, and DeclScope flags set as well.
     BlockScope = 0x40,
 
-    /// TemplateParamScope - This is a scope that corresponds to the
-    /// template parameters of a C++ template. Template parameter
-    /// scope starts at the 'template' keyword and ends when the
-    /// template declaration ends.
-    TemplateParamScope = 0x80,
-
     /// FunctionPrototypeScope - This is a scope that corresponds to the
     /// parameters within a function prototype.
     FunctionPrototypeScope = 0x100,
 
-    /// AtCatchScope - This is a scope that corresponds to the Objective-C
-    /// @catch statement.
-    AtCatchScope = 0x200,
-    
     /// ObjCMethodScope - This scope corresponds to an Objective-C method body.
     /// It always has FnScope and DeclScope set as well.
     ObjCMethodScope = 0x400
@@ -104,12 +94,6 @@ private:
   /// BlockParent - This is a direct link to the immediately containing
   /// BlockScope if this scope is not one, or null if there is none.
   Scope *BlockParent;
-
-  /// TemplateParamParent - This is a direct link to the
-  /// immediately containing template parameter scope. In the
-  /// case of nested templates, template parameter scopes can have
-  /// other template parameter scopes as parents.
-  Scope *TemplateParamParent;
 
   /// DeclsInScope - This keeps track of all declarations in this scope.  When
   /// the declaration is added to the scope, it is set as the current
@@ -187,9 +171,6 @@ public:
   Scope *getBlockParent() { return BlockParent; }
   const Scope *getBlockParent() const { return BlockParent; }
 
-  Scope *getTemplateParamParent() { return TemplateParamParent; }
-  const Scope *getTemplateParamParent() const { return TemplateParamParent; }
-
   typedef DeclSetTy::iterator decl_iterator;
   decl_iterator decl_begin() const { return DeclsInScope.begin(); }
   decl_iterator decl_end()   const { return DeclsInScope.end(); }
@@ -246,21 +227,10 @@ public:
     return false;
   }
 
-  /// isTemplateParamScope - Return true if this scope is a C++
-  /// template parameter scope.
-  bool isTemplateParamScope() const {
-    return getFlags() & Scope::TemplateParamScope;
-  }
-
   /// isFunctionPrototypeScope - Return true if this scope is a
   /// function prototype scope.
   bool isFunctionPrototypeScope() const {
     return getFlags() & Scope::FunctionPrototypeScope;
-  }
-
-  /// isAtCatchScope - Return true if this scope is @catch.
-  bool isAtCatchScope() const {
-    return getFlags() & Scope::AtCatchScope;
   }
 
   typedef UsingDirectivesTy::iterator udir_iterator;
@@ -299,11 +269,9 @@ public:
       ContinueParent = AnyParent->ContinueParent;
       ControlParent = AnyParent->ControlParent;
       BlockParent  = AnyParent->BlockParent;
-      TemplateParamParent = AnyParent->TemplateParamParent;
     } else {
       FnParent = BreakParent = ContinueParent = BlockParent = 0;
       ControlParent = 0;
-      TemplateParamParent = 0;
     }
 
     // If this scope is a function or contains breaks/continues, remember it.
@@ -312,7 +280,6 @@ public:
     if (Flags & ContinueScope)      ContinueParent = this;
     if (Flags & ControlScope)       ControlParent = this;
     if (Flags & BlockScope)         BlockParent = this;
-    if (Flags & TemplateParamScope) TemplateParamParent = this;
     DeclsInScope.clear();
     UsingDirectives.clear();
     Entity = 0;
