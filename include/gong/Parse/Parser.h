@@ -68,6 +68,7 @@ class Parser /*: public CodeCompletionHandler */ {
   friend class PragmaUnusedHandler;
   friend class ColonProtectionRAIIObject;
   friend class BalancedDelimiterTracker;
+  PrettyStackTraceParserEntry CrashInfo;
 
   Lexer &L;
 
@@ -111,7 +112,7 @@ public:
 
   //const LangOptions &getLangOpts() const { return PP.getLangOpts(); }
   //const TargetInfo &getTargetInfo() const { return PP.getTargetInfo(); }
-  Lexer &geLexer() const { return L; }
+  Lexer &getLexer() const { return L; }
   //Sema &getActions() const { return Actions; }
 
   const Token &getCurToken() const { return Tok; }

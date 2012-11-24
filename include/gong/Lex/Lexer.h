@@ -120,7 +120,7 @@ public:
   /// offset in the current file.
   SourceLocation getSourceLocation(const char *Loc) const;
 
-  llvm::SourceMgr &getSourceManager() { return SM; }
+  const llvm::SourceMgr &getSourceManager() const { return SM; }
   DiagnosticsEngine &getDiagnostics() { return Diags; }
 
   StringRef getSpelling(const Token &Tok) const;

@@ -14,12 +14,14 @@
 #include "gong/Parse/Parser.h"
 
 #include "llvm/Support/ErrorHandling.h"
+#include "llvm/Support/MemoryBuffer.h"
+#include "llvm/Support/raw_ostream.h"
+#include "llvm/Support/SourceMgr.h"
 #if 0
 #include "clang/Parse/ParseDiagnostic.h"
 #include "clang/Sema/DeclSpec.h"
 #include "clang/Sema/Scope.h"
 #include "clang/Sema/ParsedTemplate.h"
-#include "llvm/Support/raw_ostream.h"
 #include "RAIIObjectsForParser.h"
 #include "ParsePragma.h"
 #include "clang/AST/DeclTemplate.h"
@@ -31,7 +33,7 @@ ActionBase::~ActionBase() {}
 Action::~Action() {}
 
 Parser::Parser(Lexer &l, Action &actions/*, bool skipFunctionBodies*/)
-  : L(l), Actions(actions), Diags(L.getDiagnostics()) {
+  : CrashInfo(*this), L(l), Actions(actions), Diags(L.getDiagnostics()) {
   //SkipFunctionBodies = pp.isCodeCompletionEnabled() || skipFunctionBodies;
   Tok.startToken();
   Tok.setKind(tok::eof);
@@ -965,8 +967,6 @@ bool Parser::SkipUntil(ArrayRef<tok::TokenKind> Toks, bool StopAtSemi,
   }
 }
 
-#if 0
-
 /// If a crash happens while the parser is active, print out a line indicating
 /// what the current token is.
 void PrettyStackTraceParserEntry::print(raw_ostream &OS) const {
@@ -976,19 +976,22 @@ void PrettyStackTraceParserEntry::print(raw_ostream &OS) const {
     return;
   }
 
-  if (Tok.getLocation().isInvalid()) {
+  if (!Tok.getLocation().isValid()) {
     OS << "<unknown> parser at unknown location\n";
     return;
   }
 
-  const Preprocessor &PP = P.getPreprocessor();
-  Tok.getLocation().print(OS, PP.getSourceManager());
-  if (Tok.isAnnotation())
-    OS << ": at annotation token \n";
-  else
-    OS << ": current parser token '" << PP.getSpelling(Tok) << "'\n";
+  const Lexer &L = P.getLexer();
+  const llvm::SourceMgr &SM = L.getSourceManager();
+
+  int BufID = SM.FindBufferContainingLoc(Tok.getLocation());
+  std::pair<unsigned, unsigned> Pos = SM.getLineAndColumn(Tok.getLocation());
+  OS << SM.getMemoryBuffer(BufID)->getBufferIdentifier()
+     << ":" << Pos.first << ":" << Pos.second;
+  OS << ": current parser token '" << L.getSpelling(Tok) << "'\n";
 }
 
+#if 0
 
 /// \brief Emits a diagnostic suggesting parentheses surrounding a
 /// given range.

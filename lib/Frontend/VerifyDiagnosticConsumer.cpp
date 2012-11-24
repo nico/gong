@@ -68,7 +68,7 @@ typedef TextDiagnosticBuffer::const_iterator const_diag_iterator;
 namespace {
 
 // FIXME: This doesn't belong here.
-SourceLocation locForLine(llvm::SourceMgr& SM, SourceLocation B,
+SourceLocation locForLine(const llvm::SourceMgr& SM, SourceLocation B,
                           unsigned Line) {
   int ID = SM.FindBufferContainingLoc(B);
   if (ID == -1)
@@ -213,7 +213,8 @@ private:
 /// diagnostics. If so, then put them in the appropriate directive list.
 ///
 /// Returns true if any valid directives were found.
-static bool ParseDirective(StringRef S, ExpectedData *ED, llvm::SourceMgr &SM,
+static bool ParseDirective(StringRef S, ExpectedData *ED,
+                           const llvm::SourceMgr &SM,
                            SourceLocation Pos, DiagnosticsEngine &Diags,
                            VerifyDiagnosticConsumer::DirectiveStatus &Status) {
   // A single comment may contain multiple directives.
@@ -377,7 +378,7 @@ static bool ParseDirective(StringRef S, ExpectedData *ED, llvm::SourceMgr &SM,
 /// Hook into the preprocessor and extract comments containing expected
 /// errors and warnings.
 void VerifyDiagnosticConsumer::handleComment(Lexer &L, SourceRange Comment) {
-  llvm::SourceMgr &SM = L.getSourceManager();
+  const llvm::SourceMgr &SM = L.getSourceManager();
   SourceLocation CommentBegin = Comment.Start;
 
   const char *CommentRaw = CommentBegin.getPointer();

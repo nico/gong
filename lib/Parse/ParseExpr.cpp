@@ -169,9 +169,11 @@ Parser::ParsePrimaryExpr() {
   case tok::kw_struct:
   case tok::l_square:
   case tok::kw_map:
+    // FIXME Or could be part of a literaltype
     Res = ParseCompositeLit();  // FIXME: TypeName lits
     break;
   case tok::kw_func:
+    // FIXME Or could just be a function type
     Res = ParseFunctionLit();
     break;
   }
@@ -215,6 +217,10 @@ Parser::ParseSelectorOrTypeAssertionSuffix(ExprResult &LHS) {
     return LHS;
   } else if(Tok.is(tok::l_paren)) {
     ConsumeParen();
+
+    // FIXME: '.' '(' 'type' ')' can appear in type switch statements (and
+    //        nowhere else).
+
     if (!IsType()) {
       Diag(Tok, diag::expected_type);
       SkipUntil(tok::r_paren);
@@ -329,7 +335,7 @@ Parser::ParseCompositeLit() {
 
   // FIXME: This is very similar to ParseInterfaceType
   if (Tok.isNot(tok::l_brace)) {
-    // FIXME: ...after 'struct'
+    // FIXME: ...after 'literal type'
     Diag(Tok, diag::expected_l_brace);
     SkipUntil(tok::semi, /*StopAtSemi=*/false, /*DontConsume=*/true);
     return true;
