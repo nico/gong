@@ -584,9 +584,10 @@ public:
   /// scope is popped and deleted.
   virtual void ActOnPopScope(SourceLocation Loc, Scope *S) {}
 
+  // FIXME: Rename to FileScope (there's also Universe and Package scope)
   /// ActOnTranslationUnitScope - This callback is called once, immediately
   /// after creating the translation unit scope (in Parser::Initialize).
-  virtual void ActOnTranslationUnitScope(SourceLocation Loc, Scope *S) {}
+  virtual void ActOnTranslationUnitScope(Scope *S) {}
 
   /// ParsedFreeStandingDeclSpec - This method is invoked when a declspec with
   /// no declarator (e.g. "struct foo;") is parsed.
@@ -2861,7 +2862,7 @@ public:
   /// ActOnPopScope - When a scope is popped, if any typedefs are now
   /// out-of-scope, they are removed from the IdentifierInfo::FETokenInfo field.
   virtual void ActOnPopScope(SourceLocation Loc, Scope *S);
-  virtual void ActOnTranslationUnitScope(SourceLocation Loc, Scope *S);
+  virtual void ActOnTranslationUnitScope(Scope *S);
 
   virtual DeclPtrTy ActOnForwardClassDeclaration(SourceLocation AtClassLoc,
                                                  IdentifierInfo **IdentList,

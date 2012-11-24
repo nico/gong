@@ -60,9 +60,9 @@ Parser::~Parser() {
 ///
 void Parser::Initialize() {
   // Create the translation unit scope.  Install it as the current scope.
-  //assert(getCurScope() == 0 && "A scope is already active?");
-  //EnterScope(Scope::DeclScope);
-  //Actions.ActOnTranslationUnitScope(getCurScope());
+  assert(getCurScope() == 0 && "A scope is already active?");
+  EnterScope(Scope::DeclScope);
+  Actions.ActOnTranslationUnitScope(getCurScope());
 
   //Ident_super = &PP.getIdentifierTable().get("super");
 
@@ -116,8 +116,8 @@ void Parser::ParseSourceFile() {
       ConsumeToken();
   }
 
-  //ExitScope();
-  //assert(getCurScope() == 0 && "Scope imbalance!");
+  ExitScope();
+  assert(getCurScope() == 0 && "Scope imbalance!");
 }
 
 /// PackageClause  = "package" PackageName .
@@ -1179,26 +1179,6 @@ Parser::ParseScopeFlags::~ParseScopeFlags() {
 // C99 6.9: External Definitions.
 //===----------------------------------------------------------------------===//
 
-namespace {
-  /// \brief RAIIObject to destroy the contents of a SmallVector of
-  /// TemplateIdAnnotation pointers and clear the vector.
-  class DestroyTemplateIdAnnotationsRAIIObj {
-    SmallVectorImpl<TemplateIdAnnotation *> &Container;
-  public:
-    DestroyTemplateIdAnnotationsRAIIObj(SmallVectorImpl<TemplateIdAnnotation *>
-                                       &Container)
-      : Container(Container) {}
-
-    ~DestroyTemplateIdAnnotationsRAIIObj() {
-      for (SmallVectorImpl<TemplateIdAnnotation *>::iterator I =
-           Container.begin(), E = Container.end();
-           I != E; ++I)
-        (*I)->Destroy();
-      Container.clear();
-    }
-  };
-}
-
 /// ParseTopLevelDecl - Parse one top-level declaration, return whatever the
 /// action tells us to.  This returns true if the EOF was encountered.
 bool Parser::ParseTopLevelDecl(DeclGroupPtrTy &Result) {
@@ -1872,77 +1852,6 @@ void Parser::ParseKNRParamDeclarations(Declarator &D) {
 
   // The actions module must verify that all arguments were declared.
   Actions.ActOnFinishKNRParamDeclarations(getCurScope(), D, Tok.getLocation());
-}
-
-
-/// ParseAsmStringLiteral - This is just a normal string-literal, but is not
-/// allowed to be a wide string, and is not subject to character translation.
-///
-/// [GNU] asm-string-literal:
-///         string-literal
-///
-Parser::ExprResult Parser::ParseAsmStringLiteral() {
-  switch (Tok.getKind()) {
-    case tok::string_literal:
-      break;
-    case tok::utf8_string_literal:
-    case tok::utf16_string_literal:
-    case tok::utf32_string_literal:
-    case tok::wide_string_literal: {
-      SourceLocation L = Tok.getLocation();
-      Diag(Tok, diag::err_asm_operand_wide_string_literal)
-        << (Tok.getKind() == tok::wide_string_literal)
-        << SourceRange(L, L);
-      return ExprError();
-    }
-    default:
-      Diag(Tok, diag::err_expected_string_literal);
-      return ExprError();
-  }
-
-  return ParseStringLiteralExpression();
-}
-
-/// ParseSimpleAsm
-///
-/// [GNU] simple-asm-expr:
-///         'asm' '(' asm-string-literal ')'
-///
-Parser::ExprResult Parser::ParseSimpleAsm(SourceLocation *EndLoc) {
-  assert(Tok.is(tok::kw_asm) && "Not an asm!");
-  SourceLocation Loc = ConsumeToken();
-
-  if (Tok.is(tok::kw_volatile)) {
-    // Remove from the end of 'asm' to the end of 'volatile'.
-    SourceRange RemovalRange(PP.getLocForEndOfToken(Loc),
-                             PP.getLocForEndOfToken(Tok.getLocation()));
-
-    Diag(Tok, diag::warn_file_asm_volatile)
-      << FixItHint::CreateRemoval(RemovalRange);
-    ConsumeToken();
-  }
-
-  BalancedDelimiterTracker T(*this, tok::l_paren);
-  if (T.consumeOpen()) {
-    Diag(Tok, diag::err_expected_lparen_after) << "asm";
-    return ExprError();
-  }
-
-  ExprResult Result(ParseAsmStringLiteral());
-
-  if (Result.isInvalid()) {
-    SkipUntil(tok::r_paren, true, true);
-    if (EndLoc)
-      *EndLoc = Tok.getLocation();
-    ConsumeAnyToken();
-  } else {
-    // Close the paren and get the location of the end bracket
-    T.consumeClose();
-    if (EndLoc)
-      *EndLoc = T.getCloseLocation();
-  }
-
-  return Result;
 }
 
 /// \brief Get the TemplateIdAnnotation from the token and put it in the

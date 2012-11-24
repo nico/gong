@@ -13,6 +13,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "gong/Parse/Parser.h"
+#include "gong/Parse/Scope.h"
 #include "llvm/Support/ErrorHandling.h"
 //#include "RAIIObjectsForParser.h"
 //#include "gong/Basic/Diagnostic.h"
@@ -144,6 +145,10 @@ bool Parser::ParseEmptyStmt() {
 /// Block = "{" { Statement ";" } "}" .
 bool Parser::ParseBlock() {
   assert(Tok.is(tok::l_brace) && "Expected '{'");
+
+  // Enter a scope to hold everything within the block.
+  ParseScope CompoundScope(this, Scope::DeclScope);
+
   ConsumeBrace();
   // FIXME: scoping, better recovery, check IsStatment() first,
   //        semicolon insertion after last statement
