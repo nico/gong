@@ -40,7 +40,7 @@ namespace gong {
   class Designation;
   class InitListDesignations;
   // Lex.
-  class Preprocessor;
+  class Lexer;
   class Token;
 
   // We can re-use the low bit of expression, statement, base, and
@@ -169,6 +169,28 @@ public:
   /// getDeclName - Return a pretty name for the specified decl if possible, or
   /// an empty string if not.  This is used for pretty crash reporting.
   virtual std::string getDeclName(DeclPtrTy D) { return ""; }
+
+  //===--------------------------------------------------------------------===//
+  // Import Decl handling.
+  //===--------------------------------------------------------------------===//
+
+  /// Called after a single import spec has been parsed.
+  /// in the current scope.
+  ///
+  /// \param ImportPath The path to the package to be imported. Always valid.
+  ///
+  /// \param LocalName For |import M "lib/math"|, this is the M. Else NULL.
+  ///
+  /// \param IsLocal True for |import . "lib/math"| imports. If this is true,
+  /// LocalName will be NULL.
+  //FIXME: Needs More SourceLocation params
+  virtual void ActOnImportSpec(StringRef ImportPath,
+                               IdentifierInfo *LocalName,
+                               bool IsLocal) {}
+  // FIXME: Need to distinguish between one-line and grouped ImportDecls
+  // Maybe ActOnImportSpec could return a decl, which is then passed on to
+  // ActOnSingleImportDecl() / ActOnMultiImportDecl(). Or there's
+  // ActOnBeginSingle/MultiImportDecl / ActOnFinishSingle/MultiImportDecl.
 
   //===--------------------------------------------------------------------===//
   // Declaration Tracking Callbacks.
@@ -2817,10 +2839,10 @@ class MinimalAction : public Action {
   /// For example, user-defined classes, built-in "id" type, etc.
   Scope *TUScope;
   IdentifierTable &Idents;
-  Preprocessor &PP;
+  Lexer &L;
   void *TypeNameInfoTablePtr;
 public:
-  MinimalAction(Preprocessor &pp);
+  MinimalAction(Lexer &l);
   ~MinimalAction();
 
   /// getTypeName - This looks at the IdentifierInfo::FETokenInfo field to

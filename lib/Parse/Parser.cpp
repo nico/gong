@@ -29,9 +29,6 @@
 #endif
 using namespace gong;
 
-ActionBase::~ActionBase() {}
-Action::~Action() {}
-
 Parser::Parser(Lexer &l, Action &actions/*, bool skipFunctionBodies*/)
   : CrashInfo(*this), L(l), Actions(actions), Diags(L.getDiagnostics()) {
   //SkipFunctionBodies = pp.isCodeCompletionEnabled() || skipFunctionBodies;
@@ -221,12 +218,13 @@ bool Parser::ParseImportSpec() {
     Diag(diag::expected_string_literal);
     return true;
   }
-  const char* Import = Tok.getLiteralData();
+  StringRef Import(Tok.getLiteralData(), Tok.getLength());
   SourceLocation ImportLoc = ConsumeStringToken();
+
+  Actions.ActOnImportSpec(Import, II, IsDot);
 
   // FIXME: pass on
   (void)ImportLoc;
-  (void)Import;
 
   return false;
 }
