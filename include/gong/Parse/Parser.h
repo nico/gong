@@ -91,9 +91,9 @@ class Parser /*: public CodeCompletionHandler */ {
   DiagnosticsEngine &Diags;
 
   /// ScopeCache - Cache scopes to reduce malloc traffic.
-  //enum { ScopeCacheSize = 16 };
-  //unsigned NumCachedScopes;
-  //Scope *ScopeCache[ScopeCacheSize];
+  enum { ScopeCacheSize = 16 };
+  unsigned NumCachedScopes;
+  Scope *ScopeCache[ScopeCacheSize];
 
   /// \brief Identifier for "message".
   IdentifierInfo *Ident_message;
@@ -116,7 +116,7 @@ public:
   //Sema &getActions() const { return Actions; }
 
   const Token &getCurToken() const { return Tok; }
-  //Scope *getCurScope() const { return Actions.getCurScope(); }
+  Scope *getCurScope() const { return Actions.getCurScope(); }
 
   // Type forwarding.  All of these are statically 'void*', but they may all be
   // different actual classes based on the actions in place.
@@ -442,7 +442,6 @@ private:
   /// \brief Consume any extra semi-colons until the end of the line.
   void ConsumeExtraSemi(ExtraSemiKind Kind/*, unsigned TST = TST_unspecified*/);
 
-#if 0
 public:
   //===--------------------------------------------------------------------===//
   // Scope manipulation
@@ -491,6 +490,7 @@ public:
   /// ExitScope - Pop a scope off the scope stack.
   void ExitScope();
 
+#if 0
 private:
   /// \brief RAII object used to modify the scope flags for the current scope.
   class ParseScopeFlags {

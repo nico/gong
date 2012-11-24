@@ -13,6 +13,7 @@
 
 #include "gong/Parse/Parser.h"
 
+#include "gong/Parse/Scope.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/MemoryBuffer.h"
 #include "llvm/Support/raw_ostream.h"
@@ -20,7 +21,6 @@
 #if 0
 #include "clang/Parse/ParseDiagnostic.h"
 #include "clang/Sema/DeclSpec.h"
-#include "clang/Sema/Scope.h"
 #include "clang/Sema/ParsedTemplate.h"
 #include "RAIIObjectsForParser.h"
 #include "ParsePragma.h"
@@ -37,8 +37,8 @@ Parser::Parser(Lexer &l, Action &actions/*, bool skipFunctionBodies*/)
   //SkipFunctionBodies = pp.isCodeCompletionEnabled() || skipFunctionBodies;
   Tok.startToken();
   Tok.setKind(tok::eof);
-  //Actions.CurScope = 0;
-  //NumCachedScopes = 0;
+  Actions.CurScope = 0;
+  NumCachedScopes = 0;
   ParenCount = BracketCount = BraceCount = 0;
 
   //PP.setCodeCompletionHandler(*this);
@@ -46,12 +46,12 @@ Parser::Parser(Lexer &l, Action &actions/*, bool skipFunctionBodies*/)
 
 Parser::~Parser() {
   // If we still have scopes active, delete the scope tree.
-  //delete getCurScope();
-  //Actions.CurScope = 0;
+  delete getCurScope();
+  Actions.CurScope = 0;
   
   // Free the scope cache.
-  //for (unsigned i = 0, e = NumCachedScopes; i != e; ++i)
-    //delete ScopeCache[i];
+  for (unsigned i = 0, e = NumCachedScopes; i != e; ++i)
+    delete ScopeCache[i];
 
   //PP.clearCodeCompletionHandler();
 }
@@ -1122,7 +1122,6 @@ void Parser::ConsumeExtraSemi(ExtraSemiKind Kind/*, unsigned TST*/) {
   //    << FixItHint::CreateRemoval(SourceRange(StartLoc, EndLoc));
 }
 
-#if 0
 //===----------------------------------------------------------------------===//
 // Scope manipulation
 //===----------------------------------------------------------------------===//
@@ -1134,7 +1133,7 @@ void Parser::EnterScope(unsigned ScopeFlags) {
     N->Init(getCurScope(), ScopeFlags);
     Actions.CurScope = N;
   } else {
-    Actions.CurScope = new Scope(getCurScope(), ScopeFlags, Diags);
+    Actions.CurScope = new Scope(getCurScope(), ScopeFlags);
   }
 }
 
@@ -1156,6 +1155,7 @@ void Parser::ExitScope() {
     ScopeCache[NumCachedScopes++] = OldScope;
 }
 
+#if 0
 /// Set the flags for the current scope to ScopeFlags. If ManageFlags is false,
 /// this object does nothing.
 Parser::ParseScopeFlags::ParseScopeFlags(Parser *Self, unsigned ScopeFlags,
