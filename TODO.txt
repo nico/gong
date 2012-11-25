@@ -1,0 +1,254 @@
+Lexer:
+
+Eventually: code completion markers
+fixits, ranges
+flag to dump stats
+
+whitespace is just space, tab, \r, and \n. test and remove \f, \v
+=> 6g accepts them. Filed https://code.google.com/p/go/issues/detail?id=4405
+
+
+mark unknown tokens in the rune / string error cases as literals, so that semi
+insertion is done. Makes error recovery nicer. (`var a = ''\nvar b` doesn't
+recover well atm)
+
+lookahead
+
+literal lexing and diags (078 vs 078.0, 'aa', etc. `ack FIXME test/Lex`)
+
+
+Parser:
+ExprResult/StmtResult for result passing
+Actions interface
+measureTokenLength
+go doesn't need predeclarations for methods, figure out how to do that
+
+Current classifyIdentifier() design requires full import resolving.  For some
+clients (fmt), that's not desirable.  Consider doing something like
+ParseTypeOrExpr() instead, and let Sema fix up thing.
+
+
+Have nice fixit for toplevel `a := b`
+
+
+Handle https://groups.google.com/forum/#!topic/golang-nuts/Bv4GDkPRMxA well
+
+
+introduce a consistent naming scheme for functions that assert the current
+token type vs those that don't
+
+share {} parsing code for interface{}, struct{}, and possibly blocks, and
+selectstmts
+
+look at BalancedDelimTracker and friends, so that eg |type t ['4'.(int]int|
+gets only one diag
+
+# decls
+var
+const
+() grouping
+
+
+# Statements:
+range exprs for for
+  - Needs "allow range / was range" functionality in ParseSimpleStmt
+switch
+  - Needs "allow typeswitchguard / was tsg" functionality in ParseSimpleStmt
+
+Add scopes:
+function parameters
+each if, for, and switch is in its own implicit block
+each clause of a switch or select acts as an implicit block
+
+Non-SimpleStmts are always followed by ';'. SimpleStmts are always followed by
+';' or '{' (for the ForStmt step simplestmt).
+
+Statement =
+  Declaration | LabeledStmt | SimpleStmt |
+  GoStmt | ReturnStmt | BreakStmt | ContinueStmt | GotoStmt |
+  FallthroughStmt | Block | IfStmt | SwitchStmt | SelectStmt | ForStmt |
+  DeferStmt .
+
+SimpleStmt =
+  EmptyStmt | ExpressionStmt | SendStmt | IncDecStmt | Assignment |
+  ShortVarDecl .
+
+Non-SimpleStmt =
+  Declaration | LabeledStmt | GotoStmt | ReturnStmt | BreakStmt | ContinueStmt |
+  GotoStmt | FallthroughStmt | Block | IfStmt | SwitchStmt | SelectStmt |
+  ForStmt | DeferStmt .
+-> fairly easy to distinguish. all those start with keywords, except for
+   LabeledStmts, which can be detected with just 1 lookahead
+
+
+Big fixme (other than types): Factor out type parsing, so that literal values
+and literal types can call either and then decide what's up based on the next
+token.
+
+# expressions: PrimaryExpr.
+
+composite lits: values
+
+primaryexpr suffix: call suffix
+
+identifier in PrimaryExpr looks pretty hairy
+ Operand
+  OperandName = ident | QualifiedIdent
+  MethodExpr = ( TypeName | '(' '*' TypeName ')' ) '.' MethodName
+    MethodName = ident
+    TypeName = ident | QualifiedIdent
+      QualifiedIdent = PackageName '.' ident
+        PackageName = ident
+  '(' Expression ')'
+ Conversion
+  Type '(' Expression ')'
+   Type = TypeName | TypeLit | '(' Type ')' .
+ BuiltinCall = identifier '(' [ BuiltinArgs [',' ] ] ')'
+
+ CompositeLit  = LiteralType LiteralValue .
+ LiteralType   = StructType | ArrayType | "[" "..." "]" ElementType |
+                 SliceType | MapType | TypeName .
+
+identifier:
+  next '.': either end of expr (selector),
+            or TypeName (for MethodExpr or Conversion),
+            or QualifiedIdent
+'(':
+ next '*': Either part of MethodExpr, or '(' Type ')' (pointer)
+ else: Could be '(' Expr ')', '(' Type ')'
+
+...and can have a suffix starting with
+  '.' Expression (Selector)
+  '[' (Index / Slice)
+  '.' Type (TypeAssertion)
+  '(' (Call)
+
+'[', 'struct', '*', 'func', 'map': Either type or compositelit/functiontype
+'interface, 'chan': type
+
+
+`[]int` can either be the start of a type (maybe for a Conversion), or the start
+of a composite literal.
+
+'*' can either be an unary op or the start of a type.
+  *foo(bar) with foo being a type is parsed as indirection. (*foo)(bar) is a
+  conversion.
+
+'<-' can either be an unary op or the start of a type too.
+
+Always need to parse the type first, and then decide if it's a lit (next is '{')
+or a type (next is '(').
+
+
+Builtins:
+
+close(chan expr)
+len(s), cap(s), s an expr
+new(T), T a type
+make(T), make(T, n), make(T, m, n), T a type, m, n exprs
+append(s, x...)
+copy(dst [], src[])
+delete(m, k)
+complex(r, i), real(c), imag(c)
+panic(interface{}), recover() interface{}
+
+print(), println(): implementation-specific; might not exist
+
+
+predeclared types:
+http://golang.org/ref/spec#Predeclared_identifiers
+
+
+var decls are introduced at the '=': `var int int` works with int being a type.
+`int := 2 * int` works with int being a value.
+
+
+Frontend:
+
+-parse-noop and -parse-print-callbacks: (r109392)
+lib/Frontend/FrontendActions.cpp
+ParseOnlyAction
+PrintParseAction
+tools/driver/cc1_main.cpp
+clang/Frontend/FrontendActions.h
+
+Notes
+=====
+
+go is easier to lex:
+- no escaped newlines
+- no trigraphs
+- no preprocessor
+- way fewer string literal types
+
+parse:
+- no templates
+- no vexing parse
+- fewer precedence levels
+
++ annoying: parameterdecl. if identifier, need to look at next token.
+                           if next is ',', identifier is part of IdentifierList
+                           elif next is '...', identifier is IdentifierList
+                           elif next is type, identifier is IdentifierList
+                           else identifier is type
++ annoying: simplestmt vs expr in if. always need to parse simplestmt, and then
+            potentially convert to expr. "for" is worse cause the simplestmt
+            parsing needs to allow a rangeexpr in that case too.
++ annoying: switchstms. Have to parse a simplestmt first, but if that's not
+            followed by a ';', the simplestmt was actually a TypeSwitchGuard,
+            so parsesimplestmt needs to allow that too :-/
+
+
+spec groups:
+import, var, const, type
+
+
+range expressions are weird. They're the only place where full expressions are
+allowed at the lhs (actually, RecvStms are like this too). This is valid:
+
+package main
+func main() {
+  arr := [...]int {1, 2, 3 }
+  for arr[0] := range arr {
+    println(arr[0])
+  }
+}
+
+But this is not:
+
+package main
+func main() {
+  arr := [...]int {1, 2, 3 }
+  for arr[0] := 0; arr[0] < 2; arr[0]++ {
+    println(arr[0])
+  }
+}
+
+(Both programs are valid if you use '=' instead of ':=')
+
+minimalaction deletion:
+http://lists.cs.uiuc.edu/pipermail/cfe-commits/Week-of-Mon-20100719/032534.html
+
+
+clang diags:
+DiagnosticsEngine::Diag() central function
+ArgumentKind has std_string, declcontext, etc
+has a SourceManager
+error limits, ignores warnings, fatal errors, include stacks, macro stacks,
+template stacks, some argumentkinds (identifierinfo and later) and corresponding
+DiagBuilder operator<< overloads
+
+DiagnosticBuilder adds stuff (arguments, source ranges) stuff to diags before
+they're printed
+
+Delegates to DiagnosticConsumer
+
+DiagnosticsEngine uses DiagnosticIDs as id database, which in turn depends on
+all the hardcoded .td files for clang stuff. (DiagnosticIDs::EmitDiag() gets a
+DiagnosticEngine object.)
+
+DiagnosticConsumers:
+TextDiagnosticBuffer: Stores messages
+TextDiagnosticPrinter: Prints messages
+
+DiagnosticEngine dep on DiagnosticIDs might be movable behind an interface.
