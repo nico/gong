@@ -241,7 +241,8 @@ public:
 
   // Statements
   bool ParseStatement();
-  bool ParseStatementTail(IdentifierInfo *II);
+  bool ParseSimpleStmt(bool *StmtWasExpression = NULL);
+  bool ParseSimpleStmtTail(IdentifierInfo *II, bool *StmtWasExpression = NULL);
   bool ParseShortVarDeclTail();
   bool ParseAssignmentTail();
   bool ParseLabeledStmtTail(IdentifierInfo *II);

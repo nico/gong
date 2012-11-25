@@ -52,13 +52,28 @@ bool Parser::ParseStatement() {
   case tok::identifier: {
     IdentifierInfo *II = Tok.getIdentifierInfo();
     ConsumeToken();
-    return ParseStatementTail(II);
+    if (Tok.is(tok::colon))
+      return ParseLabeledStmtTail(II);
+    return ParseSimpleStmtTail(II);
   }
   
   default: llvm_unreachable("unexpected token kind");
   }
   SkipUntil(tok::semi, /*StopAtSemi=*/false, /*DontConsume=*/true);
   return true;
+}
+
+bool Parser::ParseSimpleStmt(bool *StmtWasExpression) {
+  if (Tok.is(tok::semi))
+    return ParseEmptyStmt();
+  if (Tok.isNot(tok::identifier)) {
+    Diag(Tok, diag::expected_ident);
+    // FIXME: recover?
+    return true;
+  }
+  IdentifierInfo *II = Tok.getIdentifierInfo();
+  ConsumeToken();
+  return ParseSimpleStmtTail(II, StmtWasExpression);
 }
 
 static bool IsAssignmentOp(Token &Tok) {
@@ -82,10 +97,7 @@ static bool IsAssignmentOp(Token &Tok) {
 }
 
 /// Called after the leading IdentifierInfo of a statement has been read.
-bool Parser::ParseStatementTail(IdentifierInfo *II) {
-  if (Tok.is(tok::colon))
-    return ParseLabeledStmtTail(II);
-
+bool Parser::ParseSimpleStmtTail(IdentifierInfo *II, bool *StmtWasExpression) {
   if (Tok.is(tok::comma)) {
     // It's an identifier list! (Which can be interpreted as expression list.)
     // If it's followed by ':=', this is a ShortVarDecl (the only statement
@@ -109,7 +121,9 @@ bool Parser::ParseStatementTail(IdentifierInfo *II) {
   if (Tok.is(tok::colonequal))
     return ParseShortVarDeclTail();
 
-  // Could be: Label, ExpressionStmt, IncDecStmt, Assignment, ShortVarDecl
+  // FIXME: Write *StmtWasExpression
+
+  // Could be: ExpressionStmt, IncDecStmt, Assignment
   assert(false && "FIXME");
   return true;
 }
@@ -200,8 +214,36 @@ bool Parser::ParseFallthroughStmt() {
 /// IfStmt = "if" [ SimpleStmt ";" ] Expression Block
 ///          [ "else" ( IfStmt | Block ) ] .
 bool Parser::ParseIfStmt() {
-  // FIXME
-  SkipUntil(tok::semi, /*StopAtSemi=*/false, /*DontConsume=*/true);
+  assert(Tok.is(tok::kw_if) && "expected 'if'");
+  ConsumeToken();
+
+  SourceLocation StmtLoc = Tok.getLocation();
+  bool StmtWasExpression = false;
+  if (ParseSimpleStmt(&StmtWasExpression))
+    return true;
+
+  if (Tok.is(tok::semi)) {
+    ConsumeToken();
+    ParseExpression();
+  } else if (!StmtWasExpression) {
+    Diag(StmtLoc, diag::expected_expr);
+  }
+
+  if (Tok.isNot(tok::l_brace)) {
+    Diag(Tok, diag::expected_l_brace);
+    return true;
+  }
+  bool Failed = ParseBlock();
+
+  if (Tok.isNot(tok::kw_else))
+    return Failed;
+
+  ConsumeToken();
+  if (Tok.is(tok::kw_if))
+    return ParseIfStmt();
+  if (Tok.is(tok::l_brace))
+    return ParseBlock();
+  Diag(Tok, diag::expected_if_or_l_brace);
   return true;
 }
 

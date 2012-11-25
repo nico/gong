@@ -4,7 +4,8 @@ package p
 
 func f() {
   // Declaration
-  //FIXME
+  //FIXME: var, const
+  type t int
 
   // LabeledStmt
   lab:
@@ -50,7 +51,14 @@ func f() {
   // Block
   //FIXME
   // IfStmt
-  //FIXME
+  if a := 4; 5 < 6 {
+  }
+  if a := 4; 5 < 6 {
+  } else {
+  }
+  if a := 4; 5 < 6 {
+  } else if b := 5; 6 < 7 {
+  }
   // SwitchStmt
   //FIXME
   // ForStmt
