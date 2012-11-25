@@ -73,6 +73,7 @@ bool Parser::ParseReturnStmt() {
   return true;
 }
 
+/// BreakStmt = "break" [ Label ] .
 bool Parser::ParseBreakStmt() {
   assert(Tok.is(tok::kw_break) && "expected 'break'");
   ConsumeToken();
@@ -81,6 +82,7 @@ bool Parser::ParseBreakStmt() {
   return false;
 }
 
+/// ContinueStmt = "continue" [ Label ] .
 bool Parser::ParseContinueStmt() {
   assert(Tok.is(tok::kw_continue) && "expected 'continue'");
   ConsumeToken();
@@ -89,6 +91,7 @@ bool Parser::ParseContinueStmt() {
   return true;
 }
 
+/// GotoStmt = "goto" Label .
 bool Parser::ParseGotoStmt() {
   assert(Tok.is(tok::kw_goto) && "expected 'goto'");
   ConsumeToken();
@@ -101,30 +104,60 @@ bool Parser::ParseGotoStmt() {
   return true;
 }
 
+/// FallthroughStmt = "fallthrough" .
 bool Parser::ParseFallthroughStmt() {
   assert(Tok.is(tok::kw_fallthrough) && "expected 'fallthrough'");
   ConsumeToken();
   return false;
 }
 
+/// IfStmt = "if" [ SimpleStmt ";" ] Expression Block
+///          [ "else" ( IfStmt | Block ) ] .
 bool Parser::ParseIfStmt() {
   // FIXME
   SkipUntil(tok::semi, /*StopAtSemi=*/false, /*DontConsume=*/true);
   return true;
 }
 
+/// SwitchStmt = ExprSwitchStmt | TypeSwitchStmt .
+/// 
+/// ExprSwitchStmt = "switch" [ SimpleStmt ";" ] [ Expression ]
+///                  "{" { ExprCaseClause } "}" .
+/// ExprCaseClause = ExprSwitchCase ":" { Statement ";" } .
+/// ExprSwitchCase = "case" ExpressionList | "default" .
+/// 
+/// TypeSwitchStmt  = "switch" [ SimpleStmt ";" ] TypeSwitchGuard
+///                   "{" { TypeCaseClause } "}" .
+/// TypeSwitchGuard = [ identifier ":=" ] PrimaryExpr "." "(" "type" ")" .
+/// TypeCaseClause  = TypeSwitchCase ":" { Statement ";" } .
+/// TypeSwitchCase  = "case" TypeList | "default" .
+/// TypeList        = Type { "," Type } .
 bool Parser::ParseSwitchStmt() {
   // FIXME
   SkipUntil(tok::semi, /*StopAtSemi=*/false, /*DontConsume=*/true);
   return true;
 }
 
+/// SelectStmt = "select" "{" { CommClause } "}" .
+/// CommClause = CommCase ":" { Statement ";" } .
+/// CommCase   = "case" ( SendStmt | RecvStmt ) | "default" .
+/// RecvStmt   = [ Expression [ "," Expression ] ( "=" | ":=" ) ] RecvExpr .
+/// RecvExpr   = Expression .
 bool Parser::ParseSelectStmt() {
   // FIXME
   SkipUntil(tok::semi, /*StopAtSemi=*/false, /*DontConsume=*/true);
   return true;
 }
 
+/// ForStmt = "for" [ Condition | ForClause | RangeClause ] Block .
+/// Condition = Expression .
+/// 
+/// ForClause = [ InitStmt ] ";" [ Condition ] ";" [ PostStmt ] .
+/// InitStmt = SimpleStmt .
+/// PostStmt = SimpleStmt .
+/// 
+/// RangeClause = Expression [ "," Expression ] ( "=" | ":=" )
+///               "range" Expression .
 bool Parser::ParseForStmt() {
   // FIXME
   SkipUntil(tok::semi, /*StopAtSemi=*/false, /*DontConsume=*/true);
@@ -138,6 +171,7 @@ bool Parser::ParseDeferStmt() {
   return ParseExpression().isInvalid();
 }
 
+/// EmptyStmt = .
 bool Parser::ParseEmptyStmt() {
   return false;
 }
