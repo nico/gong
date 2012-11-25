@@ -33,5 +33,5 @@ var y b;
 
 
 func foo() int {
-  return x + z
+  return //x + z  // FIXME: Reenable once OperandNames are parsed
 }

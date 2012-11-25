@@ -806,7 +806,6 @@ bool Parser::ParseDeclaration() {
 
 /// ConstDecl      = "const" ( ConstSpec | "(" { ConstSpec ";" } ")" ) .
 /// ConstSpec      = IdentifierList [ [ Type ] "=" ExpressionList ] .
-/// ExpressionList = Expression { "," Expression } .
 bool Parser::ParseConstDecl() {
   assert(Tok.is(tok::kw_const) && "Expected 'const'");
   ConsumeToken();

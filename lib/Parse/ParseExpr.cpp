@@ -376,6 +376,18 @@ Parser::ParseFunctionLit() {
 /// MethodExpr    = ReceiverType "." MethodName .
 /// ReceiverType  = TypeName | "(" "*" TypeName ")" .
 
+/// ExpressionList = Expression { "," Expression } .
+Action::ExprResult
+Parser::ParseExpressionList() {
+  ParseExpression();
+  while (Tok.is(tok::comma)) {
+    ConsumeToken();
+    // FIXME: Diag if Tok doesn't start an expression.
+    ParseExpression();
+  }
+  return false;
+}
+
 #if 0
 /// \brief Simple precedence-based parser for binary/ternary operators.
 ///

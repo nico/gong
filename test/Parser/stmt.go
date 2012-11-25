@@ -9,10 +9,10 @@ func f() {
   // FIXME: `go;` should diag
   go 4
   // ReturnStmt
-  //return
-  //return 4
-  //return 4,  should diag
-  //return 4,5
+  return
+  return 4
+  //return 4,  // FIXME: should diag
+  return 4,5
   //FIXME
   // BreakStmt
   break

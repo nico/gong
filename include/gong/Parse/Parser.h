@@ -236,6 +236,7 @@ public:
   ExprResult ParseBasicLit();
   ExprResult ParseCompositeLit();
   ExprResult ParseFunctionLit();
+  ExprResult ParseExpressionList();
 
 
   // Statements

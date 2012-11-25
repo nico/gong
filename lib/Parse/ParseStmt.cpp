@@ -68,9 +68,12 @@ bool Parser::ParseGoStmt() {
 
 /// ReturnStmt = "return" [ ExpressionList ] .
 bool Parser::ParseReturnStmt() {
-  // FIXME
-  SkipUntil(tok::semi, /*StopAtSemi=*/false, /*DontConsume=*/true);
-  return true;
+  assert(Tok.is(tok::kw_return) && "expected 'return'");
+  ConsumeToken();
+
+  if (Tok.isNot(tok::semi))
+    ParseExpressionList();
+  return false;
 }
 
 /// BreakStmt = "break" [ Label ] .
@@ -189,7 +192,7 @@ bool Parser::ParseBlock() {
   // See Parser::ParseCompoundStatementBody() in clang.
   while (Tok.isNot(tok::r_brace) && Tok.isNot(tok::eof)) {
     ParseStatement();
-    ExpectAndConsumeSemi(diag::expected_semi_import);
+    ExpectAndConsumeSemi(diag::expected_semi);
   }
   return ExpectAndConsume(tok::r_brace, diag::expected_r_brace);
 }
