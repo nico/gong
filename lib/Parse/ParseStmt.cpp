@@ -57,6 +57,7 @@ bool Parser::ParseStatement() {
     return ParseSimpleStmtTail(II);
   }
   
+  // FIXME: all other expr starts: literals, '(', 'struct', etc
   default: llvm_unreachable("unexpected token kind");
   }
   SkipUntil(tok::semi, /*StopAtSemi=*/false, /*DontConsume=*/true);
@@ -66,6 +67,8 @@ bool Parser::ParseStatement() {
 bool Parser::ParseSimpleStmt(bool *StmtWasExpression) {
   if (Tok.is(tok::semi))
     return ParseEmptyStmt();
+  // FIXME: Not true, could be all the other valid expr prefixes too (literal,
+  // 'struct', etc).
   if (Tok.isNot(tok::identifier)) {
     Diag(Tok, diag::expected_ident);
     // FIXME: recover?
@@ -98,6 +101,8 @@ static bool IsAssignmentOp(Token &Tok) {
 
 /// Called after the leading IdentifierInfo of a statement has been read.
 bool Parser::ParseSimpleStmtTail(IdentifierInfo *II, bool *StmtWasExpression) {
+  // FIXME: Tok could be '.'
+
   if (Tok.is(tok::comma)) {
     // It's an identifier list! (Which can be interpreted as expression list.)
     // If it's followed by ':=', this is a ShortVarDecl (the only statement
@@ -121,11 +126,41 @@ bool Parser::ParseSimpleStmtTail(IdentifierInfo *II, bool *StmtWasExpression) {
   if (Tok.is(tok::colonequal))
     return ParseShortVarDeclTail();
 
-  // FIXME: Write *StmtWasExpression
+  // FIXME: probably better to return for all tokens that aren't
+  // possible expr prefixes.
+  if (Tok.is(tok::semi) || Tok.is(tok::l_brace)) {
+    // Just a single identifier.
+    if (StmtWasExpression)
+      // See the below FIXME about types :-/
+      *StmtWasExpression = true;
+    return false;
+  }
 
+  // FIXME: Or it could be a type!
   // Could be: ExpressionStmt, IncDecStmt, Assignment
-  assert(false && "FIXME");
-  return true;
+  ExprResult LHS = ParseExpression();
+
+  if (Tok.is(tok::comma)) {
+    // Must be an expression list, and the simplestmt must be an assignment.
+    ParseExpressionListTail(LHS);
+    if (Tok.isNot(tok::equal)) {
+      Diag(Tok, diag::expected_equal);
+      return true;
+    }
+    return ParseAssignmentTail();
+  }
+
+  if (Tok.is(tok::equal))
+    return ParseAssignmentTail();
+
+  if (Tok.is(tok::plusplus) || Tok.is(tok::minusminus))
+    return ParseIncDecStmtTail(LHS);
+
+  if (StmtWasExpression)
+    // See the above FIXME about types :-/
+    *StmtWasExpression = true;
+
+  return LHS.isInvalid();
 }
 
 /// This is called after the identifier list has been read.
@@ -145,6 +180,15 @@ bool Parser::ParseAssignmentTail() {
   assert(IsAssignmentOp(Tok) && "expected assignment op");
   ConsumeToken();
   return ParseExpressionList().isInvalid();
+}
+
+/// This is called after the lhs expression has been read.
+/// IncDecStmt = Expression ( "++" | "--" ) .
+bool Parser::ParseIncDecStmtTail(ExprResult &LHS) {
+  assert((Tok.is(tok::plusplus) || Tok.is(tok::minusminus)) &&
+         "expected '++' or '--'");
+  ConsumeToken();
+  return LHS.isInvalid();
 }
 
 /// This is called after the label identifier has been read.
@@ -227,6 +271,7 @@ bool Parser::ParseIfStmt() {
     ParseExpression();
   } else if (!StmtWasExpression) {
     Diag(StmtLoc, diag::expected_expr);
+    return true;
   }
 
   if (Tok.isNot(tok::l_brace)) {

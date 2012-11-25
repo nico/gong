@@ -18,10 +18,11 @@ func f() {
   // SimpleStmts, SendStmt:
   //FIXME
   // SimpleStmts, IncDecStmt:
-  //FIXME
+  a++
+  a--
   // SimpleStmts, Assignment:
   a, b, c = 1, 2, 3
-  //FIXME: a = 4
+  a = 4
   //FIXME: a[i], a[j] = 4, 5
   // SimpleStmts, ShortVarDecl:
   a, b, c := 1, 2, 3
@@ -53,6 +54,9 @@ func f() {
   // IfStmt
   if a := 4; 5 < 6 {
   }
+  if a {
+  }
+  //if a < b { }  // FIXME
   if a := 4; 5 < 6 {
   } else {
   }

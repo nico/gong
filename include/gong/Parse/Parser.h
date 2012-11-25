@@ -237,6 +237,7 @@ public:
   ExprResult ParseCompositeLit();
   ExprResult ParseFunctionLit();
   ExprResult ParseExpressionList();
+  ExprResult ParseExpressionListTail(ExprResult &LHS);
 
 
   // Statements
@@ -245,6 +246,7 @@ public:
   bool ParseSimpleStmtTail(IdentifierInfo *II, bool *StmtWasExpression = NULL);
   bool ParseShortVarDeclTail();
   bool ParseAssignmentTail();
+  bool ParseIncDecStmtTail(ExprResult &LHS);
   bool ParseLabeledStmtTail(IdentifierInfo *II);
   bool ParseGoStmt();
   bool ParseReturnStmt();

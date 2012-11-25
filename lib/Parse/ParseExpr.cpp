@@ -150,13 +150,6 @@ Parser::ParseUnaryExpr() {
 /// OperandName = identifier | QualifiedIdent.
 Action::ExprResult
 Parser::ParsePrimaryExpr() {
-  // FIXME
-  //if (Tok.is(tok::numeric_literal)) {
-  //  // FIXME
-  //  ConsumeToken();
-  //  return false;
-  //}
-  //return true;
   ExprResult Res;
 
   switch (Tok.getKind()) {
@@ -379,13 +372,18 @@ Parser::ParseFunctionLit() {
 /// ExpressionList = Expression { "," Expression } .
 Action::ExprResult
 Parser::ParseExpressionList() {
-  ParseExpression();
+  ExprResult LHS = ParseExpression();
+  return ParseExpressionListTail(LHS);
+}
+
+Action::ExprResult
+Parser::ParseExpressionListTail(ExprResult &LHS) {
   while (Tok.is(tok::comma)) {
     ConsumeToken();
     // FIXME: Diag if Tok doesn't start an expression.
     ParseExpression();
   }
-  return false;
+  return LHS;
 }
 
 #if 0
