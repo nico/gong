@@ -854,15 +854,27 @@ bool Parser::ParseVarDecl() {
 }
 
 bool Parser::IsType() {
-  return Tok.is(tok::identifier) ||
-         Tok.is(tok::l_paren) ||
-         Tok.is(tok::l_square) ||
-         Tok.is(tok::kw_struct) ||
-         Tok.is(tok::star) ||
-         Tok.is(tok::kw_func) ||
-         Tok.is(tok::kw_interface) ||
-         Tok.is(tok::kw_map) ||
-         Tok.is(tok::kw_chan) || Tok.is(tok::lessminus);
+  switch (Tok.getKind()) {
+  default:
+    return false;
+  case tok::identifier:
+  case tok::l_paren:
+  case tok::l_square:
+  case tok::kw_struct:
+  case tok::star:
+  case tok::kw_func:
+  case tok::kw_interface:
+  case tok::kw_map:
+  case tok::kw_chan:
+  case tok::lessminus:
+    return true;
+  }
+}
+
+bool Parser::IsExpression() {
+  // An expression can start with a type (for a conversion), so every
+  // type prefix is also an expression prefix.
+  return IsType() || IsUnaryOp();
 }
 
 DiagnosticBuilder Parser::Diag(SourceLocation Loc, unsigned DiagID) {

@@ -169,8 +169,23 @@ Parser::ParsePrimaryExpr() {
     // FIXME Or could just be a function type
     Res = ParseFunctionLit();
     break;
+  case tok::identifier: {
+    IdentifierInfo *II = Tok.getIdentifierInfo();
+    ConsumeToken();
+    Res = ParsePrimaryExprTail(II);
+    break;
+  }
+  case tok::l_paren:
+    assert(false && "FIXME: (expr) (type) (*typename)");
+    return ExprError();
   }
   return ParsePrimaryExprSuffix(Res);
+}
+
+Action::ExprResult
+Parser::ParsePrimaryExprTail(IdentifierInfo *II) {
+  // FIXME: '.', possibly more stuff
+  return false;
 }
 
 /// Call           = "(" [ ArgumentList [ "," ] ] ")" .

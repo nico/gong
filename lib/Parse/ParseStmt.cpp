@@ -126,19 +126,12 @@ bool Parser::ParseSimpleStmtTail(IdentifierInfo *II, bool *StmtWasExpression) {
   if (Tok.is(tok::colonequal))
     return ParseShortVarDeclTail();
 
-  // FIXME: probably better to return for all tokens that aren't
-  // possible expr prefixes.
-  if (Tok.is(tok::semi) || Tok.is(tok::l_brace)) {
-    // Just a single identifier.
-    if (StmtWasExpression)
-      // See the below FIXME about types :-/
-      *StmtWasExpression = true;
-    return false;
-  }
-
   // FIXME: Or it could be a type!
   // Could be: ExpressionStmt, IncDecStmt, Assignment
-  ExprResult LHS = ParseExpression();
+  // FIXME: all the other expr prefixes
+  ExprResult LHS = ParsePrimaryExprTail(II);
+  LHS = ParsePrimaryExprSuffix(LHS);
+  LHS = ParseRHSOfBinaryExpression(LHS, prec::Lowest);
 
   if (Tok.is(tok::comma)) {
     // Must be an expression list, and the simplestmt must be an assignment.

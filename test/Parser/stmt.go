@@ -23,7 +23,8 @@ func f() {
   // SimpleStmts, Assignment:
   a, b, c = 1, 2, 3
   a = 4
-  //FIXME: a[i], a[j] = 4, 5
+  a[i] = 4
+  a[i], a[j] = 4, 5
   // SimpleStmts, ShortVarDecl:
   a, b, c := 1, 2, 3
   a := 1
@@ -56,7 +57,7 @@ func f() {
   }
   if a {
   }
-  //if a < b { }  // FIXME
+  if a < b { }
   if a := 4; 5 < 6 {
   } else {
   }

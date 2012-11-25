@@ -221,6 +221,7 @@ public:
   bool ParseVarDecl();
 
   bool IsType();
+  bool IsExpression();
 
   // Expressions
   //FIXME: These should likely be OwningExprResult
@@ -230,6 +231,7 @@ public:
   bool IsUnaryOp();
   ExprResult ParseUnaryExpr();
   ExprResult ParsePrimaryExpr();
+  ExprResult ParsePrimaryExprTail(IdentifierInfo *II);
   ExprResult ParsePrimaryExprSuffix(ExprResult &LHS);
   ExprResult ParseSelectorOrTypeAssertionSuffix(ExprResult &LHS);
   ExprResult ParseIndexOrSliceSuffix(ExprResult &LHS);
