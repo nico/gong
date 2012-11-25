@@ -265,7 +265,6 @@ bool Parser::ParseFunctionDecl() {
   assert(Tok.is(tok::identifier) && "Expected identifier");
   IdentifierInfo *FunctionName = Tok.getIdentifierInfo();
   SourceLocation FuncLoc = ConsumeToken();
-  (void)FunctionName;  // FIXME
   (void)FuncLoc;  // FIXME
 
   if (Tok.is(tok::l_paren)) {
@@ -273,6 +272,8 @@ bool Parser::ParseFunctionDecl() {
   } else {
     Diag(Tok, diag::expected_l_paren);
   }
+
+  Actions.ActOnFunctionDecl(*FunctionName, getCurScope());
 
   if (Tok.is(tok::l_brace)) {
     ParseBody();
@@ -831,11 +832,13 @@ bool Parser::ParseTypeDecl() {
 /// TypeSpec     = identifier Type .
 bool Parser::ParseTypeSpec() {
   assert(Tok.is(tok::identifier) && "Expected identifier");
+  IdentifierInfo *TypeName = Tok.getIdentifierInfo();
   ConsumeToken();
   if (!IsType()) {
     Diag(Tok, diag::expected_type);
     return true;
   }
+  Actions.ActOnTypeSpec(*TypeName, getCurScope());
   return ParseType();
 }
 

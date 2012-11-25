@@ -45,10 +45,10 @@ Action::~Action() {}
 namespace {
   struct TypeNameInfo {
     TypeNameInfo *Prev;
-    bool isTypeName;
+    Action::IdentifierInfoType Type;
 
-    TypeNameInfo(bool istypename, TypeNameInfo *prev) {
-      isTypeName = istypename;
+    TypeNameInfo(Action::IdentifierInfoType type, TypeNameInfo *prev) {
+      Type = type;
       Prev = prev;
     }
   };
@@ -56,9 +56,10 @@ namespace {
   struct TypeNameInfoTable {
     llvm::RecyclingAllocator<llvm::BumpPtrAllocator, TypeNameInfo> Allocator;
 
-    void AddEntry(bool isTypename, IdentifierInfo *II) {
+    void AddEntry(Action::IdentifierInfoType Type, IdentifierInfo *II) {
+//fprintf(stderr, "pushing %d for %s\n", Type, II->getName().str().c_str());
       TypeNameInfo *TI = Allocator.Allocate<TypeNameInfo>();
-      new (TI) TypeNameInfo(isTypename, II->getFETokenInfo<TypeNameInfo>());
+      new (TI) TypeNameInfo(Type, II->getFETokenInfo<TypeNameInfo>());
       II->setFETokenInfo(TI);
     }
 
@@ -82,37 +83,89 @@ MinimalAction::~MinimalAction() {
   delete getTable(TypeNameInfoTablePtr);
 }
 
+void MinimalAction::ActOnImportSpec(StringRef ImportPath,
+                                    IdentifierInfo *LocalName,
+                                    bool IsLocal) {
+  if (IsLocal)
+    // FIXME: This should insert all exported symbols in ImportPath into the
+    // current file's file scope.
+    return;
+
+  TypeNameInfoTable &TNIT = *getTable(TypeNameInfoTablePtr);
+
+  if (LocalName) {
+    // FIXME: This should insert all exported symbols in ImportPath into
+    // LocalName's scope.
+    TNIT.AddEntry(Action::IIT_Package, LocalName);
+    TUScope->AddDecl(DeclPtrTy::make(LocalName));
+    return;
+  }
+
+  // FIXME: The right thing to do here is to load the package file pointed to
+  // by ImportPath and get the `package` identifier used therein. As an
+  // approximation, just grab the last path component off ImportPath.
+  ImportPath = ImportPath.slice(1, ImportPath.size() - 1);  // Strip ""
+  size_t SlashPos = ImportPath.rfind('/');
+  if (SlashPos != StringRef::npos)
+    ImportPath = ImportPath.substr(SlashPos + 1);
+
+  TNIT.AddEntry(Action::IIT_Package, &Idents.get(ImportPath));
+  TUScope->AddDecl(DeclPtrTy::make(&Idents.get(ImportPath)));
+}
+
+/// This looks at the IdentifierInfo::FETokenInfo field to determine whether
+/// the name is a package name, type name, or not in this scope.
+Action::IdentifierInfoType MinimalAction::classifyIdentifier(
+    const IdentifierInfo &II, const Scope* S) {
+  if (TypeNameInfo *TI = II.getFETokenInfo<TypeNameInfo>())
+    return TI->Type;
+  return IIT_Unknown;
+}
+
+/// Registers an identifier as type package name.
+void MinimalAction::ActOnTypeSpec(IdentifierInfo &II, Scope* S) {
+  getTable(TypeNameInfoTablePtr)->AddEntry(Action::IIT_Type, &II);
+
+  // Remember that this needs to be removed when the scope is popped.
+  S->AddDecl(DeclPtrTy::make(&II));
+}
+
+void MinimalAction::ActOnFunctionDecl(IdentifierInfo &II, Scope* S) {
+  getTable(TypeNameInfoTablePtr)->AddEntry(Action::IIT_Func, &II);
+
+  // Remember that this needs to be removed when the scope is popped.
+  S->AddDecl(DeclPtrTy::make(&II));
+}
+
 void MinimalAction::ActOnTranslationUnitScope(Scope *S) {
   TUScope = S;
 
   TypeNameInfoTable &TNIT = *getTable(TypeNameInfoTablePtr);
 
+  // http://golang.org/ref/spec#Predeclared_identifiers
   const char* BuiltinTypes[] = {
     "bool", "byte", "complex64", "complex128", "error", "float32", "float64",
     "int", "int8", "int16", "int32", "int64", "rune", "string",
     "uint", "uint8", "uint16", "uint32", "uint64", "uintptr"
   };
-  for (size_t i = 0; i < llvm::array_lengthof(BuiltinTypes); ++i)
-    TNIT.AddEntry(true, &Idents.get(BuiltinTypes[i]));
-}
-
-/// This looks at the IdentifierInfo::FETokenInfo field to determine whether
-/// the name is a type name  or not in this scope.
-Action::TypeTy *
-MinimalAction::getTypeName(IdentifierInfo &II, SourceLocation Loc,
-                           Scope *S, CXXScopeSpec *SS,
-                           bool isClassName, TypeTy *ObjectType) {
-  if (TypeNameInfo *TI = II.getFETokenInfo<TypeNameInfo>())
-    if (TI->isTypeName)
-      return TI;
-  return 0;
-}
-
-/// isCurrentClassName - Always returns false, because MinimalAction
-/// does not support C++ classes with constructors.
-bool MinimalAction::isCurrentClassName(const IdentifierInfo &, Scope *,
-                                       const CXXScopeSpec *) {
-  return false;
+  for (size_t i = 0; i < llvm::array_lengthof(BuiltinTypes); ++i) {
+    TNIT.AddEntry(Action::IIT_Type, &Idents.get(BuiltinTypes[i]));
+    TUScope->AddDecl(DeclPtrTy::make(&Idents.get(BuiltinTypes[i])));
+  }
+  // FIXME: Why does the spec list "nil" in a separate category?
+  const char* BuiltinConstants[] = { "true", "false", "iota", "nil" };
+  for (size_t i = 0; i < llvm::array_lengthof(BuiltinConstants); ++i) {
+    TNIT.AddEntry(Action::IIT_Const, &Idents.get(BuiltinConstants[i]));
+    TUScope->AddDecl(DeclPtrTy::make(&Idents.get(BuiltinConstants[i])));
+  }
+  const char* BuiltinFunctions[] = {
+    "append", "cap", "close", "complex", "copy", "delete", "imag", "len",
+    "make", "new", "panic", "print", "println", "real", "recover",
+  };
+  for (size_t i = 0; i < llvm::array_lengthof(BuiltinFunctions); ++i) {
+    TNIT.AddEntry(Action::IIT_BuiltinFunc, &Idents.get(BuiltinFunctions[i]));
+    TUScope->AddDecl(DeclPtrTy::make(&Idents.get(BuiltinFunctions[i])));
+  }
 }
 
 /// ActOnDeclarator - If this is a typedef declarator, we modify the
@@ -142,39 +195,6 @@ MinimalAction::ActOnDeclarator(Scope *S, Declarator &D) {
   return DeclPtrTy();
 }
 
-Action::DeclPtrTy
-MinimalAction::ActOnStartClassInterface(SourceLocation AtInterfaceLoc,
-                                        IdentifierInfo *ClassName,
-                                        SourceLocation ClassLoc,
-                                        IdentifierInfo *SuperName,
-                                        SourceLocation SuperLoc,
-                                        const DeclPtrTy *ProtoRefs,
-                                        unsigned NumProtocols,
-                                        const SourceLocation *ProtoLocs,
-                                        SourceLocation EndProtoLoc,
-                                        AttributeList *AttrList) {
-  // Allocate and add the 'TypeNameInfo' "decl".
-  getTable(TypeNameInfoTablePtr)->AddEntry(true, ClassName);
-  return DeclPtrTy();
-}
-
-/// ActOnForwardClassDeclaration -
-/// Scope will always be top level file scope.
-Action::DeclPtrTy
-MinimalAction::ActOnForwardClassDeclaration(SourceLocation AtClassLoc,
-                                            IdentifierInfo **IdentList,
-                                            SourceLocation *IdentLocs,
-                                            unsigned NumElts) {
-  for (unsigned i = 0; i != NumElts; ++i) {
-    // Allocate and add the 'TypeNameInfo' "decl".
-    getTable(TypeNameInfoTablePtr)->AddEntry(true, IdentList[i]);
-
-    // Remember that this needs to be removed when the scope is popped.
-    TUScope->AddDecl(DeclPtrTy::make(IdentList[i]));
-  }
-  return DeclPtrTy();
-}
-
 /// ActOnPopScope - When a scope is popped, if any typedefs are now
 /// out-of-scope, they are removed from the IdentifierInfo::FETokenInfo field.
 void MinimalAction::ActOnPopScope(SourceLocation Loc, Scope *S) {
@@ -190,6 +210,7 @@ void MinimalAction::ActOnPopScope(SourceLocation Loc, Scope *S) {
       TypeNameInfo *Next = TI->Prev;
       Table.DeleteEntry(TI);
 
+//fprintf(stderr, "popping %s\n", II.getName().str().c_str());
       II.setFETokenInfo(Next);
     }
   }

@@ -52,18 +52,18 @@ namespace gong {
   template<> struct IsResultPtrLowBitFree<4> { static const bool value = true;};
   template<> struct IsResultPtrLowBitFree<5> { static const bool value = true;};
 
-/// Action - As the parser reads the input file and recognizes the productions
-/// of the grammar, it invokes methods on this class to turn the parsed input
-/// into something useful: e.g. a parse tree.
+/// As the parser reads the input file and recognizes the productions of the
+/// grammar, it invokes methods on this class to turn the parsed input into
+/// something useful: e.g. a parse tree.
 ///
 /// The callback methods that this class provides are phrased as actions that
 /// the parser has just done or is about to do when the method is called.  They
 /// are not requests that the actions module do the specified action.
 ///
-/// All of the methods here are optional except getTypeName() and
-/// isCurrentClassName(), which must be specified in order for the
-/// parse to complete accurately.  The MinimalAction class does this
-/// bare-minimum of tracking to implement this functionality.
+/// All of the methods here are optional except classifyIdentifier()  which
+/// must be specified in order for the parse to complete accurately.  The
+/// MinimalAction class does this bare-minimum of tracking to implement this
+/// functionality.
 class Action : public ActionBase {
   /// \brief The parser's current scope.
   ///
@@ -196,6 +196,40 @@ public:
   // Declaration Tracking Callbacks.
   //===--------------------------------------------------------------------===//
 
+  /// Describes the type of an identifier. Go has a shared namespace for
+  /// package and type names and identifiers (i.e. a local variable |int|
+  /// shadows the type |int|).
+  enum IdentifierInfoType {
+    IIT_Package,
+    IIT_Type,
+    IIT_Const,
+    IIT_Var,
+    IIT_Func,
+    IIT_BuiltinFunc,
+    IIT_Unknown
+  };
+
+  /// Determines if |II| names a package, a type, or an identifier (variable or
+  /// function name).
+  ///
+  /// \param II the identifier for which we are performing name lookup
+  ///
+  /// \param S the scope in which this name lookup occurs
+  virtual IdentifierInfoType classifyIdentifier(const IdentifierInfo &II,
+                                                const Scope* S) = 0;
+
+  /// Called after a type spec has been parsed.
+  ///
+  /// \param II The name of the new type.
+  //FIXME: Pass in the type too.
+  virtual void ActOnTypeSpec(IdentifierInfo &II, Scope* S) {}
+
+  /// Registers an identifier as function name.
+  ///
+  /// \param II The name of the new function.
+  //FIXME: Pass in more stuff.
+  virtual void ActOnFunctionDecl(IdentifierInfo &II, Scope* S) {}
+
   typedef uintptr_t ParsingDeclStackState;
 
   /// PushParsingDeclaration - Notes that the parser has begun
@@ -289,11 +323,6 @@ public:
     return false;
   }
                                        
-  /// isCurrentClassName - Return true if the specified name is the
-  /// name of the innermost C++ class type currently being defined.
-  //virtual bool isCurrentClassName(const IdentifierInfo &II, Scope *S,
-  //                                const CXXScopeSpec *SS = 0) = 0;
-
   /// \brief Determine whether the given name refers to a template.
   ///
   /// This callback is used by the parser after it has seen a '<' to determine
@@ -2845,37 +2874,22 @@ public:
   MinimalAction(Lexer &l);
   ~MinimalAction();
 
-  /// getTypeName - This looks at the IdentifierInfo::FETokenInfo field to
-  /// determine whether the name is a typedef or not in this scope.
-  ///
-  /// \param II the identifier for which we are performing name lookup
-  ///
-  /// \param NameLoc the location of the identifier
-  ///
-  /// \param S the scope in which this name lookup occurs
-  ///
-  /// \param SS if non-NULL, the C++ scope specifier that precedes the
-  /// identifier
-  ///
-  /// \param isClassName whether this is a C++ class-name production, in
-  /// which we can end up referring to a member of an unknown specialization
-  /// that we know (from the grammar) is supposed to be a type. For example,
-  /// this occurs when deriving from "std::vector<T>::allocator_type", where T
-  /// is a template parameter.
-  ///
-  /// \returns the type referred to by this identifier, or NULL if the type
-  /// does not name an identifier.
-  virtual TypeTy *getTypeName(IdentifierInfo &II, SourceLocation NameLoc,
-                              Scope *S, CXXScopeSpec *SS,
-                              bool isClassName = false,
-                              TypeTy *ObjectType = 0);
+  /// Registers an identifier as package name, unless \a IsLocal is set.
+  virtual void ActOnImportSpec(StringRef ImportPath,
+                               IdentifierInfo *LocalName,
+                               bool IsLocal);
 
-  /// isCurrentClassName - Always returns false, because MinimalAction
-  /// does not support C++ classes with constructors.
-  virtual bool isCurrentClassName(const IdentifierInfo& II, Scope *S,
-                                  const CXXScopeSpec *SS);
+  /// This looks at the IdentifierInfo::FETokenInfo field to determine whether
+  /// the name is a package name, type name, or not in this scope.
+  virtual IdentifierInfoType classifyIdentifier(const IdentifierInfo &II,
+                                                const Scope* S);
 
-  
+  /// Registers an identifier as type name.
+  virtual void ActOnTypeSpec(IdentifierInfo &II, Scope* S);
+
+  /// Registers an identifier as function name.
+  virtual void ActOnFunctionDecl(IdentifierInfo &II, Scope* S);
+
   /// ActOnDeclarator - If this is a typedef declarator, we modify the
   /// IdentifierInfo::FETokenInfo field to keep track of this fact, until S is
   /// popped.
@@ -2885,22 +2899,6 @@ public:
   /// out-of-scope, they are removed from the IdentifierInfo::FETokenInfo field.
   virtual void ActOnPopScope(SourceLocation Loc, Scope *S);
   virtual void ActOnTranslationUnitScope(Scope *S);
-
-  virtual DeclPtrTy ActOnForwardClassDeclaration(SourceLocation AtClassLoc,
-                                                 IdentifierInfo **IdentList,
-                                                 SourceLocation *SLocs,
-                                                 unsigned NumElts);
-
-  virtual DeclPtrTy ActOnStartClassInterface(SourceLocation interLoc,
-                                             IdentifierInfo *ClassName,
-                                             SourceLocation ClassLoc,
-                                             IdentifierInfo *SuperName,
-                                             SourceLocation SuperLoc,
-                                             const DeclPtrTy *ProtoRefs,
-                                             unsigned NumProtoRefs,
-                                             const SourceLocation *ProtoLocs,
-                                             SourceLocation EndProtoLoc,
-                                             AttributeList *AttrList);
 };
 
 ///// PrettyStackTraceActionsDecl - If a crash occurs in the parser while parsing
