@@ -70,7 +70,7 @@ func f() {
   if a := 4; 5 < 6 {
   } else if b := 5; 6 < 7 {
   }
-  // FIXME: if a :=4; {} should diag
+  // FIXME: if a := 4; {} should diag
   // SwitchStmt
   //FIXME
   // SelectStmt
@@ -84,7 +84,17 @@ func f() {
   }
   select { default: fallthrough }
   select { default: fallthrough a }  //expected-diag {{expected ';'}}
-  //FIXME
+  select {
+  case a<-4:        // Send
+  case <-4:         // Unnamed receive
+  case a = <-4:     // Named receive
+  case a := <-4:    // Named receive
+  case a,b = <-4:   // Named receive
+  case a,b := <-4:  // Named receive
+  }
+  select {
+  case a, b:  // expected-diag{{expected ':=' or '='}}
+  }
   // ForStmt
   for {}
 

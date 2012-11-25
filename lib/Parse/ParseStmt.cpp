@@ -383,6 +383,8 @@ bool Parser::ParseCommClause() {
 /// CommCase   = "case" ( SendStmt | RecvStmt ) | "default" .
 /// RecvStmt   = [ Expression [ "," Expression ] ( "=" | ":=" ) ] RecvExpr .
 /// RecvExpr   = Expression .
+/// SendStmt = Channel "<-" Expression .
+/// Channel  = Expression .
 bool Parser::ParseCommCase() {
   assert((Tok.is(tok::kw_case) || Tok.is(tok::kw_default)) &&
          "expected 'case' or 'default'");
@@ -392,9 +394,35 @@ bool Parser::ParseCommCase() {
   }
 
   ConsumeToken();  // Consume 'case'.
-  // FIXME
-  //SkipUntil(tok::semi);
-  return true;
+
+  ExprResult LHS = ParseExpression();
+  if (Tok.is(tok::lessminus))
+    return ParseSendStmtTail(LHS);
+
+  // This is a RecvStmt.
+  bool FoundAssignOp = false;
+  if (Tok.is(tok::comma)) {
+    LHS = ParseExpressionListTail(LHS);
+
+    if (Tok.isNot(tok::equal) && Tok.isNot(tok::colonequal)) {
+      Diag(Tok, diag::expected_colonequal_or_equal);
+      // FIXME: recover?
+      return true;
+    }
+    ConsumeToken();  // Eat '=' or ':='.
+    FoundAssignOp = true;
+  } else if (Tok.is(tok::equal) || Tok.is(tok::colonequal)) {
+    ConsumeToken();  // Eat '=' or ':='.
+    FoundAssignOp = true;
+  }
+
+  if (FoundAssignOp) {
+    // Parse RecvExpr after the assignment operator.
+    ParseExpression();
+  } else {
+    // LHS was the RecvExpr, nothing to do.
+  }
+  return false;
 }
 
 /// ForStmt = "for" [ Condition | ForClause | RangeClause ] Block .
