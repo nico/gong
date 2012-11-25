@@ -52,7 +52,12 @@ func f() {
   // FallthroughStmt
   fallthrough
   // Block
-  //FIXME
+  {}
+  {
+    a := 1
+  }
+  { a := 1 }
+  { fallthrough a }  // expected-diag{{expected ';'}}
   // IfStmt
   if a := 4; 5 < 6 {
   }

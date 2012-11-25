@@ -475,6 +475,9 @@ bool Parser::ParseBlock() {
   // See Parser::ParseCompoundStatementBody() in clang.
   while (Tok.isNot(tok::r_brace) && Tok.isNot(tok::eof)) {
     ParseStatement();
+    // A semicolon may be omitted before a closing ')' or '}'.
+    if (Tok.is(tok::r_brace))
+      break;
     ExpectAndConsumeSemi(diag::expected_semi);
   }
   return ExpectAndConsume(tok::r_brace, diag::expected_r_brace);
