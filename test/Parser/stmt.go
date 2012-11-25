@@ -5,6 +5,11 @@ package p
 func f() {
   // Declaration
   //FIXME
+  // LabeledStmt
+  lab:
+  lab: break
+  // SimpleStmt
+  //FIXME
   // GoStmt
   // FIXME: `go;` should diag
   go 4

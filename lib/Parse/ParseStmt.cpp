@@ -30,33 +30,53 @@ using namespace gong;
 ///              Assignment | ShortVarDecl .
 bool Parser::ParseStatement() {
   switch (Tok.getKind()) {
-    case tok::kw_const:
-    case tok::kw_type:
-    case tok::kw_var:         return ParseDeclaration();
-    case tok::kw_go:          return ParseGoStmt();
-    case tok::kw_return:      return ParseReturnStmt();
-    case tok::kw_break:       return ParseBreakStmt();
-    case tok::kw_continue:    return ParseContinueStmt();
-    case tok::kw_goto:        return ParseGotoStmt();
-    case tok::kw_fallthrough: return ParseFallthroughStmt();
-    case tok::l_brace:        return ParseBlock();
-    case tok::kw_if:          return ParseIfStmt();
-    case tok::kw_switch:      return ParseSwitchStmt();
-    case tok::kw_select:      return ParseSelectStmt();
-    case tok::kw_for:         return ParseForStmt();
-    case tok::kw_defer:       return ParseDeferStmt();
+  case tok::kw_const:
+  case tok::kw_type:
+  case tok::kw_var:         return ParseDeclaration();
+  case tok::kw_go:          return ParseGoStmt();
+  case tok::kw_return:      return ParseReturnStmt();
+  case tok::kw_break:       return ParseBreakStmt();
+  case tok::kw_continue:    return ParseContinueStmt();
+  case tok::kw_goto:        return ParseGotoStmt();
+  case tok::kw_fallthrough: return ParseFallthroughStmt();
+  case tok::l_brace:        return ParseBlock();
+  case tok::kw_if:          return ParseIfStmt();
+  case tok::kw_switch:      return ParseSwitchStmt();
+  case tok::kw_select:      return ParseSelectStmt();
+  case tok::kw_for:         return ParseForStmt();
+  case tok::kw_defer:       return ParseDeferStmt();
 
-    // SimpleStmts
-    case tok::semi:           return ParseEmptyStmt();
+  // SimpleStmts
+  case tok::semi:           return ParseEmptyStmt();
 
-    case tok::identifier:
-      // Could be: Label, ExpressionStmt, IncDecStmt, Assignment, ShortVarDecl
-      //FIXME
-      ;
-    default: llvm_unreachable("unexpected token kind");
+  case tok::identifier: {
+    IdentifierInfo *II = Tok.getIdentifierInfo();
+    ConsumeToken();
+    return ParseStatementTail(II);
+  }
+  
+  default: llvm_unreachable("unexpected token kind");
   }
   SkipUntil(tok::semi, /*StopAtSemi=*/false, /*DontConsume=*/true);
   return true;
+}
+
+/// Called after the leading IdentifierInfo of a statement has been read.
+bool Parser::ParseStatementTail(IdentifierInfo *II) {
+  if (Tok.is(tok::colon))
+    return ParseLabeledStmtTail(II);
+  // Could be: Label, ExpressionStmt, IncDecStmt, Assignment, ShortVarDecl
+  assert(false && "FIXME");
+  return true;
+}
+
+/// This is called after the label identifier has been read.
+/// LabeledStmt = Label ":" Statement .
+/// Label       = identifier .
+bool Parser::ParseLabeledStmtTail(IdentifierInfo *II) {
+  assert(Tok.is(tok::colon) && "expected ':'");
+  ConsumeToken();
+  return ParseStatement();
 }
 
 /// GoStmt = "go" Expression .
