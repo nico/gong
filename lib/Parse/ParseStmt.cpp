@@ -106,6 +106,9 @@ bool Parser::ParseStatementTail(IdentifierInfo *II) {
     }
   }
 
+  if (Tok.is(tok::colonequal))
+    return ParseShortVarDeclTail();
+
   // Could be: Label, ExpressionStmt, IncDecStmt, Assignment, ShortVarDecl
   assert(false && "FIXME");
   return true;

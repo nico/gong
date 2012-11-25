@@ -24,7 +24,7 @@ func f() {
   //FIXME: a[i], a[j] = 4, 5
   // SimpleStmts, ShortVarDecl:
   a, b, c := 1, 2, 3
-  //FIXME: a := 1
+  a := 1
   //FIXME: nice diag for a[i] := 1 (just fixit to '=')
 
   // GoStmt
