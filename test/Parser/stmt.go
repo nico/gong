@@ -65,7 +65,11 @@ func f() {
   if a := 4; 5 < 6 {
   } else if b := 5; 6 < 7 {
   }
+  // FIXME: if a :=4; {} should diag
   // SwitchStmt
+  //FIXME
+  // SelectStmt
+  select {}
   //FIXME
   // ForStmt
   for {}

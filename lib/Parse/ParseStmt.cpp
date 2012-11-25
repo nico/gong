@@ -317,11 +317,42 @@ bool Parser::ParseSwitchStmt() {
 }
 
 /// SelectStmt = "select" "{" { CommClause } "}" .
+bool Parser::ParseSelectStmt() {
+  assert(Tok.is(tok::kw_select) && "expected 'select'");
+  ConsumeToken();
+
+  // FIXME: This is somewhat similar to ParseInterfaceType
+  if (Tok.isNot(tok::l_brace)) {
+    // FIXME: ...after 'select'
+    Diag(Tok, diag::expected_l_brace);
+    // FIXME: recover?
+    return true;
+  }
+  ConsumeBrace();
+
+  // FIXME: might be better to run this loop only while (IsCommClause)?
+  while (Tok.isNot(tok::r_brace) && Tok.isNot(tok::eof)) {
+    if (Tok.isNot(tok::kw_case) && Tok.isNot(tok::kw_default)) {
+      Diag(Tok, diag::expected_case_or_default);
+      SkipUntil(tok::r_brace, /*StopAtSemi=*/false);
+      return true;
+    }
+    if (ParseCommClause()) {
+      SkipUntil(tok::r_brace, /*StopAtSemi=*/false);
+      return true;
+    }
+  }
+  if (Tok.is(tok::r_brace))
+    ConsumeBrace();
+
+  return false;
+}
+
 /// CommClause = CommCase ":" { Statement ";" } .
 /// CommCase   = "case" ( SendStmt | RecvStmt ) | "default" .
 /// RecvStmt   = [ Expression [ "," Expression ] ( "=" | ":=" ) ] RecvExpr .
 /// RecvExpr   = Expression .
-bool Parser::ParseSelectStmt() {
+bool Parser::ParseCommClause() {
   // FIXME
   SkipUntil(tok::semi, /*StopAtSemi=*/false, /*DontConsume=*/true);
   return true;
