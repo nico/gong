@@ -68,7 +68,29 @@ func f() {
   // SwitchStmt
   //FIXME
   // ForStmt
+  for {}
+
+  for a < b {}
+
+  for ;; {}
+  for a := 4;; {}
+  for ; 5 < 6; {}
+  for ;; a++ {}
+  for a := 4; 5 < 6; {}
+  for a := 4;; a++ {}
+  for ; 5 < 6; a++ {}
+  for a := 4; 5 < 6; a++ {}
+
   //FIXME
+  //for a := range "hi" {}
+  //for a = range "hi" {}
+  //for a, b := range "hi" {}
+  //for a, b= range "hi" {}
+
+  // FIXME: Check that range isn't permitted in other exprs or other-styled
+  // fors.  Not even as child of a range expression.
+  // FIXME: Check simplestmts aren't allowed in the condition of a for clause.
+
   // DeferStmt
   // FIXME: `defer;` should diag
   defer 4

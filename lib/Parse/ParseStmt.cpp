@@ -337,9 +337,47 @@ bool Parser::ParseSelectStmt() {
 /// RangeClause = Expression [ "," Expression ] ( "=" | ":=" )
 ///               "range" Expression .
 bool Parser::ParseForStmt() {
-  // FIXME
-  SkipUntil(tok::semi, /*StopAtSemi=*/false, /*DontConsume=*/true);
-  return true;
+  assert(Tok.is(tok::kw_for) && "expected 'for'");
+  ConsumeToken();
+
+  if (Tok.is(tok::l_brace))
+    return ParseBlock();
+
+  SourceLocation StmtLoc = Tok.getLocation();
+  bool StmtWasExpression = false;
+  // FIXME: Need to allow range clauses in the simplestmt too
+  if (Tok.isNot(tok::semi))
+    if (ParseSimpleStmt(&StmtWasExpression))
+      return true;
+
+  if (Tok.is(tok::semi)) {
+    // ForClause case
+    ConsumeToken();  // Consume 1st ';'.
+    if (Tok.isNot(tok::semi))
+      ParseExpression();
+    if (Tok.isNot(tok::semi)) {
+      Diag(Tok, diag::expected_semi);
+      // FIXME: recover?
+      return true;
+    }
+    ConsumeToken();  // Consume 2nd ';'.
+    if (Tok.isNot(tok::l_brace)) {
+      ParseSimpleStmt();
+    }
+    // FIXME: Collect errors above.
+  } else if (!StmtWasExpression) {
+    Diag(StmtLoc, diag::expected_expr);
+    // FIXME: recover?
+  } else {
+    // Single expression
+    // (FIXME: or range expr, once that's done)
+  }
+
+  if (Tok.isNot(tok::l_brace)) {
+    Diag(Tok, diag::expected_l_brace);
+    return true;
+  }
+  return ParseBlock();
 }
 
 /// DeferStmt = "defer" Expression .
