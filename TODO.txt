@@ -48,7 +48,6 @@ var
 const
 () grouping
 
-
 # Statements:
 range exprs for for
   - Needs "allow range / was range" functionality in ParseSimpleStmt
@@ -59,27 +58,6 @@ Add scopes:
 function parameters
 each if, for, and switch is in its own implicit block
 each clause of a switch or select acts as an implicit block
-
-Non-SimpleStmts are always followed by ';'. SimpleStmts are always followed by
-';' or '{' (for the ForStmt step simplestmt).
-
-Statement =
-  Declaration | LabeledStmt | SimpleStmt |
-  GoStmt | ReturnStmt | BreakStmt | ContinueStmt | GotoStmt |
-  FallthroughStmt | Block | IfStmt | SwitchStmt | SelectStmt | ForStmt |
-  DeferStmt .
-
-SimpleStmt =
-  EmptyStmt | ExpressionStmt | SendStmt | IncDecStmt | Assignment |
-  ShortVarDecl .
-
-Non-SimpleStmt =
-  Declaration | LabeledStmt | GotoStmt | ReturnStmt | BreakStmt | ContinueStmt |
-  GotoStmt | FallthroughStmt | Block | IfStmt | SwitchStmt | SelectStmt |
-  ForStmt | DeferStmt .
--> fairly easy to distinguish. all those start with keywords, except for
-   LabeledStmts, which can be detected with just 1 lookahead
-
 
 Big fixme (other than types): Factor out type parsing, so that literal values
 and literal types can call either and then decide what's up based on the next
