@@ -249,6 +249,7 @@ public:
   bool ParseShortVarDeclTail();
   bool ParseAssignmentTail();
   bool ParseIncDecStmtTail(ExprResult &LHS);
+  bool ParseSendStmtTail(ExprResult &LHS);
   bool ParseLabeledStmtTail(IdentifierInfo *II);
   bool ParseGoStmt();
   bool ParseReturnStmt();

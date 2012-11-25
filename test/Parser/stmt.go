@@ -14,9 +14,10 @@ func f() {
   // SimpleStmts, EmptyStmt:
   ;
   // SimpleStmts, ExpressionStmt:
-  //FIXME
+  a * b + c
+  // FIXME: 4 + 5 * 4
   // SimpleStmts, SendStmt:
-  //FIXME
+  a <- 5
   // SimpleStmts, IncDecStmt:
   a++
   a--

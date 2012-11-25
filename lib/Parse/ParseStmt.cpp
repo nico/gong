@@ -149,6 +149,9 @@ bool Parser::ParseSimpleStmtTail(IdentifierInfo *II, bool *StmtWasExpression) {
   if (Tok.is(tok::plusplus) || Tok.is(tok::minusminus))
     return ParseIncDecStmtTail(LHS);
 
+  if (Tok.is(tok::lessminus))
+    return ParseSendStmtTail(LHS);
+
   if (StmtWasExpression)
     // See the above FIXME about types :-/
     *StmtWasExpression = true;
@@ -182,6 +185,15 @@ bool Parser::ParseIncDecStmtTail(ExprResult &LHS) {
          "expected '++' or '--'");
   ConsumeToken();
   return LHS.isInvalid();
+}
+
+/// This is called after the channel has been read.
+/// SendStmt = Channel "<-" Expression .
+/// Channel  = Expression .
+bool Parser::ParseSendStmtTail(ExprResult &LHS) {
+  assert(Tok.is(tok::lessminus) && "expected '<-'");
+  ConsumeToken();
+  return ParseExpression().isInvalid();
 }
 
 /// This is called after the label identifier has been read.
