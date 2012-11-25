@@ -261,6 +261,7 @@ public:
   bool ParseSwitchStmt();
   bool ParseSelectStmt();
   bool ParseCommClause();
+  bool ParseCommCase();
   bool ParseForStmt();
   bool ParseDeferStmt();
   bool ParseEmptyStmt();

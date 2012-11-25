@@ -70,6 +70,13 @@ func f() {
   //FIXME
   // SelectStmt
   select {}
+  select {
+  default:
+  }
+  select {
+  default:
+    return
+  }
   //FIXME
   // ForStmt
   for {}

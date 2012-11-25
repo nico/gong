@@ -349,12 +349,43 @@ bool Parser::ParseSelectStmt() {
 }
 
 /// CommClause = CommCase ":" { Statement ";" } .
+bool Parser::ParseCommClause() {
+  ParseCommCase();
+
+  if (Tok.isNot(tok::colon)) {
+    // FIXME: just add fixit (at least for default and simple CommCases).
+    Diag(Tok, diag::expected_colon);
+  } else {
+    ConsumeToken();
+  }
+
+  // CommClauses are always in SelectStmts, where they can only be followed by
+  // other CommClauses, or the end of the SelectStmt.
+  while (Tok.isNot(tok::kw_case) && Tok.isNot(tok::kw_default) &&
+         Tok.isNot(tok::r_brace) && Tok.isNot(tok::eof)) {
+    ParseStatement();
+    if (Tok.isNot(tok::semi)) {
+      Diag(Tok, diag::expected_semi);
+    }
+    ConsumeToken();  // Consume 2nd ';'.
+  }
+  return false;
+}
+
 /// CommCase   = "case" ( SendStmt | RecvStmt ) | "default" .
 /// RecvStmt   = [ Expression [ "," Expression ] ( "=" | ":=" ) ] RecvExpr .
 /// RecvExpr   = Expression .
-bool Parser::ParseCommClause() {
+bool Parser::ParseCommCase() {
+  assert((Tok.is(tok::kw_case) || Tok.is(tok::kw_default)) &&
+         "expected 'case' or 'default'");
+  if (Tok.is(tok::kw_default)) {
+    ConsumeToken();
+    return false;
+  }
+
+  ConsumeToken();  // Consume 'case'.
   // FIXME
-  SkipUntil(tok::semi, /*StopAtSemi=*/false, /*DontConsume=*/true);
+  //SkipUntil(tok::semi);
   return true;
 }
 
