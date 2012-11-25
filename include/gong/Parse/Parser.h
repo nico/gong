@@ -240,12 +240,12 @@ public:
 
   // Statements
   bool ParseStatement();
-  bool ParseGoStmnt();
-  bool ParseReturnStmnt();
-  bool ParseBreakStmnt();
-  bool ParseContinueStmnt();
-  bool ParseGotoStmnt();
-  bool ParseFallthroughStmnt();
+  bool ParseGoStmt();
+  bool ParseReturnStmt();
+  bool ParseBreakStmt();
+  bool ParseContinueStmt();
+  bool ParseGotoStmt();
+  bool ParseFallthroughStmt();
   bool ParseIfStmt();
   bool ParseSwitchStmt();
   bool ParseSelectStmt();

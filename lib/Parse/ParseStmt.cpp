@@ -33,12 +33,12 @@ bool Parser::ParseStatement() {
     case tok::kw_const:
     case tok::kw_type:
     case tok::kw_var:         return ParseDeclaration();
-    case tok::kw_go:          return ParseGoStmnt();
-    case tok::kw_return:      return ParseReturnStmnt();
-    case tok::kw_break:       return ParseBreakStmnt();
-    case tok::kw_continue:    return ParseContinueStmnt();
-    case tok::kw_goto:        return ParseGotoStmnt();
-    case tok::kw_fallthrough: return ParseFallthroughStmnt();
+    case tok::kw_go:          return ParseGoStmt();
+    case tok::kw_return:      return ParseReturnStmt();
+    case tok::kw_break:       return ParseBreakStmt();
+    case tok::kw_continue:    return ParseContinueStmt();
+    case tok::kw_goto:        return ParseGotoStmt();
+    case tok::kw_fallthrough: return ParseFallthroughStmt();
     case tok::l_brace:        return ParseBlock();
     case tok::kw_if:          return ParseIfStmt();
     case tok::kw_switch:      return ParseSwitchStmt();
@@ -60,20 +60,20 @@ bool Parser::ParseStatement() {
 }
 
 /// GoStmt = "go" Expression .
-bool Parser::ParseGoStmnt() {
+bool Parser::ParseGoStmt() {
   assert(Tok.is(tok::kw_go) && "expected 'go'");
   ConsumeToken();
   return ParseExpression().isInvalid();
 }
 
 /// ReturnStmt = "return" [ ExpressionList ] .
-bool Parser::ParseReturnStmnt() {
+bool Parser::ParseReturnStmt() {
   // FIXME
   SkipUntil(tok::semi, /*StopAtSemi=*/false, /*DontConsume=*/true);
   return true;
 }
 
-bool Parser::ParseBreakStmnt() {
+bool Parser::ParseBreakStmt() {
   assert(Tok.is(tok::kw_break) && "expected 'break'");
   ConsumeToken();
   if (Tok.is(tok::identifier))
@@ -81,7 +81,7 @@ bool Parser::ParseBreakStmnt() {
   return false;
 }
 
-bool Parser::ParseContinueStmnt() {
+bool Parser::ParseContinueStmt() {
   assert(Tok.is(tok::kw_continue) && "expected 'continue'");
   ConsumeToken();
   if (Tok.is(tok::identifier))
@@ -89,7 +89,7 @@ bool Parser::ParseContinueStmnt() {
   return true;
 }
 
-bool Parser::ParseGotoStmnt() {
+bool Parser::ParseGotoStmt() {
   assert(Tok.is(tok::kw_goto) && "expected 'goto'");
   ConsumeToken();
   if (Tok.is(tok::identifier)) {
@@ -101,7 +101,7 @@ bool Parser::ParseGotoStmnt() {
   return true;
 }
 
-bool Parser::ParseFallthroughStmnt() {
+bool Parser::ParseFallthroughStmt() {
   assert(Tok.is(tok::kw_fallthrough) && "expected 'fallthrough'");
   ConsumeToken();
   return false;
