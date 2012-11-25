@@ -77,6 +77,8 @@ func f() {
   default:
     return
   }
+  select { default: fallthrough }
+  select { default: fallthrough a }  //expected-diag {{expected ';'}}
   //FIXME
   // ForStmt
   for {}

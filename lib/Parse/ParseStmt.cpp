@@ -364,10 +364,18 @@ bool Parser::ParseCommClause() {
   while (Tok.isNot(tok::kw_case) && Tok.isNot(tok::kw_default) &&
          Tok.isNot(tok::r_brace) && Tok.isNot(tok::eof)) {
     ParseStatement();
+
+    // A semicolon may be omitted before a closing ')' or '}'.
+    if (Tok.is(tok::r_brace))
+      break;
+
     if (Tok.isNot(tok::semi)) {
       Diag(Tok, diag::expected_semi);
+      SkipUntil(tok::semi, tok::r_brace,
+                /*ConsumeSemi=*/false, /*DontConsume=*/true);
+    } else {
+      ConsumeToken();
     }
-    ConsumeToken();  // Consume 2nd ';'.
   }
   return false;
 }
