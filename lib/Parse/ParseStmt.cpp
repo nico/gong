@@ -61,13 +61,73 @@ bool Parser::ParseStatement() {
   return true;
 }
 
+static bool IsAssignmentOp(Token &Tok) {
+  switch (Tok.getKind()) {
+  default:
+    return false;
+  case tok::equal:
+  case tok::plusequal:
+  case tok::minusequal:
+  case tok::pipeequal:
+  case tok::caretequal:
+  case tok::starequal:
+  case tok::slashequal:
+  case tok::percentequal:
+  case tok::lesslessequal:
+  case tok::greatergreaterequal:
+  case tok::ampequal:
+  case tok::ampcaretequal:
+    return true;
+  }
+}
+
 /// Called after the leading IdentifierInfo of a statement has been read.
 bool Parser::ParseStatementTail(IdentifierInfo *II) {
   if (Tok.is(tok::colon))
     return ParseLabeledStmtTail(II);
+
+  if (Tok.is(tok::comma)) {
+    // It's an identifier list! (Which can be interpreted as expression list.)
+    // If it's followed by ':=', this is a ShortVarDecl (the only statement
+    // starting with an identifier list).
+    // If it's followed by '=', this is an Assignment (the only statement
+    // starting with an expression list).
+    ParseIdentifierListTail(II);
+    if (Tok.is(tok::colonequal))
+      return ParseShortVarDeclTail();
+    else if (IsAssignmentOp(Tok))
+      return ParseAssignmentTail();
+    else {
+      Diag(Tok, diag::expected_colonequal_or_equal);
+      // FIXME: recover?
+      return true;
+      // FIXME: For bonus points, only suggest ':=' if at least one identifier
+      //        is new.
+    }
+  }
+
   // Could be: Label, ExpressionStmt, IncDecStmt, Assignment, ShortVarDecl
   assert(false && "FIXME");
   return true;
+}
+
+/// This is called after the identifier list has been read.
+/// ShortVarDecl = IdentifierList ":=" ExpressionList .
+bool Parser::ParseShortVarDeclTail() {
+  assert(Tok.is(tok::colonequal) && "expected ':='");
+  ConsumeToken();
+  return ParseExpressionList().isInvalid();
+}
+
+/// This is called after the lhs expression list has been read.
+/// Assignment = ExpressionList assign_op ExpressionList .
+/// 
+/// assign_op = [ add_op | mul_op ] "=" .
+/// The op= construct is a single token.
+bool Parser::ParseAssignmentTail() {
+  assert(IsAssignmentOp(Tok) && "expected assignment op");
+  ConsumeToken();
+  return ParseExpressionList().isInvalid();
 }
 
 /// This is called after the label identifier has been read.

@@ -242,6 +242,8 @@ public:
   // Statements
   bool ParseStatement();
   bool ParseStatementTail(IdentifierInfo *II);
+  bool ParseShortVarDeclTail();
+  bool ParseAssignmentTail();
   bool ParseLabeledStmtTail(IdentifierInfo *II);
   bool ParseGoStmt();
   bool ParseReturnStmt();

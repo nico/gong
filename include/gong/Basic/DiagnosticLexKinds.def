@@ -92,3 +92,4 @@ DIAG(expected_chan,        "expected 'chan'")
 DIAG(expected_dot_or_ident_or_string,
     "expected '.' or identifier or string literal")
 DIAG(expected_expr,        "expected expression")
+DIAG(expected_colonequal_or_equal, "expected ':=' or '='")
