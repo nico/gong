@@ -23,11 +23,6 @@ Actions interface
 measureTokenLength
 go doesn't need predeclarations for methods, figure out how to do that
 
-Current classifyIdentifier() design requires full import resolving.  For some
-clients (fmt), that's not desirable.  Consider doing something like
-ParseTypeOrExpr() instead, and let Sema fix up thing.
-
-
 Have nice fixit for toplevel `a := b`
 
 
@@ -44,6 +39,9 @@ maybe share the optional SimpleStmt parsing code in ifstmt, forstmt, switchstmt
 
 look at BalancedDelimTracker and friends, so that eg |type t ['4'.(int]int|
 gets only one diag
+
+"""if x == (T{a,b,c}[i]) { … }
+if (x == T{a,b,c}[i]) { … }"""  <- xxx ambiguity?
 
 # decls
 var
@@ -65,7 +63,11 @@ Big fixme (other than types): Factor out type parsing, so that literal values
 and literal types can call either and then decide what's up based on the next
 token.
 
-# expressions: PrimaryExpr.
+# expressions:
+'(': (expr) (type) (*typename)
+qualifiedidents
+conversions, builtincalls
+calls
 
 composite lits: values
 
@@ -114,7 +116,8 @@ of a composite literal.
   *foo(bar) with foo being a type is parsed as indirection. (*foo)(bar) is a
   conversion.
 
-'<-' can either be an unary op or the start of a type too.
+'<-' can either be an unary op or the start of a type too. But type in an expr
+only after '(' according to spec.
 
 Always need to parse the type first, and then decide if it's a lit (next is '{')
 or a type (next is '(').

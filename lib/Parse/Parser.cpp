@@ -160,7 +160,7 @@ bool Parser::ParseImportDecl() {
       if (Tok.isNot(tok::period) &&
           Tok.isNot(tok::identifier) &&
           Tok.isNot(tok::string_literal)) {
-        Diag(Tok, diag::expected_dot_or_ident_or_string);
+        Diag(Tok, diag::expected_period_or_ident_or_string);
         Fail = true;
       } else
         Fail = ParseImportSpec();
@@ -874,7 +874,8 @@ bool Parser::IsType() {
 bool Parser::IsExpression() {
   // An expression can start with a type (for a conversion), so every
   // type prefix is also an expression prefix.
-  return IsType() || IsUnaryOp();
+  return IsType() || IsUnaryOp() || Tok.is(tok::numeric_literal) ||
+         Tok.is(tok::rune_literal) || Tok.is(tok::string_literal);
 }
 
 DiagnosticBuilder Parser::Diag(SourceLocation Loc, unsigned DiagID) {

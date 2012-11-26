@@ -54,8 +54,29 @@ bool Parser::ParseStatement() {
       return ParseLabeledStmtTail(II);
     return ParseSimpleStmtTail(II);
   }
+
+  // non-identifier ExpressionStmts
+  case tok::amp:
+  case tok::caret:
+  case tok::exclaim:
+  case tok::kw_chan:
+  case tok::kw_func:
+  case tok::kw_interface:
+  case tok::kw_map:
+  case tok::kw_struct:
+  case tok::l_paren:
+  case tok::l_square:
+  case tok::lessminus:
+  case tok::minus:
+  case tok::numeric_literal:
+  case tok::plus:
+  case tok::rune_literal:
+  case tok::star:
+  case tok::string_literal:
+    return ParseExpression().isInvalid();
   
-  // FIXME: all other expr starts: literals, '(', 'struct', etc
+  // FIXME: Check calls that won't come here (kw_package, kw_import, etc)?
+  //        Silently ignore them?
   default: llvm_unreachable("unexpected token kind");
   }
   SkipUntil(tok::semi, /*StopAtSemi=*/false, /*DontConsume=*/true);

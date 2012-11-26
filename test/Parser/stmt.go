@@ -16,7 +16,7 @@ func f() {
 
   // SimpleStmts, ExpressionStmt:
   a * b + c
-  // FIXME: 4 + 5 * 4
+  4 + 5 * 4
 
   // SimpleStmts, SendStmt:
   a <- 5

@@ -184,7 +184,36 @@ Parser::ParsePrimaryExpr() {
 
 Action::ExprResult
 Parser::ParsePrimaryExprTail(IdentifierInfo *II) {
-  // FIXME: '.', possibly more stuff
+  // FIXME: Requiring this classification from the Action interface in the limit
+  // means that MinimalAction needs to do module loading, which is probably
+  // undesirable for most non-Sema clients.  Consdier doing something like
+  // ParseTypeOrExpr() instead which parses the superset of both, and hand the
+  // result on to Action.
+  Action::IdentifierInfoType IIT =
+      Actions.classifyIdentifier(*II, getCurScope());
+  switch (IIT) {
+  case Action::IIT_Package:
+    Diag(Tok, diag::unimplemented_package_name);
+    // consume '.', fall through to non-type path
+    ExpectAndConsume(tok::period, diag::expected_period);
+    ExpectAndConsume(tok::identifier, diag::expected_ident);
+    break;
+  case Action::IIT_Type:
+    // If the next token is a '.', this is a MethodExpr. While semantically not
+    // completey correct, ParsePrimaryExprSuffix() will handle this fine.
+    break;
+  case Action::IIT_BuiltinFunc:
+    break;
+  case Action::IIT_Const:
+  case Action::IIT_Func:
+  case Action::IIT_Unknown:
+  case Action::IIT_Var:
+    // Only "Var" and "Const" make much sense here, "Func" and "Unknown" are
+    // even cause for a diagnostic. But that's a Sema-level thing really.
+    // If the next token is a '.', this will be handled by the regular
+    // suffix-parsing in ParsePrimaryExprSuffix().
+    break;
+  }
   return false;
 }
 
