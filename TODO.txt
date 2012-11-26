@@ -37,8 +37,10 @@ Handle https://groups.google.com/forum/#!topic/golang-nuts/Bv4GDkPRMxA well
 introduce a consistent naming scheme for functions that assert the current
 token type vs those that don't
 
-share {} parsing code for interface{}, struct{}, and possibly blocks, and
-selectstmts
+share {} parsing code for interface{}, struct{}, and possibly blocks,
+selectstmts, and switchstmts
+
+maybe share the optional SimpleStmt parsing code in ifstmt, forstmt, switchstmt
 
 look at BalancedDelimTracker and friends, so that eg |type t ['4'.(int]int|
 gets only one diag

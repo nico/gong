@@ -84,7 +84,18 @@ func f() {
   // FIXME: if a := 4; {} should diag
 
   // SwitchStmt
-  //FIXME
+  switch {}
+  switch foo {}
+  switch i := 0; foo {}
+  switch { default: a = 4 }
+  switch {
+  case a+b, c+d:
+    //a += 4  // FIXME: should work
+    if a < b {}
+    fallthrough
+  default: continue
+  }
+  //FIXME: TypeSwitchStmts
 
   // SelectStmt
   select {}

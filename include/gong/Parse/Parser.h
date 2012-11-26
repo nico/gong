@@ -259,6 +259,8 @@ public:
   bool ParseFallthroughStmt();
   bool ParseIfStmt();
   bool ParseSwitchStmt();
+  bool ParseExprCaseClause();
+  bool ParseExprSwitchCase();
   bool ParseSelectStmt();
   bool ParseCommClause();
   bool ParseCommCase();

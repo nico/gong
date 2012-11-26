@@ -26,8 +26,6 @@ using namespace gong;
 ///   GoStmt | ReturnStmt | BreakStmt | ContinueStmt | GotoStmt |
 ///   FallthroughStmt | Block | IfStmt | SwitchStmt | SelectStmt | ForStmt |
 ///   DeferStmt .
-/// SimpleStmt = EmptyStmt | ExpressionStmt | SendStmt | IncDecStmt |
-///              Assignment | ShortVarDecl .
 bool Parser::ParseStatement() {
   switch (Tok.getKind()) {
   case tok::kw_const:
@@ -64,6 +62,8 @@ bool Parser::ParseStatement() {
   return true;
 }
 
+/// SimpleStmt = EmptyStmt | ExpressionStmt | SendStmt | IncDecStmt |
+///              Assignment | ShortVarDecl .
 bool Parser::ParseSimpleStmt(bool *StmtWasExpression) {
   if (Tok.is(tok::semi))
     return ParseEmptyStmt();
@@ -301,8 +301,6 @@ bool Parser::ParseIfStmt() {
 /// 
 /// ExprSwitchStmt = "switch" [ SimpleStmt ";" ] [ Expression ]
 ///                  "{" { ExprCaseClause } "}" .
-/// ExprCaseClause = ExprSwitchCase ":" { Statement ";" } .
-/// ExprSwitchCase = "case" ExpressionList | "default" .
 /// 
 /// TypeSwitchStmt  = "switch" [ SimpleStmt ";" ] TypeSwitchGuard
 ///                   "{" { TypeCaseClause } "}" .
@@ -311,9 +309,103 @@ bool Parser::ParseIfStmt() {
 /// TypeSwitchCase  = "case" TypeList | "default" .
 /// TypeList        = Type { "," Type } .
 bool Parser::ParseSwitchStmt() {
-  // FIXME
-  SkipUntil(tok::semi, /*StopAtSemi=*/false, /*DontConsume=*/true);
-  return true;
+  // FIXME: TypeSwitchStmts. Detecting those, especially with the optinal
+  // SimpleStmt is annoying. Either this requires arbitrary lookahead to look
+  // for '.' '(' 'type' (until an unbalanced '{' is hit), or ParseSimpleStmt
+  // needs to learn to parse TypeSwitchGuards (and needs to retroactively verify
+  // that the lhs expressionlist was just a single identifier etc)
+  // For now, just assume we always have an expression switch statement.
+
+  assert(Tok.is(tok::kw_switch) && "expected 'switch'");
+  ConsumeToken();
+
+  // For ExprSwitchStmts, everything between 'switch and '{' is optional.
+  // (This is not true for TypeSwitchStmts.)
+  if (Tok.isNot(tok::l_brace)) {
+    // FIXME: This is fairly similar to the code in ParseIfStmt. If that's still
+    // the case once TypeSwitchStmts work, refactor.
+    SourceLocation StmtLoc = Tok.getLocation();
+    bool StmtWasExpression = false;
+    if (ParseSimpleStmt(&StmtWasExpression)) {
+      SkipUntil(tok::l_brace, /*StopAtSemi=*/false, /*DontConsume=*/true);
+    }
+
+    if (Tok.is(tok::semi)) {
+      ConsumeToken();
+      ParseExpression();
+    } else if (!StmtWasExpression) {
+      Diag(StmtLoc, diag::expected_expr);
+    }
+  }
+
+  if (Tok.isNot(tok::l_brace)) {
+    Diag(Tok, diag::expected_l_brace);
+    return true;
+  }
+  ConsumeBrace();
+
+  // FIXME: This is fairly similar to the {} code in ParseSelectStmt().
+  while (Tok.isNot(tok::r_brace) && Tok.isNot(tok::eof)) {
+    if (Tok.isNot(tok::kw_case) && Tok.isNot(tok::kw_default)) {
+      Diag(Tok, diag::expected_case_or_default);
+      SkipUntil(tok::r_brace, /*StopAtSemi=*/false);
+      return true;
+    }
+    if (ParseExprCaseClause()) {
+      SkipUntil(tok::r_brace, /*StopAtSemi=*/false);
+      return true;
+    }
+  }
+  // FIXME: diag on missing r_brace
+  if (Tok.is(tok::r_brace))
+    ConsumeBrace();
+
+  return false;
+}
+
+/// ExprCaseClause = ExprSwitchCase ":" { Statement ";" } .
+bool Parser::ParseExprCaseClause() {
+  ParseExprSwitchCase();
+
+  // FIXME: This is _really_ similar to ParseCommClause.
+  if (Tok.isNot(tok::colon)) {
+    // FIXME: just add fixit (at least for default and simple CommCases).
+    Diag(Tok, diag::expected_colon);
+  } else {
+    ConsumeToken();
+  }
+
+  // ExprCaseClauses are always in ExprSwitchStmts, where they can only be
+  // followed by other ExprCaseClauses, or the end of the ExprSwitchStmt.
+  while (Tok.isNot(tok::kw_case) && Tok.isNot(tok::kw_default) &&
+         Tok.isNot(tok::r_brace) && Tok.isNot(tok::eof)) {
+    ParseStatement();
+
+    // A semicolon may be omitted before a closing ')' or '}'.
+    if (Tok.is(tok::r_brace))
+      break;
+
+    if (Tok.isNot(tok::semi)) {
+      Diag(Tok, diag::expected_semi);
+      SkipUntil(tok::semi, tok::r_brace,
+                /*ConsumeSemi=*/false, /*DontConsume=*/true);
+    } else {
+      ConsumeToken();
+    }
+  }
+  return false;
+}
+
+/// ExprSwitchCase = "case" ExpressionList | "default" .
+bool Parser::ParseExprSwitchCase() {
+  assert((Tok.is(tok::kw_case) || Tok.is(tok::kw_default)) &&
+         "expected 'case' or 'default'");
+  if (Tok.is(tok::kw_default)) {
+    ConsumeToken();
+    return false;
+  }
+  ConsumeToken();
+  return ParseExpressionList().isInvalid();
 }
 
 /// SelectStmt = "select" "{" { CommClause } "}" .
@@ -342,6 +434,7 @@ bool Parser::ParseSelectStmt() {
       return true;
     }
   }
+  // FIXME: diag on missing r_brace
   if (Tok.is(tok::r_brace))
     ConsumeBrace();
 
