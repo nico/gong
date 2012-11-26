@@ -37,4 +37,4 @@ func (foo) a() int
 
 func a {}  // expected-diag {{expected '('}}
 
-// FIXME: `func a()` without {} is valid, test once signature parsing is done
+func a()
