@@ -107,6 +107,10 @@ func f() {
   //FIXME
   //int(4.5)
   // FIXME: should diag with a different number or arguments
+  // FIXME: All conversions starting with a type literal prefix, also the
+  //        chan and interface ones.
+  // FIXME: *type(expr) vs (*type)(expr)
+  // FIXME: <-chan int(expr) vs (<-chan int)(expr)
 
   // PrimaryExpr, BuiltinCall
   //FIXME
