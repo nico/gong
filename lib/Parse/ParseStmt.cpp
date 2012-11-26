@@ -112,7 +112,7 @@ bool Parser::ParseSimpleStmtTail(IdentifierInfo *II, bool *StmtWasExpression) {
     ParseIdentifierListTail(II);
     if (Tok.is(tok::colonequal))
       return ParseShortVarDeclTail();
-    else if (IsAssignmentOp(Tok))
+    if (IsAssignmentOp(Tok))
       return ParseAssignmentTail();
     else {
       Diag(Tok, diag::expected_colonequal_or_equal);
@@ -143,7 +143,7 @@ bool Parser::ParseSimpleStmtTail(IdentifierInfo *II, bool *StmtWasExpression) {
     return ParseAssignmentTail();
   }
 
-  if (Tok.is(tok::equal))
+  if (IsAssignmentOp(Tok))
     return ParseAssignmentTail();
 
   if (Tok.is(tok::plusplus) || Tok.is(tok::minusminus))

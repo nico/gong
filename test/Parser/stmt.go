@@ -30,6 +30,7 @@ func f() {
   a = 4
   a[i] = 4
   a[i], a[j] = 4, 5
+  a += 4
 
   // SimpleStmts, ShortVarDecl:
   a, b, c := 1, 2, 3
@@ -90,7 +91,7 @@ func f() {
   switch { default: a = 4 }
   switch {
   case a+b, c+d:
-    //a += 4  // FIXME: should work
+    a += 4
     if a < b {}
     fallthrough
   default: continue
