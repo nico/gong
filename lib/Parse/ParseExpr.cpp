@@ -146,7 +146,6 @@ Parser::ParseUnaryExpr() {
 ///   PrimaryExpr Call .
 /// Operand    = Literal | OperandName | MethodExpr | "(" Expression ")" .
 /// Literal    = BasicLit | CompositeLit | FunctionLit .
-/// BasicLit   = int_lit | float_lit | imaginary_lit | char_lit | string_lit .
 /// OperandName = identifier | QualifiedIdent.
 Action::ExprResult
 Parser::ParsePrimaryExpr() {
@@ -206,9 +205,10 @@ Parser::ParsePrimaryExprTail(IdentifierInfo *II) {
     // If the next token is a '.', this is a MethodExpr. While semantically not
     // completey correct, ParsePrimaryExprSuffix() will handle this fine.
 
-    if (Tok.is(tok::l_paren)) {
-      // FIXME ParseConversion
-    }
+    // If the next token is a '(', then this is a conversion. While semantically
+    // not correct, ParsePrimaryExprSuffix()'s call parsing will parse this.
+    // (It'll accept too much though: Conversions get exactly one expr, but
+    // ParsePrimaryExprSuffix() will accept 0-n.)
 
     break;
   case Action::IIT_BuiltinFunc:
@@ -252,8 +252,6 @@ Parser::ParseConversionTail() {
   return false;
 }
 
-/// Call           = "(" [ ArgumentList [ "," ] ] ")" .
-/// ArgumentList   = ExpressionList [ "..." ] .
 Action::ExprResult
 Parser::ParsePrimaryExprSuffix(ExprResult &LHS) {
   while (1) {
@@ -269,8 +267,7 @@ Parser::ParsePrimaryExprSuffix(ExprResult &LHS) {
       break;
     }
     case tok::l_paren: {  // Call
-      assert(false && "FIXME");
-      ConsumeParen();
+      LHS = ParseCallSuffix(LHS);
       break;
     }
     }
@@ -343,6 +340,29 @@ Parser::ParseIndexOrSliceSuffix(ExprResult &LHS) {
   return LHS;
 }
 
+/// Call           = "(" [ ArgumentList [ "," ] ] ")" .
+/// ArgumentList   = ExpressionList [ "..." ] .
+Action::ExprResult
+Parser::ParseCallSuffix(ExprResult &LHS) {
+  assert(Tok.is(tok::l_paren) && "expected '('");
+  ConsumeParen();
+  if (Tok.isNot(tok::r_paren)) {
+    ParseExpressionList();
+    if (Tok.is(tok::ellipsis))
+      ConsumeToken();
+    if (Tok.is(tok::comma))
+      ConsumeToken();
+  }
+  if (Tok.isNot(tok::r_paren)) {
+    Diag(Tok, diag::expected_r_paren);
+    SkipUntil(tok::r_paren);
+    return ExprError();
+  }
+  ConsumeParen();
+  return LHS;
+}
+
+/// BasicLit   = int_lit | float_lit | imaginary_lit | char_lit | string_lit .
 Action::ExprResult
 Parser::ParseBasicLit() {
   assert((Tok.is(tok::numeric_literal) || Tok.is(tok::rune_literal) ||

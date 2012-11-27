@@ -105,7 +105,7 @@ func f() {
 
   // PrimaryExpr, Conversion
   //FIXME: Conversions for named types:
-  //int(4.5)
+  int(4.5)
   // FIXME: *type(expr) vs (*type)(expr)
   // FIXME: <-chan int(expr) vs (<-chan int)(expr)
   interface{}(4)
@@ -140,6 +140,14 @@ func f() {
   foo.(int)
 
   // PrimaryExpr Call
-  //FIXME
-  //foo(4 + 5, 6 - 7)
+  foo()
+  foo(,)  // FIXME: should-diag
+  foo(4,)
+  foo(...)  // FIXME: should-diag
+  foo(4...)
+  foo(4...,)
+  foo(4,...)  // FIXME: should-diag
+  //foo(...,4)  // FIXME: should-diag
+  foo(4 + 5)
+  foo(4 + 5, 6 - 7)
 }
