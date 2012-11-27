@@ -59,9 +59,6 @@ function parameters
 each if, for, and switch is in its own implicit block
 each clause of a switch or select acts as an implicit block
 
-Big fixme (other than types): Factor out type parsing, so that literal values
-and literal types can call either and then decide what's up based on the next
-token.
 
 # expressions:
 '(': (expr) (type) (*typename)
@@ -70,6 +67,8 @@ conversions, builtincalls
 calls
 
 composite lits: values
+
+conversions for named types
 
 primaryexpr suffix: call suffix
 

@@ -104,11 +104,8 @@ func f() {
   //(4 + 4)
 
   // PrimaryExpr, Conversion
-  //FIXME
+  //FIXME: Conversions for named types:
   //int(4.5)
-  // FIXME: should diag with a different number or arguments
-  // FIXME: All conversions starting with a type literal prefix, also the
-  //        chan and interface ones.
   // FIXME: *type(expr) vs (*type)(expr)
   // FIXME: <-chan int(expr) vs (<-chan int)(expr)
   interface{}(4)
