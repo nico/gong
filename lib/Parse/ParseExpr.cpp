@@ -243,8 +243,12 @@ Parser::ParseConversionTail() {
   assert(Tok.is(tok::l_paren) && "expected '('");
   ConsumeParen();
   ParseExpression();
-  if (ExpectAndConsume(tok::r_paren, diag::expected_r_paren))
+  if (Tok.isNot(tok::r_paren)) {
+    Diag(Tok, diag::expected_r_paren);
+    SkipUntil(tok::r_paren);
     return ExprError();
+  }
+  ConsumeParen();
   return false;
 }
 
