@@ -476,7 +476,39 @@ Parser::ParseElementList() {
 /// Value         = Expression | LiteralValue .
 Action::ExprResult
 Parser::ParseElement() {
-  assert(false && "FIXME: Element");
+  IdentifierInfo *FieldName = NULL;
+  if (Tok.is(tok::identifier)) {
+    IdentifierInfo *II = Tok.getIdentifierInfo();
+    ConsumeToken();
+    if (Tok.isNot(tok::colon)) {
+      // parse expression tail
+      // FIXME: refactor with code in ParseSimpleStmtTail
+      ExprResult LHS = ParsePrimaryExprTail(II);
+      LHS = ParsePrimaryExprSuffix(LHS);
+      LHS = ParseRHSOfBinaryExpression(LHS, prec::Lowest);
+    } else {
+      FieldName = II;
+    }
+  } else if (Tok.isNot(tok::l_brace)) {
+    // FIXME: check that this is a valid expression start.
+    ParseExpression();
+  }
+
+  if (Tok.is(tok::colon)) {
+    // Key was present.
+    ConsumeToken();
+    // Need to parse Expression or LiteralValue for Value.
+    if (Tok.is(tok::l_brace))
+      ParseLiteralValue();
+    else
+      ParseExpression();
+  } else {
+    // No key. Need to use already-parsed Expression for Value, or parse
+    // a LiteralValue.
+    if (Tok.is(tok::l_brace))
+      ParseLiteralValue();
+  }
+  return false;
 }
 
 /// FunctionLit = FunctionType Body .

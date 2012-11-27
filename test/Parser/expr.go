@@ -43,6 +43,7 @@ type t ['4'.(int]int;  //expected-diag {{expected ')'}} expected-diag{{expected 
 
 // The tests below depend on ExpressionStmt parsing.
 type mytype struct{ foo int }
+type mynestedtype struct{ foo struct{bar int} }
 func (mytype) mymethod() { }
 func f() {
   // unary ops
@@ -80,12 +81,16 @@ func f() {
   // PrimaryExpr, Operand, Literal, CompositeLit
   struct{a int}{}
   [4]int{}
-  //FIXME:
-  //[...]int{1, 2, 3}
-  //[]int{1, 2, 3}
-  //map[string]int{"foo": 2, "bar": 3}
+  [...]int{1, 2, 3}
+  []int{1, 2, 3, 4+5*6, 4+5*6: 8}
+  map[string]int{"foo": 2, "bar": 3}
   mytype{}
-  //mytype{foo: 4}; mytype{4}
+  mytype{foo: 4}
+  mytype{4}
+  mynestedtype{ { 4 } }
+  mynestedtype{foo: { 4 } }
+  mynestedtype{ {bar: 4 } }
+  mynestedtype{foo: {bar: 4 } }
 
   // PrimaryExpr, Operand, Literal, FunctionLit
   //FIXME
