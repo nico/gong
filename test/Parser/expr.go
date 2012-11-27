@@ -93,8 +93,7 @@ func f() {
   mynestedtype{foo: {bar: 4 } }
 
   // PrimaryExpr, Operand, Literal, FunctionLit
-  //FIXME
-  //func(int) int{}
+  func(int) int{}
 
   // PrimaryExpr, Operand, OperandName
   foo
