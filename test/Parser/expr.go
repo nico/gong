@@ -109,10 +109,7 @@ func f() {
   //(4 + 4)
 
   // PrimaryExpr, Conversion
-  //FIXME: Conversions for named types:
   int(4.5)
-  // FIXME: *type(expr) vs (*type)(expr)
-  // FIXME: <-chan int(expr) vs (<-chan int)(expr)
   interface{}(4)
   chan int(4)
   chan int()  // FIXME: should-diag {{expected expression}}
@@ -123,6 +120,8 @@ func f() {
   [...]int(4)  // expected-diag {{expected '{'}}
   struct{foo int}(4)
   map[string]int(4)
+  // FIXME: *type(expr) vs (*type)(expr)
+  // FIXME: <-chan int(expr) vs (<-chan int)(expr)
 
   // PrimaryExpr, BuiltinCall
   //FIXME
