@@ -111,6 +111,9 @@ func f() {
   //        chan and interface ones.
   // FIXME: *type(expr) vs (*type)(expr)
   // FIXME: <-chan int(expr) vs (<-chan int)(expr)
+  interface{}(4)
+  chan int(4)
+  chan int()  // FIXME: should-diag {{expected expression}}
 
   // PrimaryExpr, BuiltinCall
   //FIXME

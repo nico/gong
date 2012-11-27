@@ -448,8 +448,6 @@ bool Parser::ParseReceiver() {
 }
 
 /// Type      = TypeName | TypeLit | "(" Type ")" .
-/// TypeLit   = ArrayType | StructType | PointerType | FunctionType |
-///             InterfaceType | SliceType | MapType | ChannelType .
 bool Parser::ParseType() {
   assert(Tok.isNot(tok::l_paren) && "FIXME: not yet implemented");
 
@@ -489,6 +487,8 @@ bool Parser::ParseTypeNameTail(IdentifierInfo *Head) {
   return false;
 }
 
+/// TypeLit   = ArrayType | StructType | PointerType | FunctionType |
+///             InterfaceType | SliceType | MapType | ChannelType .
 bool Parser::ParseTypeLit() {
   switch (Tok.getKind()) {
   case tok::l_square:     return ParseArrayOrSliceType();

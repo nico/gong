@@ -232,6 +232,7 @@ public:
   ExprResult ParseUnaryExpr();
   ExprResult ParsePrimaryExpr();
   ExprResult ParsePrimaryExprTail(IdentifierInfo *II);
+  ExprResult ParseConversion();
   ExprResult ParsePrimaryExprSuffix(ExprResult &LHS);
   ExprResult ParseSelectorOrTypeAssertionSuffix(ExprResult &LHS);
   ExprResult ParseIndexOrSliceSuffix(ExprResult &LHS);

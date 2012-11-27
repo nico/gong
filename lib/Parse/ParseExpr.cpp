@@ -175,6 +175,10 @@ Parser::ParsePrimaryExpr() {
     Res = ParsePrimaryExprTail(II);
     break;
   }
+  case tok::kw_chan:
+  case tok::kw_interface:
+    Res = ParseConversion();
+    break;
   case tok::l_paren:
     assert(false && "FIXME: (expr) (type) (*typename)");
     return ExprError();
@@ -201,6 +205,11 @@ Parser::ParsePrimaryExprTail(IdentifierInfo *II) {
   case Action::IIT_Type:
     // If the next token is a '.', this is a MethodExpr. While semantically not
     // completey correct, ParsePrimaryExprSuffix() will handle this fine.
+
+    if (Tok.is(tok::l_paren)) {
+      // FIXME ParseConversion
+    }
+
     break;
   case Action::IIT_BuiltinFunc:
     break;
@@ -214,6 +223,18 @@ Parser::ParsePrimaryExprTail(IdentifierInfo *II) {
     // suffix-parsing in ParsePrimaryExprSuffix().
     break;
   }
+  return false;
+}
+
+/// Conversion = Type "(" Expression ")" .
+Action::ExprResult
+Parser::ParseConversion() {
+  ParseType();
+  if (ExpectAndConsume(tok::l_paren, diag::expected_l_paren))
+    return ExprError();
+  ParseExpression();
+  if (ExpectAndConsume(tok::r_paren, diag::expected_r_paren))
+    return ExprError();
   return false;
 }
 
@@ -404,8 +425,6 @@ Parser::ParseFunctionLit() {
   return false;
 }
 
-
-/// Conversion = Type "(" Expression ")" .
 
 /// BuiltinCall = identifier "(" [ BuiltinArgs [ "," ] ] ")" .
 /// BuiltinArgs = Type [ "," ExpressionList ] | ExpressionList .
