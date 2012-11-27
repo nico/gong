@@ -438,26 +438,45 @@ Parser::ParseCompositeLitOrConversion() {
 }
 
 /// LiteralValue  = "{" [ ElementList [ "," ] ] "}" .
+Action::ExprResult
+Parser::ParseLiteralValue() {
+  assert(Tok.is(tok::l_brace) && "expected '{'");
+  ConsumeBrace();
+
+  if (Tok.isNot(tok::r_brace)) {
+    ParseElementList();
+    if (Tok.is(tok::comma))
+      ConsumeToken();
+  }
+
+  if (Tok.isNot(tok::r_brace)) {
+    Diag(Tok, diag::expected_r_brace);
+    SkipUntil(tok::r_brace);
+    return true;
+  }
+  ConsumeBrace();
+  return false;
+}
+
 /// ElementList   = Element { "," Element } .
+Action::ExprResult
+Parser::ParseElementList() {
+  ParseElement();
+  while (Tok.is(tok::comma)) {
+    ConsumeToken();
+    ParseElement();
+  }
+  return true;
+}
+
 /// Element       = [ Key ":" ] Value .
 /// Key           = FieldName | ElementIndex .
 /// FieldName     = identifier .
 /// ElementIndex  = Expression .
 /// Value         = Expression | LiteralValue .
 Action::ExprResult
-Parser::ParseLiteralValue() {
-  assert(Tok.is(tok::l_brace) && "expected '{'");
-  ConsumeBrace();
-
-  // FIXME: This is very similar to ParseInterfaceType
-  while (Tok.isNot(tok::r_brace) && Tok.isNot(tok::eof)) {
-    assert(false && "FIXME");
-    ConsumeToken();
-  }
-  if (Tok.is(tok::r_brace))
-    ConsumeBrace();
-
-  return false;
+Parser::ParseElement() {
+  assert(false && "FIXME: Element");
 }
 
 /// FunctionLit = FunctionType Body .

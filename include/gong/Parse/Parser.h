@@ -241,6 +241,8 @@ public:
   ExprResult ParseBasicLit();
   ExprResult ParseCompositeLitOrConversion();
   ExprResult ParseLiteralValue();
+  ExprResult ParseElementList();
+  ExprResult ParseElement();
   ExprResult ParseFunctionLitOrConversion();
   ExprResult ParseExpressionList();
   ExprResult ParseExpressionListTail(ExprResult &LHS);
