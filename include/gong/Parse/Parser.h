@@ -226,6 +226,7 @@ public:
   // Expressions
   //FIXME: These should likely be OwningExprResult
   ExprResult ParseExpression();
+  ExprResult ParseExpressionTail(IdentifierInfo *II);
   ExprResult ParseRHSOfBinaryExpression(ExprResult LHS,
                                         prec::Level MinPrec);
   bool IsUnaryOp();

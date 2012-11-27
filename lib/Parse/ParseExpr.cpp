@@ -59,6 +59,15 @@ Parser::ParseExpression() {
   return ParseRHSOfBinaryExpression(LHS, prec::Lowest);
 }
 
+/// This is called for expressions that start with an identifier, after the
+/// initial identifier has been read.
+Parser::ExprResult
+Parser::ParseExpressionTail(IdentifierInfo *II) {
+  ExprResult LHS = ParsePrimaryExprTail(II);
+  LHS = ParsePrimaryExprSuffix(LHS);
+  return ParseRHSOfBinaryExpression(LHS, prec::Lowest);
+}
+
 Parser::ExprResult
 Parser::ParseRHSOfBinaryExpression(ExprResult LHS, prec::Level MinPrec) {
   prec::Level NextTokPrec = getBinOpPrecedence(Tok.getKind());
@@ -481,11 +490,7 @@ Parser::ParseElement() {
     IdentifierInfo *II = Tok.getIdentifierInfo();
     ConsumeToken();
     if (Tok.isNot(tok::colon)) {
-      // parse expression tail
-      // FIXME: refactor with code in ParseSimpleStmtTail
-      ExprResult LHS = ParsePrimaryExprTail(II);
-      LHS = ParsePrimaryExprSuffix(LHS);
-      LHS = ParseRHSOfBinaryExpression(LHS, prec::Lowest);
+      ParseExpressionTail(II);
     } else {
       FieldName = II;
     }

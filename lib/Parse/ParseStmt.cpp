@@ -147,12 +147,9 @@ bool Parser::ParseSimpleStmtTail(IdentifierInfo *II, bool *StmtWasExpression) {
   if (Tok.is(tok::colonequal))
     return ParseShortVarDeclTail();
 
-  // FIXME: Or it could be a type!
-  // Could be: ExpressionStmt, IncDecStmt, Assignment
-  // FIXME: all the other expr prefixes
-  ExprResult LHS = ParsePrimaryExprTail(II);
-  LHS = ParsePrimaryExprSuffix(LHS);
-  LHS = ParseRHSOfBinaryExpression(LHS, prec::Lowest);
+  // Could be: ExpressionStmt, SendStmt IncDecStmt, Assignment. They all start
+  // with an Expression.
+  ExprResult LHS = ParseExpressionTail(II);
 
   if (Tok.is(tok::comma)) {
     // Must be an expression list, and the simplestmt must be an assignment.
