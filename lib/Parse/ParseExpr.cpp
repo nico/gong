@@ -162,11 +162,9 @@ Parser::ParsePrimaryExpr() {
   case tok::kw_struct:
   case tok::l_square:
   case tok::kw_map:
-    // FIXME Or could be part of a literaltype
-    Res = ParseCompositeLit();  // FIXME: TypeName lits
+    Res = ParseCompositeLitOrConversion();  // FIXME: TypeName lits
     break;
   case tok::kw_func:
-    // FIXME Or could just be a function type
     Res = ParseFunctionLitOrConversion();
     break;
   case tok::identifier: {
@@ -360,7 +358,7 @@ Parser::ParseBasicLit() {
 /// ElementIndex  = Expression .
 /// Value         = Expression | LiteralValue .
 Action::ExprResult
-Parser::ParseCompositeLit() {
+Parser::ParseCompositeLitOrConversion() {
   // FIXME: TypeName lits (Tok.is(tok::identifier)
   assert((Tok.is(tok::kw_struct) || Tok.is(tok::l_square) ||
         Tok.is(tok::kw_map)) && "Unexpected composite literal start");
@@ -371,6 +369,8 @@ Parser::ParseCompositeLit() {
     RequiredStrings,
     OptionalStrings
   } KeyKind;
+
+  bool WasEllipsisArray = false;
 
   switch (Tok.getKind()) {
   default: llvm_unreachable("unexpected token kind");
@@ -383,6 +383,7 @@ Parser::ParseCompositeLit() {
     KeyKind = Ints;
     ConsumeBracket();
     if (Tok.is(tok::ellipsis)) {
+      WasEllipsisArray = true;
       ConsumeToken();
       if (Tok.isNot(tok::r_square))
         Diag(Tok, diag::expected_r_square);
@@ -400,6 +401,9 @@ Parser::ParseCompositeLit() {
       return ExprError();
     break;
   }
+
+  if (!WasEllipsisArray && Tok.is(tok::l_paren))
+    return ParseConversionTail();
 
   // Value
 

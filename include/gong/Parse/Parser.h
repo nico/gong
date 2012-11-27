@@ -238,7 +238,7 @@ public:
   ExprResult ParseSelectorOrTypeAssertionSuffix(ExprResult &LHS);
   ExprResult ParseIndexOrSliceSuffix(ExprResult &LHS);
   ExprResult ParseBasicLit();
-  ExprResult ParseCompositeLit();
+  ExprResult ParseCompositeLitOrConversion();
   ExprResult ParseFunctionLitOrConversion();
   ExprResult ParseExpressionList();
   ExprResult ParseExpressionListTail(ExprResult &LHS);

@@ -115,6 +115,11 @@ func f() {
   chan int(4)
   chan int()  // FIXME: should-diag {{expected expression}}
   func(int)int(4)
+  []int(4)
+  [4]int(4)
+  [...]int(4)  // expected-diag {{expected '{'}}
+  struct{foo int}(4)
+  map[string]int(4)
 
   // PrimaryExpr, BuiltinCall
   //FIXME
