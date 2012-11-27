@@ -114,6 +114,7 @@ func f() {
   interface{}(4)
   chan int(4)
   chan int()  // FIXME: should-diag {{expected expression}}
+  func(int)int(4)
 
   // PrimaryExpr, BuiltinCall
   //FIXME

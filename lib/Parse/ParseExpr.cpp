@@ -167,7 +167,7 @@ Parser::ParsePrimaryExpr() {
     break;
   case tok::kw_func:
     // FIXME Or could just be a function type
-    Res = ParseFunctionLit();
+    Res = ParseFunctionLitOrConversion();
     break;
   case tok::identifier: {
     IdentifierInfo *II = Tok.getIdentifierInfo();
@@ -186,6 +186,8 @@ Parser::ParsePrimaryExpr() {
   return ParsePrimaryExprSuffix(Res);
 }
 
+/// This is called if the first token in a PrimaryExpression was an identifier,
+/// after that identifier has been read.
 Action::ExprResult
 Parser::ParsePrimaryExprTail(IdentifierInfo *II) {
   // FIXME: Requiring this classification from the Action interface in the limit
@@ -230,8 +232,18 @@ Parser::ParsePrimaryExprTail(IdentifierInfo *II) {
 Action::ExprResult
 Parser::ParseConversion() {
   ParseType();
-  if (ExpectAndConsume(tok::l_paren, diag::expected_l_paren))
+  if (Tok.isNot(tok::l_paren)) {
+    Diag(Tok, diag::expected_l_paren);
     return ExprError();
+  }
+  return ParseConversionTail();
+}
+
+/// This is called after the Type in a Conversion has been read.
+Action::ExprResult
+Parser::ParseConversionTail() {
+  assert(Tok.is(tok::l_paren) && "expected '('");
+  ConsumeParen();
   ParseExpression();
   if (ExpectAndConsume(tok::r_paren, diag::expected_r_paren))
     return ExprError();
@@ -412,17 +424,20 @@ Parser::ParseCompositeLit() {
 
 /// FunctionLit = FunctionType Body .
 Action::ExprResult
-Parser::ParseFunctionLit() {
+Parser::ParseFunctionLitOrConversion() {
   assert(Tok.is(tok::kw_func) && "expected 'func'");
   if (ParseFunctionType())
     return ExprError();
-  if (Tok.isNot(tok::l_brace)) {
-    Diag(Tok, diag::expected_l_brace);
+  if (Tok.is(tok::l_brace)) {
+    // FunctionLit
+    return ParseBody();
+  } else if (Tok.is(tok::l_paren)) {
+    // Conversion
+    return ParseConversionTail();
+  } else {
+    Diag(Tok, diag::expected_l_brace_or_l_paren);
     return ExprError();
   }
-  if (!ParseBody())
-    return ExprError();
-  return false;
 }
 
 
@@ -439,6 +454,7 @@ Parser::ParseExpressionList() {
   return ParseExpressionListTail(LHS);
 }
 
+/// This is called after the initial Expression in ExpressionList has been read.
 Action::ExprResult
 Parser::ParseExpressionListTail(ExprResult &LHS) {
   while (Tok.is(tok::comma)) {

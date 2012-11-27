@@ -233,12 +233,13 @@ public:
   ExprResult ParsePrimaryExpr();
   ExprResult ParsePrimaryExprTail(IdentifierInfo *II);
   ExprResult ParseConversion();
+  ExprResult ParseConversionTail();
   ExprResult ParsePrimaryExprSuffix(ExprResult &LHS);
   ExprResult ParseSelectorOrTypeAssertionSuffix(ExprResult &LHS);
   ExprResult ParseIndexOrSliceSuffix(ExprResult &LHS);
   ExprResult ParseBasicLit();
   ExprResult ParseCompositeLit();
-  ExprResult ParseFunctionLit();
+  ExprResult ParseFunctionLitOrConversion();
   ExprResult ParseExpressionList();
   ExprResult ParseExpressionListTail(ExprResult &LHS);
 
