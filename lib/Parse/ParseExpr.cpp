@@ -189,7 +189,7 @@ Action::ExprResult
 Parser::ParsePrimaryExprTail(IdentifierInfo *II) {
   // FIXME: Requiring this classification from the Action interface in the limit
   // means that MinimalAction needs to do module loading, which is probably
-  // undesirable for most non-Sema clients.  Consdier doing something like
+  // undesirable for most non-Sema clients.  Consider doing something like
   // ParseTypeOrExpr() instead which parses the superset of both, and hand the
   // result on to Action.
   Action::IdentifierInfoType IIT =
@@ -205,13 +205,19 @@ Parser::ParsePrimaryExprTail(IdentifierInfo *II) {
     // If the next token is a '.', this is a MethodExpr. While semantically not
     // completey correct, ParsePrimaryExprSuffix() will handle this fine.
 
-    // If the next token is a '(', then this is a conversion. While semantically
+    // If the next token is a '(', then this is a Conversion. While semantically
     // not correct, ParsePrimaryExprSuffix()'s call parsing will parse this.
     // (It'll accept too much though: Conversions get exactly one expr, but
     // ParsePrimaryExprSuffix() will accept 0-n.)
 
+    // If the next token is a '{', the this is a CompositeLit starting with a
+    // TypeName. (Expressions can't be followed by '{', so this could be done
+    // unconditionally for all IIs.)
+    if (Tok.is(tok::l_brace))
+      return ParseLiteralValue();
     break;
   case Action::IIT_BuiltinFunc:
+    assert(false && "FIXME: BuiltinCalls");
     break;
   case Action::IIT_Const:
   case Action::IIT_Func:
@@ -374,13 +380,6 @@ Parser::ParseBasicLit() {
 /// CompositeLit  = LiteralType LiteralValue .
 /// LiteralType   = StructType | ArrayType | "[" "..." "]" ElementType |
 ///                 SliceType | MapType | TypeName .
-/// LiteralValue  = "{" [ ElementList [ "," ] ] "}" .
-/// ElementList   = Element { "," Element } .
-/// Element       = [ Key ":" ] Value .
-/// Key           = FieldName | ElementIndex .
-/// FieldName     = identifier .
-/// ElementIndex  = Expression .
-/// Value         = Expression | LiteralValue .
 Action::ExprResult
 Parser::ParseCompositeLitOrConversion() {
   // FIXME: TypeName lits (Tok.is(tok::identifier)
@@ -428,18 +427,29 @@ Parser::ParseCompositeLitOrConversion() {
 
   if (!WasEllipsisArray && Tok.is(tok::l_paren))
     return ParseConversionTail();
+  else if(Tok.is(tok::l_brace))
+    return ParseLiteralValue();
 
-  // Value
+  // FIXME: ...after 'literal type'
+  Diag(Tok, WasEllipsisArray ? diag::expected_l_brace :
+                               diag::expected_l_brace_or_l_paren);
+  SkipUntil(tok::semi, /*StopAtSemi=*/false, /*DontConsume=*/true);
+  return true;
+}
 
-  // FIXME: This is very similar to ParseInterfaceType
-  if (Tok.isNot(tok::l_brace)) {
-    // FIXME: ...after 'literal type'
-    Diag(Tok, diag::expected_l_brace);
-    SkipUntil(tok::semi, /*StopAtSemi=*/false, /*DontConsume=*/true);
-    return true;
-  }
+/// LiteralValue  = "{" [ ElementList [ "," ] ] "}" .
+/// ElementList   = Element { "," Element } .
+/// Element       = [ Key ":" ] Value .
+/// Key           = FieldName | ElementIndex .
+/// FieldName     = identifier .
+/// ElementIndex  = Expression .
+/// Value         = Expression | LiteralValue .
+Action::ExprResult
+Parser::ParseLiteralValue() {
+  assert(Tok.is(tok::l_brace) && "expected '{'");
   ConsumeBrace();
 
+  // FIXME: This is very similar to ParseInterfaceType
   while (Tok.isNot(tok::r_brace) && Tok.isNot(tok::eof)) {
     assert(false && "FIXME");
     ConsumeToken();

@@ -54,6 +54,8 @@ range exprs for for
 switch
   - Needs "allow typeswitchguard / was tsg" functionality in ParseSimpleStmt
 
+ParseStatement() just crashes on unexpected tokens (say a ')' or a 'package')
+
 Add scopes:
 function parameters
 each if, for, and switch is in its own implicit block
@@ -63,14 +65,11 @@ each clause of a switch or select acts as an implicit block
 # expressions:
 '(': (expr) (type) (*typename)
 qualifiedidents
-conversions, builtincalls
-calls
+builtincalls
 
 composite lits: values
 
 conversions for named types
-
-primaryexpr suffix: call suffix
 
 identifier in PrimaryExpr looks pretty hairy
  Operand
@@ -97,12 +96,6 @@ identifier:
 '(':
  next '*': Either part of MethodExpr, or '(' Type ')' (pointer)
  else: Could be '(' Expr ')', '(' Type ')'
-
-...and can have a suffix starting with
-  '.' Expression (Selector)
-  '[' (Index / Slice)
-  '.' Type (TypeAssertion)
-  '(' (Call)
 
 '[', 'struct', '*', 'func', 'map': Either type or compositelit/functiontype
 'interface, 'chan': type

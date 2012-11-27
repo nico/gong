@@ -84,6 +84,7 @@ func f() {
   //[...]int{1, 2, 3}
   //[]int{1, 2, 3}
   //map[string]int{"foo": 2, "bar": 3}
+  mytype{}
   //mytype{foo: 4}; mytype{4}
 
   // PrimaryExpr, Operand, Literal, FunctionLit

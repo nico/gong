@@ -240,6 +240,7 @@ public:
   ExprResult ParseCallSuffix(ExprResult &LHS);
   ExprResult ParseBasicLit();
   ExprResult ParseCompositeLitOrConversion();
+  ExprResult ParseLiteralValue();
   ExprResult ParseFunctionLitOrConversion();
   ExprResult ParseExpressionList();
   ExprResult ParseExpressionListTail(ExprResult &LHS);
