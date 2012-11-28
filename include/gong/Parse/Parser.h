@@ -279,7 +279,7 @@ public:
                            SimpleStmtExts Ext = SSE_None);
 
   bool ParseShortVarDeclTail();
-  bool ParseAssignmentTail();
+  bool ParseAssignmentTail(tok::TokenKind Op);
   bool ParseIncDecStmtTail(ExprResult &LHS);
   bool ParseSendStmtTail(ExprResult &LHS);
   bool ParseLabeledStmtTail(IdentifierInfo *II);
@@ -297,6 +297,8 @@ public:
   bool ParseCommClause();
   bool ParseCommCase();
   bool ParseForStmt();
+  bool ParseRangeClauseTail(tok::TokenKind Op, SimpleStmtKind *OutKind,
+                            SimpleStmtExts Exts);
   bool ParseDeferStmt();
   bool ParseEmptyStmt();
   bool ParseBlock();

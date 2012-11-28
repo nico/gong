@@ -100,8 +100,8 @@ bool Parser::ParseSimpleStmt(SimpleStmtKind *OutKind, SimpleStmtExts Ext) {
   return ParseSimpleStmtTail(II, OutKind, Ext);
 }
 
-static bool IsAssignmentOp(Token &Tok) {
-  switch (Tok.getKind()) {
+static bool IsAssignmentOp(tok::TokenKind Kind) {
+  switch (Kind) {
   default:
     return false;
   case tok::equal:
@@ -123,6 +123,7 @@ static bool IsAssignmentOp(Token &Tok) {
 /// Called after the leading IdentifierInfo of a statement has been read.
 bool Parser::ParseSimpleStmtTail(IdentifierInfo *II, SimpleStmtKind *OutKind,
                                  SimpleStmtExts Ext) {
+  SourceLocation StartLoc = PrevTokLocation;
   // FIXME: Tok could be '.'
 
   if (Tok.is(tok::comma)) {
@@ -139,38 +140,66 @@ bool Parser::ParseSimpleStmtTail(IdentifierInfo *II, SimpleStmtKind *OutKind,
       // FIXME: For bonus points, only suggest ':=' if at least one identifier
       //        is new.
     }
+    tok::TokenKind Op = Tok.getKind();
+    ConsumeToken();
 
-    if (Tok.is(tok::colonequal))
+    if (Tok.is(tok::kw_range))
+      return ParseRangeClauseTail(Op, OutKind, Ext);
+    if (Op == tok::colonequal)
       return ParseShortVarDeclTail();
-    if (Tok.is(tok::equal))
+    if (Op == tok::equal)
       // Since more than one element was parsed, only '=' is valid here.
-      return ParseAssignmentTail();
+      return ParseAssignmentTail(tok::equal);
   }
 
-  if (Tok.is(tok::colonequal))
+  if (Tok.is(tok::colonequal)) {
+    ConsumeToken();
+    if (Tok.is(tok::kw_range))
+      return ParseRangeClauseTail(tok::colonequal, OutKind, Ext);
     return ParseShortVarDeclTail();
+  }
 
-  // Could be: ExpressionStmt, SendStmt IncDecStmt, Assignment. They all start
+  // Could be: ExpressionStmt, SendStmt, IncDecStmt, Assignment. They all start
   // with an Expression.
   ExprResult LHS = ParseExpressionTail(II);
 
   if (Tok.is(tok::comma)) {
     // Must be an expression list, and the simplestmt must be an assignment.
     ParseExpressionListTail(LHS);
+
+    tok::TokenKind Op = Tok.getKind();
+    SourceLocation OpLocation = ConsumeToken();
+    if (Tok.is(tok::kw_range))
+      return ParseRangeClauseTail(tok::colonequal, OutKind, Ext);
     // "In assignment operations, both the left- and right-hand expression
     // lists must contain exactly one single-valued expression."
     // So expect a '=' for an assignment -- assignment operations (+= etc)
     // aren't permitted after an expression list.
-    if (Tok.isNot(tok::equal)) {
-      Diag(Tok, diag::expected_equal);
+    if (Op != tok::equal) {
+      Diag(OpLocation, diag::expected_equal);
       SkipUntil(tok::semi, /*StopAtSemi=*/false, /*DontConsume=*/true);
       return true;
     }
-    return ParseAssignmentTail();
+    return ParseAssignmentTail(tok::equal);
   }
 
-  if (IsAssignmentOp(Tok))
-    return ParseAssignmentTail();
+  if (IsAssignmentOp(Tok.getKind())) {
+    tok::TokenKind Op = Tok.getKind();
+    ConsumeToken();
+    if (Tok.is(tok::kw_range))
+      return ParseRangeClauseTail(tok::colonequal, OutKind, Ext);
+    return ParseAssignmentTail(Op);
+  }
+
+  if (Tok.is(tok::colonequal)) {
+    ConsumeToken();
+    if (Tok.is(tok::kw_range))
+      return ParseRangeClauseTail(tok::colonequal, OutKind, Ext);
+    // FIXME: fixit to change ':=' to '='
+    Diag(StartLoc, diag::invalid_expr_left_of_colonequal);
+    // FIXME: propagate error.
+    return ParseShortVarDeclTail();
+  }
 
   if (Tok.is(tok::plusplus) || Tok.is(tok::minusminus))
     return ParseIncDecStmtTail(LHS);
@@ -184,22 +213,19 @@ bool Parser::ParseSimpleStmtTail(IdentifierInfo *II, SimpleStmtKind *OutKind,
   return LHS.isInvalid();
 }
 
-/// This is called after the identifier list has been read.
+/// This is called after the ':=' has been read.
 /// ShortVarDecl = IdentifierList ":=" ExpressionList .
 bool Parser::ParseShortVarDeclTail() {
-  assert(Tok.is(tok::colonequal) && "expected ':='");
-  ConsumeToken();
   return ParseExpressionList().isInvalid();
 }
 
-/// This is called after the lhs expression list has been read.
+/// This is called after the assign_op has been read.
 /// Assignment = ExpressionList assign_op ExpressionList .
 /// 
 /// assign_op = [ add_op | mul_op ] "=" .
 /// The op= construct is a single token.
-bool Parser::ParseAssignmentTail() {
-  assert(IsAssignmentOp(Tok) && "expected assignment op");
-  ConsumeToken();
+bool Parser::ParseAssignmentTail(tok::TokenKind Op) {
+  assert(IsAssignmentOp(Op) && "expected assignment op");
   return ParseExpressionList().isInvalid();
 }
 
@@ -549,9 +575,6 @@ bool Parser::ParseCommCase() {
 /// ForClause = [ InitStmt ] ";" [ Condition ] ";" [ PostStmt ] .
 /// InitStmt = SimpleStmt .
 /// PostStmt = SimpleStmt .
-/// 
-/// RangeClause = Expression [ "," Expression ] ( "=" | ":=" )
-///               "range" Expression .
 bool Parser::ParseForStmt() {
   assert(Tok.is(tok::kw_for) && "expected 'for'");
   ConsumeToken();
@@ -561,12 +584,13 @@ bool Parser::ParseForStmt() {
 
   SourceLocation StmtLoc = Tok.getLocation();
   SimpleStmtKind Kind = SSK_Normal;
-  // FIXME: Need to allow range clauses in the simplestmt too
   if (Tok.isNot(tok::semi))
-    if (ParseSimpleStmt(&Kind))
+    if (ParseSimpleStmt(&Kind, SSE_RangeClause))
       return true;
 
-  if (Tok.is(tok::semi)) {
+  if (Kind == SSK_RangeClause) {
+    // Range clause, nothing more to do.
+  } else if (Tok.is(tok::semi)) {
     // ForClause case
     ConsumeToken();  // Consume 1st ';'.
     if (Tok.isNot(tok::semi))
@@ -594,6 +618,31 @@ bool Parser::ParseForStmt() {
     return true;
   }
   return ParseBlock();
+}
+
+/// This is called when Tok points at "range".
+/// RangeClause = Expression [ "," Expression ] ( "=" | ":=" )
+///               "range" Expression .
+bool Parser::ParseRangeClauseTail(tok::TokenKind Op, SimpleStmtKind *OutKind,
+                                  SimpleStmtExts Exts) {
+  assert(Tok.is(tok::kw_range) && "expected 'range'");
+  ConsumeToken();
+
+  // FIXME: return an invalid statement in this case.
+  bool Failed = false;
+  if (Exts != SSE_RangeClause) {
+    Diag(Tok, diag::range_only_valid_in_for);
+    Failed = true;
+  }
+  if (Op != tok::equal && Op != tok::colonequal) {
+    Diag(PrevTokLocation, diag::expected_colonequal_or_equal);
+    Failed = true;
+  }
+
+  if (OutKind && !Failed)
+    *OutKind = SSK_RangeClause;
+
+  return ParseExpression().isInvalid();
 }
 
 /// DeferStmt = "defer" Expression .

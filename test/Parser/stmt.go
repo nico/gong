@@ -34,11 +34,12 @@ func f() {
   // FIXME: These would be nicer as "op= needs single expression" or similar.
   a, b, c += 4, 5, 6  // expected-diag{{expected ':=' or '='}}
   a[i], b += 3, 4  // expected-diag{{expected '='}}
+  a, b = range 4  // expected-diag{{'range' is only valid in for statements}}
 
   // SimpleStmts, ShortVarDecl:
   a, b, c := 1, 2, 3
   a := 1
-  //FIXME: nice diag for a[i] := 1 (just fixit to '=')
+  a[i] := 1  // expected-diag{{unexpected expression before ':='}}
 
   // GoStmt
   // FIXME: `go;` should diag
@@ -136,11 +137,14 @@ func f() {
   for ; 5 < 6; a++ {}
   for a := 4; 5 < 6; a++ {}
 
-  //FIXME
-  //for a := range "hi" {}
-  //for a = range "hi" {}
-  //for a, b := range "hi" {}
-  //for a, b= range "hi" {}
+  for a := range "hi" {}
+  for a = range "hi" {}
+  for a, b := range "hi" {}
+  for a, b = range "hi" {}
+  for a[i] := range "hi" {}
+  for a[i] = range "hi" {}
+  for a[i], b[i] := range "hi" {}
+  for a[i], b[i] = range "hi" {}
 
   // FIXME: Check that range isn't permitted in other exprs or other-styled
   // fors.  Not even as child of a range expression.

@@ -24,10 +24,6 @@ Parser
 types/exprs in ()  (similar to :: in c++ maybe?)
 (*TypeName) in MethodExprs
 
-range exprs for for
-  - Needs "allow range / was range" functionality in ParseSimpleStmt
-  RangeClause = Expression [ "," Expression ] ( "=" | ":=" ) "range" Expression
-
 switch
   - Needs "allow typeswitchguard / was tsg" functionality in ParseSimpleStmt
   TypeSwitchGuard = [ identifier ":=" ] PrimaryExpr "." "(" "type" ")"
