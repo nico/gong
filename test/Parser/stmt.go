@@ -31,6 +31,8 @@ func f() {
   a[i] = 4
   a[i], a[j] = 4, 5
   a += 4
+  a, b, c += 4, 5, 6  // FIXME: should-diag{{+= needs a single expression on both sides}}
+  // a[i], b += 3, 4  // FIXME: should-diag
 
   // SimpleStmts, ShortVarDecl:
   a, b, c := 1, 2, 3
@@ -44,7 +46,7 @@ func f() {
   // ReturnStmt
   return
   return 4
-  //return 4,  // FIXME: should diag
+  //return 4,  // FIXME: should-diag
   return 4,5
 
   // BreakStmt

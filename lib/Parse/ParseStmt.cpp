@@ -135,6 +135,7 @@ bool Parser::ParseSimpleStmtTail(IdentifierInfo *II, SimpleStmtKind *OutKind,
     if (Tok.is(tok::colonequal))
       return ParseShortVarDeclTail();
     if (IsAssignmentOp(Tok))
+      // FIXME: Since more than one element was parsed, only '=' is valid here.
       return ParseAssignmentTail();
     else {
       Diag(Tok, diag::expected_colonequal_or_equal);
@@ -155,6 +156,10 @@ bool Parser::ParseSimpleStmtTail(IdentifierInfo *II, SimpleStmtKind *OutKind,
   if (Tok.is(tok::comma)) {
     // Must be an expression list, and the simplestmt must be an assignment.
     ParseExpressionListTail(LHS);
+    // "In assignment operations, both the left- and right-hand expression
+    // lists must contain exactly one single-valued expression."
+    // So expect a '=' for an assignemnt -- assignment operations (+= etc)
+    // aren't permitted after an expression list.
     if (Tok.isNot(tok::equal)) {
       Diag(Tok, diag::expected_equal);
       return true;
