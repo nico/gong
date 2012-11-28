@@ -72,6 +72,14 @@ gets only one diag
 if (x == T{a,b,c}[i]) { … }"""  <- xxx ambiguity?
 
 
+nice diag with fixit (insert '()') for `func main {}`
+
+nice diag with fixit (insert ',') for
+  myfunc(
+    4
+  )
+
+
 ParseStatement() just crashes on unexpected tokens (say a ')' or a 'package')
 
 Add scopes:

@@ -89,6 +89,7 @@ func f() {
   // FIXME: if a := 4; {} should diag
 
   // SwitchStmt
+  //   ExprSwitchStmt
   switch {}
   switch foo {}
   switch i := 0; foo {}
@@ -100,6 +101,7 @@ func f() {
     fallthrough
   default: continue
   }
+  switch i.(int) {}  // Note: This is an ExprSwitchStmt, Not a TypeSwitchStmt
   //FIXME: TypeSwitchStmts
 
   // SelectStmt
