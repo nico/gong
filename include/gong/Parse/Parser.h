@@ -251,8 +251,17 @@ public:
 
   // Statements
   bool ParseStatement();
-  bool ParseSimpleStmt(bool *StmtWasExpression = NULL);
-  bool ParseSimpleStmtTail(IdentifierInfo *II, bool *StmtWasExpression = NULL);
+
+  enum SimpleStmtKind {
+    /// An unremarkable SimpleStmt.
+    SSK_Normal,
+
+    /// A SimpleStmt consisting of a single expression.
+    SSK_Expression
+  };
+  bool ParseSimpleStmt(SimpleStmtKind *OutKind = NULL);
+  bool ParseSimpleStmtTail(IdentifierInfo *II, SimpleStmtKind *OutKind = NULL);
+
   bool ParseShortVarDeclTail();
   bool ParseAssignmentTail();
   bool ParseIncDecStmtTail(ExprResult &LHS);

@@ -21,14 +21,23 @@ literal lexing and diags (078 vs 078.0, 'aa', etc. `ack FIXME test/Lex`)
 Parser
 =====
 
-missing:
-types/exprs in ()
+types/exprs in ()  (similar to :: in c++ maybe?)
 (*TypeName) in MethodExprs
 
 range exprs for for
   - Needs "allow range / was range" functionality in ParseSimpleStmt
+  RangeClause = Expression [ "," Expression ] ( "=" | ":=" ) "range" Expression
+
 switch
   - Needs "allow typeswitchguard / was tsg" functionality in ParseSimpleStmt
+  TypeSwitchGuard = [ identifier ":=" ] PrimaryExpr "." "(" "type" ")"
+  TypeSwitchStmt  = "switch" [ SimpleStmt ";" ] TypeSwitchGuard
+                    "{" { TypeCaseClause } "}" .
+  ExprSwitchStmt  = "switch" [ SimpleStmt ";" ] [ Expression ]
+                    "{" { ExprCaseClause } "}" .
+
+
+
 
 var, const, () grouping for type, var, const
 
@@ -36,10 +45,16 @@ qualifiedidents
 builtincalls
 
 
+
+
 ExprResult/StmtResult for result passing
+
 Actions interface
+
 measureTokenLength
+
 go doesn't need predeclarations for methods, figure out how to do that
+=> similar to objc, check what clang does.
 
 Have nice fixit for toplevel `a := b`
 

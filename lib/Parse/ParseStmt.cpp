@@ -85,7 +85,7 @@ bool Parser::ParseStatement() {
 
 /// SimpleStmt = EmptyStmt | ExpressionStmt | SendStmt | IncDecStmt |
 ///              Assignment | ShortVarDecl .
-bool Parser::ParseSimpleStmt(bool *StmtWasExpression) {
+bool Parser::ParseSimpleStmt(SimpleStmtKind *OutKind) {
   if (Tok.is(tok::semi))
     return ParseEmptyStmt();
   // FIXME: Not true, could be all the other valid expr prefixes too (literal,
@@ -97,7 +97,7 @@ bool Parser::ParseSimpleStmt(bool *StmtWasExpression) {
   }
   IdentifierInfo *II = Tok.getIdentifierInfo();
   ConsumeToken();
-  return ParseSimpleStmtTail(II, StmtWasExpression);
+  return ParseSimpleStmtTail(II, OutKind);
 }
 
 static bool IsAssignmentOp(Token &Tok) {
@@ -121,7 +121,7 @@ static bool IsAssignmentOp(Token &Tok) {
 }
 
 /// Called after the leading IdentifierInfo of a statement has been read.
-bool Parser::ParseSimpleStmtTail(IdentifierInfo *II, bool *StmtWasExpression) {
+bool Parser::ParseSimpleStmtTail(IdentifierInfo *II, SimpleStmtKind *OutKind) {
   // FIXME: Tok could be '.'
 
   if (Tok.is(tok::comma)) {
@@ -170,9 +170,8 @@ bool Parser::ParseSimpleStmtTail(IdentifierInfo *II, bool *StmtWasExpression) {
   if (Tok.is(tok::lessminus))
     return ParseSendStmtTail(LHS);
 
-  if (StmtWasExpression)
-    // See the above FIXME about types :-/
-    *StmtWasExpression = true;
+  if (OutKind)
+    *OutKind = SSK_Expression;
 
   return LHS.isInvalid();
 }
@@ -285,14 +284,14 @@ bool Parser::ParseIfStmt() {
   ConsumeToken();
 
   SourceLocation StmtLoc = Tok.getLocation();
-  bool StmtWasExpression = false;
-  if (ParseSimpleStmt(&StmtWasExpression))
+  SimpleStmtKind Kind = SSK_Normal;
+  if (ParseSimpleStmt(&Kind))
     return true;
 
   if (Tok.is(tok::semi)) {
     ConsumeToken();
     ParseExpression();
-  } else if (!StmtWasExpression) {
+  } else if (Kind != SSK_Expression) {
     Diag(StmtLoc, diag::expected_expr);
     return true;
   }
@@ -343,15 +342,15 @@ bool Parser::ParseSwitchStmt() {
     // FIXME: This is fairly similar to the code in ParseIfStmt. If that's still
     // the case once TypeSwitchStmts work, refactor.
     SourceLocation StmtLoc = Tok.getLocation();
-    bool StmtWasExpression = false;
-    if (ParseSimpleStmt(&StmtWasExpression)) {
+    SimpleStmtKind Kind = SSK_Normal;
+    if (ParseSimpleStmt(&Kind)) {
       SkipUntil(tok::l_brace, /*StopAtSemi=*/false, /*DontConsume=*/true);
     }
 
     if (Tok.is(tok::semi)) {
       ConsumeToken();
       ParseExpression();
-    } else if (!StmtWasExpression) {
+    } else if (Kind != SSK_Expression) {
       Diag(StmtLoc, diag::expected_expr);
     }
   }
@@ -553,10 +552,10 @@ bool Parser::ParseForStmt() {
     return ParseBlock();
 
   SourceLocation StmtLoc = Tok.getLocation();
-  bool StmtWasExpression = false;
+  SimpleStmtKind Kind = SSK_Normal;
   // FIXME: Need to allow range clauses in the simplestmt too
   if (Tok.isNot(tok::semi))
-    if (ParseSimpleStmt(&StmtWasExpression))
+    if (ParseSimpleStmt(&Kind))
       return true;
 
   if (Tok.is(tok::semi)) {
@@ -574,7 +573,7 @@ bool Parser::ParseForStmt() {
       ParseSimpleStmt();
     }
     // FIXME: Collect errors above.
-  } else if (!StmtWasExpression) {
+  } else if (Kind != SSK_Expression) {
     Diag(StmtLoc, diag::expected_expr);
     // FIXME: recover?
   } else {
