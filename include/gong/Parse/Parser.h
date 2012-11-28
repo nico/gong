@@ -252,15 +252,31 @@ public:
   // Statements
   bool ParseStatement();
 
+  /// This can be passed to ParseSimpleStmt() to tell it to accept additional
+  /// constructs.
+  enum SimpleStmtExts {
+    /// Accept only SimpleStmts.
+    SSE_None,
+
+    // In addition to SimpleStmts, also accept RangeClause.
+    SSE_RangeClause
+  };
+  /// This describes what ParseSimpleStmt() parsed.
   enum SimpleStmtKind {
     /// An unremarkable SimpleStmt.
     SSK_Normal,
 
     /// A SimpleStmt consisting of a single expression.
-    SSK_Expression
+    SSK_Expression,
+
+    /// A RangeClause. This will only be set if SSE_RangeClause was passed as
+    /// permitted option.
+    SSK_RangeClause
   };
-  bool ParseSimpleStmt(SimpleStmtKind *OutKind = NULL);
-  bool ParseSimpleStmtTail(IdentifierInfo *II, SimpleStmtKind *OutKind = NULL);
+  bool ParseSimpleStmt(SimpleStmtKind *OutKind = NULL,
+                       SimpleStmtExts Ext = SSE_None);
+  bool ParseSimpleStmtTail(IdentifierInfo *II, SimpleStmtKind *OutKind = NULL,
+                           SimpleStmtExts Ext = SSE_None);
 
   bool ParseShortVarDeclTail();
   bool ParseAssignmentTail();

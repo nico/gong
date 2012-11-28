@@ -85,7 +85,7 @@ bool Parser::ParseStatement() {
 
 /// SimpleStmt = EmptyStmt | ExpressionStmt | SendStmt | IncDecStmt |
 ///              Assignment | ShortVarDecl .
-bool Parser::ParseSimpleStmt(SimpleStmtKind *OutKind) {
+bool Parser::ParseSimpleStmt(SimpleStmtKind *OutKind, SimpleStmtExts Ext) {
   if (Tok.is(tok::semi))
     return ParseEmptyStmt();
   // FIXME: Not true, could be all the other valid expr prefixes too (literal,
@@ -97,7 +97,7 @@ bool Parser::ParseSimpleStmt(SimpleStmtKind *OutKind) {
   }
   IdentifierInfo *II = Tok.getIdentifierInfo();
   ConsumeToken();
-  return ParseSimpleStmtTail(II, OutKind);
+  return ParseSimpleStmtTail(II, OutKind, Ext);
 }
 
 static bool IsAssignmentOp(Token &Tok) {
@@ -121,15 +121,16 @@ static bool IsAssignmentOp(Token &Tok) {
 }
 
 /// Called after the leading IdentifierInfo of a statement has been read.
-bool Parser::ParseSimpleStmtTail(IdentifierInfo *II, SimpleStmtKind *OutKind) {
+bool Parser::ParseSimpleStmtTail(IdentifierInfo *II, SimpleStmtKind *OutKind,
+                                 SimpleStmtExts Ext) {
   // FIXME: Tok could be '.'
 
   if (Tok.is(tok::comma)) {
     // It's an identifier list! (Which can be interpreted as expression list.)
-    // If it's followed by ':=', this is a ShortVarDecl (the only statement
-    // starting with an identifier list).
-    // If it's followed by '=', this is an Assignment (the only statement
-    // starting with an expression list).
+    // If it's followed by ':=', this is a ShortVarDecl or a RangeClause (the
+    // only statements starting with an identifier list).
+    // If it's followed by '=', this is an Assignment or a RangeClause (the
+    // only statement starting with an expression list).
     ParseIdentifierListTail(II);
     if (Tok.is(tok::colonequal))
       return ParseShortVarDeclTail();
