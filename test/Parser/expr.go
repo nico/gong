@@ -142,6 +142,7 @@ func f() {
 
   // PrimaryExpr TypeAssertion
   foo.(int)
+  foo.(type)  // expected-diag{{'.(type)' is only valid in switch statements}}
 
   // PrimaryExpr Call
   foo()

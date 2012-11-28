@@ -296,21 +296,27 @@ Parser::ParseSelectorOrTypeAssertionSuffix(ExprResult &LHS) {
   assert(Tok.is(tok::period) && "expected '.'");
   ConsumeToken();
 
+  SourceLocation PrevLoc = PrevTokLocation;
+
   if (Tok.is(tok::identifier)) {
     ConsumeToken();
     return LHS;
   } else if(Tok.is(tok::l_paren)) {
     ConsumeParen();
 
-    // FIXME: '.' '(' 'type' ')' can appear in type switch statements (and
-    //        nowhere else).
-
-    if (!IsType()) {
-      Diag(Tok, diag::expected_type);
-      SkipUntil(tok::r_paren);
-      return ExprError();
+    if (Tok.is(tok::kw_type)) {
+      // FIXME: allow this in type switch statements.
+      Diag(PrevLoc, diag::type_only_valid_in_switch);
+      ConsumeToken();
+    } else {
+      if (!IsType()) {
+        Diag(Tok, diag::expected_type);
+        SkipUntil(tok::r_paren);
+        return ExprError();
+      }
+      ParseType();
     }
-    ParseType();
+
     if (Tok.is(tok::r_paren))
       ConsumeParen();
     else {
