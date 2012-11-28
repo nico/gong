@@ -1,4 +1,5 @@
-Lexer:
+Lexer
+=====
 
 Eventually: code completion markers
 fixits, ranges
@@ -17,14 +18,30 @@ lookahead
 literal lexing and diags (078 vs 078.0, 'aa', etc. `ack FIXME test/Lex`)
 
 
-Parser:
+Parser
+=====
+
+missing:
+types/exprs in ()
+(*TypeName) in MethodExprs
+
+range exprs for for
+  - Needs "allow range / was range" functionality in ParseSimpleStmt
+switch
+  - Needs "allow typeswitchguard / was tsg" functionality in ParseSimpleStmt
+
+var, const, () grouping for type, var, const
+
+qualifiedidents
+builtincalls
+
+
 ExprResult/StmtResult for result passing
 Actions interface
 measureTokenLength
 go doesn't need predeclarations for methods, figure out how to do that
 
 Have nice fixit for toplevel `a := b`
-
 
 Handle https://groups.google.com/forum/#!topic/golang-nuts/Bv4GDkPRMxA well
 
@@ -43,16 +60,6 @@ gets only one diag
 """if x == (T{a,b,c}[i]) { … }
 if (x == T{a,b,c}[i]) { … }"""  <- xxx ambiguity?
 
-# decls
-var
-const
-() grouping
-
-# Statements:
-range exprs for for
-  - Needs "allow range / was range" functionality in ParseSimpleStmt
-switch
-  - Needs "allow typeswitchguard / was tsg" functionality in ParseSimpleStmt
 
 ParseStatement() just crashes on unexpected tokens (say a ')' or a 'package')
 
@@ -63,9 +70,6 @@ each clause of a switch or select acts as an implicit block
 
 
 # expressions:
-'(': (expr) (type) (*typename)
-qualifiedidents
-builtincalls
 
 identifier in PrimaryExpr looks pretty hairy
  Operand
@@ -93,23 +97,6 @@ identifier:
  next '*': Either part of MethodExpr, or '(' Type ')' (pointer)
  else: Could be '(' Expr ')', '(' Type ')'
 
-'[', 'struct', '*', 'func', 'map': Either type or compositelit/functiontype
-'interface, 'chan': type
-
-
-`[]int` can either be the start of a type (maybe for a Conversion), or the start
-of a composite literal.
-
-'*' can either be an unary op or the start of a type.
-  *foo(bar) with foo being a type is parsed as indirection. (*foo)(bar) is a
-  conversion.
-
-'<-' can either be an unary op or the start of a type too. But type in an expr
-only after '(' according to spec.
-
-Always need to parse the type first, and then decide if it's a lit (next is '{')
-or a type (next is '(').
-
 
 Builtins:
 
@@ -126,15 +113,9 @@ panic(interface{}), recover() interface{}
 print(), println(): implementation-specific; might not exist
 
 
-predeclared types:
-http://golang.org/ref/spec#Predeclared_identifiers
 
-
-var decls are introduced at the '=': `var int int` works with int being a type.
-`int := 2 * int` works with int being a value.
-
-
-Frontend:
+Frontend
+========
 
 -parse-noop and -parse-print-callbacks: (r109392)
 lib/Frontend/FrontendActions.cpp
@@ -142,6 +123,8 @@ ParseOnlyAction
 PrintParseAction
 tools/driver/cc1_main.cpp
 clang/Frontend/FrontendActions.h
+
+
 
 Notes
 =====
