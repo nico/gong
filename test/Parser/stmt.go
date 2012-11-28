@@ -31,8 +31,9 @@ func f() {
   a[i] = 4
   a[i], a[j] = 4, 5
   a += 4
-  a, b, c += 4, 5, 6  // FIXME: should-diag{{+= needs a single expression on both sides}}
-  // a[i], b += 3, 4  // FIXME: should-diag
+  // FIXME: These would be nicer as "op= needs single expression" or similar.
+  a, b, c += 4, 5, 6  // expected-diag{{expected ':=' or '='}}
+  a[i], b += 3, 4  // expected-diag{{expected '='}}
 
   // SimpleStmts, ShortVarDecl:
   a, b, c := 1, 2, 3

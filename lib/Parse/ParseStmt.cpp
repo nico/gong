@@ -132,18 +132,19 @@ bool Parser::ParseSimpleStmtTail(IdentifierInfo *II, SimpleStmtKind *OutKind,
     // If it's followed by '=', this is an Assignment or a RangeClause (the
     // only statement starting with an expression list).
     ParseIdentifierListTail(II);
-    if (Tok.is(tok::colonequal))
-      return ParseShortVarDeclTail();
-    if (IsAssignmentOp(Tok))
-      // FIXME: Since more than one element was parsed, only '=' is valid here.
-      return ParseAssignmentTail();
-    else {
+    if (Tok.isNot(tok::colonequal) && Tok.isNot(tok::equal)) {
       Diag(Tok, diag::expected_colonequal_or_equal);
-      // FIXME: recover?
+      SkipUntil(tok::semi, /*StopAtSemi=*/false, /*DontConsume=*/true);
       return true;
       // FIXME: For bonus points, only suggest ':=' if at least one identifier
       //        is new.
     }
+
+    if (Tok.is(tok::colonequal))
+      return ParseShortVarDeclTail();
+    if (Tok.is(tok::equal))
+      // Since more than one element was parsed, only '=' is valid here.
+      return ParseAssignmentTail();
   }
 
   if (Tok.is(tok::colonequal))
@@ -158,10 +159,11 @@ bool Parser::ParseSimpleStmtTail(IdentifierInfo *II, SimpleStmtKind *OutKind,
     ParseExpressionListTail(LHS);
     // "In assignment operations, both the left- and right-hand expression
     // lists must contain exactly one single-valued expression."
-    // So expect a '=' for an assignemnt -- assignment operations (+= etc)
+    // So expect a '=' for an assignment -- assignment operations (+= etc)
     // aren't permitted after an expression list.
     if (Tok.isNot(tok::equal)) {
       Diag(Tok, diag::expected_equal);
+      SkipUntil(tok::semi, /*StopAtSemi=*/false, /*DontConsume=*/true);
       return true;
     }
     return ParseAssignmentTail();
