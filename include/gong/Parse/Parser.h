@@ -225,18 +225,25 @@ public:
 
   // Expressions
   //FIXME: These should likely be OwningExprResult
-  ExprResult ParseExpression();
-  ExprResult ParseExpressionTail(IdentifierInfo *II);
+  /// If \a TypeSwitchGuardExpr points to a bool that is true, then the
+  /// expression parser will allow a trailing '.(type)' if a PrimaryExpr was
+  /// parsed.  *TypeSwitchGuardExpr will be set to true if that happend or to
+  /// false in all other cases.
+  ExprResult ParseExpression(bool *TypeSwitchGuardExpr = NULL);
+  ExprResult ParseExpressionTail(IdentifierInfo *II,
+                                 bool *TypeSwitchGuardExpr = NULL);
   ExprResult ParseRHSOfBinaryExpression(ExprResult LHS,
-                                        prec::Level MinPrec);
+                                        prec::Level MinPrec,
+                                        bool *TypeSwitchGuardExpr);
   bool IsUnaryOp();
-  ExprResult ParseUnaryExpr();
-  ExprResult ParsePrimaryExpr();
+  ExprResult ParseUnaryExpr(bool *TypeSwitchGuardExpr = NULL);
+  ExprResult ParsePrimaryExpr(bool *TypeSwitchGuardExpr);
   ExprResult ParsePrimaryExprTail(IdentifierInfo *II);
   ExprResult ParseConversion();
   ExprResult ParseConversionTail();
-  ExprResult ParsePrimaryExprSuffix(ExprResult &LHS);
-  ExprResult ParseSelectorOrTypeAssertionSuffix(ExprResult &LHS);
+  ExprResult ParsePrimaryExprSuffix(ExprResult &LHS, bool *TypeSwitchGuardExpr);
+  ExprResult ParseSelectorOrTypeAssertionSuffix(ExprResult &LHS,
+                                                bool *TypeSwitchGuardExpr);
   ExprResult ParseIndexOrSliceSuffix(ExprResult &LHS);
   ExprResult ParseCallSuffix(ExprResult &LHS);
   ExprResult ParseBasicLit();
