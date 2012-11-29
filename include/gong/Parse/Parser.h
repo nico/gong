@@ -224,26 +224,41 @@ public:
   bool IsExpression();
 
   // Expressions
+
+  /// If \a Opt points to a TypeSwitchGuardParam, then the expression parser
+  /// will allow a trailing '.(type)' if a PrimaryExpr was parsed.
+  /// Opt.Result will be set to Parsed if that happend or to NotParsed in all
+  /// other cases.
+  struct TypeSwitchGuardParam {
+    enum  { NotParsed, Parsed } Result;
+    SourceLocation TSGLoc;  ///< Points at the '.'.
+
+    TypeSwitchGuardParam() : Result(NotParsed) {}
+    void Set(SourceLocation Loc) { Result = Parsed; TSGLoc = Loc; }
+    void Reset(Parser& Self) {
+      if (Result != Parsed)
+        return;
+      Self.Diag(TSGLoc, diag::type_only_valid_in_switch);
+      Result = NotParsed;
+    }
+  };
+
   //FIXME: These should likely be OwningExprResult
-  /// If \a TypeSwitchGuardExpr points to a bool that is true, then the
-  /// expression parser will allow a trailing '.(type)' if a PrimaryExpr was
-  /// parsed.  *TypeSwitchGuardExpr will be set to true if that happend or to
-  /// false in all other cases.
-  ExprResult ParseExpression(bool *TypeSwitchGuardExpr = NULL);
+  ExprResult ParseExpression(TypeSwitchGuardParam *Opt = NULL);
   ExprResult ParseExpressionTail(IdentifierInfo *II,
-                                 bool *TypeSwitchGuardExpr = NULL);
+                                 TypeSwitchGuardParam *Opt = NULL);
   ExprResult ParseRHSOfBinaryExpression(ExprResult LHS,
                                         prec::Level MinPrec,
-                                        bool *TypeSwitchGuardExpr);
+                                        TypeSwitchGuardParam *Opt);
   bool IsUnaryOp();
-  ExprResult ParseUnaryExpr(bool *TypeSwitchGuardExpr = NULL);
-  ExprResult ParsePrimaryExpr(bool *TypeSwitchGuardExpr);
+  ExprResult ParseUnaryExpr(TypeSwitchGuardParam *Opt = NULL);
+  ExprResult ParsePrimaryExpr(TypeSwitchGuardParam *Opt);
   ExprResult ParsePrimaryExprTail(IdentifierInfo *II);
   ExprResult ParseConversion();
   ExprResult ParseConversionTail();
-  ExprResult ParsePrimaryExprSuffix(ExprResult &LHS, bool *TypeSwitchGuardExpr);
+  ExprResult ParsePrimaryExprSuffix(ExprResult &LHS, TypeSwitchGuardParam *Opt);
   ExprResult ParseSelectorOrTypeAssertionSuffix(ExprResult &LHS,
-                                                bool *TypeSwitchGuardExpr);
+                                                TypeSwitchGuardParam *Opt);
   ExprResult ParseIndexOrSliceSuffix(ExprResult &LHS);
   ExprResult ParseCallSuffix(ExprResult &LHS);
   ExprResult ParseBasicLit();

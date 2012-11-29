@@ -62,7 +62,10 @@ Tests:
   switch a := 4; a := a.(type) {}
   switch a.(type); a.(type) {}
   switch a.(type).(type) {}
-  switch a.(int).(type) {}
+  switch a.(int).(type) {}  // Valid!
+  switch a.foo.(type) {}
+  switch a[i].(type) {}
+  switch a().(type) {}
   switch a.(type).(int) {}
     
 

@@ -54,23 +54,23 @@ static prec::Level getBinOpPrecedence(tok::TokenKind Kind) {
 /// add_op     = "+" | "-" | "|" | "^" .
 /// mul_op     = "*" | "/" | "%" | "<<" | ">>" | "&" | "&^" .
 Parser::ExprResult
-Parser::ParseExpression(bool *TypeSwitchGuardExpr) {
-  ExprResult LHS = ParseUnaryExpr(TypeSwitchGuardExpr);
-  return ParseRHSOfBinaryExpression(LHS, prec::Lowest, TypeSwitchGuardExpr);
+Parser::ParseExpression(TypeSwitchGuardParam *Opt) {
+  ExprResult LHS = ParseUnaryExpr(Opt);
+  return ParseRHSOfBinaryExpression(LHS, prec::Lowest, Opt);
 }
 
 /// This is called for expressions that start with an identifier, after the
 /// initial identifier has been read.
 Parser::ExprResult
-Parser::ParseExpressionTail(IdentifierInfo *II, bool *TypeSwitchGuardExpr) {
+Parser::ParseExpressionTail(IdentifierInfo *II, TypeSwitchGuardParam *Opt) {
   ExprResult LHS = ParsePrimaryExprTail(II);
-  LHS = ParsePrimaryExprSuffix(LHS, TypeSwitchGuardExpr);
-  return ParseRHSOfBinaryExpression(LHS, prec::Lowest, TypeSwitchGuardExpr);
+  LHS = ParsePrimaryExprSuffix(LHS, Opt);
+  return ParseRHSOfBinaryExpression(LHS, prec::Lowest, Opt);
 }
 
 Parser::ExprResult
 Parser::ParseRHSOfBinaryExpression(ExprResult LHS, prec::Level MinPrec,
-                                   bool *TypeSwitchGuardExpr) {
+                                   TypeSwitchGuardParam *Opt) {
   prec::Level NextTokPrec = getBinOpPrecedence(Tok.getKind());
   SourceLocation ColonLoc;
 
@@ -81,10 +81,8 @@ Parser::ParseRHSOfBinaryExpression(ExprResult LHS, prec::Level MinPrec,
     if (NextTokPrec < MinPrec)
       return LHS;
 
-    // FIXME gah this doesn't diag on |a.(type) + 4|. Have a TSGLoc outparam,
-    // and diag here if that's set.
-    if (TypeSwitchGuardExpr)
-      *TypeSwitchGuardExpr = false;
+    if (Opt)
+      Opt->Reset(*this);
 
     // Consume the operator, saving the operator token for error reporting.
     //Token OpToken = Tok;  // FIXME
@@ -109,7 +107,7 @@ Parser::ParseRHSOfBinaryExpression(ExprResult LHS, prec::Level MinPrec,
       // compile A+B+C+D as A+(B+(C+D)), where each paren is a level of
       // recursion here.  The function takes ownership of the RHS.
       RHS = ParseRHSOfBinaryExpression(
-          RHS, static_cast<prec::Level>(ThisPrec + 1), TypeSwitchGuardExpr);
+          RHS, static_cast<prec::Level>(ThisPrec + 1), NULL);
 
       if (RHS.isInvalid())
         LHS = ExprError();
@@ -144,13 +142,12 @@ bool Parser::IsUnaryOp() {
 /// UnaryExpr  = PrimaryExpr | unary_op UnaryExpr .
 /// unary_op   = "+" | "-" | "!" | "^" | "*" | "&" | "<-" .
 Action::ExprResult
-Parser::ParseUnaryExpr(bool *TypeSwitchGuardExpr) {
+Parser::ParseUnaryExpr(TypeSwitchGuardParam *Opt) {
   if (IsUnaryOp()) {
-    if (TypeSwitchGuardExpr)
-      *TypeSwitchGuardExpr = false;
+    Opt = NULL;
     ConsumeToken();  // FIXME: use
   }
-  return ParsePrimaryExpr(TypeSwitchGuardExpr);
+  return ParsePrimaryExpr(Opt);
 }
 
 /// PrimaryExpr =
@@ -166,7 +163,7 @@ Parser::ParseUnaryExpr(bool *TypeSwitchGuardExpr) {
 /// Literal    = BasicLit | CompositeLit | FunctionLit .
 /// OperandName = identifier | QualifiedIdent.
 Action::ExprResult
-Parser::ParsePrimaryExpr(bool *TypeSwitchGuardExpr) {
+Parser::ParsePrimaryExpr(TypeSwitchGuardParam *Opt) {
   ExprResult Res;
 
   switch (Tok.getKind()) {
@@ -198,7 +195,7 @@ Parser::ParsePrimaryExpr(bool *TypeSwitchGuardExpr) {
     assert(false && "FIXME: (expr) (type) (*typename)");
     return ExprError();
   }
-  return ParsePrimaryExprSuffix(Res, TypeSwitchGuardExpr);
+  return ParsePrimaryExprSuffix(Res, Opt);
 }
 
 /// This is called if the first token in a PrimaryExpression was an identifier,
@@ -277,21 +274,27 @@ Parser::ParseConversionTail() {
 }
 
 Action::ExprResult
-Parser::ParsePrimaryExprSuffix(ExprResult &LHS, bool *TypeSwitchGuardExpr) {
+Parser::ParsePrimaryExprSuffix(ExprResult &LHS, TypeSwitchGuardParam *Opt) {
   while (1) {
     switch (Tok.getKind()) {
     default:  // Not a postfix-expression suffix.
+      if (Opt)
+        Opt->Reset(*this);
       return LHS;
     case tok::period: {  // Selector or TypeAssertion
-      LHS = ParseSelectorOrTypeAssertionSuffix(LHS, TypeSwitchGuardExpr);
+      LHS = ParseSelectorOrTypeAssertionSuffix(LHS, Opt);
       break;
     }
     case tok::l_square: {  // Index or Slice
       LHS = ParseIndexOrSliceSuffix(LHS);
+      if (Opt)
+        Opt->Reset(*this);
       break;
     }
     case tok::l_paren: {  // Call
       LHS = ParseCallSuffix(LHS);
+      if (Opt)
+        Opt->Reset(*this);
       break;
     }
     }
@@ -302,13 +305,11 @@ Parser::ParsePrimaryExprSuffix(ExprResult &LHS, bool *TypeSwitchGuardExpr) {
 /// TypeAssertion  = "." "(" Type ")" .
 Action::ExprResult
 Parser::ParseSelectorOrTypeAssertionSuffix(ExprResult &LHS,
-                                           bool *TypeSwitchGuardExpr) {
+                                           TypeSwitchGuardParam *Opt) {
   assert(Tok.is(tok::period) && "expected '.'");
   ConsumeToken();
 
-  bool AllowType = TypeSwitchGuardExpr && *TypeSwitchGuardExpr;
-  if (TypeSwitchGuardExpr)
-    *TypeSwitchGuardExpr = false;
+  bool AllowType = Opt;
 
   SourceLocation PrevLoc = PrevTokLocation;
 
@@ -321,8 +322,8 @@ Parser::ParseSelectorOrTypeAssertionSuffix(ExprResult &LHS,
     if (Tok.is(tok::kw_type)) {
       if (!AllowType)
         Diag(PrevLoc, diag::type_only_valid_in_switch);
-      else if (TypeSwitchGuardExpr)
-        *TypeSwitchGuardExpr = true;
+      else if (Opt)
+        Opt->Set(PrevLoc);
       ConsumeToken();
     } else {
       if (!IsType()) {
