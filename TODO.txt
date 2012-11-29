@@ -31,6 +31,34 @@ switch
                     "{" { TypeCaseClause } "}" .
   ExprSwitchStmt  = "switch" [ SimpleStmt ";" ] [ Expression ]
                     "{" { ExprCaseClause } "}" .
+Plan A:
+  * Pass "allow .(type)" flag to ParseExpression(), reset it everywhere along
+    the way if something isn't a PrimaryExpr. Let ParseExpression() return if
+    it saw a ".(type)".
+  * Have same flag for ParseSimpleStmt(), pass it on to ParseExpression(). Check
+    result. If flag is set and ".(type)" was seen, only allow a single
+    identifier.
+
+Plan B:
+  * Pass "allow .(type)" flag to ParseExpression(), reset it everywhere along
+    the way if something isn't a PrimaryExpr. Let ParseExpression() return if
+    it saw a ".(type)".
+  * Have switchstmt parse logic look for 'identifier ":="'. Jump into
+    ParseSimpleStmtTail if ":=" not found, else ParseExpression() with flag set.
+    
+
+    If next is ';', do the same again, but jump into 
+
+Tests:
+  switch a.(type)++ {}
+  switch a = a.(type) {}
+  switch a = 4; a := a.(type) {}
+  switch a := 4; a := a.(type) {}
+  switch a.(type); a.(type) {}
+  switch a.(type).(type) {}
+  switch a.(int).(type) {}
+  switch a.(type).(int) {}
+    
 
 
 
