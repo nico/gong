@@ -94,6 +94,8 @@ DIAG(expected_chan,                "expected 'chan'")
 DIAG(expected_period_or_ident_or_string,
     "expected '.' or identifier or string literal")
 DIAG(expected_expr,                "expected expression")
+DIAG(expected_expr_or_typeswitchguard,
+    "expected expression or type switch guard")
 DIAG(expected_colonequal_or_equal, "expected ':=' or '='")
 DIAG(expected_if_or_l_brace,       "expected 'if' or '{'")
 DIAG(expected_case_or_default,     "expected 'case' or 'default'")
@@ -101,6 +103,5 @@ DIAG(expected_colon,               "expected ':'")
 DIAG(expected_period,              "expected '.'")
 DIAG(unimplemented_package_name,   "sorry, package-qualifiers don't work yet")
 DIAG(range_only_valid_in_for,      "'range' is only valid in for statements")
-DIAG(type_only_valid_in_switch,
-    "'.(type)' is only valid in switch statements")
+DIAG(type_only_valid_in_switch,    "unexpected '.(type)'")
 DIAG(invalid_expr_left_of_colonequal, "unexpected expression before ':='")

@@ -45,7 +45,10 @@ Plan B:
     it saw a ".(type)".
   * Have switchstmt parse logic look for 'identifier ":="'. Jump into
     ParseSimpleStmtTail if ":=" not found, else ParseExpression() with flag set.
-    If next is ';', do the same again, but jump into XXX
+  Issue: 'identifier ":="' is optional, so either ParseSimpleStmtTail() needs to
+    learn about TypeSwitchStmts anyway, or ParseSwitchStmt needs to do a lot of
+     the work that ParseSimpleStmt does (parse an expression, check if next is
+     ',', parse more expressions, check for =, op=
 
 Plan C:
   * Implement lookahead. After parsing an expression, check if the next tokens

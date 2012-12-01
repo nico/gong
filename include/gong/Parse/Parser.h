@@ -267,7 +267,7 @@ public:
   ExprResult ParseElementList();
   ExprResult ParseElement();
   ExprResult ParseFunctionLitOrConversion();
-  ExprResult ParseExpressionList();
+  ExprResult ParseExpressionList(TypeSwitchGuardParam *Opt = NULL);
   ExprResult ParseExpressionListTail(ExprResult &LHS);
 
 
@@ -281,7 +281,10 @@ public:
     SSE_None,
 
     // In addition to SimpleStmts, also accept RangeClause.
-    SSE_RangeClause
+    SSE_RangeClause,
+
+    // In addition to SimpleStmts, also accept TypeSwitchGuard.
+    SSE_TypeSwitchGuard
   };
   /// This describes what ParseSimpleStmt() parsed.
   enum SimpleStmtKind {
@@ -293,14 +296,18 @@ public:
 
     /// A RangeClause. This will only be set if SSE_RangeClause was passed as
     /// permitted option.
-    SSK_RangeClause
+    SSK_RangeClause,
+
+    /// A TypeSwitchGuard. This will only be set if SSE_TypeSwitchGuard was
+    /// passed as permitted option.
+    SSK_TypeSwitchGuard
   };
   bool ParseSimpleStmt(SimpleStmtKind *OutKind = NULL,
                        SimpleStmtExts Ext = SSE_None);
   bool ParseSimpleStmtTail(IdentifierInfo *II, SimpleStmtKind *OutKind = NULL,
                            SimpleStmtExts Ext = SSE_None);
 
-  bool ParseShortVarDeclTail();
+  bool ParseShortVarDeclTail(TypeSwitchGuardParam *Opt = NULL);
   bool ParseAssignmentTail(tok::TokenKind Op);
   bool ParseIncDecStmtTail(ExprResult &LHS);
   bool ParseSendStmtTail(ExprResult &LHS);

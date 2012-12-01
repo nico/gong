@@ -278,8 +278,6 @@ Parser::ParsePrimaryExprSuffix(ExprResult &LHS, TypeSwitchGuardParam *Opt) {
   while (1) {
     switch (Tok.getKind()) {
     default:  // Not a postfix-expression suffix.
-      if (Opt)
-        Opt->Reset(*this);
       return LHS;
     case tok::period: {  // Selector or TypeAssertion
       LHS = ParseSelectorOrTypeAssertionSuffix(LHS, Opt);
@@ -566,8 +564,10 @@ Parser::ParseFunctionLitOrConversion() {
 
 /// ExpressionList = Expression { "," Expression } .
 Action::ExprResult
-Parser::ParseExpressionList() {
-  ExprResult LHS = ParseExpression();
+Parser::ParseExpressionList(TypeSwitchGuardParam *Opt) {
+  ExprResult LHS = ParseExpression(Opt);
+  if (Tok.is(tok::comma) && Opt)
+    Opt->Reset(*this);
   return ParseExpressionListTail(LHS);
 }
 

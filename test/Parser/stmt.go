@@ -101,8 +101,28 @@ func f() {
     fallthrough
   default: continue
   }
+  // FIXME: switch i := 0; j := 0 {} should diag
+
   switch i.(int) {}  // Note: This is an ExprSwitchStmt, Not a TypeSwitchStmt
-  //FIXME: TypeSwitchStmts
+  //   TypeSwitchStmts
+  switch a.(type) {}
+  switch a := a.(type) {}
+  switch a.(type)++ {}  // expected-diag{{unexpected '.(type)'}} expected-diag{{expected expression or type switch guard}}
+  switch a.(type) + 4 {}  // expected-diag{{unexpected '.(type)'}}
+  switch a = a.(type) {}  // expected-diag{{unexpected '.(type)'}} expected-diag{{expected expression or type switch guard}}
+  switch a = 4; a := a.(type) {}
+  switch a := 4; a := a.(type) {}
+  //switch a.(type); a.(type) {}
+  //switch a.(type).(type) {}
+  //switch a.(int).(type) {}  // Valid!
+  //switch a.foo.(type) {}
+  //switch a[i].(type) {}
+  //switch a().(type) {}
+  //switch a.(type).(int) {}
+  //switch a.(type), a.(type) {}
+  //switch a.(type) := 4 {}
+  //FIXME: TypeSwitchCases
+
 
   // SelectStmt
   select {}

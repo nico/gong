@@ -100,7 +100,9 @@ bool Parser::ParseSimpleStmt(SimpleStmtKind *OutKind, SimpleStmtExts Ext) {
   return ParseSimpleStmtTail(II, OutKind, Ext);
 }
 
-static bool IsAssignmentOp(tok::TokenKind Kind) {
+namespace {
+
+bool IsAssignmentOp(tok::TokenKind Kind) {
   switch (Kind) {
   default:
     return false;
@@ -119,6 +121,30 @@ static bool IsAssignmentOp(tok::TokenKind Kind) {
     return true;
   }
 }
+
+/// A simple RAII class that lets a TypeSwitchGuardParam emit a diagnostic when
+/// the RAII object hasn't been disarmed. Otherwise, it sets a SimpleStmtKind
+/// pointer to SSK_TypeSwitchGuard.
+class TypeSwitchGuardParamRAII {
+  Parser *Self;
+  Parser::TypeSwitchGuardParam* TSG;
+  bool Armed;
+  Parser::SimpleStmtKind *Out;
+public:
+  TypeSwitchGuardParamRAII(
+      Parser *Self, Parser::TypeSwitchGuardParam* TSG,
+      Parser::SimpleStmtKind *Out)
+      : Self(Self), TSG(TSG), Armed(true), Out(Out) {}
+  ~TypeSwitchGuardParamRAII() {
+    if (Armed)
+      TSG->Reset(*Self);
+    else if (TSG->Result == Parser::TypeSwitchGuardParam::Parsed && Out)
+      *Out = Parser::SSK_TypeSwitchGuard;
+  }
+  void disarm() { Armed = false; }
+};
+
+}  // namespace
 
 /// Called after the leading IdentifierInfo of a statement has been read.
 bool Parser::ParseSimpleStmtTail(IdentifierInfo *II, SimpleStmtKind *OutKind,
@@ -152,16 +178,25 @@ bool Parser::ParseSimpleStmtTail(IdentifierInfo *II, SimpleStmtKind *OutKind,
       return ParseAssignmentTail(tok::equal);
   }
 
+  TypeSwitchGuardParam Opt, *POpt = NULL;
+  if (Ext == SSE_TypeSwitchGuard)
+    POpt = &Opt;
+  // In a switch statement, ParseSimpleStmtTail() has to accept TypeSwitchGuards
+  // which technically aren't SimpleStmts.  OptRAII will diag on all
+  // TypeSwitchGuards when destructed unless it's explicitly disarm()ed.
+  TypeSwitchGuardParamRAII OptRAII(this, &Opt, OutKind);
+
   if (Tok.is(tok::colonequal)) {
     ConsumeToken();
     if (Tok.is(tok::kw_range))
       return ParseRangeClauseTail(tok::colonequal, OutKind, Ext);
-    return ParseShortVarDeclTail();
+    OptRAII.disarm();
+    return ParseShortVarDeclTail(POpt);
   }
 
   // Could be: ExpressionStmt, SendStmt, IncDecStmt, Assignment. They all start
   // with an Expression.
-  ExprResult LHS = ParseExpressionTail(II);
+  ExprResult LHS = ParseExpressionTail(II, POpt);
 
   if (Tok.is(tok::comma)) {
     // Must be an expression list, and the simplestmt must be an assignment.
@@ -188,6 +223,8 @@ bool Parser::ParseSimpleStmtTail(IdentifierInfo *II, SimpleStmtKind *OutKind,
     ConsumeToken();
     if (Tok.is(tok::kw_range))
       return ParseRangeClauseTail(tok::colonequal, OutKind, Ext);
+    // FIXME: if Op is '=' and the expression a TypeSwitchGuard, provide fixit
+    // to turn '=' into ':='.
     return ParseAssignmentTail(Op);
   }
 
@@ -209,14 +246,16 @@ bool Parser::ParseSimpleStmtTail(IdentifierInfo *II, SimpleStmtKind *OutKind,
 
   if (OutKind)
     *OutKind = SSK_Expression;
+  // Note: This can overwrite *OutKind.
+  OptRAII.disarm();
 
   return LHS.isInvalid();
 }
 
 /// This is called after the ':=' has been read.
 /// ShortVarDecl = IdentifierList ":=" ExpressionList .
-bool Parser::ParseShortVarDeclTail() {
-  return ParseExpressionList().isInvalid();
+bool Parser::ParseShortVarDeclTail(TypeSwitchGuardParam *Opt) {
+  return ParseExpressionList(Opt).isInvalid();
 }
 
 /// This is called after the assign_op has been read.
@@ -360,15 +399,10 @@ bool Parser::ParseIfStmt() {
 /// TypeSwitchCase  = "case" TypeList | "default" .
 /// TypeList        = Type { "," Type } .
 bool Parser::ParseSwitchStmt() {
-  // FIXME: TypeSwitchStmts. Detecting those, especially with the optinal
-  // SimpleStmt is annoying. Either this requires arbitrary lookahead to look
-  // for '.' '(' 'type' (until an unbalanced '{' is hit), or ParseSimpleStmt
-  // needs to learn to parse TypeSwitchGuards (and needs to retroactively verify
-  // that the lhs expressionlist was just a single identifier etc)
-  // For now, just assume we always have an expression switch statement.
-
   assert(Tok.is(tok::kw_switch) && "expected 'switch'");
   ConsumeToken();
+
+  bool IsTypeSwitch = false;
 
   // For ExprSwitchStmts, everything between 'switch and '{' is optional.
   // (This is not true for TypeSwitchStmts.)
@@ -377,15 +411,25 @@ bool Parser::ParseSwitchStmt() {
     // the case once TypeSwitchStmts work, refactor.
     SourceLocation StmtLoc = Tok.getLocation();
     SimpleStmtKind Kind = SSK_Normal;
-    if (ParseSimpleStmt(&Kind)) {
+    if (ParseSimpleStmt(&Kind, SSE_TypeSwitchGuard)) {
       SkipUntil(tok::l_brace, /*StopAtSemi=*/false, /*DontConsume=*/true);
     }
 
-    if (Tok.is(tok::semi)) {
-      ConsumeToken();
-      ParseExpression();
-    } else if (Kind != SSK_Expression) {
-      Diag(StmtLoc, diag::expected_expr);
+    if (Kind == SSK_TypeSwitchGuard) {
+      IsTypeSwitch = true;
+    } else {
+      if (Tok.is(tok::semi)) {
+        ConsumeToken();
+
+        Kind = SSK_Normal;
+        ParseSimpleStmt(&Kind, SSE_TypeSwitchGuard);
+        if (Kind == SSK_TypeSwitchGuard)
+          IsTypeSwitch = true;
+        else if (Kind != SSK_Expression)
+          Diag(StmtLoc, diag::expected_expr_or_typeswitchguard);
+      } else if (Kind != SSK_Expression) {
+        Diag(StmtLoc, diag::expected_expr_or_typeswitchguard);
+      }
     }
   }
 
@@ -394,6 +438,8 @@ bool Parser::ParseSwitchStmt() {
     return true;
   }
   ConsumeBrace();
+
+  // FIXME: Parse TypeSwitchCases here if IsTypeSwitch is set.
 
   // FIXME: This is fairly similar to the {} code in ParseSelectStmt().
   while (Tok.isNot(tok::r_brace) && Tok.isNot(tok::eof)) {
