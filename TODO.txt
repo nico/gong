@@ -23,6 +23,8 @@ Parser
 
 types/exprs in ()  (similar to :: in c++ maybe?)
 (*TypeName) in MethodExprs
+    MethodExpr    = ReceiverType "." MethodName .
+    ReceiverType  = TypeName | "(" "*" TypeName ")" .
 
 var, const, () grouping for type, var, const
 
@@ -30,6 +32,37 @@ qualifiedidents
 builtincalls
 
 
+expression or type start:
+    *
+    <-
+    [
+    map
+    struct
+    func
+    identifier
+
+  Conversions only:
+    interface
+    chan
+
+only expression starts:
+    +
+    -
+    !
+    ^
+    &
+    4
+    '4'
+    "4"
+
+only type starts:
+    nothing, because a type can always start a conversion expression
+
+-> This is already mostly implemented outside of '()' for regular expressions.
+
+In parens, types get preference (  *foo(exp), <-foo(foo) are deref, read of a
+call, while (*foo)(exp), (<-foo)(exp) are conversions. func()(x) is a function
+signature, while (func())(x) is a conversion  ).
 
 
 ExprResult/StmtResult for result passing
@@ -79,33 +112,6 @@ each clause of a switch or select acts as an implicit block
 
 # expressions:
 
-identifier in PrimaryExpr looks pretty hairy
- Operand
-  OperandName = ident | QualifiedIdent
-  MethodExpr = ( TypeName | '(' '*' TypeName ')' ) '.' MethodName
-    MethodName = ident
-    TypeName = ident | QualifiedIdent
-      QualifiedIdent = PackageName '.' ident
-        PackageName = ident
-  '(' Expression ')'
- Conversion
-  Type '(' Expression ')'
-   Type = TypeName | TypeLit | '(' Type ')' .
- BuiltinCall = identifier '(' [ BuiltinArgs [',' ] ] ')'
-
- CompositeLit  = LiteralType LiteralValue .
- LiteralType   = StructType | ArrayType | "[" "..." "]" ElementType |
-                 SliceType | MapType | TypeName .
-
-identifier:
-  next '.': either end of expr (selector),
-            or TypeName (for MethodExpr or Conversion),
-            or QualifiedIdent
-'(':
- next '*': Either part of MethodExpr, or '(' Type ')' (pointer)
- else: Could be '(' Expr ')', '(' Type ')'
-
-
 Builtins:
 
 close(chan expr)
@@ -132,6 +138,17 @@ PrintParseAction
 tools/driver/cc1_main.cpp
 clang/Frontend/FrontendActions.h
 
+
+
+Long term
+=========
+
+http://llvm.org/docs/GarbageCollection.html
+-> Can this work with the regular go collector?
+
+libclang-style c api
+python bindings for that c api
+clang-complete clone on top of the python bindings
 
 
 Notes
