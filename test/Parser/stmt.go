@@ -86,7 +86,7 @@ func f() {
   if a := 4; 5 < 6 {
   } else if b := 5; 6 < 7 {
   }
-  // FIXME: if a := 4; {} should diag
+  // FIXME: if a := 4; {} // should-diag
 
   // SwitchStmt
   //   ExprSwitchStmt
@@ -170,6 +170,7 @@ func f() {
   for a[i] = range "hi" {}
   for a[i], b[i] := range "hi" {}
   for a[i], b[i] = range "hi" {}
+  for a[i], b[i] += range "hi" {}  // expected-diag{{expected ':=' or '='}}
 
   // FIXME: Check that range isn't permitted in other exprs or other-styled
   // fors.  Not even as child of a range expression.

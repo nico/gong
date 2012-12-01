@@ -205,7 +205,7 @@ bool Parser::ParseSimpleStmtTail(IdentifierInfo *II, SimpleStmtKind *OutKind,
     tok::TokenKind Op = Tok.getKind();
     SourceLocation OpLocation = ConsumeToken();
     if (Tok.is(tok::kw_range))
-      return ParseRangeClauseTail(tok::colonequal, OutKind, Ext);
+      return ParseRangeClauseTail(Op, OutKind, Ext);
     // "In assignment operations, both the left- and right-hand expression
     // lists must contain exactly one single-valued expression."
     // So expect a '=' for an assignment -- assignment operations (+= etc)
@@ -685,7 +685,7 @@ bool Parser::ParseRangeClauseTail(tok::TokenKind Op, SimpleStmtKind *OutKind,
     Failed = true;
   }
 
-  if (OutKind && !Failed)
+  if (OutKind)
     *OutKind = SSK_RangeClause;
 
   return ParseExpression().isInvalid();
