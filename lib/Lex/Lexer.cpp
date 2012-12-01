@@ -36,7 +36,6 @@ enum {
   CHAR_LETTER   = 0x04,  // a-z,A-Z
   CHAR_NUMBER   = 0x08,  // 0-9
   CHAR_UNDER    = 0x10,  // _
-  CHAR_PERIOD   = 0x20,  // .
   CHAR_RAWDEL   = 0x40   // {}[]#<>%:;?*+-/^&|~!=,"'
 };
 
@@ -67,7 +66,7 @@ static const unsigned char CharInfo[256] =
 //40  (         41  )         42  *         43  +
 //44  ,         45  -         46  .         47  /
    0           , 0           , CHAR_RAWDEL , CHAR_RAWDEL ,
-   CHAR_RAWDEL , CHAR_RAWDEL , CHAR_PERIOD , CHAR_RAWDEL ,
+   CHAR_RAWDEL , CHAR_RAWDEL , 0           , CHAR_RAWDEL ,
 //48  0         49  1         50  2         51  3
 //52  4         53  5         54  6         55  7
    CHAR_NUMBER , CHAR_NUMBER , CHAR_NUMBER , CHAR_NUMBER ,
@@ -121,7 +120,6 @@ static void InitCharacterInfo() {
   assert(CHAR_VERT_WS == CharInfo[(int)'\n']);
   assert(CHAR_VERT_WS == CharInfo[(int)'\r']);
   assert(CHAR_UNDER   == CharInfo[(int)'_']);
-  assert(CHAR_PERIOD  == CharInfo[(int)'.']);
   for (unsigned i = 'a'; i <= 'z'; ++i) {
     assert(CHAR_LETTER == CharInfo[i]);
     assert(CHAR_LETTER == CharInfo[i+'A'-'a']);
