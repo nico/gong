@@ -238,7 +238,7 @@ public:
     void Reset(Parser& Self) {
       if (Result != Parsed)
         return;
-      Self.Diag(TSGLoc, diag::type_only_valid_in_switch);
+      Self.Diag(TSGLoc, diag::unexpected_kw_type);
       Result = NotParsed;
     }
   };
@@ -257,8 +257,8 @@ public:
   ExprResult ParseConversion();
   ExprResult ParseConversionTail();
   ExprResult ParsePrimaryExprSuffix(ExprResult &LHS, TypeSwitchGuardParam *Opt);
-  ExprResult ParseSelectorOrTypeAssertionSuffix(ExprResult &LHS,
-                                                TypeSwitchGuardParam *Opt);
+  ExprResult ParseSelectorOrTypeAssertionOrTypeSwitchGuardSuffix(
+      ExprResult &LHS, TypeSwitchGuardParam *Opt);
   ExprResult ParseIndexOrSliceSuffix(ExprResult &LHS);
   ExprResult ParseCallSuffix(ExprResult &LHS);
   ExprResult ParseBasicLit();

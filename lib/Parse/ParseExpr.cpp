@@ -280,19 +280,21 @@ Parser::ParsePrimaryExprSuffix(ExprResult &LHS, TypeSwitchGuardParam *Opt) {
     default:  // Not a postfix-expression suffix.
       return LHS;
     case tok::period: {  // Selector or TypeAssertion
-      LHS = ParseSelectorOrTypeAssertionSuffix(LHS, Opt);
+      if (Opt)
+        Opt->Reset(*this);
+      LHS = ParseSelectorOrTypeAssertionOrTypeSwitchGuardSuffix(LHS, Opt);
       break;
     }
     case tok::l_square: {  // Index or Slice
-      LHS = ParseIndexOrSliceSuffix(LHS);
       if (Opt)
         Opt->Reset(*this);
+      LHS = ParseIndexOrSliceSuffix(LHS);
       break;
     }
     case tok::l_paren: {  // Call
-      LHS = ParseCallSuffix(LHS);
       if (Opt)
         Opt->Reset(*this);
+      LHS = ParseCallSuffix(LHS);
       break;
     }
     }
@@ -302,12 +304,12 @@ Parser::ParsePrimaryExprSuffix(ExprResult &LHS, TypeSwitchGuardParam *Opt) {
 /// Selector       = "." identifier .
 /// TypeAssertion  = "." "(" Type ")" .
 Action::ExprResult
-Parser::ParseSelectorOrTypeAssertionSuffix(ExprResult &LHS,
-                                           TypeSwitchGuardParam *Opt) {
+Parser::ParseSelectorOrTypeAssertionOrTypeSwitchGuardSuffix(
+    ExprResult &LHS, TypeSwitchGuardParam *Opt) {
   assert(Tok.is(tok::period) && "expected '.'");
   ConsumeToken();
 
-  bool AllowType = Opt;
+  bool AllowTypeKeyword = Opt != NULL;
 
   SourceLocation PrevLoc = PrevTokLocation;
 
@@ -318,8 +320,8 @@ Parser::ParseSelectorOrTypeAssertionSuffix(ExprResult &LHS,
     ConsumeParen();
 
     if (Tok.is(tok::kw_type)) {
-      if (!AllowType)
-        Diag(PrevLoc, diag::type_only_valid_in_switch);
+      if (!AllowTypeKeyword)
+        Diag(PrevLoc, diag::unexpected_kw_type);
       else if (Opt)
         Opt->Set(PrevLoc);
       ConsumeToken();

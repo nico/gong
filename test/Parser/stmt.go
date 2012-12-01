@@ -101,7 +101,7 @@ func f() {
     fallthrough
   default: continue
   }
-  // FIXME: switch i := 0; j := 0 {} should diag
+  switch i := 0; j := 0 {} // expected-diag{{expected expression or type switch guard}}
 
   switch i.(int) {}  // Note: This is an ExprSwitchStmt, Not a TypeSwitchStmt
   //   TypeSwitchStmts
@@ -112,15 +112,18 @@ func f() {
   switch a = a.(type) {}  // expected-diag{{unexpected '.(type)'}} expected-diag{{expected expression or type switch guard}}
   switch a = 4; a := a.(type) {}
   switch a := 4; a := a.(type) {}
-  //switch a.(type); a.(type) {}
-  //switch a.(type).(type) {}
-  //switch a.(int).(type) {}  // Valid!
-  //switch a.foo.(type) {}
-  //switch a[i].(type) {}
-  //switch a().(type) {}
-  //switch a.(type).(int) {}
-  //switch a.(type), a.(type) {}
-  //switch a.(type) := 4 {}
+  switch a.(type); a.(type) {}  // expected-diag{{expected '{'}}
+  switch a.(type).(type) {}  // expected-diag{{unexpected '.(type)'}}
+  switch a.(int).(type) {}  // Valid!
+  switch a.foo.(type) {}
+  switch a[i].(type) {}
+  switch a().(type) {}
+  switch a.(type).(int) {}  // expected-diag{{unexpected '.(type)'}}
+  switch a.(type).foo {}  // expected-diag{{unexpected '.(type)'}}
+  switch a.(type)() {}  // expected-diag{{unexpected '.(type)'}}
+  switch a.(type)[3] {}  // expected-diag{{unexpected '.(type)'}}
+  //switch a.(type), a.(type) {}  // FIXME
+  switch a.(type) := 4 {}  // expected-diag{{unexpected expression before ':='}} expected-diag{{unexpected '.(type)'}} expected-diag{{expected expression or type switch guard}}
   //FIXME: TypeSwitchCases
 
 

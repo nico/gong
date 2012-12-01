@@ -435,7 +435,7 @@ bool Parser::ParseSwitchStmt() {
 
   if (Tok.isNot(tok::l_brace)) {
     Diag(Tok, diag::expected_l_brace);
-    return true;
+    SkipUntil(tok::l_brace, /*StopAtSemi=*/false, /*DontConsume=*/true);
   }
   ConsumeBrace();
 
