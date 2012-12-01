@@ -31,7 +31,7 @@ using namespace gong;
 //===----------------------------------------------------------------------===//
 
 enum {
-  CHAR_HORZ_WS  = 0x01,  // ' ', '\t', '\f', '\v'.  Note, no '\0'
+  CHAR_HORZ_WS  = 0x01,  // ' ', '\t'.  Note, no '\0'
   CHAR_VERT_WS  = 0x02,  // '\r', '\n'
   CHAR_LETTER   = 0x04,  // a-z,A-Z
   CHAR_NUMBER   = 0x08,  // 0-9
@@ -50,8 +50,8 @@ static const unsigned char CharInfo[256] =
    0           , 0           , 0           , 0           ,
 // 8 BS          9 HT         10 NL         11 VT
 //12 NP         13 CR         14 SO         15 SI
-   0           , CHAR_HORZ_WS, CHAR_VERT_WS, CHAR_HORZ_WS,
-   CHAR_HORZ_WS, CHAR_VERT_WS, 0           , 0           ,
+   0           , CHAR_HORZ_WS, CHAR_VERT_WS, 0           ,
+   0           , CHAR_VERT_WS, 0           , 0           ,
 //16 DLE        17 DC1        18 DC2        19 DC3
 //20 DC4        21 NAK        22 SYN        23 ETB
    0           , 0           , 0           , 0           ,
@@ -116,8 +116,8 @@ static void InitCharacterInfo() {
   // check the statically-initialized CharInfo table
   assert(CHAR_HORZ_WS == CharInfo[(int)' ']);
   assert(CHAR_HORZ_WS == CharInfo[(int)'\t']);
-  assert(CHAR_HORZ_WS == CharInfo[(int)'\f']);
-  assert(CHAR_HORZ_WS == CharInfo[(int)'\v']);
+  assert(CHAR_HORZ_WS != CharInfo[(int)'\f']);
+  assert(CHAR_HORZ_WS != CharInfo[(int)'\v']);
   assert(CHAR_VERT_WS == CharInfo[(int)'\n']);
   assert(CHAR_VERT_WS == CharInfo[(int)'\r']);
   assert(CHAR_UNDER   == CharInfo[(int)'_']);
@@ -1142,8 +1142,6 @@ LexNextToken:
     goto LexNextToken;   // GCC isn't tail call eliminating.
   case ' ':
   case '\t':
-  case '\f':
-  case '\v':
   SkipHorizontalWhitespace:
     Result.setFlag(Token::LeadingSpace);
     if (SkipWhitespace(Result, CurPtr))
