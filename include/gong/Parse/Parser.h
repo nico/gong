@@ -306,6 +306,11 @@ public:
                        SimpleStmtExts Ext = SSE_None);
   bool ParseSimpleStmtTail(IdentifierInfo *II, SimpleStmtKind *OutKind = NULL,
                            SimpleStmtExts Ext = SSE_None);
+  bool ParseSimpleStmtTailAfterExpression(ExprResult &LHS,
+                                          SourceLocation StartLoc,
+                                          TypeSwitchGuardParam *Opt,
+                                          SimpleStmtKind *OutKind,
+                                          SimpleStmtExts Ext);
 
   bool ParseShortVarDeclTail(TypeSwitchGuardParam *Opt = NULL);
   bool ParseAssignmentTail(tok::TokenKind Op);

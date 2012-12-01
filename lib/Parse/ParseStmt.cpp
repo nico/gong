@@ -88,16 +88,17 @@ bool Parser::ParseStatement() {
 bool Parser::ParseSimpleStmt(SimpleStmtKind *OutKind, SimpleStmtExts Ext) {
   if (Tok.is(tok::semi))
     return ParseEmptyStmt();
-  // FIXME: Not true, could be all the other valid expr prefixes too (literal,
-  // 'struct', etc).
-  if (Tok.isNot(tok::identifier)) {
-    Diag(Tok, diag::expected_ident);
-    // FIXME: recover?
-    return true;
+  if (Tok.is(tok::identifier)) {
+    IdentifierInfo *II = Tok.getIdentifierInfo();
+    ConsumeToken();
+    return ParseSimpleStmtTail(II, OutKind, Ext);
   }
-  IdentifierInfo *II = Tok.getIdentifierInfo();
-  ConsumeToken();
-  return ParseSimpleStmtTail(II, OutKind, Ext);
+  SourceLocation StartLoc = Tok.getLocation();
+  TypeSwitchGuardParam Opt, *POpt = Ext == SSE_TypeSwitchGuard ? &Opt : NULL;
+  // Could be: ExpressionStmt, SendStmt, IncDecStmt, Assignment. They all start
+  // with an Expression.
+  ExprResult LHS = ParseExpression(POpt);
+  return ParseSimpleStmtTailAfterExpression(LHS, StartLoc, POpt, OutKind, Ext);
 }
 
 namespace {
@@ -136,6 +137,8 @@ public:
       Parser::SimpleStmtKind *Out)
       : Self(Self), TSG(TSG), Armed(true), Out(Out) {}
   ~TypeSwitchGuardParamRAII() {
+    if (!TSG)
+      return;
     if (Armed)
       TSG->Reset(*Self);
     else if (TSG->Result == Parser::TypeSwitchGuardParam::Parsed && Out)
@@ -146,7 +149,7 @@ public:
 
 }  // namespace
 
-/// Called after the leading IdentifierInfo of a statement has been read.
+/// Called after the leading IdentifierInfo of a simple statement has been read.
 bool Parser::ParseSimpleStmtTail(IdentifierInfo *II, SimpleStmtKind *OutKind,
                                  SimpleStmtExts Ext) {
   SourceLocation StartLoc = PrevTokLocation;
@@ -178,25 +181,34 @@ bool Parser::ParseSimpleStmtTail(IdentifierInfo *II, SimpleStmtKind *OutKind,
       return ParseAssignmentTail(tok::equal);
   }
 
-  TypeSwitchGuardParam Opt, *POpt = NULL;
-  if (Ext == SSE_TypeSwitchGuard)
-    POpt = &Opt;
-  // In a switch statement, ParseSimpleStmtTail() has to accept TypeSwitchGuards
-  // which technically aren't SimpleStmts.  OptRAII will diag on all
-  // TypeSwitchGuards when destructed unless it's explicitly disarm()ed.
-  TypeSwitchGuardParamRAII OptRAII(this, &Opt, OutKind);
+  TypeSwitchGuardParam Opt, *POpt = Ext == SSE_TypeSwitchGuard ? &Opt : NULL;
 
   if (Tok.is(tok::colonequal)) {
     ConsumeToken();
     if (Tok.is(tok::kw_range))
       return ParseRangeClauseTail(tok::colonequal, OutKind, Ext);
-    OptRAII.disarm();
-    return ParseShortVarDeclTail(POpt);
+    bool Result = ParseShortVarDeclTail(POpt);
+    if (POpt && POpt->Result == TypeSwitchGuardParam::Parsed && OutKind)
+      *OutKind = SSK_TypeSwitchGuard;
+    return Result;
   }
-
   // Could be: ExpressionStmt, SendStmt, IncDecStmt, Assignment. They all start
   // with an Expression.
   ExprResult LHS = ParseExpressionTail(II, POpt);
+  return ParseSimpleStmtTailAfterExpression(LHS, StartLoc, POpt, OutKind, Ext);
+}
+
+/// Called after the leading Expression of a simple statement has been read.
+bool
+Parser::ParseSimpleStmtTailAfterExpression(ExprResult &LHS,
+                                           SourceLocation StartLoc,
+                                           TypeSwitchGuardParam *Opt,
+                                           SimpleStmtKind *OutKind,
+                                           SimpleStmtExts Ext) {
+  // In a switch statement, ParseSimpleStmtTail() has to accept TypeSwitchGuards
+  // which technically aren't SimpleStmts.  OptRAII will diag on all
+  // TypeSwitchGuards when destructed unless it's explicitly disarm()ed.
+  TypeSwitchGuardParamRAII OptRAII(this, Opt, OutKind);
 
   if (Tok.is(tok::comma)) {
     // Must be an expression list, and the simplestmt must be an assignment.

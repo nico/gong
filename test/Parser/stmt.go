@@ -86,6 +86,17 @@ func f() {
   if a := 4; 5 < 6 {
   } else if b := 5; 6 < 7 {
   }
+  if ; a < 4 { a = 4 }
+  if 4; true {}
+  if '4'; true {}
+  if "asdf"; true {}
+  if `asdf`; true {}
+  if +4; true {}
+  if []int{1, 2}; true {}
+  if func(){}(); true {}
+  if chan int(4); true {}
+  if interface{}(a); true {}
+  if interface{}(a).(int); true {}
   // FIXME: if a := 4; {} // should-diag
 
   // SwitchStmt
@@ -124,6 +135,7 @@ func f() {
   switch a.(type)[3] {}  // expected-diag{{unexpected '.(type)'}}
   switch a.(type), a.(type) {}  // expected-diag 2 {{unexpected '.(type)'}} expected-diag{{expected assignment operator}} expected-diag{{expected expression or type switch guard}}
   switch a.(type) := 4 {}  // expected-diag{{unexpected expression before ':='}} expected-diag{{unexpected '.(type)'}} expected-diag{{expected expression or type switch guard}}
+  switch interface{}(4).(type) {}
   //FIXME: TypeSwitchCases
 
 
