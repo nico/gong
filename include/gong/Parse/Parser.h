@@ -210,6 +210,7 @@ public:
   bool ParseChannelType();
   bool IsElementType() { return IsType(); }
   bool ParseElementType();
+  bool ParseTypeList();
 
   bool ParseIdentifierList();
   bool ParseIdentifierListTail(IdentifierInfo *Head);
@@ -325,8 +326,9 @@ public:
   bool ParseFallthroughStmt();
   bool ParseIfStmt();
   bool ParseSwitchStmt();
-  bool ParseExprCaseClause();
-  bool ParseExprSwitchCase();
+  enum CaseClauseType { ExprCaseClause, TypeCaseClause };
+  bool ParseCaseClause(CaseClauseType Type);
+  bool ParseSwitchCase(CaseClauseType Type);
   bool ParseSelectStmt();
   bool ParseCommClause();
   bool ParseCommCase();

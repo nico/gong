@@ -110,6 +110,7 @@ func f() {
     a += 4
     if a < b {}
     fallthrough
+  case func(int) float64:  // expected-diag{{expected '{' or '('}}
   default: continue
   }
   switch i := 0; j := 0 {} // expected-diag{{expected expression or type switch guard}}
@@ -136,7 +137,15 @@ func f() {
   switch a.(type), a.(type) {}  // expected-diag 2 {{unexpected '.(type)'}} expected-diag{{expected assignment operator}} expected-diag{{expected expression or type switch guard}}
   switch a.(type) := 4 {}  // expected-diag{{unexpected expression before ':='}} expected-diag{{unexpected '.(type)'}} expected-diag{{expected expression or type switch guard}}
   switch interface{}(4).(type) {}
-  //FIXME: TypeSwitchCases
+  switch i := x.(type) {
+  case nil: printString("x is nil")
+  case int: printInt(i)  // i is int
+  case float64: printFloat64(i)  // i is float64
+  case func(int) float64: printFunction(i)  // i is function
+  case bool, string: printString("type is bool or string")  // i is interface{}
+  // case 4:  // FIXME: should diag
+  default: printString("don't know the type")
+  }
 
 
   // SelectStmt

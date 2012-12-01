@@ -412,9 +412,6 @@ bool Parser::ParseIfStmt() {
 /// TypeSwitchStmt  = "switch" [ SimpleStmt ";" ] TypeSwitchGuard
 ///                   "{" { TypeCaseClause } "}" .
 /// TypeSwitchGuard = [ identifier ":=" ] PrimaryExpr "." "(" "type" ")" .
-/// TypeCaseClause  = TypeSwitchCase ":" { Statement ";" } .
-/// TypeSwitchCase  = "case" TypeList | "default" .
-/// TypeList        = Type { "," Type } .
 bool Parser::ParseSwitchStmt() {
   assert(Tok.is(tok::kw_switch) && "expected 'switch'");
   ConsumeToken();
@@ -456,8 +453,6 @@ bool Parser::ParseSwitchStmt() {
   }
   ConsumeBrace();
 
-  // FIXME: Parse TypeSwitchCases here if IsTypeSwitch is set.
-
   // FIXME: This is fairly similar to the {} code in ParseSelectStmt().
   while (Tok.isNot(tok::r_brace) && Tok.isNot(tok::eof)) {
     if (Tok.isNot(tok::kw_case) && Tok.isNot(tok::kw_default)) {
@@ -465,7 +460,7 @@ bool Parser::ParseSwitchStmt() {
       SkipUntil(tok::r_brace, /*StopAtSemi=*/false);
       return true;
     }
-    if (ParseExprCaseClause()) {
+    if (ParseCaseClause(IsTypeSwitch ? TypeCaseClause : ExprCaseClause)) {
       SkipUntil(tok::r_brace, /*StopAtSemi=*/false);
       return true;
     }
@@ -478,8 +473,9 @@ bool Parser::ParseSwitchStmt() {
 }
 
 /// ExprCaseClause = ExprSwitchCase ":" { Statement ";" } .
-bool Parser::ParseExprCaseClause() {
-  ParseExprSwitchCase();
+/// TypeCaseClause  = TypeSwitchCase ":" { Statement ";" } .
+bool Parser::ParseCaseClause(CaseClauseType Type) {
+  ParseSwitchCase(Type);
 
   // FIXME: This is _really_ similar to ParseCommClause.
   if (Tok.isNot(tok::colon)) {
@@ -511,7 +507,8 @@ bool Parser::ParseExprCaseClause() {
 }
 
 /// ExprSwitchCase = "case" ExpressionList | "default" .
-bool Parser::ParseExprSwitchCase() {
+/// TypeSwitchCase  = "case" TypeList | "default" .
+bool Parser::ParseSwitchCase(CaseClauseType Type) {
   assert((Tok.is(tok::kw_case) || Tok.is(tok::kw_default)) &&
          "expected 'case' or 'default'");
   if (Tok.is(tok::kw_default)) {
@@ -519,7 +516,10 @@ bool Parser::ParseExprSwitchCase() {
     return false;
   }
   ConsumeToken();
-  return ParseExpressionList().isInvalid();
+  switch (Type) {
+  case ExprCaseClause: return ParseExpressionList().isInvalid();
+  case TypeCaseClause: return ParseTypeList();
+  }
 }
 
 /// SelectStmt = "select" "{" { CommClause } "}" .

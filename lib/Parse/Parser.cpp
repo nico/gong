@@ -769,6 +769,17 @@ bool Parser::ParseElementType() {
   return ParseType();
 }
 
+/// TypeList        = Type { "," Type } .
+bool Parser::ParseTypeList() {
+  ParseType();
+  while (Tok.is(tok::comma)) {
+    ConsumeToken();
+    // FIXME: Diag if Tok doesn't start a type.
+    ParseType();
+  }
+  return false;
+}
+
 /// IdentifierList = identifier { "," identifier } .
 bool Parser::ParseIdentifierList() {
   assert(Tok.is(tok::identifier) && "Expected identifier");

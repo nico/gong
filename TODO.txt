@@ -24,8 +24,6 @@ Parser
 types/exprs in ()  (similar to :: in c++ maybe?)
 (*TypeName) in MethodExprs
 
-TypeCaseClauses
-
 var, const, () grouping for type, var, const
 
 qualifiedidents
