@@ -24,56 +24,7 @@ Parser
 types/exprs in ()  (similar to :: in c++ maybe?)
 (*TypeName) in MethodExprs
 
-switch
-  - Needs "allow typeswitchguard / was tsg" functionality in ParseSimpleStmt
-  TypeSwitchGuard = [ identifier ":=" ] PrimaryExpr "." "(" "type" ")"
-  TypeSwitchStmt  = "switch" [ SimpleStmt ";" ] TypeSwitchGuard
-                    "{" { TypeCaseClause } "}" .
-  ExprSwitchStmt  = "switch" [ SimpleStmt ";" ] [ Expression ]
-                    "{" { ExprCaseClause } "}" .
-Plan A:
-  * Pass "allow .(type)" flag to ParseExpression(), reset it everywhere along
-    the way if something isn't a PrimaryExpr. Let ParseExpression() return if
-    it saw a ".(type)".
-  * Have same flag for ParseSimpleStmt(), pass it on to ParseExpression(). Check
-    result. If flag is set and ".(type)" was seen, only allow a single
-    identifier.
-
-Plan B:
-  * Pass "allow .(type)" flag to ParseExpression(), reset it everywhere along
-    the way if something isn't a PrimaryExpr. Let ParseExpression() return if
-    it saw a ".(type)".
-  * Have switchstmt parse logic look for 'identifier ":="'. Jump into
-    ParseSimpleStmtTail if ":=" not found, else ParseExpression() with flag set.
-  Issue: 'identifier ":="' is optional, so either ParseSimpleStmtTail() needs to
-    learn about TypeSwitchStmts anyway, or ParseSwitchStmt needs to do a lot of
-     the work that ParseSimpleStmt does (parse an expression, check if next is
-     ',', parse more expressions, check for =, op=
-
-Plan C:
-  * Implement lookahead. After parsing an expression, check if the next tokens
-    are '.(type)' and if so don't consume the tokens. Consume them back in
-    ParseSwitchStmt.
-  * But: Now need to retroactively check if the expr was Primary, etc
-
-
-Tests:
-  switch a.(type)++ {}
-  switch a.(type) + 4 {}
-  switch a = a.(type) {}
-  switch a = 4; a := a.(type) {}
-  switch a := 4; a := a.(type) {}
-  switch a.(type); a.(type) {}
-  switch a.(type).(type) {}
-  switch a.(int).(type) {}  // Valid!
-  switch a.foo.(type) {}
-  switch a[i].(type) {}
-  switch a().(type) {}
-  switch a.(type).(int) {}
-    
-
-
-
+TypeCaseClauses
 
 var, const, () grouping for type, var, const
 
