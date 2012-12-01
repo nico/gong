@@ -202,6 +202,11 @@ bool Parser::ParseSimpleStmtTail(IdentifierInfo *II, SimpleStmtKind *OutKind,
     // Must be an expression list, and the simplestmt must be an assignment.
     ParseExpressionListTail(LHS);
 
+    if (!IsAssignmentOp(Tok.getKind()) && Tok.isNot(tok::colonequal)) {
+      Diag(Tok, diag::expected_assign_op);
+      return true;
+    }
+
     tok::TokenKind Op = Tok.getKind();
     SourceLocation OpLocation = ConsumeToken();
     if (Tok.is(tok::kw_range))

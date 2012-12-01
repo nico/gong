@@ -122,7 +122,7 @@ func f() {
   switch a.(type).foo {}  // expected-diag{{unexpected '.(type)'}}
   switch a.(type)() {}  // expected-diag{{unexpected '.(type)'}}
   switch a.(type)[3] {}  // expected-diag{{unexpected '.(type)'}}
-  //switch a.(type), a.(type) {}  // FIXME
+  switch a.(type), a.(type) {}  // expected-diag 2 {{unexpected '.(type)'}} expected-diag{{expected assignment operator}} expected-diag{{expected expression or type switch guard}}
   switch a.(type) := 4 {}  // expected-diag{{unexpected expression before ':='}} expected-diag{{unexpected '.(type)'}} expected-diag{{expected expression or type switch guard}}
   //FIXME: TypeSwitchCases
 
