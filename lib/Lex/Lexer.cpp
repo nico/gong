@@ -268,52 +268,11 @@ void Lexer::DumpToken(const Token &Tok, bool DumpFlags) const {
 /// If we're in KeepCommentMode or any CommentHandler has inserted
 /// some tokens, this will store the first token and return true.
 bool Lexer::SkipLineComment(Token &Result, const char *CurPtr) {
-  // Scan over the body of the comment.  The common case, when scanning, is that
-  // the comment contains normal ascii characters with nothing interesting in
-  // them.  As such, optimize for this case with the inner loop.
-  char C;
-  do {
-    C = *CurPtr;
-    // Skip over characters in the fast loop.
-    while (C != 0 &&                // Potentially EOF.
-           C != '\n' && C != '\r')  // Newline or DOS-style newline.
-      C = *++CurPtr;
-
-    const char *NextLine = CurPtr;
-    if (C != 0) {
-      // We found a newline, see if it's escaped.
-      const char *EscapePtr = CurPtr-1;
-      while (isHorizontalWhitespace(*EscapePtr)) // Skip whitespace.
-        --EscapePtr;
-
-      if (*EscapePtr == '\\') // Escaped newline.
-        CurPtr = EscapePtr;
-      else if (EscapePtr[0] == '/' && EscapePtr[-1] == '?' &&
-               EscapePtr[-2] == '?') // Trigraph-escaped newline.
-        CurPtr = EscapePtr-2;
-      else
-        break; // This is a newline, we're done.
-    }
-
-    // Otherwise, this is a hard case.  Fall back on getAndAdvanceChar to
-    // properly decode the character.  Read it in raw mode to avoid emitting
-    // diagnostics about things like trigraphs.  If we see an escaped newline,
-    // we'll handle it below.
-    const char *OldPtr = CurPtr;
-    C = getAndAdvanceChar(CurPtr, Result);
-
-    // If we only read only one character, then no special handling is needed.
-    // We're done and can skip forward to the newline.
-    if (C != 0 && CurPtr == OldPtr+1) {
-      CurPtr = NextLine;
-      break;
-    }
-
-    if (CurPtr == BufferEnd+1) { 
-      --CurPtr; 
-      break; 
-    }
-  } while (C != '\n' && C != '\r');
+  char C = *CurPtr;
+  // Skip over characters in the fast loop.
+  while (CurPtr != BufferEnd && 
+         C != '\n' && C != '\r')  // Newline or DOS-style newline.
+    C = *++CurPtr;
 
   handleComment(Result, SourceRange(getSourceLocation(BufferPtr),
                                     getSourceLocation(CurPtr)));
