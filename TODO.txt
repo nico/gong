@@ -37,6 +37,9 @@ Have nice fixit for toplevel `a := b`
 
 Handle https://groups.google.com/forum/#!topic/golang-nuts/Bv4GDkPRMxA well
 
+missing closing braces after interface, struct, blocks, selects, switchs
+missing closing parens after impor/var/const/type spec
+
 
 introduce a consistent naming scheme for functions that assert the current
 token type vs those that don't

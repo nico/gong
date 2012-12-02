@@ -821,9 +821,9 @@ bool Parser::ParseConstDecl() {
   ConsumeToken();
   if (Tok.is(tok::identifier))
     return ParseConstSpec();
-
-  // FIXME
-  assert(false && "FIXME: implement constdecl groups");
+  if (Tok.is(tok::l_paren))
+    return ParseDeclGroup(DGK_Const);
+  Diag(Tok, diag::expected_ident_or_l_paren);
   SkipUntil(tok::semi, /*StopAtSemi=*/false, /*DontConsume=*/true);
   return true;
 }
@@ -832,7 +832,7 @@ bool Parser::ParseConstDecl() {
 bool Parser::ParseConstSpec() {
   assert(Tok.is(tok::identifier) && "Expected identifier");
   ParseIdentifierList();
-  if (Tok.is(tok::semi))
+  if (Tok.is(tok::semi) || Tok.is(tok::r_paren))
     return false;
   if (Tok.isNot(tok::equal) && !IsType()) {
     Diag(Tok, diag::expected_equal_or_type);
@@ -907,6 +907,38 @@ bool Parser::ParseVarSpec() {
     Diag(Tok, diag::expected_equal);
   ConsumeToken();  // Eat '='.
   return ParseExpressionList().isInvalid();
+}
+
+bool Parser::ParseDeclGroup(DeclGroupKind Kind) {
+  assert(Tok.is(tok::l_paren) && "Expected '('");
+  ConsumeParen();
+
+  // FIXME: Similar to importspec block parsing
+  while (Tok.isNot(tok::r_paren) && Tok.isNot(tok::eof)) {
+    if (Tok.isNot(tok::identifier)) {
+      Diag(Tok, diag::expected_ident);
+      SkipUntil(tok::r_paren, /*StopAtSemi=*/false);
+      return true;
+    }
+    bool Fail;
+    switch (Kind) {
+    case DGK_Const: Fail = ParseConstSpec(); break;
+    case DGK_Type:  Fail = ParseTypeSpec(); break;
+    case DGK_Var:   Fail = ParseVarSpec(); break;
+    }
+    if (Fail) {
+      SkipUntil(tok::r_paren, /*StopAtSemi=*/false);
+      return true;
+    }
+
+    if (Tok.isNot(tok::semi) && Tok.isNot(tok::r_paren)) {
+      Diag(diag::expected_semi);
+      SkipUntil(tok::r_paren, /*StopAtSemi=*/true, /*DontConsume=*/true);
+    }
+    if (Tok.is(tok::semi))
+      ConsumeToken();
+  }
+  return ExpectAndConsume(tok::r_paren, diag::expected_r_paren);
 }
 
 bool Parser::IsType() {

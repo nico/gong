@@ -17,11 +17,17 @@ const foo, bar int = 1, 2
 const foo int 4  // expected-diag{{expected '='}}
 const foo 4  // expected-diag{{expected '=' or type}}
 
+const ( foo )
+const ( foo, bar )
+const (
+  bar int = 19; foo = 20
+  baz
+)
+
 //const { foo, bar }
-//const {
-//  bar int = 19; foo = 20
-//  baz
-//}
+
+
+// TypeDecls is covered by test/Parser/type.go.
 
 
 // VarDecl
@@ -38,3 +44,9 @@ var foo, bar int = 1, 2
 
 var foo int 4  // expected-diag{{expected '='}}
 var foo 4  // expected-diag{{expected '=' or type}}
+
+//var ( foo, bar )
+//var (
+//  bar int = 19; foo = 20
+//  baz
+//)
