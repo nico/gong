@@ -346,14 +346,8 @@ bool Parser::ParseParameters() {
   if (Tok.is(tok::comma))
     ConsumeToken();
 
-  if (Tok.is(tok::r_paren)) {
-    ConsumeParen();
-    return false;
-  } else {
-    Diag(Tok, diag::expected_r_paren);
-    SkipUntil(tok::r_paren, /*StopAtSemi=*/true, /*DontConsume=*/true);
-    return true;
-  }
+  return ExpectAndConsume(
+      tok::r_paren, diag::expected_r_paren, "", tok::r_paren);
 }
 
 bool Parser::IsParameterList() {
