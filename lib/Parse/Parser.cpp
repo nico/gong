@@ -856,10 +856,10 @@ bool Parser::ParseTypeDecl() {
   ConsumeToken();
   if (Tok.is(tok::identifier))
     return ParseTypeSpec();
-
-  // FIXME
+  if (Tok.is(tok::l_paren))
+    return ParseDeclGroup(DGK_Type);
+  Diag(Tok, diag::expected_ident_or_l_paren);
   SkipUntil(tok::semi, /*StopAtSemi=*/false, /*DontConsume=*/true);
-  assert(false && "FIXME: implement typespec groups");
   return true;
 }
 

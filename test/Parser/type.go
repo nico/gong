@@ -2,6 +2,12 @@
 
 package p
 
+type ( t int )
+type (
+  t int
+  t [4]int
+)
+
 // TypeName
 type t int
 type t int.int
