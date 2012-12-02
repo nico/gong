@@ -284,7 +284,7 @@ public:
   ExprResult ParseIndexOrSliceSuffix(ExprResult &LHS);
   ExprResult ParseCallSuffix(ExprResult &LHS);
   ExprResult ParseBasicLit();
-  ExprResult ParseCompositeLitOrConversion();
+  ExprResult ParseCompositeLitOrConversion(TypeParam *TOpt);
   ExprResult ParseLiteralValue();
   ExprResult ParseElementList();
   ExprResult ParseElement();

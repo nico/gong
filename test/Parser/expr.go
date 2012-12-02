@@ -105,23 +105,24 @@ func f() {
   //(*mytype).mymethod
 
   // PrimaryExpr, Operand, '(' Expression ')'
-  //FIXME
   (4 + 4)
   (+4)
-  //((+4))
-  //(+(4))
+  ((+4))
+  (+(4))
   (-4)
   (!4)
   (^4)
   (&4)
   ('a')
-  //(4 + foo)
-  //(foo + 4)
-  //((4 + 4) * 5)
-  //(5 * (4 + 4))
-  //((+4))
-  //(([...]int{1,2,3} + 4))
-  //(([]int))([...]int{1,2,3})
+  (4 + foo)
+  (foo + 4)
+  ((4 + 4) * 5)
+  (5 * (4 + 4))
+  ((+4))
+  (([...]int{1,2,3} + 4))
+  (([]int))([...]int{1,2,3})
+  (([3]int))([...]int{1,2,3})
+  ((map[int]string))(map[int]string{})
   (interface{})(4).foo
   ((((interface{}))))(4).foo
   (interface{}(4))
@@ -131,6 +132,7 @@ func f() {
   (chan int)(4).foo()
   (chan<- int)  // expected-diag{{expected '('}}
   (chan int).foo()  // expected-diag{{expected '('}}
+  // FIXME: func()
 
   // PrimaryExpr, Conversion
   int(4.5)

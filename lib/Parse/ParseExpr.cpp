@@ -177,7 +177,7 @@ Parser::ParsePrimaryExpr(TypeSwitchGuardParam *TSGOpt, TypeParam *TOpt) {
   case tok::kw_struct:
   case tok::l_square:
   case tok::kw_map:
-    Res = ParseCompositeLitOrConversion();
+    Res = ParseCompositeLitOrConversion(TOpt);
     break;
   case tok::kw_func:
     Res = ParseFunctionLitOrConversion();
@@ -194,9 +194,6 @@ Parser::ParsePrimaryExpr(TypeSwitchGuardParam *TSGOpt, TypeParam *TOpt) {
     break;
   case tok::l_paren: {
     //FIXME:
-    // (: call this function again? Or ParseExpression()? But need to discover
-    //    type of parsed thing?
-    // [, map, struct: type or conversion or literal
     // *: type or deref or conversion or methodexpr
     // <-: type or conversion or expression
     // func: type or conversion or expression or literal
@@ -456,7 +453,7 @@ Parser::ParseBasicLit() {
 /// LiteralType   = StructType | ArrayType | "[" "..." "]" ElementType |
 ///                 SliceType | MapType | TypeName .
 Action::ExprResult
-Parser::ParseCompositeLitOrConversion() {
+Parser::ParseCompositeLitOrConversion(TypeParam *TOpt) {
   // FIXME: TypeName lits (Tok.is(tok::identifier)
   assert((Tok.is(tok::kw_struct) || Tok.is(tok::l_square) ||
         Tok.is(tok::kw_map)) && "Unexpected composite literal start");
@@ -492,8 +489,12 @@ Parser::ParseCompositeLitOrConversion() {
 
   if (!WasEllipsisArray && Tok.is(tok::l_paren))
     return ParseConversionTail();
-  else if(Tok.is(tok::l_brace))
+  if (Tok.is(tok::l_brace))
     return ParseLiteralValue();
+  if (!WasEllipsisArray && TOpt) {
+    TOpt->Kind = TypeParam::EK_Type;
+    return false;
+  }
 
   // FIXME: ...after 'literal type'
   Diag(Tok, WasEllipsisArray ? diag::expected_l_brace :
