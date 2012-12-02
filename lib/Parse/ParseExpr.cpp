@@ -191,9 +191,16 @@ Parser::ParsePrimaryExpr(TypeSwitchGuardParam *Opt) {
   case tok::kw_interface:
     Res = ParseConversion();
     break;
-  case tok::l_paren:
-    Res = ParseParenthesizedPrimaryExpr();
+  case tok::l_paren: {
+    ParenExprKind Kind;
+    Res = ParseParenthesizedPrimaryExpr(&Kind);
+    // FIXME: This is mostly duplicated from ParseConversion().
+    if (Tok.isNot(tok::l_paren) && Kind == PEK_Type) {
+      Diag(Tok, diag::expected_l_paren);
+      return ExprError();
+    }
     break;
+  }
   }
   return ParsePrimaryExprSuffix(Res, Opt);
 }
@@ -279,7 +286,7 @@ Parser::ParseConversionTail() {
 ///   2. The '(' Type ')' producing in Type, at the beginning of a Conversion.
 ///   3. The '(' '*' TypeName ')' production in Operand's MethodExpr.
 Action::ExprResult
-Parser::ParseParenthesizedPrimaryExpr() {
+Parser::ParseParenthesizedPrimaryExpr(ParenExprKind *OutKind) {
   assert(Tok.is(tok::l_paren) && "expected '('");
   ConsumeParen();
 
@@ -304,6 +311,7 @@ Parser::ParseParenthesizedPrimaryExpr() {
   case tok::exclaim:
   case tok::caret:
   case tok::amp:
+    *OutKind = PEK_Expr;
     Res = ParseExpression();
     break;
   case tok::kw_interface:
@@ -311,8 +319,12 @@ Parser::ParseParenthesizedPrimaryExpr() {
     ParseType();
     // FIXME: If this is not followed by l_paren, this is just a type and
     // the caller needs to check for an l_paren after the r_paren below.
-    if (Tok.is(tok::l_paren))
+    if (Tok.is(tok::l_paren)) {
+      *OutKind = PEK_Expr;
       ParseConversionTail();
+    } else {
+      *OutKind = PEK_Type;
+    }
   }
   ExpectAndConsume(tok::r_paren, diag::expected_r_paren);
   return Res;

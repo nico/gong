@@ -127,8 +127,8 @@ func f() {
   (interface{}(4)).foo()
   (chan int)(4).foo
   (chan<- int)(4)
-  (chan int).foo()
-  (chan<- int)  // FIXME: should-diag
+  (chan int)(4).foo()
+  (chan<- int)  // expected-diag{{expected '('}}
 
   // PrimaryExpr, Conversion
   int(4.5)
