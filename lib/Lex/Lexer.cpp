@@ -35,8 +35,7 @@ enum {
   CHAR_VERT_WS  = 0x02,  // '\r', '\n'
   CHAR_LETTER   = 0x04,  // a-z,A-Z
   CHAR_NUMBER   = 0x08,  // 0-9
-  CHAR_UNDER    = 0x10,  // _
-  CHAR_RAWDEL   = 0x40   // {}[]#<>%:;?*+-/^&|~!=,"'
+  CHAR_UNDER    = 0x10   // _
 };
 
 // Statically initialize CharInfo table based on ASCII character set
@@ -61,20 +60,20 @@ static const unsigned char CharInfo[256] =
    0           , 0           , 0           , 0           ,
 //32 SP         33  !         34  "         35  #
 //36  $         37  %         38  &         39  '
-   CHAR_HORZ_WS, CHAR_RAWDEL , CHAR_RAWDEL , CHAR_RAWDEL ,
-   0           , CHAR_RAWDEL , CHAR_RAWDEL , CHAR_RAWDEL ,
+   CHAR_HORZ_WS, 0           , 0           , 0           ,
+   0           , 0           , 0           , 0           ,
 //40  (         41  )         42  *         43  +
 //44  ,         45  -         46  .         47  /
-   0           , 0           , CHAR_RAWDEL , CHAR_RAWDEL ,
-   CHAR_RAWDEL , CHAR_RAWDEL , 0           , CHAR_RAWDEL ,
+   0           , 0           , 0           , 0           ,
+   0           , 0           , 0           , 0           ,
 //48  0         49  1         50  2         51  3
 //52  4         53  5         54  6         55  7
    CHAR_NUMBER , CHAR_NUMBER , CHAR_NUMBER , CHAR_NUMBER ,
    CHAR_NUMBER , CHAR_NUMBER , CHAR_NUMBER , CHAR_NUMBER ,
 //56  8         57  9         58  :         59  ;
 //60  <         61  =         62  >         63  ?
-   CHAR_NUMBER , CHAR_NUMBER , CHAR_RAWDEL , CHAR_RAWDEL ,
-   CHAR_RAWDEL , CHAR_RAWDEL , CHAR_RAWDEL , CHAR_RAWDEL ,
+   CHAR_NUMBER , CHAR_NUMBER , 0           , 0           ,
+   0           , 0           , 0           , 0           ,
 //64  @         65  A         66  B         67  C
 //68  D         69  E         70  F         71  G
    0           , CHAR_LETTER , CHAR_LETTER , CHAR_LETTER ,
@@ -89,8 +88,8 @@ static const unsigned char CharInfo[256] =
    CHAR_LETTER , CHAR_LETTER , CHAR_LETTER , CHAR_LETTER ,
 //88  X         89  Y         90  Z         91  [
 //92  \         93  ]         94  ^         95  _
-   CHAR_LETTER , CHAR_LETTER , CHAR_LETTER , CHAR_RAWDEL ,
-   0           , CHAR_RAWDEL , CHAR_RAWDEL , CHAR_UNDER  ,
+   CHAR_LETTER , CHAR_LETTER , CHAR_LETTER , 0           ,
+   0           , 0           , 0           , CHAR_UNDER  ,
 //96  `         97  a         98  b         99  c
 //100  d       101  e        102  f        103  g
    0           , CHAR_LETTER , CHAR_LETTER , CHAR_LETTER ,
@@ -105,8 +104,8 @@ static const unsigned char CharInfo[256] =
    CHAR_LETTER , CHAR_LETTER , CHAR_LETTER , CHAR_LETTER ,
 //120  x       121  y        122  z        123  {
 //124  |       125  }        126  ~        127 DEL
-   CHAR_LETTER , CHAR_LETTER , CHAR_LETTER , CHAR_RAWDEL ,
-   CHAR_RAWDEL , CHAR_RAWDEL , CHAR_RAWDEL , 0
+   CHAR_LETTER , CHAR_LETTER , CHAR_LETTER , 0           ,
+   0           , 0           , 0           , 0
 };
 
 static void InitCharacterInfo() {
