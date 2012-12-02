@@ -147,6 +147,7 @@ func f() {
   default: printString("don't know the type")
   }
   switch ((interface{}))(4).(type) {}
+  switch interface{}(new(int)).(type) {}
 
   // SelectStmt
   select {}

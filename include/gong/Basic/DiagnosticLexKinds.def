@@ -94,6 +94,8 @@ DIAG(expected_element_type,        "expected element type")
 DIAG(expected_chan,                "expected 'chan'")
 DIAG(expected_period_or_ident_or_string,
     "expected '.' or identifier or string literal")
+DIAG(expected_l_paren_after_builtin,
+    "expected '(', builtins can only be used in calls")
 DIAG(expected_expr,                "expected expression")
 DIAG(expected_expr_or_typeswitchguard,
     "expected expression or type switch guard")

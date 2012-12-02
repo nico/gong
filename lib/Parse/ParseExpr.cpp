@@ -268,9 +268,36 @@ Parser::ParsePrimaryExprTail(IdentifierInfo *II) {
     if (Tok.is(tok::l_brace))
       return ParseLiteralValue();
     break;
-  case Action::IIT_BuiltinFunc:
-    assert(false && "FIXME: BuiltinCalls");
+  case Action::IIT_BuiltinFunc: {
+    // FIXME: It looks like gc just always accepts types in calls and lets
+    //        sema sort things out. With that change, builtins could be handled
+    //        by the normal ParseCallSuffix() function. (Except that a trailing
+    //        '...' isn't permitted in BuiltinCalls, but see golang bug 4479)
+    /// BuiltinCall = identifier "(" [ BuiltinArgs [ "," ] ] ")" .
+    /// BuiltinArgs = Type [ "," ExpressionList ] | ExpressionList .
+
+    if (Tok.isNot(tok::l_paren)) {
+      Diag(Tok, diag::expected_l_paren_after_builtin);
+      return true;
+    }
+    ConsumeParen();
+    if (Tok.isNot(tok::r_paren)) {
+      TypeParam TypeOpt;
+      // No builtin returns an interface type, so they can't be followed by
+      // '.(type)'.
+      ExprResult LHS = ParseExpression(NULL, &TypeOpt);
+      ParseExpressionListTail(LHS);
+      if (Tok.is(tok::comma))
+        ConsumeToken();
+    }
+    if (Tok.isNot(tok::r_paren)) {
+      Diag(Tok, diag::expected_r_paren);
+      SkipUntil(tok::r_paren);
+      return ExprError();
+    }
+    ConsumeParen();
     break;
+  }
   case Action::IIT_Const:
   case Action::IIT_Func:
   case Action::IIT_Unknown:
@@ -599,9 +626,6 @@ Parser::ParseFunctionLitOrConversion(TypeParam *TOpt) {
   }
 }
 
-
-/// BuiltinCall = identifier "(" [ BuiltinArgs [ "," ] ] ")" .
-/// BuiltinArgs = Type [ "," ExpressionList ] | ExpressionList .
 
 /// MethodExpr    = ReceiverType "." MethodName .
 /// ReceiverType  = TypeName | "(" "*" TypeName ")" .

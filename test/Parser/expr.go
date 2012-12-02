@@ -152,9 +152,9 @@ func f() {
   map[string]int(4)
 
   // PrimaryExpr, BuiltinCall
-  //FIXME
-  //make([]int, 6)
-  //println(4)
+  make([]int, 6)
+  println(4)
+  println  // expected-diag {{expected '(', builtins can only be used in calls}}
 
   // PrimaryExpr Selector
   "asdf".foo
