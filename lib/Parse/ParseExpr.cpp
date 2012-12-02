@@ -54,23 +54,23 @@ static prec::Level getBinOpPrecedence(tok::TokenKind Kind) {
 /// add_op     = "+" | "-" | "|" | "^" .
 /// mul_op     = "*" | "/" | "%" | "<<" | ">>" | "&" | "&^" .
 Parser::ExprResult
-Parser::ParseExpression(TypeSwitchGuardParam *Opt) {
-  ExprResult LHS = ParseUnaryExpr(Opt);
-  return ParseRHSOfBinaryExpression(LHS, prec::Lowest, Opt);
+Parser::ParseExpression(TypeSwitchGuardParam *TSGOpt, TypeParam *TOpt) {
+  ExprResult LHS = ParseUnaryExpr(TSGOpt, TOpt);
+  return ParseRHSOfBinaryExpression(LHS, prec::Lowest, TSGOpt);
 }
 
 /// This is called for expressions that start with an identifier, after the
 /// initial identifier has been read.
 Parser::ExprResult
-Parser::ParseExpressionTail(IdentifierInfo *II, TypeSwitchGuardParam *Opt) {
+Parser::ParseExpressionTail(IdentifierInfo *II, TypeSwitchGuardParam *TSGOpt) {
   ExprResult LHS = ParsePrimaryExprTail(II);
-  LHS = ParsePrimaryExprSuffix(LHS, Opt);
-  return ParseRHSOfBinaryExpression(LHS, prec::Lowest, Opt);
+  LHS = ParsePrimaryExprSuffix(LHS, TSGOpt);
+  return ParseRHSOfBinaryExpression(LHS, prec::Lowest, TSGOpt);
 }
 
 Parser::ExprResult
 Parser::ParseRHSOfBinaryExpression(ExprResult LHS, prec::Level MinPrec,
-                                   TypeSwitchGuardParam *Opt) {
+                                   TypeSwitchGuardParam *TSGOpt) {
   prec::Level NextTokPrec = getBinOpPrecedence(Tok.getKind());
   SourceLocation ColonLoc;
 
@@ -81,8 +81,8 @@ Parser::ParseRHSOfBinaryExpression(ExprResult LHS, prec::Level MinPrec,
     if (NextTokPrec < MinPrec)
       return LHS;
 
-    if (Opt)
-      Opt->Reset(*this);
+    if (TSGOpt)
+      TSGOpt->Reset(*this);
 
     // Consume the operator, saving the operator token for error reporting.
     //Token OpToken = Tok;  // FIXME
@@ -142,12 +142,13 @@ bool Parser::IsUnaryOp() {
 /// UnaryExpr  = PrimaryExpr | unary_op UnaryExpr .
 /// unary_op   = "+" | "-" | "!" | "^" | "*" | "&" | "<-" .
 Action::ExprResult
-Parser::ParseUnaryExpr(TypeSwitchGuardParam *Opt) {
+Parser::ParseUnaryExpr(TypeSwitchGuardParam *TSGOpt, TypeParam *TOpt) {
+  // FIXME: * and <- if TOpt is set.
   if (IsUnaryOp()) {
-    Opt = NULL;
+    TSGOpt = NULL;
     ConsumeToken();  // FIXME: use
   }
-  return ParsePrimaryExpr(Opt);
+  return ParsePrimaryExpr(TSGOpt, TOpt);
 }
 
 /// PrimaryExpr =
@@ -163,7 +164,7 @@ Parser::ParseUnaryExpr(TypeSwitchGuardParam *Opt) {
 /// Literal    = BasicLit | CompositeLit | FunctionLit .
 /// OperandName = identifier | QualifiedIdent.
 Action::ExprResult
-Parser::ParsePrimaryExpr(TypeSwitchGuardParam *Opt) {
+Parser::ParsePrimaryExpr(TypeSwitchGuardParam *TSGOpt, TypeParam *TOpt) {
   ExprResult Res;
 
   switch (Tok.getKind()) {
@@ -189,20 +190,48 @@ Parser::ParsePrimaryExpr(TypeSwitchGuardParam *Opt) {
   }
   case tok::kw_chan:
   case tok::kw_interface:
-    Res = ParseConversion();
+    Res = ParseConversion(TOpt);
     break;
   case tok::l_paren: {
-    ParenExprKind Kind;
-    Res = ParseParenthesizedPrimaryExpr(&Kind);
-    // FIXME: This is mostly duplicated from ParseConversion().
-    if (Tok.isNot(tok::l_paren) && Kind == PEK_Type) {
-      Diag(Tok, diag::expected_l_paren);
-      Res = ExprError();
+    //FIXME:
+    // (: call this function again? Or ParseExpression()? But need to discover
+    //    type of parsed thing?
+    // [, map, struct: type or conversion or literal
+    // *: type or deref or conversion or methodexpr
+    // <-: type or conversion or expression
+    // func: type or conversion or expression or literal
+    // identifier: Tricky! ParsePrimaryExprTail(), but accept types too.
+
+    ConsumeParen();
+    /// This handles PrimaryExprs that start with '('. This happens in these
+    /// cases:
+    ///   1. The '(' Expression ')' production in Operand.
+    ///   2. The '(' Type ')' production in Type, at the beginning of a
+    ///      Conversion.
+    ///   3. The '(' '*' TypeName ')' production in Operand's MethodExpr.
+    TypeParam TypeOpt;
+    //assert(false);
+    Res = ParseExpression(TSGOpt, &TypeOpt);
+    ExpectAndConsume(tok::r_paren, diag::expected_r_paren);
+    
+    if (!TOpt) {
+      switch (TypeOpt.Kind) {
+      case TypeParam::EK_Type:
+        // FIXME: This is mostly duplicated from ParseConversion().
+        if (Tok.isNot(tok::l_paren)) {
+          Diag(Tok, diag::expected_l_paren);
+          Res = ExprError();
+        }
+        break;
+      default:; // FIXME FIXME
+      }
+    } else {
+      TOpt->Kind = TypeOpt.Kind;
     }
     break;
   }
   }
-  return ParsePrimaryExprSuffix(Res, Opt);
+  return ParsePrimaryExprSuffix(Res, TSGOpt);
 }
 
 /// This is called if the first token in a PrimaryExpression was an identifier,
@@ -256,13 +285,20 @@ Parser::ParsePrimaryExprTail(IdentifierInfo *II) {
 
 /// Conversion = Type "(" Expression ")" .
 Action::ExprResult
-Parser::ParseConversion() {
+Parser::ParseConversion(TypeParam *TOpt) {
   ParseType();
-  if (Tok.isNot(tok::l_paren)) {
+  if (Tok.is(tok::l_paren)) {
+    if (TOpt)
+      TOpt->Kind = TypeParam::EK_Expr;
+    return ParseConversionTail();
+  }
+  if (!TOpt) {
     Diag(Tok, diag::expected_l_paren);
     return ExprError();
   }
-  return ParseConversionTail();
+  // FIXME: TypeName, identifier, etc?
+  TOpt->Kind = TypeParam::EK_Type;
+  return ExprError();
 }
 
 /// This is called after the Type in a Conversion has been read.
@@ -278,57 +314,6 @@ Parser::ParseConversionTail() {
   }
   ConsumeParen();
   return false;
-}
-
-
-/// This handles PrimaryExprs that start with '('. This happens in these cases:
-///   1. The '(' Expression ')' production in Operand.
-///   2. The '(' Type ')' production in Type, at the beginning of a Conversion.
-///   3. The '(' '*' TypeName ')' production in Operand's MethodExpr.
-Action::ExprResult
-Parser::ParseParenthesizedPrimaryExpr(ParenExprKind *OutKind) {
-  assert(Tok.is(tok::l_paren) && "expected '('");
-  ConsumeParen();
-
-  ExprResult Res;
-
-  switch (Tok.getKind()) {
-  default:
-    //FIXME:
-    // (: call this function again? Or ParseExpression()? But need to discover
-    //    type of parsed thing?
-    // [, map, struct: type or conversion or literal
-    // *: type or deref or conversion or methodexpr
-    // <-: type or conversion or expression
-    // func: type or conversion or expression or literal
-    // identifier: Tricky! ParsePrimaryExprTail(), but accept types too.
-    assert(false && "FIXME");
-    return ExprError();
-  case tok::numeric_literal:
-  case tok::rune_literal:
-  case tok::string_literal:
-  case tok::plus:
-  case tok::minus:
-  case tok::exclaim:
-  case tok::caret:
-  case tok::amp:
-    *OutKind = PEK_Expr;
-    Res = ParseExpression();
-    break;
-  case tok::kw_interface:
-  case tok::kw_chan:
-    ParseType();
-    // FIXME: If this is not followed by l_paren, this is just a type and
-    // the caller needs to check for an l_paren after the r_paren below.
-    if (Tok.is(tok::l_paren)) {
-      *OutKind = PEK_Expr;
-      ParseConversionTail();
-    } else {
-      *OutKind = PEK_Type;
-    }
-  }
-  ExpectAndConsume(tok::r_paren, diag::expected_r_paren);
-  return Res;
 }
 
 Action::ExprResult

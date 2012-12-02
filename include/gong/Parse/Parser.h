@@ -226,6 +226,24 @@ public:
 
   // Expressions
 
+  /// If \a TOpt points to a TypeParam, then the expression parser
+  /// will allow types in addition to expressions.
+  /// TSGOpt.Kind will be set to EK_Type if a type was parsed.
+  /// This is needed to parse the first parenthesized tokens in an expression
+  /// like |([]int)(4)| and |((interface{}))(4)|.
+  struct TypeParam {
+    enum {
+      EK_Expr,
+      EK_Identifier,
+      EK_Type,
+      EK_TypeName,
+      EK_StarTypeName
+    } Kind;
+    IdentifierInfo *II;
+
+    TypeParam() : Kind(EK_Expr) {}
+  };
+
   /// If \a TSGOpt points to a TypeSwitchGuardParam, then the expression parser
   /// will allow a trailing '.(type)' if a PrimaryExpr was parsed.
   /// TSGOpt.Result will be set to Parsed if that happend or to NotParsed in all
@@ -245,20 +263,21 @@ public:
   };
 
   //FIXME: These should likely be OwningExprResult
-  ExprResult ParseExpression(TypeSwitchGuardParam *TSGOpt = NULL);
+  ExprResult ParseExpression(TypeSwitchGuardParam *TSGOpt = NULL,
+                             TypeParam *TOpt = NULL);
   ExprResult ParseExpressionTail(IdentifierInfo *II,
                                  TypeSwitchGuardParam *TSGOpt = NULL);
   ExprResult ParseRHSOfBinaryExpression(ExprResult LHS,
                                         prec::Level MinPrec,
                                         TypeSwitchGuardParam *TSGOpt);
   bool IsUnaryOp();
-  ExprResult ParseUnaryExpr(TypeSwitchGuardParam *TSGOpt = NULL);
-  ExprResult ParsePrimaryExpr(TypeSwitchGuardParam *TSGOpt);
+  ExprResult ParseUnaryExpr(TypeSwitchGuardParam *TSGOpt = NULL,
+                            TypeParam *TOpt = NULL);
+  ExprResult ParsePrimaryExpr(TypeSwitchGuardParam *TSGOpt,
+                              TypeParam *TOpt);
   ExprResult ParsePrimaryExprTail(IdentifierInfo *II);
-  ExprResult ParseConversion();
+  ExprResult ParseConversion(TypeParam *TOpt);
   ExprResult ParseConversionTail();
-  enum ParenExprKind { PEK_Expr, PEK_Type };
-  ExprResult ParseParenthesizedPrimaryExpr(ParenExprKind *OutKind);
   ExprResult ParsePrimaryExprSuffix(ExprResult &LHS, TypeSwitchGuardParam *TSGOpt);
   ExprResult ParseSelectorOrTypeAssertionOrTypeSwitchGuardSuffix(
       ExprResult &LHS, TypeSwitchGuardParam *TSGOpt);

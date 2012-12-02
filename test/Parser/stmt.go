@@ -146,7 +146,7 @@ func f() {
   // case 4:  // FIXME: should diag
   default: printString("don't know the type")
   }
-
+  switch ((interface{}))(4).(type) {}
 
   // SelectStmt
   select {}

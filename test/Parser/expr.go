@@ -123,6 +123,7 @@ func f() {
   //(([...]int{1,2,3} + 4))
   //(([]int))([...]int{1,2,3})
   (interface{})(4).foo
+  ((((interface{}))))(4).foo
   (interface{}(4))
   (interface{}(4)).foo()
   (chan int)(4).foo

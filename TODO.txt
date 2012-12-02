@@ -69,6 +69,9 @@ Plan A:
   How does this handle identifiers?
     Maybe it always sets them to expr, or it sets "dunno, lol", or it asks the
     Actions object what to do. Open for discussion.
+  How does this handle * and <-?
+    ParseUnaryExpr() looks at the parsed type to decide. Only annoying for
+    identifiers I suppose.
 
 Plan B:
     Always allow types in ParseExpression() and let callers make sure to diag
@@ -77,7 +80,14 @@ Plan B:
 Plan C:
     Only add "AllowType" for functions called by ParseParenthesizedPrimaryExpr.
 
-=> Plan A sounds least bad.
+Plan D:
+    If IsType(), call ParseType(), then snoop for '{', if found parse literal,
+    and '(' and parse conversion.
+    Except for '*' and '<-'...
+    Hm, doesn't handle |((interface{}))(4)|.
+
+
+=> Plan A sounds least bad. With "dunno, lol" flag.
 
 
 ExprResult/StmtResult for result passing
