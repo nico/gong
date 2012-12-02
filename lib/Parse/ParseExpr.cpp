@@ -197,7 +197,7 @@ Parser::ParsePrimaryExpr(TypeSwitchGuardParam *Opt) {
     // FIXME: This is mostly duplicated from ParseConversion().
     if (Tok.isNot(tok::l_paren) && Kind == PEK_Type) {
       Diag(Tok, diag::expected_l_paren);
-      return ExprError();
+      Res = ExprError();
     }
     break;
   }

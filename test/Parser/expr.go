@@ -129,6 +129,7 @@ func f() {
   (chan<- int)(4)
   (chan int)(4).foo()
   (chan<- int)  // expected-diag{{expected '('}}
+  (chan int).foo()  // expected-diag{{expected '('}}
 
   // PrimaryExpr, Conversion
   int(4.5)
