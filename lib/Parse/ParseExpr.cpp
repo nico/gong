@@ -283,7 +283,7 @@ Parser::ParseConversionTail() {
 
 /// This handles PrimaryExprs that start with '('. This happens in these cases:
 ///   1. The '(' Expression ')' production in Operand.
-///   2. The '(' Type ')' producing in Type, at the beginning of a Conversion.
+///   2. The '(' Type ')' production in Type, at the beginning of a Conversion.
 ///   3. The '(' '*' TypeName ')' production in Operand's MethodExpr.
 Action::ExprResult
 Parser::ParseParenthesizedPrimaryExpr(ParenExprKind *OutKind) {
@@ -301,6 +301,7 @@ Parser::ParseParenthesizedPrimaryExpr(ParenExprKind *OutKind) {
     // *: type or deref or conversion or methodexpr
     // <-: type or conversion or expression
     // func: type or conversion or expression or literal
+    // identifier: Tricky! ParsePrimaryExprTail(), but accept types too.
     assert(false && "FIXME");
     return ExprError();
   case tok::numeric_literal:
@@ -592,6 +593,7 @@ Parser::ParseFunctionLitOrConversion() {
   assert(Tok.is(tok::kw_func) && "expected 'func'");
   if (ParseFunctionType())
     return ExprError();
+
   if (Tok.is(tok::l_brace)) {
     // FunctionLit
     return ParseBody();

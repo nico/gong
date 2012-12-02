@@ -61,6 +61,24 @@ In parens, types get preference (  *foo(exp), <-foo(foo) are deref, read of a
 call, while (*foo)(exp), (<-foo)(exp) are conversions. func()(x) is a function
 signature, while (func())(x) is a conversion  ).
 
+Plan A:
+    Add an "AllowType" parameter to ParseExpression() and children, and don't
+    diag but return on missing '(' after a type if that's set. Makes the return
+    value a bit silly though.
+    Set this when parsing a () nested expression.
+  How does this handle identifiers?
+    Maybe it always sets them to expr, or it sets "dunno, lol", or it asks the
+    Actions object what to do. Open for discussion.
+
+Plan B:
+    Always allow types in ParseExpression() and let callers make sure to diag
+    if they can't handle a type.
+
+Plan C:
+    Only add "AllowType" for functions called by ParseParenthesizedPrimaryExpr.
+
+=> Plan A sounds least bad.
+
 
 ExprResult/StmtResult for result passing
 
