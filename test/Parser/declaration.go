@@ -26,7 +26,7 @@ const (
   baz
 )
 
-//const { foo, bar }
+const { foo, bar }  // expected-diag{{expected identifier or '('}}
 
 
 // TypeDecls is covered by test/Parser/type.go.

@@ -18,8 +18,6 @@ literal lexing and diags (078 vs 078.0, 'aa', etc. `ack FIXME test/Lex`)
 Parser
 =====
 
-var, const, () grouping for type, var, const
-
 qualifiedidents
 builtincalls
 
