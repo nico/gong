@@ -449,10 +449,16 @@ bool Parser::ParseReceiver() {
 
 /// Type      = TypeName | TypeLit | "(" Type ")" .
 bool Parser::ParseType() {
-  assert(Tok.isNot(tok::l_paren) && "FIXME: not yet implemented");
-
   if (Tok.is(tok::identifier))
     return ParseTypeName();
+
+  if (Tok.is(tok::l_paren)) {
+    ConsumeParen();
+    bool Result = ParseType();
+    ExpectAndConsume(tok::r_paren, diag::expected_r_paren); // FIXME: Use result
+    return Result;
+  }
+
   return ParseTypeLit();
 }
 

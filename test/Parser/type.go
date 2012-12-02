@@ -77,3 +77,8 @@ type t <-int  // expected-diag{{expected 'chan'}}
 type t <-chan<-chan int
 
 // '(' Type ')'
+type t (int)
+type t (*int)
+type t ((((int))))
+type t (map[(string)](int))
+type t (int  // expected-diag{{expected ')'}}
