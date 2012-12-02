@@ -192,8 +192,8 @@ Parser::ParsePrimaryExpr(TypeSwitchGuardParam *Opt) {
     Res = ParseConversion();
     break;
   case tok::l_paren:
-    assert(false && "FIXME: (expr) (type) (*typename)");
-    return ExprError();
+    Res = ParseParenthesizedPrimaryExpr();
+    break;
   }
   return ParsePrimaryExprSuffix(Res, Opt);
 }
@@ -271,6 +271,37 @@ Parser::ParseConversionTail() {
   }
   ConsumeParen();
   return false;
+}
+
+
+/// This handles PrimaryExprs that start with '('. This happens in these cases:
+///   1. The '(' Expression ')' production in Operand.
+///   2. The '(' Type ')' producing in Type, at the beginning of a Conversion.
+///   3. The '(' '*' TypeName ')' production in Operand's MethodExpr.
+Action::ExprResult
+Parser::ParseParenthesizedPrimaryExpr() {
+  assert(Tok.is(tok::l_paren) && "expected '('");
+  ConsumeParen();
+
+  ExprResult Res;
+
+  switch (Tok.getKind()) {
+  default:
+    assert(false && "FIXME: (expr) (type) (*typename)");
+    return ExprError();
+  case tok::numeric_literal:
+  case tok::rune_literal:
+  case tok::string_literal:
+  case tok::plus:
+  case tok::minus:
+  case tok::exclaim:
+  case tok::caret:
+  case tok::amp:
+    Res = ParseExpression();
+    break;
+  }
+  ExpectAndConsume(tok::r_paren, diag::expected_r_paren);
+  return Res;
 }
 
 Action::ExprResult

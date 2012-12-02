@@ -257,6 +257,7 @@ public:
   ExprResult ParsePrimaryExprTail(IdentifierInfo *II);
   ExprResult ParseConversion();
   ExprResult ParseConversionTail();
+  ExprResult ParseParenthesizedPrimaryExpr();
   ExprResult ParsePrimaryExprSuffix(ExprResult &LHS, TypeSwitchGuardParam *Opt);
   ExprResult ParseSelectorOrTypeAssertionOrTypeSwitchGuardSuffix(
       ExprResult &LHS, TypeSwitchGuardParam *Opt);

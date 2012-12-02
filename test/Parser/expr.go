@@ -106,7 +106,19 @@ func f() {
 
   // PrimaryExpr, Operand, '(' Expression ')'
   //FIXME
-  //(4 + 4)
+  (4 + 4)
+  (+4)
+  //((+4))
+  //(+(4))
+  (-4)
+  (!4)
+  (^4)
+  (&4)
+  ('a')
+  (4 + foo)
+  //(foo + 4)
+  //((4 + 4) * 5)
+  //(5 * (4 + 4))
 
   // PrimaryExpr, Conversion
   int(4.5)
