@@ -843,7 +843,10 @@ bool Parser::ParseConstSpec() {
     ParseType();
   if (Tok.isNot(tok::equal))
     Diag(Tok, diag::expected_equal);
-  ConsumeToken();  // Eat '='.
+  else
+    ConsumeToken();  // Eat '='.
+  if (!IsExpression())
+    return true;
   return ParseExpressionList().isInvalid();
 }
 
@@ -874,15 +877,36 @@ bool Parser::ParseTypeSpec() {
 }
 
 /// VarDecl     = "var" ( VarSpec | "(" { VarSpec ";" } ")" ) .
-/// VarSpec     = IdentifierList
-///               ( Type [ "=" ExpressionList ] | "=" ExpressionList ) .
 bool Parser::ParseVarDecl() {
   assert(Tok.is(tok::kw_var) && "Expected 'var'");
   ConsumeToken();
+  if (Tok.is(tok::identifier))
+    return ParseVarSpec();
+
   // FIXME
+  //assert(false && "FIXME: implement vardecl groups");
   SkipUntil(tok::semi, /*StopAtSemi=*/false, /*DontConsume=*/true);
-  //assert(false && "FIXME: implement var");
   return true;
+}
+
+/// VarSpec     = IdentifierList
+///               ( Type [ "=" ExpressionList ] | "=" ExpressionList ) .
+bool Parser::ParseVarSpec() {
+  assert(Tok.is(tok::identifier) && "Expected identifier");
+  ParseIdentifierList();
+  if (Tok.isNot(tok::equal) && !IsType()) {
+    Diag(Tok, diag::expected_equal_or_type);
+    SkipUntil(tok::semi, /*ConsumeSemi=*/false, /*DontConsume=*/true);
+    return true;
+  }
+  if (Tok.isNot(tok::equal))
+    ParseType();
+  if (Tok.is(tok::semi))
+    return false;
+  if (Tok.isNot(tok::equal))
+    Diag(Tok, diag::expected_equal);
+  ConsumeToken();  // Eat '='.
+  return ParseExpressionList().isInvalid();
 }
 
 bool Parser::IsType() {

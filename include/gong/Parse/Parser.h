@@ -221,6 +221,7 @@ public:
   bool ParseTypeDecl();
   bool ParseTypeSpec();
   bool ParseVarDecl();
+  bool ParseVarSpec();
 
   bool IsType();
   bool IsExpression();
