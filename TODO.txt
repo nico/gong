@@ -5,9 +5,6 @@ Eventually: code completion markers
 fixits, ranges
 flag to dump stats
 
-whitespace is just space, tab, \r, and \n. test and remove \f, \v
-=> 6g accepts them. Filed https://code.google.com/p/go/issues/detail?id=4405
-
 
 mark unknown tokens in the rune / string error cases as literals, so that semi
 insertion is done. Makes error recovery nicer. (`var a = ''\nvar b` doesn't
@@ -81,6 +78,7 @@ Handle https://groups.google.com/forum/#!topic/golang-nuts/Bv4GDkPRMxA well
 
 introduce a consistent naming scheme for functions that assert the current
 token type vs those that don't
+    handle tok::unknown
 
 share {} parsing code for interface{}, struct{}, and possibly blocks,
 selectstmts, and switchstmts
@@ -102,7 +100,7 @@ nice diag with fixit (insert ',') for
   )
 
 
-ParseStatement() just crashes on unexpected tokens (say a ')' or a 'package')
+ParseStatement() just crashes on unexpected tokens (eg ')' or 'package')
 
 Add scopes:
 function parameters
