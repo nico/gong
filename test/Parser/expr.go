@@ -132,7 +132,8 @@ func f() {
   (chan int)(4).foo()
   (chan<- int)  // expected-diag{{expected '('}}
   (chan int).foo()  // expected-diag{{expected '('}}
-  // FIXME: func()
+  (func())(func(){ myprint("yo") })()
+  // FIXME: func()(func(){println("yo")})()  // should-diag
 
   // PrimaryExpr, Conversion
   int(4.5)

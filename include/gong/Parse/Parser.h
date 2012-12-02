@@ -234,10 +234,10 @@ public:
   struct TypeParam {
     enum {
       EK_Expr,
-      EK_Identifier,
-      EK_Type,
-      EK_TypeName,
-      EK_StarTypeName
+      //EK_Identifier,
+      EK_Type
+      //EK_TypeName,
+      //EK_StarTypeName
     } Kind;
     IdentifierInfo *II;
 
@@ -288,7 +288,7 @@ public:
   ExprResult ParseLiteralValue();
   ExprResult ParseElementList();
   ExprResult ParseElement();
-  ExprResult ParseFunctionLitOrConversion();
+  ExprResult ParseFunctionLitOrConversion(TypeParam *TOpt);
   ExprResult ParseExpressionList(TypeSwitchGuardParam *TSGOpt = NULL);
   ExprResult ParseExpressionListTail(ExprResult &LHS);
 

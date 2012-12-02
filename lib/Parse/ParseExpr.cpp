@@ -180,7 +180,7 @@ Parser::ParsePrimaryExpr(TypeSwitchGuardParam *TSGOpt, TypeParam *TOpt) {
     Res = ParseCompositeLitOrConversion(TOpt);
     break;
   case tok::kw_func:
-    Res = ParseFunctionLitOrConversion();
+    Res = ParseFunctionLitOrConversion(TOpt);
     break;
   case tok::identifier: {
     IdentifierInfo *II = Tok.getIdentifierInfo();
@@ -196,7 +196,6 @@ Parser::ParsePrimaryExpr(TypeSwitchGuardParam *TSGOpt, TypeParam *TOpt) {
     //FIXME:
     // *: type or deref or conversion or methodexpr
     // <-: type or conversion or expression
-    // func: type or conversion or expression or literal
     // identifier: Tricky! ParsePrimaryExprTail(), but accept types too.
 
     ConsumeParen();
@@ -575,7 +574,7 @@ Parser::ParseElement() {
 
 /// FunctionLit = FunctionType Body .
 Action::ExprResult
-Parser::ParseFunctionLitOrConversion() {
+Parser::ParseFunctionLitOrConversion(TypeParam *TOpt) {
   assert(Tok.is(tok::kw_func) && "expected 'func'");
   if (ParseFunctionType())
     return ExprError();
@@ -586,6 +585,9 @@ Parser::ParseFunctionLitOrConversion() {
   } else if (Tok.is(tok::l_paren)) {
     // Conversion
     return ParseConversionTail();
+  } else if (TOpt) {
+    TOpt->Kind = TypeParam::EK_Type;
+    return ExprError();  // FIXME
   } else {
     Diag(Tok, diag::expected_l_brace_or_l_paren);
     return ExprError();
