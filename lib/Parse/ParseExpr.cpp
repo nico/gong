@@ -287,7 +287,14 @@ Parser::ParseParenthesizedPrimaryExpr() {
 
   switch (Tok.getKind()) {
   default:
-    assert(false && "FIXME: (expr) (type) (*typename)");
+    //FIXME:
+    // (: call this function again? Or ParseExpression()? But need to discover
+    //    type of parsed thing?
+    // [, map, struct: type or conversion or literal
+    // *: type or deref or conversion or methodexpr
+    // <-: type or conversion or expression
+    // func: type or conversion or expression or literal
+    assert(false && "FIXME");
     return ExprError();
   case tok::numeric_literal:
   case tok::rune_literal:
@@ -299,6 +306,13 @@ Parser::ParseParenthesizedPrimaryExpr() {
   case tok::amp:
     Res = ParseExpression();
     break;
+  case tok::kw_interface:
+  case tok::kw_chan:
+    ParseType();
+    // FIXME: If this is not followed by l_paren, this is just a type and
+    // the caller needs to check for an l_paren after the r_paren below.
+    if (Tok.is(tok::l_paren))
+      ParseConversionTail();
   }
   ExpectAndConsume(tok::r_paren, diag::expected_r_paren);
   return Res;

@@ -115,10 +115,20 @@ func f() {
   (^4)
   (&4)
   ('a')
-  (4 + foo)
+  //(4 + foo)
   //(foo + 4)
   //((4 + 4) * 5)
   //(5 * (4 + 4))
+  //((+4))
+  //(([...]int{1,2,3} + 4))
+  //(([]int))([...]int{1,2,3})
+  (interface{})(4).foo
+  (interface{}(4))
+  (interface{}(4)).foo()
+  (chan int)(4).foo
+  (chan<- int)(4)
+  (chan int).foo()
+  (chan<- int)  // FIXME: should-diag
 
   // PrimaryExpr, Conversion
   int(4.5)
