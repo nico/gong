@@ -332,26 +332,26 @@ Parser::ParseParenthesizedPrimaryExpr(ParenExprKind *OutKind) {
 }
 
 Action::ExprResult
-Parser::ParsePrimaryExprSuffix(ExprResult &LHS, TypeSwitchGuardParam *Opt) {
+Parser::ParsePrimaryExprSuffix(ExprResult &LHS, TypeSwitchGuardParam *TSGOpt) {
   while (1) {
     switch (Tok.getKind()) {
     default:  // Not a postfix-expression suffix.
       return LHS;
     case tok::period: {  // Selector or TypeAssertion
-      if (Opt)
-        Opt->Reset(*this);
-      LHS = ParseSelectorOrTypeAssertionOrTypeSwitchGuardSuffix(LHS, Opt);
+      if (TSGOpt)
+        TSGOpt->Reset(*this);
+      LHS = ParseSelectorOrTypeAssertionOrTypeSwitchGuardSuffix(LHS, TSGOpt);
       break;
     }
     case tok::l_square: {  // Index or Slice
-      if (Opt)
-        Opt->Reset(*this);
+      if (TSGOpt)
+        TSGOpt->Reset(*this);
       LHS = ParseIndexOrSliceSuffix(LHS);
       break;
     }
     case tok::l_paren: {  // Call
-      if (Opt)
-        Opt->Reset(*this);
+      if (TSGOpt)
+        TSGOpt->Reset(*this);
       LHS = ParseCallSuffix(LHS);
       break;
     }
@@ -363,11 +363,11 @@ Parser::ParsePrimaryExprSuffix(ExprResult &LHS, TypeSwitchGuardParam *Opt) {
 /// TypeAssertion  = "." "(" Type ")" .
 Action::ExprResult
 Parser::ParseSelectorOrTypeAssertionOrTypeSwitchGuardSuffix(
-    ExprResult &LHS, TypeSwitchGuardParam *Opt) {
+    ExprResult &LHS, TypeSwitchGuardParam *TSGOpt) {
   assert(Tok.is(tok::period) && "expected '.'");
   ConsumeToken();
 
-  bool AllowTypeKeyword = Opt != NULL;
+  bool AllowTypeKeyword = TSGOpt != NULL;
 
   SourceLocation PrevLoc = PrevTokLocation;
 
@@ -380,8 +380,8 @@ Parser::ParseSelectorOrTypeAssertionOrTypeSwitchGuardSuffix(
     if (Tok.is(tok::kw_type)) {
       if (!AllowTypeKeyword)
         Diag(PrevLoc, diag::unexpected_kw_type);
-      else if (Opt)
-        Opt->Set(PrevLoc);
+      else if (TSGOpt)
+        TSGOpt->Set(PrevLoc);
       ConsumeToken();
     } else {
       if (!IsType()) {
@@ -615,10 +615,10 @@ Parser::ParseFunctionLitOrConversion() {
 
 /// ExpressionList = Expression { "," Expression } .
 Action::ExprResult
-Parser::ParseExpressionList(TypeSwitchGuardParam *Opt) {
-  ExprResult LHS = ParseExpression(Opt);
-  if (Tok.is(tok::comma) && Opt)
-    Opt->Reset(*this);
+Parser::ParseExpressionList(TypeSwitchGuardParam *TSGOpt) {
+  ExprResult LHS = ParseExpression(TSGOpt);
+  if (Tok.is(tok::comma) && TSGOpt)
+    TSGOpt->Reset(*this);
   return ParseExpressionListTail(LHS);
 }
 

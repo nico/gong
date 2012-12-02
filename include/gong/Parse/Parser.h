@@ -226,9 +226,9 @@ public:
 
   // Expressions
 
-  /// If \a Opt points to a TypeSwitchGuardParam, then the expression parser
+  /// If \a TSGOpt points to a TypeSwitchGuardParam, then the expression parser
   /// will allow a trailing '.(type)' if a PrimaryExpr was parsed.
-  /// Opt.Result will be set to Parsed if that happend or to NotParsed in all
+  /// TSGOpt.Result will be set to Parsed if that happend or to NotParsed in all
   /// other cases.
   struct TypeSwitchGuardParam {
     enum  { NotParsed, Parsed } Result;
@@ -245,23 +245,23 @@ public:
   };
 
   //FIXME: These should likely be OwningExprResult
-  ExprResult ParseExpression(TypeSwitchGuardParam *Opt = NULL);
+  ExprResult ParseExpression(TypeSwitchGuardParam *TSGOpt = NULL);
   ExprResult ParseExpressionTail(IdentifierInfo *II,
-                                 TypeSwitchGuardParam *Opt = NULL);
+                                 TypeSwitchGuardParam *TSGOpt = NULL);
   ExprResult ParseRHSOfBinaryExpression(ExprResult LHS,
                                         prec::Level MinPrec,
-                                        TypeSwitchGuardParam *Opt);
+                                        TypeSwitchGuardParam *TSGOpt);
   bool IsUnaryOp();
-  ExprResult ParseUnaryExpr(TypeSwitchGuardParam *Opt = NULL);
-  ExprResult ParsePrimaryExpr(TypeSwitchGuardParam *Opt);
+  ExprResult ParseUnaryExpr(TypeSwitchGuardParam *TSGOpt = NULL);
+  ExprResult ParsePrimaryExpr(TypeSwitchGuardParam *TSGOpt);
   ExprResult ParsePrimaryExprTail(IdentifierInfo *II);
   ExprResult ParseConversion();
   ExprResult ParseConversionTail();
   enum ParenExprKind { PEK_Expr, PEK_Type };
   ExprResult ParseParenthesizedPrimaryExpr(ParenExprKind *OutKind);
-  ExprResult ParsePrimaryExprSuffix(ExprResult &LHS, TypeSwitchGuardParam *Opt);
+  ExprResult ParsePrimaryExprSuffix(ExprResult &LHS, TypeSwitchGuardParam *TSGOpt);
   ExprResult ParseSelectorOrTypeAssertionOrTypeSwitchGuardSuffix(
-      ExprResult &LHS, TypeSwitchGuardParam *Opt);
+      ExprResult &LHS, TypeSwitchGuardParam *TSGOpt);
   ExprResult ParseIndexOrSliceSuffix(ExprResult &LHS);
   ExprResult ParseCallSuffix(ExprResult &LHS);
   ExprResult ParseBasicLit();
@@ -270,7 +270,7 @@ public:
   ExprResult ParseElementList();
   ExprResult ParseElement();
   ExprResult ParseFunctionLitOrConversion();
-  ExprResult ParseExpressionList(TypeSwitchGuardParam *Opt = NULL);
+  ExprResult ParseExpressionList(TypeSwitchGuardParam *TSGOpt = NULL);
   ExprResult ParseExpressionListTail(ExprResult &LHS);
 
 
@@ -311,11 +311,11 @@ public:
                            SimpleStmtExts Ext = SSE_None);
   bool ParseSimpleStmtTailAfterExpression(ExprResult &LHS,
                                           SourceLocation StartLoc,
-                                          TypeSwitchGuardParam *Opt,
+                                          TypeSwitchGuardParam *TSGOpt,
                                           SimpleStmtKind *OutKind,
                                           SimpleStmtExts Ext);
 
-  bool ParseShortVarDeclTail(TypeSwitchGuardParam *Opt = NULL);
+  bool ParseShortVarDeclTail(TypeSwitchGuardParam *TSGOpt = NULL);
   bool ParseAssignmentTail(tok::TokenKind Op);
   bool ParseIncDecStmtTail(ExprResult &LHS);
   bool ParseSendStmtTail(ExprResult &LHS);
