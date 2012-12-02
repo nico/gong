@@ -18,7 +18,9 @@ const foo int 4  // expected-diag{{expected '='}}
 const foo 4  // expected-diag{{expected '=' or type}}
 
 const ( foo )
+const ( foo int )  // expected-diag{{expected '='}}
 const ( foo, bar )
+const ( foo, bar int )  // expected-diag{{expected '='}}
 const (
   bar int = 19; foo = 20
   baz
@@ -45,8 +47,11 @@ var foo, bar int = 1, 2
 var foo int 4  // expected-diag{{expected '='}}
 var foo 4  // expected-diag{{expected '=' or type}}
 
-//var ( foo, bar )
-//var (
-//  bar int = 19; foo = 20
-//  baz
-//)
+var ( foo ) // expected-diag{{expected '=' or type}}
+var ( foo int )
+var ( foo, bar ) // expected-diag{{expected '=' or type}}
+var ( foo, bar int )
+var (
+  bar int = 19; foo = 20
+  baz  // expected-diag{{expected '=' or type}}
+)

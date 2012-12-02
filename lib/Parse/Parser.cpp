@@ -882,9 +882,9 @@ bool Parser::ParseVarDecl() {
   ConsumeToken();
   if (Tok.is(tok::identifier))
     return ParseVarSpec();
-
-  // FIXME
-  //assert(false && "FIXME: implement vardecl groups");
+  if (Tok.is(tok::l_paren))
+    return ParseDeclGroup(DGK_Var);
+  Diag(Tok, diag::expected_ident_or_l_paren);
   SkipUntil(tok::semi, /*StopAtSemi=*/false, /*DontConsume=*/true);
   return true;
 }
@@ -896,16 +896,18 @@ bool Parser::ParseVarSpec() {
   ParseIdentifierList();
   if (Tok.isNot(tok::equal) && !IsType()) {
     Diag(Tok, diag::expected_equal_or_type);
-    SkipUntil(tok::semi, /*ConsumeSemi=*/false, /*DontConsume=*/true);
+    SkipUntil(tok::semi, tok::r_paren,
+              /*ConsumeSemi=*/false, /*DontConsume=*/true);
     return true;
   }
   if (Tok.isNot(tok::equal))
     ParseType();
-  if (Tok.is(tok::semi))
+  if (Tok.is(tok::semi) || Tok.is(tok::r_paren))
     return false;
   if (Tok.isNot(tok::equal))
     Diag(Tok, diag::expected_equal);
-  ConsumeToken();  // Eat '='.
+  else
+    ConsumeToken();  // Eat '='.
   return ParseExpressionList().isInvalid();
 }
 
