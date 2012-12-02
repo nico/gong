@@ -239,14 +239,19 @@ Parser::ParsePrimaryExprTail(IdentifierInfo *II) {
   // undesirable for most non-Sema clients.  Consider doing something like
   // ParseTypeOrExpr() instead which parses the superset of both, and hand the
   // result on to Action.
+  // -> Since this is now done anyways, this could just always accept typelits
+  //    and let Sema sort things out after the fact.
   Action::IdentifierInfoType IIT =
       Actions.classifyIdentifier(*II, getCurScope());
   switch (IIT) {
   case Action::IIT_Package:
-    Diag(Tok, diag::unimplemented_package_name);
-    // consume '.', fall through to non-type path
+    // For things in packages, perfect parser-level handling requires loading 
+    // the package binary and looking up if the identifier is a type.  Instead,
+    // always allow type literals and clean them up in sema.
     ExpectAndConsume(tok::period, diag::expected_period);
     ExpectAndConsume(tok::identifier, diag::expected_ident);
+    if (Tok.is(tok::l_brace))
+      return ParseLiteralValue();
     break;
   case Action::IIT_Type:
     // If the next token is a '.', this is a MethodExpr. While semantically not

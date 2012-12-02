@@ -2,6 +2,8 @@
 
 package p
 
+import "mypackage"
+
 // These look a bit funny, but array types are a fairly obvious place that
 // contains an expression, so these tests were useful when bootstrapping
 // expressions before statement parsing was in place.
@@ -156,6 +158,7 @@ func f() {
 
   // PrimaryExpr Selector
   "asdf".foo
+  mypackage.foo
 
   // PrimaryExpr Index
   "asdf"[4]
