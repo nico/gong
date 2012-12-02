@@ -217,6 +217,7 @@ public:
 
   bool ParseDeclaration();
   bool ParseConstDecl();
+  bool ParseConstSpec();
   bool ParseTypeDecl();
   bool ParseTypeSpec();
   bool ParseVarDecl();

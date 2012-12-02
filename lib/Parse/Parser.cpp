@@ -816,14 +816,35 @@ bool Parser::ParseDeclaration() {
 }
 
 /// ConstDecl      = "const" ( ConstSpec | "(" { ConstSpec ";" } ")" ) .
-/// ConstSpec      = IdentifierList [ [ Type ] "=" ExpressionList ] .
 bool Parser::ParseConstDecl() {
   assert(Tok.is(tok::kw_const) && "Expected 'const'");
   ConsumeToken();
+  if (Tok.is(tok::identifier))
+    return ParseConstSpec();
+
   // FIXME
+  assert(false && "FIXME: implement constdecl groups");
   SkipUntil(tok::semi, /*StopAtSemi=*/false, /*DontConsume=*/true);
-  assert(false && "FIXME: implement const");
   return true;
+}
+
+/// ConstSpec      = IdentifierList [ [ Type ] "=" ExpressionList ] .
+bool Parser::ParseConstSpec() {
+  assert(Tok.is(tok::identifier) && "Expected identifier");
+  ParseIdentifierList();
+  if (Tok.is(tok::semi))
+    return false;
+  if (Tok.isNot(tok::equal) && !IsType()) {
+    Diag(Tok, diag::expected_equal_or_type);
+    SkipUntil(tok::semi, /*ConsumeSemi=*/false, /*DontConsume=*/true);
+    return true;
+  }
+  if (Tok.isNot(tok::equal))
+    ParseType();
+  if (Tok.isNot(tok::equal))
+    Diag(Tok, diag::expected_equal);
+  ConsumeToken();  // Eat '='.
+  return ParseExpressionList().isInvalid();
 }
 
 /// TypeDecl     = "type" ( TypeSpec | "(" { TypeSpec ";" } ")" ) .
