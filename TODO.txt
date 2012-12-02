@@ -18,76 +18,10 @@ literal lexing and diags (078 vs 078.0, 'aa', etc. `ack FIXME test/Lex`)
 Parser
 =====
 
-types/exprs in ()  (similar to :: in c++ maybe?)
-(*TypeName) in MethodExprs
-    MethodExpr    = ReceiverType "." MethodName .
-    ReceiverType  = TypeName | "(" "*" TypeName ")" .
-
 var, const, () grouping for type, var, const
 
 qualifiedidents
 builtincalls
-
-
-expression or type start:
-    *
-    <-
-    [
-    map
-    struct
-    func
-    identifier
-
-  Conversions only:
-    interface
-    chan
-
-only expression starts:
-    +
-    -
-    !
-    ^
-    &
-    4
-    '4'
-    "4"
-
-only type starts:
-    nothing, because a type can always start a conversion expression
-
--> This is already mostly implemented outside of '()' for regular expressions.
-
-In parens, types get preference (  *foo(exp), <-foo(foo) are deref, read of a
-call, while (*foo)(exp), (<-foo)(exp) are conversions. func()(x) is a function
-signature, while (func())(x) is a conversion  ).
-
-Plan A:
-    Add an "AllowType" parameter to ParseExpression() and children, and don't
-    diag but return on missing '(' after a type if that's set. Makes the return
-    value a bit silly though.
-    Set this when parsing a () nested expression.
-  How does this handle identifiers?
-    Maybe it always sets them to expr, or it sets "dunno, lol", or it asks the
-    Actions object what to do. Open for discussion.
-  How does this handle * and <-?
-    ParseUnaryExpr() looks at the parsed type to decide. Only annoying for
-    identifiers I suppose.
-
-Plan B:
-    Always allow types in ParseExpression() and let callers make sure to diag
-    if they can't handle a type.
-
-Plan C:
-    Only add "AllowType" for functions called by ParseParenthesizedPrimaryExpr.
-
-Plan D:
-    If IsType(), call ParseType(), then snoop for '{', if found parse literal,
-    and '(' and parse conversion.
-    Except for '*' and '<-'...
-    Hm, doesn't handle |((interface{}))(4)|.
-
-
-=> Plan A sounds least bad. With "dunno, lol" flag.
 
 
 ExprResult/StmtResult for result passing
@@ -152,6 +86,15 @@ panic(interface{}), recover() interface{}
 
 print(), println(): implementation-specific; might not exist
 
+
+Actions
+=======
+
+types/exprs in ()
+(*TypeName) in MethodExprs
+*foo() vs (*foo)()
+<-foo() vs (<-foo)()
+func()(foo) vs (func())(foo)
 
 
 Frontend

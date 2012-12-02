@@ -263,6 +263,7 @@ public:
   };
 
   //FIXME: These should likely be OwningExprResult
+  //FIXME: Also, now that this accepts types, ExprResult doesn't make much sense
   ExprResult ParseExpression(TypeSwitchGuardParam *TSGOpt = NULL,
                              TypeParam *TOpt = NULL);
   ExprResult ParseExpressionTail(IdentifierInfo *II,

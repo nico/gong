@@ -102,7 +102,7 @@ func f() {
   // PrimaryExpr, Operand, MethodExpr
   mytype.mymethod
   //FIXME
-  //(*mytype).mymethod
+  (*mytype).mymethod
 
   // PrimaryExpr, Operand, '(' Expression ')'
   (4 + 4)
@@ -131,6 +131,7 @@ func f() {
   (chan<- int)(4)
   (chan int)(4).foo()
   (chan<- int)  // expected-diag{{expected '('}}
+  (<-chan int)(4)
   (chan int).foo()  // expected-diag{{expected '('}}
   (func())(func(){ myprint("yo") })()
   // FIXME: func()(func(){println("yo")})()  // should-diag
@@ -147,8 +148,6 @@ func f() {
   [...]int(4)  // expected-diag {{expected '{'}}
   struct{foo int}(4)
   map[string]int(4)
-  // FIXME: *type(expr) vs (*type)(expr)
-  // FIXME: <-chan int(expr) vs (<-chan int)(expr)
 
   // PrimaryExpr, BuiltinCall
   //FIXME
