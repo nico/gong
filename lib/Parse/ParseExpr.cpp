@@ -418,24 +418,15 @@ Parser::ParseCompositeLitOrConversion() {
   assert((Tok.is(tok::kw_struct) || Tok.is(tok::l_square) ||
         Tok.is(tok::kw_map)) && "Unexpected composite literal start");
 
-  // Type
-  enum {
-    Ints,
-    RequiredStrings,
-    OptionalStrings
-  } KeyKind;
-
   bool WasEllipsisArray = false;
 
   switch (Tok.getKind()) {
   default: llvm_unreachable("unexpected token kind");
   case tok::kw_struct:
-    KeyKind = OptionalStrings;
     if (ParseStructType())
       return ExprError();
     break;
   case tok::l_square: {
-    KeyKind = Ints;
     ConsumeBracket();
     if (Tok.is(tok::ellipsis)) {
       WasEllipsisArray = true;
@@ -451,7 +442,6 @@ Parser::ParseCompositeLitOrConversion() {
     break;
   }
   case tok::kw_map:
-    KeyKind = RequiredStrings;
     if (ParseMapType())
       return ExprError();
     break;
