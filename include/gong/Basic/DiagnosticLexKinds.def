@@ -108,3 +108,5 @@ DIAG(expected_period,              "expected '.'")
 DIAG(range_only_valid_in_for,      "'range' is only valid in for statements")
 DIAG(unexpected_kw_type,           "unexpected '.(type)'")
 DIAG(invalid_expr_left_of_colonequal, "unexpected expression before ':='")
+DIAG(parser_impl_limit_overflow,
+    "parser recursion limit reached, program too complex")

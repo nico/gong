@@ -193,6 +193,8 @@ Parser::ParsePrimaryExpr(TypeSwitchGuardParam *TSGOpt, TypeParam *TOpt) {
     Res = ParseConversion(TOpt);
     break;
   case tok::l_paren: {
+    // FIXME: here
+
     //FIXME:
     // *: type or deref or conversion or methodexpr
     // <-: type or conversion or expression
@@ -250,7 +252,7 @@ Parser::ParsePrimaryExprTail(IdentifierInfo *II) {
     // always allow type literals and clean them up in sema.
     ExpectAndConsume(tok::period, diag::expected_period);
     ExpectAndConsume(tok::identifier, diag::expected_ident);
-    if (Tok.is(tok::l_brace))
+    if (Tok.is(tok::l_brace) /*FIXME: && !CompositeTypeNameLitNeedsParens*/)
       return ParseLiteralValue();
     break;
   case Action::IIT_Type:
@@ -265,7 +267,7 @@ Parser::ParsePrimaryExprTail(IdentifierInfo *II) {
     // If the next token is a '{', the this is a CompositeLit starting with a
     // TypeName. (Expressions can't be followed by '{', so this could be done
     // unconditionally for all IIs.)
-    if (Tok.is(tok::l_brace))
+    if (Tok.is(tok::l_brace) /*FIXME: && !CompositeTypeNameLitNeedsParens*/)
       return ParseLiteralValue();
     break;
   case Action::IIT_BuiltinFunc: {
@@ -275,6 +277,8 @@ Parser::ParsePrimaryExprTail(IdentifierInfo *II) {
     //        '...' isn't permitted in BuiltinCalls, but see golang bug 4479)
     /// BuiltinCall = identifier "(" [ BuiltinArgs [ "," ] ] ")" .
     /// BuiltinArgs = Type [ "," ExpressionList ] | ExpressionList .
+
+// FIXME: here
 
     if (Tok.isNot(tok::l_paren)) {
       Diag(Tok, diag::expected_l_paren_after_builtin);
@@ -334,6 +338,7 @@ Action::ExprResult
 Parser::ParseConversionTail() {
   assert(Tok.is(tok::l_paren) && "expected '('");
   ConsumeParen();
+// FIXME: here
   ParseExpression();
   if (Tok.isNot(tok::r_paren)) {
     Diag(Tok, diag::expected_r_paren);
@@ -363,6 +368,7 @@ Parser::ParsePrimaryExprSuffix(ExprResult &LHS, TypeSwitchGuardParam *TSGOpt) {
       break;
     }
     case tok::l_paren: {  // Call
+// FIXME: here
       if (TSGOpt)
         TSGOpt->Reset(*this);
       LHS = ParseCallSuffix(LHS);
@@ -388,6 +394,7 @@ Parser::ParseSelectorOrTypeAssertionOrTypeSwitchGuardSuffix(
     ConsumeToken();
     return LHS;
   } else if(Tok.is(tok::l_paren)) {
+// FIXME: here
     ConsumeParen();
 
     if (Tok.is(tok::kw_type)) {
@@ -426,6 +433,8 @@ Parser::ParseIndexOrSliceSuffix(ExprResult &LHS) {
   assert(Tok.is(tok::l_square) && "expected '['");
   ConsumeBracket();
 
+  // FIXME: here
+
   if (Tok.is(tok::r_square)) {
     Diag(Tok, diag::expected_expr);
     ConsumeBracket();
@@ -455,6 +464,7 @@ Action::ExprResult
 Parser::ParseCallSuffix(ExprResult &LHS) {
   assert(Tok.is(tok::l_paren) && "expected '('");
   ConsumeParen();
+// FIXME: here
   if (Tok.isNot(tok::r_paren)) {
     ParseExpressionList();
     if (Tok.is(tok::ellipsis))
@@ -498,6 +508,7 @@ Parser::ParseCompositeLitOrConversion(TypeParam *TOpt) {
       return ExprError();
     break;
   case tok::l_square: {
+    // FIXME: here
     ConsumeBracket();
     if (Tok.is(tok::ellipsis)) {
       WasEllipsisArray = true;

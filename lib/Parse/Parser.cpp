@@ -18,11 +18,11 @@
 #include "llvm/Support/MemoryBuffer.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Support/SourceMgr.h"
+#include "RAIIObjectsForParser.h"
 #if 0
 #include "clang/Parse/ParseDiagnostic.h"
 #include "clang/Sema/DeclSpec.h"
 #include "clang/Sema/ParsedTemplate.h"
-#include "RAIIObjectsForParser.h"
 #include "ParsePragma.h"
 #include "clang/AST/DeclTemplate.h"
 #include "clang/AST/ASTConsumer.h"
@@ -37,6 +37,7 @@ Parser::Parser(Lexer &l, Action &actions/*, bool skipFunctionBodies*/)
   Actions.CurScope = 0;
   NumCachedScopes = 0;
   ParenCount = BracketCount = BraceCount = 0;
+  CompositeTypeNameLitNeedsParens = false;
 
   //PP.setCodeCompletionHandler(*this);
 }
@@ -518,6 +519,7 @@ bool Parser::ParseArrayOrSliceType() {
   assert(Tok.is(tok::l_square) && "Expected '['");
   ConsumeBracket(); 
   
+  // FIXME: here
   if (Tok.is(tok::r_square))
     return ParseSliceType();
   return ParseArrayType();
@@ -2560,9 +2562,10 @@ Parser::DeclGroupPtrTy Parser::ParseModuleImport(SourceLocation AtLoc) {
   
   return Actions.ConvertDeclToDeclGroup(Import.get());
 }
+#endif
 
 bool BalancedDelimiterTracker::diagnoseOverflow() {
-  P.Diag(P.Tok, diag::err_parser_impl_limit_overflow);
+  P.Diag(P.Tok, diag::parser_impl_limit_overflow);
   P.SkipUntil(tok::eof);
   return true;  
 }
@@ -2587,12 +2590,12 @@ bool BalancedDelimiterTracker::diagnoseMissingClose() {
   diag::kind DID;
   switch (Close) {
   default: llvm_unreachable("Unexpected balanced token");
-  case tok::r_paren : LHSName = "("; DID = diag::err_expected_rparen; break;
-  case tok::r_brace : LHSName = "{"; DID = diag::err_expected_rbrace; break;
-  case tok::r_square: LHSName = "["; DID = diag::err_expected_rsquare; break;
+  case tok::r_paren : LHSName = "("; DID = diag::expected_r_paren; break;
+  case tok::r_brace : LHSName = "{"; DID = diag::expected_r_brace; break;
+  case tok::r_square: LHSName = "["; DID = diag::expected_r_square; break;
   }
   P.Diag(P.Tok, DID);
-  P.Diag(LOpen, diag::note_matching) << LHSName;
+  //P.Diag(LOpen, diag::note_matching) << LHSName;  // FIXME
   if (P.SkipUntil(Close, /*StopAtSemi*/ true, /*DontConsume*/ true))
     LClose = P.ConsumeAnyToken();
   return true;
@@ -2601,4 +2604,3 @@ bool BalancedDelimiterTracker::diagnoseMissingClose() {
 void BalancedDelimiterTracker::skipToEnd() {
   P.SkipUntil(Close, false);
 }
-#endif

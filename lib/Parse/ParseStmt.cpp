@@ -15,7 +15,7 @@
 #include "gong/Parse/Parser.h"
 #include "gong/Parse/Scope.h"
 #include "llvm/Support/ErrorHandling.h"
-//#include "RAIIObjectsForParser.h"
+#include "RAIIObjectsForParser.h"
 //#include "gong/Basic/Diagnostic.h"
 //#include "gong/Basic/SourceManager.h"
 //#include "llvm/ADT/SmallString.h"
@@ -373,6 +373,8 @@ bool Parser::ParseIfStmt() {
   assert(Tok.is(tok::kw_if) && "expected 'if'");
   ConsumeToken();
 
+  CompositeTypeNameLitNeedsParensRAIIObject RequireParens(*this);
+
   SourceLocation StmtLoc = Tok.getLocation();
   SimpleStmtKind Kind = SSK_Normal;
   if (ParseSimpleStmt(&Kind))
@@ -385,6 +387,8 @@ bool Parser::ParseIfStmt() {
     Diag(StmtLoc, diag::expected_expr);
     return true;
   }
+
+  RequireParens.reset();
 
   if (Tok.isNot(tok::l_brace)) {
     Diag(Tok, diag::expected_l_brace);
@@ -416,6 +420,8 @@ bool Parser::ParseSwitchStmt() {
   assert(Tok.is(tok::kw_switch) && "expected 'switch'");
   ConsumeToken();
 
+  CompositeTypeNameLitNeedsParensRAIIObject RequireParens(*this);
+
   bool IsTypeSwitch = false;
 
   // For ExprSwitchStmts, everything between 'switch and '{' is optional.
@@ -446,6 +452,8 @@ bool Parser::ParseSwitchStmt() {
       }
     }
   }
+
+  RequireParens.reset();
 
   if (Tok.isNot(tok::l_brace)) {
     Diag(Tok, diag::expected_l_brace);
@@ -642,8 +650,12 @@ bool Parser::ParseForStmt() {
   assert(Tok.is(tok::kw_for) && "expected 'for'");
   ConsumeToken();
 
-  if (Tok.is(tok::l_brace))
+  CompositeTypeNameLitNeedsParensRAIIObject RequireParens(*this);
+
+  if (Tok.is(tok::l_brace)) {
+    RequireParens.reset();
     return ParseBlock();
+  }
 
   SourceLocation StmtLoc = Tok.getLocation();
   SimpleStmtKind Kind = SSK_Normal;
@@ -680,6 +692,7 @@ bool Parser::ParseForStmt() {
     Diag(Tok, diag::expected_l_brace);
     return true;
   }
+  RequireParens.reset();
   return ParseBlock();
 }
 

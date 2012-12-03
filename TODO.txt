@@ -2,7 +2,7 @@ Lexer
 =====
 
 Eventually: code completion markers
-fixits, ranges
+fixits, ranges, notes
 flag to dump stats
 
 
@@ -20,6 +20,10 @@ data
 
 Parser
 =====
+
+composite lit parens issue
+  requires less asserty statement parser in the general case
+  would be nicer if BalancedDelimTracker was used more frequently
 
 type / identifier mismatch in function results / parameters
 
@@ -52,9 +56,6 @@ maybe share the optional SimpleStmt parsing code in ifstmt, forstmt, switchstmt
 look at BalancedDelimTracker and friends, so that eg |type t ['4'.(int]int|
 gets only one diag
 
-"""if x == (T{a,b,c}[i]) { … }
-if (x == T{a,b,c}[i]) { … }"""  <- xxx ambiguity?
-
 
 nice diag with fixit (insert '()') for `func main {}`
 
@@ -62,6 +63,8 @@ nice diag with fixit (insert ',') for
   myfunc(
     4
   )
+
+nice diag with fixit (insert "()") for |if a == type{} { ... }|
 
 
 ParseStatement() just crashes on unexpected tokens (eg ')' or 'package')
@@ -147,6 +150,23 @@ parse:
 + annoying: switchstms. Have to parse a simplestmt first, but if that's not
             followed by a ';', the simplestmt was actually a TypeSwitchGuard,
             so parsesimplestmt needs to allow that too :-/
+
++ annoying: func(a, b, c) is a typelist while func(a, b, c int) is an identifier
+            list with one type. (not terrible, but annoying.)
+
++ annoying: |if a == b {}| can be a compositelit or just |b| and a block. But
+            made less annoying by the spec:
+
+"""A parsing ambiguity arises when a composite literal using the TypeName form
+of the LiteralType appears between the keyword and the opening brace of the
+block of an "if", "for", or "switch" statement, because the braces surrounding
+the expressions in the literal are confused with those introducing the block of
+statements. To resolve the ambiguity in this rare case, the composite literal
+must appear within parentheses.
+
+if x == (T{a,b,c}[i]) { … }
+if (x == T{a,b,c}[i]) { … }
+"""
 
 
 spec groups:

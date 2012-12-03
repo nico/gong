@@ -33,8 +33,7 @@ namespace gong {
   //class ParsingDeclSpec;
   //class ParsingDeclarator;
   //class ParsingFieldDeclarator;
-  class ColonProtectionRAIIObject;
-  class VersionTuple;
+  class CompositeTypeNameLitNeedsParensRAIIObject;
 
 /// PrettyStackTraceParserEntry - If a crash happens while the parser is active,
 /// an entry is printed for it.
@@ -65,8 +64,8 @@ namespace prec {
 /// been read.
 ///
 class Parser /*: public CodeCompletionHandler */ {
-  friend class PragmaUnusedHandler;
-  friend class ColonProtectionRAIIObject;
+  friend class CompositeTypeNameLitNeedsParensRAIIObject;
+  friend class ParenBraceBracketBalancer;
   friend class BalancedDelimiterTracker;
   PrettyStackTraceParserEntry CrashInfo;
 
@@ -98,13 +97,14 @@ class Parser /*: public CodeCompletionHandler */ {
   /// \brief Identifier for "message".
   IdentifierInfo *Ident_message;
 
-  /// ColonIsSacred - When this is false, we aggressively try to recover from
-  /// code like "foo : bar" as if it were a typo for "foo :: bar".  This is not
-  /// safe in case statements and a few other things.  This is managed by the
-  /// ColonProtectionRAIIObject RAII object.
-  //bool ColonIsSacred;
-
   //bool SkipFunctionBodies;
+
+  // This is set while parsing the text between an if/switch/for and the '{'
+  // that starts the body. Since if/switch/for can't nest, it's sufficient to
+  // keep this in an instance variable.
+  // FIXME: the reason is wrong (see nested blocks via func literals)
+  // FIXME set to false on '(', '['
+  bool CompositeTypeNameLitNeedsParens;
 
 public:
   Parser(Lexer &L, Action &Actions/*, bool SkipFunctionBodies*/);
@@ -1005,7 +1005,6 @@ private:
   void ParseOpenCLAttributes(ParsedAttributes &attrs);
   void ParseOpenCLQualifiers(DeclSpec &DS);
 
-  VersionTuple ParseVersionTuple(SourceRange &Range);
   void ParseAvailabilityAttribute(IdentifierInfo &Availability,
                                   SourceLocation AvailabilityLoc,
                                   ParsedAttributes &attrs,
