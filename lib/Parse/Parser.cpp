@@ -375,13 +375,21 @@ bool Parser::ParseParameterDecl() {
     ConsumeToken();
 
     if (Tok.is(tok::comma) || Tok.is(tok::ellipsis) || IsType()) {
+      bool HadEllipsis = false;
       ParseIdentifierListTail(II);
-      if (Tok.is(tok::ellipsis))
+      if (Tok.is(tok::ellipsis)) {
         ConsumeToken();
+        HadEllipsis = true;
+      }
 
       if (!IsType()) {
-        Diag(Tok, diag::expected_type);
-        return true;
+        if (HadEllipsis) {
+          Diag(Tok, diag::expected_type);
+          return true;
+        }
+        // If no Type follows the IdentifierList, the IdentifierList was
+        // actually a TypeList consisting solely of TypeNames.
+        return false;
       }
       return ParseType();
     } else {

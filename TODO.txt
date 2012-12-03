@@ -21,6 +21,8 @@ data
 Parser
 =====
 
+type / identifier mismatch in function results / parameters
+
 ExprResult/StmtResult for result passing
 
 Actions interface

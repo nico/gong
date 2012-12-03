@@ -15,6 +15,8 @@ func (foo, bar) foo() {}  // expected-diag {{expected ')'}}
 func foo(foo bar) {}
 func foo(foo, baz bar) {}
 func foo(... bar) {}
+func foo(bar...) {}  // expected-diag {{expected type}}
+func foo(int ...int) {}  // valid!
 func foo(foo... bar) {}
 func foo(foo, baz... bar) {}
 func foo(foo, baz... []int) {}
@@ -27,11 +29,13 @@ func foo(foo bar) foo . 4 {}  // expected-diag {{expected identifier}}
 // .4 is lexed as numeric literal here:
 func foo(foo bar) foo.4 {}  // expected-diag {{expected ';'}}
 
-
+func foo(a int) (int) {}
+func foo(a int) (int, int) {}
 func foo(foo bar) (bar... foo.bar) {}
 
 // Function and method bodies can be omitted.
 func a()
+func a(int, int)
 func (foo) a()
 func (foo) a() int
 
