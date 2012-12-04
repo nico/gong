@@ -93,6 +93,7 @@ func f() {
   mynestedtype{foo: { 4 } }
   mynestedtype{ {bar: 4 } }
   mynestedtype{foo: {bar: 4 } }
+  mynestedtype{foo: {bar: 4 }  // expected-diag {{expected '}'}} expected-note {{to match this '{'}}
 
   // PrimaryExpr, Operand, Literal, FunctionLit
   func(int) int{}

@@ -548,7 +548,8 @@ Parser::ParseCompositeLitOrConversion(TypeParam *TOpt) {
 Action::ExprResult
 Parser::ParseLiteralValue() {
   assert(Tok.is(tok::l_brace) && "expected '{'");
-  ConsumeBrace();
+  BalancedDelimiterTracker T(*this, tok::l_brace);
+  T.consumeOpen();
 
   if (Tok.isNot(tok::r_brace)) {
     ParseElementList();
@@ -556,13 +557,7 @@ Parser::ParseLiteralValue() {
       ConsumeToken();
   }
 
-  if (Tok.isNot(tok::r_brace)) {
-    Diag(Tok, diag::expected_r_brace);
-    SkipUntil(tok::r_brace);
-    return true;
-  }
-  ConsumeBrace();
-  return false;
+  return T.consumeClose();
 }
 
 /// ElementList   = Element { "," Element } .
