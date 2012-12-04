@@ -451,6 +451,8 @@ Parser::ParseIndexOrSliceSuffix(ExprResult &LHS) {
       ParseExpression();
   }
 
+  // FIXME: This prints "expected ']'", but a ':' is sometimes ok too
+  // (after "[1" for example).
   T.consumeClose();
   return LHS;
 }

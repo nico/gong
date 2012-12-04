@@ -723,12 +723,12 @@ bool Parser::ParseMethodSpec() {
 bool Parser::ParseMapType() {
   assert(Tok.is(tok::kw_map) && "Expected 'map'");
   ConsumeToken();
-  if (Tok.isNot(tok::l_square)) {
-    Diag(Tok, diag::expected_l_square);
+
+  BalancedDelimiterTracker T(*this, tok::l_square);
+  if (T.expectAndConsume(diag::expected_l_square)) {
     SkipUntil(tok::semi, /*StopAtSemi=*/false, /*DontConsume=*/true);
     return true;
   }
-  ConsumeBracket();
 
   if (!IsType()) {
     Diag(Tok, diag::expected_type);
@@ -737,7 +737,7 @@ bool Parser::ParseMapType() {
   }
   ParseType();
 
-  if (ExpectAndConsume(tok::r_square, diag::expected_r_square))
+  if (T.consumeClose())
     return true;
 
   if (!IsElementType()) {
