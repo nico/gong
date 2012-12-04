@@ -20,6 +20,7 @@
 #include "gong/Basic/LLVM.h"
 
 namespace gong {
+  class DiagnosticsEngine;
 
   // Import the diagnostic enums themselves.
   namespace diag {
@@ -35,7 +36,7 @@ namespace gong {
 
     // Get typedefs for common diagnostics.
     enum {
-#define DIAG(ENUM,DESC) ENUM,
+#define DIAG(ENUM,CLASS,DESC) ENUM,
 #include "gong/Basic/DiagnosticLexKinds.def"
       NUM_BUILTIN_DIAGNOSTICS
 #undef DIAG
@@ -45,6 +46,11 @@ namespace gong {
 /// \brief Used for handling and querying diagnostic IDs. Can be used and shared
 /// by multiple Diagnostics for multiple translation units.
 class DiagnosticIDs : public RefCountedBase<DiagnosticIDs> {
+public:
+  /// The level of the diagnostic.
+  enum Level {
+    Note, Error
+  };
 private:
   /// \brief Information for uniquing and looking up custom diags.
   diag::CustomDiagInfo *CustomDiagInfo;
@@ -57,7 +63,7 @@ public:
   ///
   /// If this is the first request for this diagnosic, it is registered and
   /// created, otherwise the existing ID is returned.
-  unsigned getCustomDiagID(StringRef Message);
+  unsigned getCustomDiagID(Level L, StringRef Message);
 
   //===--------------------------------------------------------------------===//
   // Diagnostic classification and reporting interfaces.
@@ -69,7 +75,13 @@ public:
   /// \brief Get the set of all diagnostic IDs.
   //void getAllDiagnostics(llvm::SmallVectorImpl<diag::kind> &Diags) const;
 
-private:
+//private:
+  /// \brief Based on the way the client configured the DiagnosticsEngine
+  /// object, classify the specified diagnostic ID into a Level, consumable by
+  /// the DiagnosticClient.
+  DiagnosticIDs::Level getDiagnosticLevel(unsigned DiagID,
+                                          const DiagnosticsEngine &Diag) const;
+
 };
 
 }  // end namespace gong

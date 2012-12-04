@@ -21,13 +21,11 @@
 #include "llvm/Support/SourceMgr.h"
 #include "llvm/Support/raw_ostream.h"
 #include <cctype>
+
 using namespace gong;
-
-
 typedef VerifyDiagnosticConsumer::Directive Directive;
 typedef VerifyDiagnosticConsumer::DirectiveList DirectiveList;
 typedef VerifyDiagnosticConsumer::ExpectedData ExpectedData;
-
 
 VerifyDiagnosticConsumer::VerifyDiagnosticConsumer(DiagnosticsEngine &Diags)
   : Diags(Diags),
@@ -49,13 +47,14 @@ VerifyDiagnosticConsumer::~VerifyDiagnosticConsumer() {
 
 // DiagnosticConsumer interface.
 
-void VerifyDiagnosticConsumer::handleDiagnostic(const Diagnostic &Info) {
+void VerifyDiagnosticConsumer::handleDiagnostic(DiagnosticsEngine::Level Level,
+                                                const Diagnostic &Info) {
   if (Info.hasSourceManager())
     setSourceManager(Info.getSourceManager());
 
   // Send the diagnostic to the buffer, we will check it once we reach the end
   // of the source file (or are destructed).
-  Buffer->handleDiagnostic(Info);
+  Buffer->handleDiagnostic(Level, Info);
 }
 
 //===----------------------------------------------------------------------===//
@@ -234,6 +233,8 @@ static bool ParseDirective(StringRef S, ExpectedData *ED,
     DirectiveList* DL = NULL;
     if (PH.Next("diag"))
       DL = ED ? &ED->Errors : NULL;
+    else if (PH.Next("note"))
+      DL = ED ? &ED->Notes : NULL;
     else if (PH.Next("no-diagnostics")) {
       if (Status == VerifyDiagnosticConsumer::HasOtherExpectedDirectives)
         Diags.Report(Pos, diag::verify_invalid_no_diags)
@@ -314,7 +315,7 @@ static bool ParseDirective(StringRef S, ExpectedData *ED,
       } else if (PH.Next("-")) {
         PH.Advance();
         if (!PH.Next(Max) || Max < Min) {
-          Diags.Report(Pos, diag::verify_invalid_range);
+          Diags.Report(Pos, diag::verify_invalid_range) << KindStr;
           continue;
         }
         PH.Advance();
@@ -332,7 +333,7 @@ static bool ParseDirective(StringRef S, ExpectedData *ED,
 
     // Next token: {{
     if (!PH.Next("{{")) {
-      Diags.Report(Pos, diag::verify_missing_start);
+      Diags.Report(Pos, diag::verify_missing_start) << KindStr;
       continue;
     }
     PH.Advance();
@@ -340,7 +341,7 @@ static bool ParseDirective(StringRef S, ExpectedData *ED,
 
     // Search for token: }}
     if (!PH.Search("}}")) {
-      Diags.Report(Pos, diag::verify_missing_end);
+      Diags.Report(Pos, diag::verify_missing_end) << KindStr;
       continue;
     }
     const char* const ContentEnd = PH.P; // mark content end
@@ -368,7 +369,7 @@ static bool ParseDirective(StringRef S, ExpectedData *ED,
       DL->push_back(D);
       FoundDirective = true;
     } else {
-      Diags.Report(Pos, diag::verify_invalid_content) << Error;
+      Diags.Report(Pos, diag::verify_invalid_content) << KindStr << Error;
     }
   }
 
@@ -414,7 +415,7 @@ static unsigned PrintUnexpected(DiagnosticsEngine &Diags,
   }
 
   Diags.Report(SourceLocation(), diag::verify_inconsistent_diags)
-    << /*Unexpected=*/true << OS.str();
+    << Kind << /*Unexpected=*/true << OS.str();
   return std::distance(diag_begin, diag_end);
 }
 
@@ -440,7 +441,7 @@ static unsigned PrintExpected(DiagnosticsEngine &Diags, llvm::SourceMgr &SourceM
   }
 
   Diags.Report(SourceLocation(), diag::verify_inconsistent_diags)
-    << /*Unexpected=*/false << OS.str();
+    << Kind << /*Unexpected=*/false << OS.str();
   return DL.size();
 }
 
@@ -503,6 +504,10 @@ static unsigned CheckResults(DiagnosticsEngine &Diags,
   NumProblems += CheckLists(Diags, SourceMgr, "error", ED.Errors,
                             Buffer.err_begin(), Buffer.err_end());
 
+  // See if there are note mismatches.
+  NumProblems += CheckLists(Diags, SourceMgr, "note", ED.Notes,
+                            Buffer.note_begin(), Buffer.note_end());
+
   return NumProblems;
 }
 
@@ -530,6 +535,7 @@ void VerifyDiagnosticConsumer::CheckDiagnostics() {
   // Reset the buffer, we have processed all the diagnostics in it.
   Buffer.reset(new TextDiagnosticBuffer());
   ED.Errors.clear();
+  ED.Notes.clear();
 }
 
 Directive *Directive::create(bool RegexKind, SourceLocation DirectiveLoc,

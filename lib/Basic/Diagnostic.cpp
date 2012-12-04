@@ -57,7 +57,12 @@ bool DiagnosticsEngine::EmitCurrentDiagnostic() {
   assert(getClient() && "DiagnosticClient not set!");
 
   Diagnostic Info(this);
-  Client->handleDiagnostic(Info);
+  DiagnosticsEngine::Level DiagLevel;
+  switch (Diags->getDiagnosticLevel(getCurrentDiagID(), *this)) {
+  case DiagnosticIDs::Note: DiagLevel = Note; break;
+  case DiagnosticIDs::Error: DiagLevel = Error; break;
+  }
+  Client->handleDiagnostic(DiagLevel, Info);
   CurDiagID = ~0U;
 
   return true;
@@ -65,8 +70,10 @@ bool DiagnosticsEngine::EmitCurrentDiagnostic() {
 
 DiagnosticConsumer::~DiagnosticConsumer() {}
 
-void DiagnosticConsumer::handleDiagnostic(const Diagnostic &Info) {
-  ++NumDiags;
+void DiagnosticConsumer::handleDiagnostic(DiagnosticsEngine::Level DiagLevel,
+                                          const Diagnostic &Info) {
+  if (DiagLevel >= DiagnosticsEngine::Error)
+    ++NumDiags;
 }
 
 /// ModifierIs - Return true if the specified modifier matches specified string.

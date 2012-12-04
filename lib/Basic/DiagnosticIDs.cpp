@@ -26,8 +26,15 @@ using namespace gong;
 
 namespace {
 
+// Diagnostic classes.
+enum {
+  CLASS_NOTE       = 0x01,
+  CLASS_ERROR      = 0x04
+};
+
 struct StaticDiagInfoRec {
   unsigned short DiagID;
+  unsigned Class : 3;
 
   uint16_t DescriptionLen;
   const char *DescriptionStr;
@@ -53,11 +60,11 @@ public:
 } // namespace anonymous
 
 static const StaticDiagInfoRec StaticDiagInfo[] = {
-#define DIAG(ENUM,DESC) \
-  { diag::ENUM, STR_SIZE(DESC, uint16_t), DESC },
+#define DIAG(ENUM,CLASS,DESC) \
+  { diag::ENUM, CLASS, STR_SIZE(DESC, uint16_t), DESC },
 #include "gong/Basic/DiagnosticLexKinds.def"
 #undef DIAG
-  { 0, 0, 0 }
+  { 0, 0, 0, 0 }
 };
 
 static const unsigned StaticDiagInfoSize =
@@ -83,7 +90,7 @@ static const StaticDiagInfoRec *GetDiagInfo(unsigned DiagID) {
 #endif
 
   // Search the diagnostic table with a binary search.
-  StaticDiagInfoRec Find = { static_cast<unsigned short>(DiagID), 0, 0 };
+  StaticDiagInfoRec Find = { static_cast<unsigned short>(DiagID), 0, 0, 0 };
 
   const StaticDiagInfoRec *Found =
     std::lower_bound(StaticDiagInfo, StaticDiagInfo + StaticDiagInfoSize, Find);
@@ -94,6 +101,14 @@ static const StaticDiagInfoRec *GetDiagInfo(unsigned DiagID) {
   return Found;
 }
 
+/// getBuiltinDiagClass - Return the class field of the diagnostic.
+///
+static unsigned getBuiltinDiagClass(unsigned DiagID) {
+  if (const StaticDiagInfoRec *Info = GetDiagInfo(DiagID))
+    return Info->Class;
+  return ~0U;
+}
+
 //===----------------------------------------------------------------------===//
 // Custom Diagnostic information
 //===----------------------------------------------------------------------===//
@@ -101,21 +116,28 @@ static const StaticDiagInfoRec *GetDiagInfo(unsigned DiagID) {
 namespace gong {
   namespace diag {
     class CustomDiagInfo {
-      typedef std::string DiagDesc;
+      typedef std::pair<DiagnosticIDs::Level, std::string> DiagDesc;
       std::vector<DiagDesc> DiagInfo;
       std::map<DiagDesc, unsigned> DiagIDs;
     public:
 
-      /// getDescription - Return the description of the specified custom
-      /// diagnostic.
+      /// Return the description of the specified custom diagnostic.
       StringRef getDescription(unsigned DiagID) const {
         assert(this && DiagID-DIAG_UPPER_LIMIT < DiagInfo.size() &&
                "Invalid diagnosic ID");
-        return DiagInfo[DiagID-DIAG_UPPER_LIMIT];
+        return DiagInfo[DiagID-DIAG_UPPER_LIMIT].second;
       }
 
-      unsigned getOrCreateDiagID(StringRef Message, DiagnosticIDs &Diags) {
-        DiagDesc D(Message);
+      /// Return the level of the specified custom diagnostic.
+      DiagnosticIDs::Level getLevel(unsigned DiagID) const {
+        assert(this && DiagID-DIAG_UPPER_LIMIT < DiagInfo.size() &&
+               "Invalid diagnosic ID");
+        return DiagInfo[DiagID-DIAG_UPPER_LIMIT].first;
+      }
+
+      unsigned getOrCreateDiagID(DiagnosticIDs::Level L, StringRef Message,
+                                 DiagnosticIDs &Diags) {
+        DiagDesc D(L, Message);
         // Check to see if it already exists.
         std::map<DiagDesc, unsigned>::iterator I = DiagIDs.lower_bound(D);
         if (I != DiagIDs.end() && I->first == D)
@@ -147,10 +169,10 @@ DiagnosticIDs::~DiagnosticIDs() {
 /// getCustomDiagID - Return an ID for a diagnostic with the specified message
 /// and level.  If this is the first request for this diagnosic, it is
 /// registered and created, otherwise the existing ID is returned.
-unsigned DiagnosticIDs::getCustomDiagID(StringRef Message) {
+unsigned DiagnosticIDs::getCustomDiagID(Level L, StringRef Message) {
   if (CustomDiagInfo == 0)
     CustomDiagInfo = new diag::CustomDiagInfo();
-  return CustomDiagInfo->getOrCreateDiagID(Message, *this);
+  return CustomDiagInfo->getOrCreateDiagID(L, Message, *this);
 }
 
 /// Given a diagnostic ID, return a description of the
@@ -159,6 +181,22 @@ StringRef DiagnosticIDs::getDescription(unsigned DiagID) {
   if (const StaticDiagInfoRec *Info = GetDiagInfo(DiagID))
     return Info->getDescription();
   return StringRef();
+}
+
+/// Based on the way the client configured the
+/// DiagnosticsEngine object, classify the specified diagnostic ID into a Level,
+/// by consumable the DiagnosticClient.
+DiagnosticIDs::Level
+DiagnosticIDs::getDiagnosticLevel(unsigned DiagID, /*SourceLocation Loc,*/
+                                  const DiagnosticsEngine &Diag) const {
+  // Handle custom diagnostics, which cannot be mapped.
+  if (DiagID >= diag::DIAG_UPPER_LIMIT)
+    return CustomDiagInfo->getLevel(DiagID);
+
+  unsigned DiagClass = getBuiltinDiagClass(DiagID);
+  if (DiagClass == CLASS_NOTE) return DiagnosticIDs::Note;
+  assert (DiagClass == CLASS_ERROR);
+  return DiagnosticIDs::Error;
 }
 
 //void DiagnosticIDs::getAllDiagnostics(

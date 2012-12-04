@@ -12,25 +12,26 @@
 //===----------------------------------------------------------------------===//
 
 #ifndef DIAG
-#define DIAG(X,Y)
+#define DIAG(X,Y,Z)
 #endif
 
-DIAG(null_in_string,       "null character(s) in string literal")
-DIAG(null_in_rune,         "null character(s) in rune literal")
-DIAG(null_in_file,         "null character(s) in file")
-DIAG(nested_block_comment, "'/*' within block comment")
+DIAG(null_in_string,       CLASS_ERROR, "null character(s) in string literal")
+DIAG(null_in_rune,         CLASS_ERROR, "null character(s) in rune literal")
+DIAG(null_in_file,         CLASS_ERROR, "null character(s) in file")
+DIAG(nested_block_comment, CLASS_ERROR, "'/*' within block comment")
 
-DIAG(unterminated_raw_string, "missing terminating '`' character")
-DIAG(unterminated_string,  "missing terminating '\"' character")
-DIAG(unterminated_rune,    "missing terminating ' character")
-DIAG(unterminated_block_comment, "unterminated /* comment")
+DIAG(unterminated_raw_string, CLASS_ERROR, "missing terminating '`' character")
+DIAG(unterminated_string,  CLASS_ERROR, "missing terminating '\"' character")
+DIAG(unterminated_rune,    CLASS_ERROR, "missing terminating ' character")
+DIAG(unterminated_block_comment, CLASS_ERROR, "unterminated /* comment")
 
-DIAG(conflict_marker,      "version control conflict marker in file")
+DIAG(conflict_marker,      CLASS_ERROR,
+    "version control conflict marker in file")
 
-DIAG(invalid_utf_sequence, "invalid utf8 sequence")
+DIAG(invalid_utf_sequence, CLASS_ERROR, "invalid utf8 sequence")
 
 // Literal
-DIAG(empty_rune,           "empty rune literal")
+DIAG(empty_rune,           CLASS_ERROR, "empty rune literal")
 //def ext_unknown_escape : ExtWarn<"unknown escape sequence '\\%0'">;
 //def err_hex_escape_no_digits : Error<"\\x used with no following hex digits">;
 //def err_ucn_escape_no_digits : Error<"\\u used with no following hex digits">;
@@ -54,59 +55,68 @@ DIAG(empty_rune,           "empty rune literal")
 //}
 //
 
+// FIXME: move to DiagnosticCommonKinds
+DIAG(note_matching,                CLASS_NOTE, "to match this '%0'")
 
 // FIXME: move to DiagnosticFrontendKinds
-DIAG(verify_inconsistent_diags,
-    "diagnostic %select{expected|seen}0 but not %select{seen|expected}0: %1")
-DIAG(verify_invalid_content, "invalid expected diag: %0")
-DIAG(verify_invalid_no_diags,
+DIAG(verify_inconsistent_diags, CLASS_ERROR,
+  "'%0' diagnostic %select{expected|seen}1 but not %select{seen|expected}1: %2")
+DIAG(verify_invalid_content, CLASS_ERROR, "invalid expected %0: %1")
+DIAG(verify_invalid_no_diags, CLASS_ERROR,
     "%select{expected|'expected-no-diagnostics'}0 directive cannot follow "
     "%select{'expected-no-diagnostics' directive|other expected directives}0")
-DIAG(verify_invalid_range, "invalid range following '-' in expected diag")
-DIAG(verify_missing_line,
-    "missing or invalid line number following '@' in expected diag")
-DIAG(verify_missing_start, "cannot find start ('{{') of expected diag")
-DIAG(verify_missing_end, "cannot find end ('}}') of expected diag")
-DIAG(verify_no_directives,
+DIAG(verify_invalid_range, CLASS_ERROR,
+    "invalid range following '-' in expected %0")
+DIAG(verify_missing_line, CLASS_ERROR,
+    "missing or invalid line number following '@' in expected %0")
+DIAG(verify_missing_start, CLASS_ERROR,
+    "cannot find start ('{{') of expected %0")
+DIAG(verify_missing_end, CLASS_ERROR,
+    "cannot find end ('}}') of expected %0")
+DIAG(verify_no_directives, CLASS_ERROR,
     "no expected directives found: consider use of 'expected-no-diagnostics'")
 
+
 // FIXME: move to DiagnosticParseKinds
-DIAG(expected_package,             "expected 'package'")
-DIAG(expected_ident,               "expected identifier")
-DIAG(invalid_package_name,         "invalid package name %0")
-DIAG(expected_semi_package,        "expected ';' after package name")
-DIAG(expected_semi_import,         "expected ';' after import line")
-DIAG(expected_semi,                "expected ';'")
-DIAG(expected_string_literal,      "expected string literal")
-DIAG(expected_ident_or_l_paren,    "expected identifier or '('")
-DIAG(expected_ident_or_star,       "expected identifier or '*' in 'struct'")
-DIAG(expected_l_paren,             "expected '('")
-DIAG(expected_r_paren,             "expected ')'")
-DIAG(expected_l_square,            "expected '['")
-DIAG(expected_r_square,            "expected ']'")
-DIAG(expected_l_brace,             "expected '{'")
-DIAG(expected_r_brace,             "expected '}'")
-DIAG(expected_equal,               "expected '='")
-DIAG(expected_equal_or_type,       "expected '=' or type")
-DIAG(expected_l_brace_or_l_paren,  "expected '{' or '('")
-DIAG(expected_type,                "expected type")
-DIAG(expected_element_type,        "expected element type")
-DIAG(expected_chan,                "expected 'chan'")
-DIAG(expected_period_or_ident_or_string,
+DIAG(expected_package,             CLASS_ERROR, "expected 'package'")
+DIAG(expected_ident,               CLASS_ERROR, "expected identifier")
+DIAG(invalid_package_name,         CLASS_ERROR, "invalid package name %0")
+DIAG(expected_semi_package, CLASS_ERROR, "expected ';' after package name")
+DIAG(expected_semi_import,  CLASS_ERROR, "expected ';' after import line")
+DIAG(expected_semi,                CLASS_ERROR, "expected ';'")
+DIAG(expected_string_literal,      CLASS_ERROR, "expected string literal")
+DIAG(expected_ident_or_l_paren,    CLASS_ERROR, "expected identifier or '('")
+DIAG(expected_ident_or_star,       CLASS_ERROR,
+    "expected identifier or '*' in 'struct'")
+DIAG(expected_l_paren,             CLASS_ERROR, "expected '('")
+DIAG(expected_r_paren,             CLASS_ERROR, "expected ')'")
+DIAG(expected_l_square,            CLASS_ERROR, "expected '['")
+DIAG(expected_r_square,            CLASS_ERROR, "expected ']'")
+DIAG(expected_l_brace,             CLASS_ERROR, "expected '{'")
+DIAG(expected_r_brace,             CLASS_ERROR, "expected '}'")
+DIAG(expected_equal,               CLASS_ERROR, "expected '='")
+DIAG(expected_equal_or_type,       CLASS_ERROR, "expected '=' or type")
+DIAG(expected_l_brace_or_l_paren,  CLASS_ERROR, "expected '{' or '('")
+DIAG(expected_type,                CLASS_ERROR, "expected type")
+DIAG(expected_element_type,        CLASS_ERROR, "expected element type")
+DIAG(expected_chan,                CLASS_ERROR, "expected 'chan'")
+DIAG(expected_period_or_ident_or_string, CLASS_ERROR,
     "expected '.' or identifier or string literal")
-DIAG(expected_l_paren_after_builtin,
+DIAG(expected_l_paren_after_builtin, CLASS_ERROR,
     "expected '(', builtins can only be used in calls")
-DIAG(expected_expr,                "expected expression")
-DIAG(expected_expr_or_typeswitchguard,
+DIAG(expected_expr,                CLASS_ERROR, "expected expression")
+DIAG(expected_expr_or_typeswitchguard, CLASS_ERROR,
     "expected expression or type switch guard")
-DIAG(expected_colonequal_or_equal, "expected ':=' or '='")
-DIAG(expected_assign_op,           "expected assignment operator")
-DIAG(expected_if_or_l_brace,       "expected 'if' or '{'")
-DIAG(expected_case_or_default,     "expected 'case' or 'default'")
-DIAG(expected_colon,               "expected ':'")
-DIAG(expected_period,              "expected '.'")
-DIAG(range_only_valid_in_for,      "'range' is only valid in for statements")
-DIAG(unexpected_kw_type,           "unexpected '.(type)'")
-DIAG(invalid_expr_left_of_colonequal, "unexpected expression before ':='")
-DIAG(parser_impl_limit_overflow,
+DIAG(expected_colonequal_or_equal, CLASS_ERROR, "expected ':=' or '='")
+DIAG(expected_assign_op,           CLASS_ERROR, "expected assignment operator")
+DIAG(expected_if_or_l_brace,       CLASS_ERROR, "expected 'if' or '{'")
+DIAG(expected_case_or_default,     CLASS_ERROR, "expected 'case' or 'default'")
+DIAG(expected_colon,               CLASS_ERROR, "expected ':'")
+DIAG(expected_period,              CLASS_ERROR, "expected '.'")
+DIAG(range_only_valid_in_for,      CLASS_ERROR,
+    "'range' is only valid in for statements")
+DIAG(unexpected_kw_type,           CLASS_ERROR, "unexpected '.(type)'")
+DIAG(invalid_expr_left_of_colonequal, CLASS_ERROR,
+    "unexpected expression before ':='")
+DIAG(parser_impl_limit_overflow,   CLASS_ERROR,
     "parser recursion limit reached, program too complex")

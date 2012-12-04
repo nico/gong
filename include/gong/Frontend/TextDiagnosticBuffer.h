@@ -26,12 +26,16 @@ public:
   typedef DiagList::iterator iterator;
   typedef DiagList::const_iterator const_iterator;
 private:
-  DiagList Errors;
+  DiagList Errors, Notes;
 public:
   const_iterator err_begin() const  { return Errors.begin(); }
   const_iterator err_end() const    { return Errors.end(); }
 
-  virtual void handleDiagnostic(const Diagnostic &Info);
+  const_iterator note_begin() const  { return Notes.begin(); }
+  const_iterator note_end() const    { return Notes.end(); }
+
+  virtual void handleDiagnostic(DiagnosticsEngine::Level Level,
+                                const Diagnostic &Info);
 
   /// FlushDiagnostics - Flush the buffered diagnostics to an given
   /// diagnostic engine.

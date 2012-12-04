@@ -73,9 +73,11 @@ public:
   ///
   struct ExpectedData {
     DirectiveList Errors;
+    DirectiveList Notes;
 
     ~ExpectedData() {
       llvm::DeleteContainerPointers(Errors);
+      llvm::DeleteContainerPointers(Notes);
     }
   };
 
@@ -106,7 +108,7 @@ public:
   ~VerifyDiagnosticConsumer();
 
   // Implement DiagnosticConsumer
-  void handleDiagnostic(const Diagnostic &Info);
+  void handleDiagnostic(DiagnosticsEngine::Level Level, const Diagnostic &Info);
 
   // Implement CommentHandler
   void handleComment(Lexer &L, SourceRange Range);

@@ -20,7 +20,7 @@ namespace gong {
 
 class TextDiagnosticPrinter : public DiagnosticConsumer {
 public:
-  void handleDiagnostic(const Diagnostic &Info);
+  void handleDiagnostic(DiagnosticsEngine::Level Level, const Diagnostic &Info);
 };
 
 } // end namespace gong

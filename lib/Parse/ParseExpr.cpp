@@ -14,7 +14,7 @@
 
 #include "gong/Parse/Parser.h"
 #include "llvm/Support/ErrorHandling.h"
-//#include "RAIIObjectsForParser.h"
+#include "RAIIObjectsForParser.h"
 //#include "llvm/ADT/SmallVector.h"
 //#include "llvm/ADT/SmallString.h"
 using namespace gong;
@@ -431,13 +431,14 @@ Parser::ParseSelectorOrTypeAssertionOrTypeSwitchGuardSuffix(
 Action::ExprResult
 Parser::ParseIndexOrSliceSuffix(ExprResult &LHS) {
   assert(Tok.is(tok::l_square) && "expected '['");
-  ConsumeBracket();
+  BalancedDelimiterTracker T(*this, tok::l_square);
+  T.consumeOpen();
 
   // FIXME: here
 
   if (Tok.is(tok::r_square)) {
     Diag(Tok, diag::expected_expr);
-    ConsumeBracket();
+    T.consumeClose();
     return ExprError();
   }
 
@@ -450,11 +451,7 @@ Parser::ParseIndexOrSliceSuffix(ExprResult &LHS) {
       ParseExpression();
   }
 
-  if (Tok.isNot(tok::r_square)) {
-    Diag(Tok, diag::expected_r_square);
-    return ExprError();
-  }
-  ConsumeBracket();
+  T.consumeClose();
   return LHS;
 }
 

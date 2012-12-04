@@ -2595,7 +2595,7 @@ bool BalancedDelimiterTracker::diagnoseMissingClose() {
   case tok::r_square: LHSName = "["; DID = diag::expected_r_square; break;
   }
   P.Diag(P.Tok, DID);
-  //P.Diag(LOpen, diag::note_matching) << LHSName;  // FIXME
+  P.Diag(LOpen, diag::note_matching) << LHSName;  // FIXME
   if (P.SkipUntil(Close, /*StopAtSemi*/ true, /*DontConsume*/ true))
     LClose = P.ConsumeAnyToken();
   return true;

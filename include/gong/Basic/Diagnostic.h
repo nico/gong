@@ -44,6 +44,12 @@ class IdentifierInfo;
 /// SourceMgr.
 class DiagnosticsEngine : public RefCountedBase<DiagnosticsEngine> {
 public:
+  /// \brief The level of the diagnostic.
+  enum Level {
+    Note = DiagnosticIDs::Note,
+    Error = DiagnosticIDs::Error
+  };
+
   enum ArgumentKind {
     ak_std_string,      ///< std::string
     ak_c_string,        ///< const char *
@@ -145,8 +151,8 @@ public:
   ///
   /// If this is the first request for this diagnosic, it is registered and
   /// created, otherwise the existing ID is returned.
-  unsigned getCustomDiagID(StringRef Message) {
-    return Diags->getCustomDiagID(Message);
+  unsigned getCustomDiagID(Level L, StringRef Message) {
+    return Diags->getCustomDiagID((DiagnosticIDs::Level)L, Message);
   }
 
   /// \brief Reset the state of the diagnostic object to its initial 
@@ -571,7 +577,8 @@ public:
   ///
   /// The default implementation just keeps track of the total number of
   /// warnings and errors.
-  virtual void handleDiagnostic(const Diagnostic &Info);
+  virtual void handleDiagnostic(DiagnosticsEngine::Level DiagLevel,
+                                const Diagnostic &Info) = 0;
 };
 
 //inline void DiagnosticsEngine::Report(SourceLocation Loc, unsigned DiagID) {

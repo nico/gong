@@ -19,9 +19,10 @@
 #include "llvm/ADT/SmallString.h"
 using namespace gong;
 
-void TextDiagnosticPrinter::handleDiagnostic(const Diagnostic &Info) {
+void TextDiagnosticPrinter::handleDiagnostic(DiagnosticsEngine::Level Level,
+                                             const Diagnostic &Info) {
   // Default implementation (Diags count).
-  DiagnosticConsumer::handleDiagnostic(Info);
+  DiagnosticConsumer::handleDiagnostic(Level, Info);
 
   // Render the diagnostic message into a temporary buffer eagerly. We'll use
   // this later as we print out the diagnostic to the terminal.
@@ -30,5 +31,10 @@ void TextDiagnosticPrinter::handleDiagnostic(const Diagnostic &Info) {
 
   SourceLocation Loc = Info.getLocation();
   llvm::SourceMgr &SM = Info.getSourceManager();
-  SM.PrintMessage(Loc, llvm::SourceMgr::DK_Error, OutStr.str());
+  llvm::SourceMgr::DiagKind Kind;
+  switch (Level) {
+  case DiagnosticsEngine::Note: Kind = llvm::SourceMgr::DK_Note; break;
+  case DiagnosticsEngine::Error: Kind = llvm::SourceMgr::DK_Error; break;
+  }
+  SM.PrintMessage(Loc, Kind, OutStr.str());
 }

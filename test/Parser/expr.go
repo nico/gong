@@ -163,6 +163,9 @@ func f() {
   // PrimaryExpr Index
   "asdf"[4]
 
+  "asdf"[  // expected-note {{to match this '['}}
+  4  // expected-diag {{expected ']'}}
+
   // PrimaryExpr Slice
   "asdf"[:]
   "asdf"[4:]
