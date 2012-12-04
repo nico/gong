@@ -561,7 +561,8 @@ bool Parser::ParseStructType() {
     SkipUntil(tok::semi, /*StopAtSemi=*/false, /*DontConsume=*/true);
     return true;
   }
-  ConsumeBrace();
+  BalancedDelimiterTracker T(*this, tok::l_brace);
+  T.consumeOpen();
 
   while (Tok.isNot(tok::r_brace) && Tok.isNot(tok::eof)) {
     if (Tok.isNot(tok::identifier) && Tok.isNot(tok::star)) {
@@ -581,8 +582,7 @@ bool Parser::ParseStructType() {
     if (Tok.is(tok::semi))
       ConsumeToken();
   }
-  if (Tok.is(tok::r_brace))
-    ConsumeBrace();
+  T.consumeClose();
   return false;
 }
 
@@ -674,7 +674,8 @@ bool Parser::ParseInterfaceType() {
     SkipUntil(tok::semi, /*StopAtSemi=*/false, /*DontConsume=*/true);
     return true;
   }
-  ConsumeBrace();
+  BalancedDelimiterTracker T(*this, tok::l_brace);
+  T.consumeOpen();
 
   while (Tok.isNot(tok::r_brace) && Tok.isNot(tok::eof)) {
     if (Tok.isNot(tok::identifier)) {
@@ -694,8 +695,7 @@ bool Parser::ParseInterfaceType() {
     if (Tok.is(tok::semi))
       ConsumeToken();
   }
-  if (Tok.is(tok::r_brace))
-    ConsumeBrace();
+  T.consumeClose();
   return false;
 }
 

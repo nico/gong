@@ -459,7 +459,8 @@ bool Parser::ParseSwitchStmt() {
     Diag(Tok, diag::expected_l_brace);
     SkipUntil(tok::l_brace, /*StopAtSemi=*/false, /*DontConsume=*/true);
   }
-  ConsumeBrace();
+  BalancedDelimiterTracker T(*this, tok::l_brace);
+  T.consumeOpen();
 
   // FIXME: This is fairly similar to the {} code in ParseSelectStmt().
   while (Tok.isNot(tok::r_brace) && Tok.isNot(tok::eof)) {
@@ -473,10 +474,7 @@ bool Parser::ParseSwitchStmt() {
       return true;
     }
   }
-  // FIXME: diag on missing r_brace
-  if (Tok.is(tok::r_brace))
-    ConsumeBrace();
-
+  T.consumeClose();
   return false;
 }
 
@@ -542,7 +540,8 @@ bool Parser::ParseSelectStmt() {
     // FIXME: recover?
     return true;
   }
-  ConsumeBrace();
+  BalancedDelimiterTracker T(*this, tok::l_brace);
+  T.consumeOpen();
 
   // FIXME: might be better to run this loop only while (IsCommClause)?
   while (Tok.isNot(tok::r_brace) && Tok.isNot(tok::eof)) {
@@ -556,10 +555,7 @@ bool Parser::ParseSelectStmt() {
       return true;
     }
   }
-  // FIXME: diag on missing r_brace
-  if (Tok.is(tok::r_brace))
-    ConsumeBrace();
-
+  T.consumeClose();
   return false;
 }
 
@@ -740,7 +736,8 @@ bool Parser::ParseBlock() {
   // Enter a scope to hold everything within the block.
   ParseScope CompoundScope(this, Scope::DeclScope);
 
-  ConsumeBrace();
+  BalancedDelimiterTracker T(*this, tok::l_brace);
+  T.consumeOpen();
   // FIXME: scoping, better recovery, check IsStatment() first,
   //        semicolon insertion after last statement
   // See Parser::ParseCompoundStatementBody() in clang.
@@ -751,5 +748,5 @@ bool Parser::ParseBlock() {
       break;
     ExpectAndConsumeSemi(diag::expected_semi);
   }
-  return ExpectAndConsume(tok::r_brace, diag::expected_r_brace);
+  return T.consumeClose();
 }
