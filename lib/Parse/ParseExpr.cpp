@@ -276,8 +276,14 @@ Parser::ParsePrimaryExprTail(IdentifierInfo *II) {
     /// BuiltinArgs = Type [ "," ExpressionList ] | ExpressionList .
 
     if (Tok.isNot(tok::l_paren)) {
-      Diag(Tok, diag::expected_l_paren_after_builtin);
-      return true;
+      // FIXME: MinimalAction doesn't handle `len := 4` correctly and complains
+      // about shadowed builtins too.  Until that's fixed (or until this whole
+      // method is killed), just allow builtin names to be used in general
+      // expressions -- it's possible they are shadowed and aren't a builtin
+      // at the moment.
+      //Diag(Tok, diag::expected_l_paren_after_builtin);
+      //return true;
+      break;
     }
     BalancedDelimiterTracker T(*this, tok::l_paren);
     T.consumeOpen();

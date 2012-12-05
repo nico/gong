@@ -156,9 +156,15 @@ func f() {
   // PrimaryExpr, BuiltinCall
   make([]int, 6)
   println(4)
-  println  // expected-diag {{expected '(', builtins can only be used in calls}}
   println(4  // expected-diag {{expected ')'}} expected-note {{to match this '('}}
   //s3 := append(s2, s0...)  // FIXME: should work (golang issue 4479)
+
+  // FIXME: See the comment in ParsePrimaryExprTail for why this is disabled:
+  //println  // should-diag {{expected '(', builtins can only be used in calls}}
+  {
+    len := 4
+    a := len + a
+  }
 
   // PrimaryExpr Selector
   "asdf".foo
