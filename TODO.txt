@@ -7,6 +7,13 @@ flag to dump stats
 
 do semicolon insertion on last line if file doesn't end with \n
 
+come up with a nicer way for semicolon insertion after '(':
+
+  foo(
+  foo()
+
+currently gets a 
+
 
 mark unknown tokens in the rune / string error cases as literals, so that semi
 insertion is done. Makes error recovery nicer. (`var a = ''\nvar b` doesn't
@@ -56,6 +63,7 @@ missing closing parens after impor/var/const/type spec
 introduce a consistent naming scheme for functions that assert the current
 token type vs those that don't
     handle tok::unknown
+  MaybeParse...() in clang is for stuff based on langopts
 
 share {} parsing code for interface{}, struct{}, and possibly blocks,
 selectstmts, and switchstmts
