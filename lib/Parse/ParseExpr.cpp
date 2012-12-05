@@ -333,15 +333,12 @@ Parser::ParseConversion(TypeParam *TOpt) {
 Action::ExprResult
 Parser::ParseConversionTail() {
   assert(Tok.is(tok::l_paren) && "expected '('");
-  ConsumeParen();
+  BalancedDelimiterTracker T(*this, tok::l_paren);
+  T.consumeOpen();
 // FIXME: here
   ParseExpression();
-  if (Tok.isNot(tok::r_paren)) {
-    Diag(Tok, diag::expected_r_paren);
-    SkipUntil(tok::r_paren);
+  if (T.consumeClose())
     return ExprError();
-  }
-  ConsumeParen();
   return false;
 }
 
