@@ -157,6 +157,7 @@ func f() {
   make([]int, 6)
   println(4)
   println  // expected-diag {{expected '(', builtins can only be used in calls}}
+  println(4  // expected-diag {{expected ')'}} expected-note {{to match this '('}}
 
   // PrimaryExpr Selector
   "asdf".foo

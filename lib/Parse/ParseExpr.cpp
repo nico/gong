@@ -283,7 +283,8 @@ Parser::ParsePrimaryExprTail(IdentifierInfo *II) {
       Diag(Tok, diag::expected_l_paren_after_builtin);
       return true;
     }
-    ConsumeParen();
+    BalancedDelimiterTracker T(*this, tok::l_paren);
+    T.consumeOpen();
     if (Tok.isNot(tok::r_paren)) {
       TypeParam TypeOpt;
       // No builtin returns an interface type, so they can't be followed by
@@ -293,12 +294,8 @@ Parser::ParsePrimaryExprTail(IdentifierInfo *II) {
       if (Tok.is(tok::comma))
         ConsumeToken();
     }
-    if (Tok.isNot(tok::r_paren)) {
-      Diag(Tok, diag::expected_r_paren);
-      SkipUntil(tok::r_paren);
+    if (T.consumeClose())
       return ExprError();
-    }
-    ConsumeParen();
     break;
   }
   case Action::IIT_Const:
