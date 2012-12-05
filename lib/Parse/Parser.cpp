@@ -338,7 +338,8 @@ bool Parser::ParseResult() {
 /// Parameters     = "(" [ ParameterList [ "," ] ] ")" .
 bool Parser::ParseParameters() {
   assert(Tok.is(tok::l_paren) && "Expected '('");
-  ConsumeParen();
+  BalancedDelimiterTracker T(*this, tok::l_paren);
+  T.consumeOpen();
 
   if (IsParameterList()) {
     ParseParameterList();
@@ -347,8 +348,7 @@ bool Parser::ParseParameters() {
   if (Tok.is(tok::comma))
     ConsumeToken();
 
-  return ExpectAndConsume(
-      tok::r_paren, diag::expected_r_paren, "", tok::r_paren);
+  return T.consumeClose();
 }
 
 bool Parser::IsParameterList() {

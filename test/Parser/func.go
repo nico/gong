@@ -42,7 +42,7 @@ func (foo) a() int
 func a {}  // expected-diag {{expected '('}}
 
 func f() {
-  func(func(){myprint("yo")})  // expected-diag{{expected ')'}} expected-diag{{expected '{' or '('}}
+  func(func(){myprint("yo")})  // expected-diag {{expected ')'}} expected-note {{to match this '('}} expected-diag {{expected '{' or '('}}
 }
 
 func a()
