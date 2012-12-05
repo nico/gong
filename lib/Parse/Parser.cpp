@@ -452,9 +452,10 @@ bool Parser::ParseType() {
     return ParseTypeName();
 
   if (Tok.is(tok::l_paren)) {
-    ConsumeParen();
+    BalancedDelimiterTracker T(*this, tok::l_paren);
+    T.consumeOpen();
     bool Result = ParseType();
-    ExpectAndConsume(tok::r_paren, diag::expected_r_paren); // FIXME: Use result
+    T.consumeClose(); // FIXME: Use result
     return Result;
   }
 

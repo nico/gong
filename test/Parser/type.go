@@ -71,7 +71,7 @@ type t []  // expected-diag{{expected element type}}
 type t map[string]int
 type t map;  // expected-diag{{expected '['}}
 type t map[;  // expected-diag{{expected type}}
-type t map[string  // expected-diag{{expected ']'}}  expected-note {{to match this '['}}
+type t map[string  // expected-diag{{expected ']'}}  expected-note{{to match this '['}}
 type t map[string]  // expected-diag{{expected type}}
 type t map[string]map[foo]int
 
@@ -87,4 +87,4 @@ type t (int)
 type t (*int)
 type t ((((int))))
 type t (map[(string)](int))
-type t (int  // expected-diag{{expected ')'}}
+type t (int  // expected-diag{{expected ')'}} expected-note{{to match this '('}}
