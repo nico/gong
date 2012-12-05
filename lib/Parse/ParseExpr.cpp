@@ -383,10 +383,14 @@ Parser::ParseSelectorOrTypeAssertionOrTypeSwitchGuardSuffix(
 
   SourceLocation PrevLoc = PrevTokLocation;
 
+  // Selector
   if (Tok.is(tok::identifier)) {
     ConsumeToken();
     return LHS;
-  } else if(Tok.is(tok::l_paren)) {
+  }
+
+  // TypeAssertion
+  if(Tok.is(tok::l_paren)) {
 // FIXME: here
     BalancedDelimiterTracker T(*this, tok::l_paren);
     T.consumeOpen();
@@ -409,10 +413,10 @@ Parser::ParseSelectorOrTypeAssertionOrTypeSwitchGuardSuffix(
     if (T.consumeClose())
       return ExprError();
     return LHS;
-  } else {
-    Diag(Tok, diag::expected_ident_or_l_paren);
-    return ExprError();
   }
+
+  Diag(Tok, diag::expected_ident_or_l_paren);
+  return ExprError();
 }
 
 /// Index          = "[" Expression "]" .
