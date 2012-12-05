@@ -158,6 +158,7 @@ func f() {
   println(4)
   println  // expected-diag {{expected '(', builtins can only be used in calls}}
   println(4  // expected-diag {{expected ')'}} expected-note {{to match this '('}}
+  //s3 := append(s2, s0...)  // FIXME: should work (golang issue 4479)
 
   // PrimaryExpr Selector
   "asdf".foo

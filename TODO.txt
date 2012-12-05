@@ -27,6 +27,8 @@ composite lit parens issue
 
 type / identifier mismatch in function results / parameters
 
+Make golang issue 4479 (... in builtincalls) work
+
 ExprResult/StmtResult for result passing
 
 Actions interface
