@@ -152,7 +152,6 @@ public:
 bool Parser::ParseSimpleStmtTail(IdentifierInfo *II, SimpleStmtKind *OutKind,
                                  SimpleStmtExts Ext) {
   SourceLocation StartLoc = PrevTokLocation;
-  // FIXME: Tok could be '.'
 
   if (Tok.is(tok::comma)) {
     // It's an identifier list! (Which can be interpreted as expression list.)

@@ -35,11 +35,16 @@ func f() {
   a, b, c += 4, 5, 6  // expected-diag{{expected ':=' or '='}}
   a[i], b += 3, 4  // expected-diag{{expected '='}}
   a, b = range 4  // expected-diag{{'range' is only valid in for statements}}
+  //a, b[i] = 1  FIXME
+  a.foo = 1
+  a.foo, b.foo = 1
 
   // SimpleStmts, ShortVarDecl:
   a, b, c := 1, 2, 3
   a := 1
   a[i] := 1  // expected-diag{{unexpected expression before ':='}}
+  //a, b[i] := 1  // should-diag{{unexpected expression before ':='}}  FIXME
+  a.foo := 1  // expected-diag{{unexpected expression before ':='}}
 
   // GoStmt
   // FIXME: `go;` should diag
