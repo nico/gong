@@ -196,8 +196,8 @@ public:
   bool ParseTypeNameTail(IdentifierInfo *Head);
   bool ParseTypeLit();
   bool ParseArrayOrSliceType();
-  bool ParseArrayType();
-  bool ParseSliceType();
+  bool ParseArrayType(BalancedDelimiterTracker &T);
+  bool ParseSliceType(BalancedDelimiterTracker &T);
   bool ParseStructType();
   bool ParseFieldDecl();
   bool ParseAnonymousField();

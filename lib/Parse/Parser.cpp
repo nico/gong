@@ -514,19 +514,20 @@ bool Parser::ParseTypeLit() {
 /// SliceType = "[" "]" ElementType .
 bool Parser::ParseArrayOrSliceType() {
   assert(Tok.is(tok::l_square) && "Expected '['");
-  ConsumeBracket(); 
+  BalancedDelimiterTracker T(*this, tok::l_square);
+  T.consumeOpen();
   
   // FIXME: here
   if (Tok.is(tok::r_square))
-    return ParseSliceType();
-  return ParseArrayType();
+    return ParseSliceType(T);
+  return ParseArrayType(T);
 }
 
 /// Tok points at ArrayLength when this is called.
-bool Parser::ParseArrayType() {
+bool Parser::ParseArrayType(BalancedDelimiterTracker &T) {
   ExprResult Expr = ParseExpression();
   (void)Expr;  // FIXME
-  if (ExpectAndConsume(tok::r_square, diag::expected_r_square)) {
+  if (T.consumeClose()) {
     SkipUntil(tok::semi, /*StopAtSemi=*/false, /*DontConsume=*/true);
     return true;
   }
@@ -537,9 +538,9 @@ bool Parser::ParseArrayType() {
 }
 
 /// Tok points at the ']' when this is called.
-bool Parser::ParseSliceType() {
+bool Parser::ParseSliceType(BalancedDelimiterTracker &T) {
   assert(Tok.is(tok::r_square) && "Expected ']'");
-  ConsumeBracket();
+  T.consumeClose();
   if (IsElementType())
     return ParseElementType();
   Diag(Tok, diag::expected_element_type);

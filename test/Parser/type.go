@@ -16,7 +16,7 @@ type t int.int
 type t [4]int;
 type t [+4]int;
 type t [-4]int;
-type t [4 int;  // expected-diag{{expected ']'}}
+type t [4 int;  // expected-diag{{expected ']'}} expected-note{{to match this '['}}
 
 // TypeLit, StructType
 type t struct {}

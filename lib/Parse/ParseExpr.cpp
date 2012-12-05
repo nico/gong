@@ -498,18 +498,19 @@ Parser::ParseCompositeLitOrConversion(TypeParam *TOpt) {
     break;
   case tok::l_square: {
     // FIXME: here
-    ConsumeBracket();
+    BalancedDelimiterTracker T(*this, tok::l_square);
+    T.consumeOpen();
     if (Tok.is(tok::ellipsis)) {
       WasEllipsisArray = true;
       ConsumeToken();
       if (Tok.isNot(tok::r_square))
         Diag(Tok, diag::expected_r_square);
       else
-        ParseSliceType();
+        ParseSliceType(T);
     } else if (Tok.is(tok::r_square))
-      ParseSliceType();
+      ParseSliceType(T);
     else
-      ParseArrayType();
+      ParseArrayType(T);
     break;
   }
   case tok::kw_map:
