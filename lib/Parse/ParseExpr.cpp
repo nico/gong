@@ -195,12 +195,8 @@ Parser::ParsePrimaryExpr(TypeSwitchGuardParam *TSGOpt, TypeParam *TOpt) {
   case tok::l_paren: {
     // FIXME: here
 
-    //FIXME:
-    // *: type or deref or conversion or methodexpr
-    // <-: type or conversion or expression
-    // identifier: Tricky! ParsePrimaryExprTail(), but accept types too.
-
-    ConsumeParen();
+    BalancedDelimiterTracker T(*this, tok::l_paren);
+    T.consumeOpen();
     /// This handles PrimaryExprs that start with '('. This happens in these
     /// cases:
     ///   1. The '(' Expression ')' production in Operand.
@@ -210,8 +206,11 @@ Parser::ParsePrimaryExpr(TypeSwitchGuardParam *TSGOpt, TypeParam *TOpt) {
     TypeParam TypeOpt;
     //assert(false);
     Res = ParseExpression(TSGOpt, &TypeOpt);
-    ExpectAndConsume(tok::r_paren, diag::expected_r_paren);
+    T.consumeClose();
     
+    // If ParseExpression() parsed a type and this is not a context that accepts
+    // types, check that the type is followed by a '(' to produce a Conversion
+    // expression.
     if (!TOpt) {
       switch (TypeOpt.Kind) {
       case TypeParam::EK_Type:

@@ -110,6 +110,7 @@ func f() {
   // PrimaryExpr, Operand, '(' Expression ')'
   (4 + 4)
   (+4)
+  (4 + 4  // expected-diag {{expected ')'}} expected-note {{to match this '('}}
   ((+4))
   (+(4))
   (-4)
