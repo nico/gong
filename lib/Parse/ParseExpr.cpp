@@ -388,7 +388,8 @@ Parser::ParseSelectorOrTypeAssertionOrTypeSwitchGuardSuffix(
     return LHS;
   } else if(Tok.is(tok::l_paren)) {
 // FIXME: here
-    ConsumeParen();
+    BalancedDelimiterTracker T(*this, tok::l_paren);
+    T.consumeOpen();
 
     if (Tok.is(tok::kw_type)) {
       if (!AllowTypeKeyword)
@@ -405,13 +406,8 @@ Parser::ParseSelectorOrTypeAssertionOrTypeSwitchGuardSuffix(
       ParseType();
     }
 
-    if (Tok.is(tok::r_paren))
-      ConsumeParen();
-    else {
-      Diag(Tok, diag::expected_r_paren);
-      SkipUntil(tok::r_paren);
+    if (T.consumeClose())
       return ExprError();
-    }
     return LHS;
   } else {
     Diag(Tok, diag::expected_ident_or_l_paren);

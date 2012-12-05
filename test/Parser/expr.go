@@ -40,7 +40,7 @@ type t ['4'.]int;  //expected-diag {{expected identifier or '('}}
 type t ['4'.()]int;  //expected-diag {{expected type}}
 
 // FIXME: The 2nd diag shouldn't be emitted.
-type t ['4'.(int]int;  //expected-diag {{expected ')'}} expected-diag{{expected ']'}}
+type t ['4'.(int]int;  //expected-diag {{expected ')'}} expected-note {{to match this '('}} expected-diag{{expected ']'}}
 
 
 // The tests below depend on ExpressionStmt parsing.

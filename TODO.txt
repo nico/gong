@@ -31,6 +31,9 @@ Make golang issue 4479 (... in builtincalls) work
 
 ExprResult/StmtResult for result passing
 
+diag only once on 
+  a := (a[1)
+
 Actions interface
 
 measureTokenLength
