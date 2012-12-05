@@ -36,6 +36,13 @@ func foo(foo bar) (bar... foo.bar) {}
 // Function and method bodies can be omitted.
 func a()
 func a(int, int)
+func a(p.int, int)
+//func a(int, p.int)  // FIXME
+
+func a(p1 int, p2 int)
+func a(p1 p.int, p2 int)
+func a(p1 int, p2 p.int)
+
 func (foo) a()
 func (foo) a() int
 
