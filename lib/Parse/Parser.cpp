@@ -920,7 +920,8 @@ bool Parser::ParseVarSpec() {
 
 bool Parser::ParseDeclGroup(DeclGroupKind Kind) {
   assert(Tok.is(tok::l_paren) && "Expected '('");
-  ConsumeParen();
+  BalancedDelimiterTracker T(*this, tok::l_paren);
+  T.consumeOpen();
 
   // FIXME: Similar to importspec block parsing
   while (Tok.isNot(tok::r_paren) && Tok.isNot(tok::eof)) {
@@ -936,7 +937,7 @@ bool Parser::ParseDeclGroup(DeclGroupKind Kind) {
     case DGK_Var:   Fail = ParseVarSpec(); break;
     }
     if (Fail) {
-      SkipUntil(tok::r_paren, /*StopAtSemi=*/false);
+      T.skipToEnd();
       return true;
     }
 
@@ -947,7 +948,7 @@ bool Parser::ParseDeclGroup(DeclGroupKind Kind) {
     if (Tok.is(tok::semi))
       ConsumeToken();
   }
-  return ExpectAndConsume(tok::r_paren, diag::expected_r_paren);
+  return T.consumeClose();
 }
 
 bool Parser::IsType() {
