@@ -10,7 +10,7 @@ func (foo) foo() {}
 func (foo bar) foo() {}
 func (foo *bar) foo() {}
 
-func (foo, bar) foo() {}  // expected-diag {{expected ')'}}
+func (foo, bar) foo() {}  // expected-diag {{expected ')'}} expected-note {{to match this '('}}
 
 func foo(foo bar) {}
 func foo(foo, baz bar) {}

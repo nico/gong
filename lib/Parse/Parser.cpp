@@ -411,7 +411,8 @@ bool Parser::ParseParameterDecl() {
 /// Receiver     = "(" [ identifier ] [ "*" ] BaseTypeName ")" .
 bool Parser::ParseReceiver() {
   assert(Tok.is(tok::l_paren) && "Expected '('");
-  ConsumeParen();
+  BalancedDelimiterTracker T(*this, tok::l_paren);
+  T.consumeOpen();
 
   IdentifierInfo *FirstII = NULL;
   if (Tok.is(tok::identifier)) {
@@ -439,12 +440,7 @@ bool Parser::ParseReceiver() {
     SkipUntil(tok::r_paren, /*StopAtSemi=*/true, /*DontConsume=*/true);
   }
 
-  if (Tok.is(tok::r_paren)) {
-    ConsumeParen();
-  } else {
-    Diag(Tok.getLocation(), diag::expected_r_paren);
-    SkipUntil(tok::r_paren);
-  }
+  T.consumeClose();
 
   // FIXME
   return true;
