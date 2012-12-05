@@ -201,4 +201,9 @@ func f() {
   // DeferStmt
   // FIXME: `defer;` should diag
   defer 4
+
+  // Something that isn't a Stmt
+  package  // expected-diag {{expected statement}}
+  = 4 )  // expected-diag {{expected statement}}  // Just one diag per line.
+  foo: import  // expected-diag {{expected statement}}
 }

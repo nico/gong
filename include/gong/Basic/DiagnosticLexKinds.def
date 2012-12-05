@@ -120,3 +120,4 @@ DIAG(invalid_expr_left_of_colonequal, CLASS_ERROR,
     "unexpected expression before ':='")
 DIAG(parser_impl_limit_overflow,   CLASS_ERROR,
     "parser recursion limit reached, program too complex")
+DIAG(expected_stmt,                CLASS_ERROR, "expected statement")

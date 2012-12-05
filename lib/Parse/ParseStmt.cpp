@@ -75,12 +75,11 @@ bool Parser::ParseStatement() {
   case tok::string_literal:
     return ParseExpression().isInvalid();
   
-  // FIXME: Check calls that won't come here (kw_package, kw_import, etc)?
-  //        Silently ignore them?
-  default: llvm_unreachable("unexpected token kind");
+  default:
+    Diag(Tok, diag::expected_stmt) << L.getSpelling(Tok);
+    SkipUntil(tok::semi, /*StopAtSemi=*/false, /*DontConsume=*/true);
+    return true;
   }
-  SkipUntil(tok::semi, /*StopAtSemi=*/false, /*DontConsume=*/true);
-  return true;
 }
 
 /// SimpleStmt = EmptyStmt | ExpressionStmt | SendStmt | IncDecStmt |

@@ -64,6 +64,13 @@ introduce a consistent naming scheme for functions that assert the current
 token type vs those that don't
     handle tok::unknown
   MaybeParse...() in clang is for stuff based on langopts
+  TryParse
+  MustParse
+  DoParse
+  DiagParse
+  SoftParse
+  ConsumeFoo
+    ...but in all cases, only the head is asserted
 
 share {} parsing code for interface{}, struct{}, and possibly blocks,
 selectstmts, and switchstmts
