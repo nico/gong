@@ -78,3 +78,49 @@ break // end-of-line comment
 // CHECK: return 'return'
 break continue /*
 */ return
+
+// No semicolon should be inserted after other keywords.
+// CHECK: case 'case'
+// CHECK-NEXT: chan 'chan'
+// CHECK-NEXT: const 'const'
+// CHECK-NEXT: default 'default'
+// CHECK-NEXT: defer 'defer'
+// CHECK-NEXT: else 'else'
+// CHECK-NEXT: for 'for'
+// CHECK-NEXT: func 'func'
+// CHECK-NEXT: go 'go'
+// CHECK-NEXT: goto 'goto'
+// CHECK-NEXT: if 'if'
+// CHECK-NEXT: import 'import'
+// CHECK-NEXT: interface 'interface'
+// CHECK-NEXT: map 'map'
+// CHECK-NEXT: package 'package'
+// CHECK-NEXT: range 'range'
+// CHECK-NEXT: select 'select'
+// CHECK-NEXT: struct 'struct'
+// CHECK-NEXT: switch 'switch'
+// CHECK-NEXT: type 'type'
+// CHECK-NEXT: var 'var'
+// CHECK-NEXT: case 'case'
+case
+chan
+const
+default
+defer
+else
+for
+func
+go
+goto
+if
+import
+interface
+map
+package
+range
+select
+struct
+switch
+type
+var
+case

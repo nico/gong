@@ -148,6 +148,10 @@ func f() {
   }
   switch ((interface{}))(4).(type) {}
   switch interface{}(new(int)).(type) {}
+  switch {
+    case
+    true:
+  }
 
   // SelectStmt
   select {}
@@ -203,7 +207,7 @@ func f() {
   defer 4
 
   // Something that isn't a Stmt
-  package  // expected-diag {{expected statement}}
+  package;  // expected-diag {{expected statement}}
   = 4 )  // expected-diag {{expected statement}}  // Just one diag per line.
   foo: import  // expected-diag {{expected statement}}
 }

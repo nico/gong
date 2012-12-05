@@ -79,11 +79,6 @@ IdentifierTable::IdentifierTable(IdentifierInfoLookup* externalLookup)
 /// AddKeyword - This method is used to associate a token ID with specific
 /// identifiers because they are language keywords.  This causes the lexer to
 /// automatically map matching identifiers to specialized token codes.
-///
-/// The C90/C99/CPP/CPP0x flags are set to 3 if the token is a keyword in a
-/// future language standard, set to 2 if the token should be enabled in the
-/// specified language, set to 1 if it is an extension in the specified
-/// language, and set to 0 if disabled in the specified language.
 static void AddKeyword(StringRef Keyword,
                        tok::TokenKind TokenCode,
                        IdentifierTable &Table) {

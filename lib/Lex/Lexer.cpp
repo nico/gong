@@ -382,9 +382,12 @@ void Lexer::LexIdentifier(Token &Result, const char *CurPtr) {
   FormTokenWithChars(Result, CurPtr, tok::identifier);
 
   // Update the token info (identifier info and appropriate token kind).
+  // This converts e.g. "for" from tok::identifier to tok::kw_for.
   IdentifierInfo *II = &Identifiers.get(StringRef(IdStart, Result.getLength()));
   Result.setIdentifierInfo(II);
-  Result.setKind(II->getTokenID());
+  tok::TokenKind IIKind = II->getTokenID();
+  Result.setKind(IIKind);
+  LastTokenKind = IIKind;
 }
 
 /// LexRuneLiteral - Lex the remainder of a character constant, after having

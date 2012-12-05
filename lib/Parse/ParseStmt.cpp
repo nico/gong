@@ -160,6 +160,8 @@ bool Parser::ParseSimpleStmtTail(IdentifierInfo *II, SimpleStmtKind *OutKind,
     // only statements starting with an identifier list).
     // If it's followed by '=', this is an Assignment or a RangeClause (the
     // only statement starting with an expression list).
+    // FIXME: actually, not true, could still be an expression list with the
+    // first expression just being an OperandName
     ParseIdentifierListTail(II);
     if (Tok.isNot(tok::colonequal) && Tok.isNot(tok::equal)) {
       Diag(Tok, diag::expected_colonequal_or_equal);
