@@ -67,6 +67,7 @@ namespace gong {
     tok::TokenKind Kind, Close;
     SourceLocation (Parser::*Consumer)();
     SourceLocation LOpen, LClose;
+    bool TypeNameLitNeedsParensState;
     
     unsigned short &getDepth() {
       switch (Kind) {
@@ -103,6 +104,9 @@ namespace gong {
           break;
       }      
     }
+    ~BalancedDelimiterTracker() {
+      P.CompositeTypeNameLitNeedsParens = TypeNameLitNeedsParensState;
+    }
     
     SourceLocation getOpenLocation() const { return LOpen; }
     SourceLocation getCloseLocation() const { return LClose; }
@@ -114,6 +118,10 @@ namespace gong {
       
       if (getDepth() < MaxDepth) {
         LOpen = (P.*Consumer)();
+
+        TypeNameLitNeedsParensState = P.CompositeTypeNameLitNeedsParens;
+        P.CompositeTypeNameLitNeedsParens = false;
+
         return false;
       }
       
@@ -124,6 +132,8 @@ namespace gong {
                           const char *Msg = "",
                           tok::TokenKind SkipToTok = tok::unknown);
     bool consumeClose() {
+      P.CompositeTypeNameLitNeedsParens = TypeNameLitNeedsParensState;
+
       if (P.Tok.is(Close)) {
         LClose = (P.*Consumer)();
         return false;

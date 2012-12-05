@@ -100,10 +100,9 @@ class Parser /*: public CodeCompletionHandler */ {
   //bool SkipFunctionBodies;
 
   // This is set while parsing the text between an if/switch/for and the '{'
-  // that starts the body. Since if/switch/for can't nest, it's sufficient to
-  // keep this in an instance variable.
-  // FIXME: the reason is wrong (see nested blocks via func literals)
-  // FIXME set to false on '(', '['
+  // that starts the body.  This is set to true through
+  // CompositeTypeNameLitNeedsParensRAIIObjects in ParseIf/Switch/For, and then
+  // back to false in parenthesized expressions by BalancedDelimiterTracker.
   bool CompositeTypeNameLitNeedsParens;
 
 public:

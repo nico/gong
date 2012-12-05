@@ -1,5 +1,4 @@
 // RUN: %gong_cc1 -verify %s
-// XFAIL: *
 
 package testpackage
 
@@ -8,40 +7,50 @@ import "imported"
 type mytype struct{}
 
 func f() {
-  var a mytype
-  if a == mytype{} { }  // should-diag
-  if a == (mytype{}) { }
-  if (a == mytype{}) { }
+  // This test checks that composite typename literals between if/for/switch and
+  // their body are only allowed when wrapped in parentheses.  The currently
+  // emitted diagnostics should be better, but they are emitted on the right
+  // lines.
 
-  if mytype{} == a { }  // should-diag
+  var a mytype
+  if a == mytype{} { }  // expected-diag {{expected ';'}}
+  if a == (mytype{}) { }
+  if a == foo[mytype{}.intfield] { }
+
+  if mytype{} == a { }  // expected-diag {{expected ';'}} expected-diag {{expected statement}}
   if (mytype{}) == a { }
   if (mytype{} == a) { }
 
-  if a == imported.ptype{} { }  // should-diag
+  if a == imported.ptype{} { }  // expected-diag {{expected ';'}}
   if a == (imported.ptype{}) { }
   if (a == imported.ptype{}) { }
 
-  if imported.ptype{} == a { }  // should-diag
+  if imported.ptype{} == a { }  // expected-diag {{expected ';'}} expected-diag {{expected statement}}
   if (imported.ptype{}) == a { }
   if (imported.ptype{} == a) { }
 
-  if a == mytype { }  // should-diag
+  // This could arguably emit a parse-time diagnostic. It's a sema-time
+  // diagnostic in gc.
+  if a == mytype { }
   if a == (mytype) { }
   if (a == mytype) { }
 
-  if mytype == a { }  // should-diag
+  if mytype == a { }
   if (mytype) == a { }
   if (mytype == a) { }
 
-  if a == imported.ptype { }  // should-diag
+  // This could arguably emit a parse-time diagnostic. It's a sema-time
+  // diagnostic in gc.
+  if a == imported.ptype { }
   if a == (imported.ptype) { }
   if (a == imported.ptype) { }
 
-  if imported.ptype == a { }  // should-diag
+  if imported.ptype == a { }
   if (imported.ptype) == a { }
   if (imported.ptype == a) { }
 
-  if ba := a == mytype{}; ba && a == (mytype{}) { }  // should-diag
+  // FIXME: Understand why these diags are produced.
+  if ba := a == mytype{}; ba && a == (mytype{}) { }  // expected-diag {{expected expression}} expected-diag {{expected ';'}} expected-diag {{expected ';'}}
   if ba := a == (mytype{}); ba && a == (mytype{}) { }
 
   // This is fine without parens.
@@ -49,56 +58,64 @@ func f() {
   if a == struct{}(a) { }
   if a == [4]int{} { }
   if a == [4]int([4]int{}) { }
-  if a == [4]int() { }  // should-diag
+  if a == [4]int() { }  // FIXME should-diag{{expected expression in conversion}}
   if a == map[int]int{} {}
   if a == map[int]int(a) {}
-  if a == map[int]int() {}  // should-diag
+  if a == map[int]int() {}  // FIXME should-diag{{expected expression in conversion}}
 
   if i := (mytype{4}).f; i > 4 {}
-  if i := mytype{4}.f; i > 4 {}  // should-diag
+  if i := mytype{4}.f; i > 4 {}  // expected-diag {{expected expression}} expected-diag 2 {{expected ';'}} expected-diag {{expected statement}} expected-diag {{expected ';'}}
 
 
-  for a == mytype{} { }  // should-diag
+  for a == mytype{} { }  // expected-diag {{expected ';'}}
   for a == (mytype{}) { }
   for (a == mytype{}) { }
 
-  for a == mytype { }  // should-diag
+  // This could arguably emit a parse-time diagnostic. It's a sema-time
+  // diagnostic in gc.
+  for a == mytype { }
   for a == (mytype) { }
   for (a == mytype) { }
 
-  for a == imported.ptype{} { }  // should-diag
+  for a == imported.ptype{} { }  // expected-diag {{expected ';'}}
   for a == (imported.ptype{}) { }
   for (a == imported.ptype{}) { }
 
-  for a == imported.ptype { }  // should-diag
+  // This could arguably emit a parse-time diagnostic. It's a sema-time
+  // diagnostic in gc.
+  for a == imported.ptype { }
   for a == (imported.ptype) { }
   for (a == imported.ptype) { }
 
-  for ba := a == mytype{}; ba && a == (mytype{}) ; { }  // should-diag
+  for ba := a == mytype{}; ba && a == (mytype{}) ; { }  // expected-diag {{expected expression}}
   for ba := a == (mytype{}); ba && a == (mytype{}) ; { }
-  for ba := a == (mytype{}); ba && a == (mytype{}) ; ba = a == mytype{} { }  // should-diag
+  for ba := a == (mytype{}); ba && a == (mytype{}) ; ba = a == mytype{} { }  // expected-diag {{expected ';'}}
   for ba := a == (mytype{}); ba && a == (mytype{}) ; ba = a == (mytype{}) { }
-  for ba := range mytype{} { }  // should-diag
+  for ba := range mytype{} { }  // expected-diag {{expected ';'}}
   for ba := range (mytype{}) { }
 
 
-  switch a == mytype{} { }  // should-diag
+  switch a == mytype{} { }  // expected-diag {{expected ';'}}
   switch a == (mytype{}) { }
   switch (a == mytype{}) { }
 
-  switch a == mytype { }  // should-diag
+  // This could arguably emit a parse-time diagnostic. It's a sema-time
+  // diagnostic in gc.
+  switch a == mytype { }
   switch a == (mytype) { }
   switch (a == mytype) { }
 
-  switch a == imported.ptype{} { }  // should-diag
+  switch a == imported.ptype{} { }  // expected-diag {{expected ';'}}
   switch a == (imported.ptype{}) { }
   switch (a == imported.ptype{}) { }
 
-  switch a == imported.ptype { }  // should-diag
+  // This could arguably emit a parse-time diagnostic. It's a sema-time
+  // diagnostic in gc.
+  switch a == imported.ptype { }
   switch a == (imported.ptype) { }
   switch (a == imported.ptype) { }
 
-  switch ba := a == mytype{}; ba && a == (mytype{}) { }  // should-diag
+  switch ba := a == mytype{}; ba && a == (mytype{}) { }  // expected-diag {{expected expression or type switch guard}} expected-diag {{expected ';'}}
   switch ba := a == (mytype{}); ba && a == (mytype{}) { }
 
 
@@ -143,7 +160,7 @@ func f() {
   }
   if true { b := a == mytype{} }
   for { b := a == mytype{} }
-  switch { b := a == mytype{} }
+  switch { default: b := a == mytype{} }
 
   // gc doesn't warn about those, but the spec isn't very clear on these
   // (golang issue 4482):

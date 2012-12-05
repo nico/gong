@@ -517,7 +517,6 @@ bool Parser::ParseArrayOrSliceType() {
   BalancedDelimiterTracker T(*this, tok::l_square);
   T.consumeOpen();
   
-  // FIXME: here
   if (Tok.is(tok::r_square))
     return ParseSliceType(T);
   return ParseArrayType(T);
