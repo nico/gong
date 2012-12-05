@@ -5,6 +5,8 @@ Eventually: code completion markers
 fixits, ranges, notes
 flag to dump stats
 
+do semicolon insertion on last line if file doesn't end with \n
+
 
 mark unknown tokens in the rune / string error cases as literals, so that semi
 insertion is done. Makes error recovery nicer. (`var a = ''\nvar b` doesn't
@@ -33,6 +35,8 @@ ExprResult/StmtResult for result passing
 
 diag only once on 
   a := (a[1)
+
+Only one diag when ending a file without a closing ) (imports) / } (blocks)
 
 Actions interface
 

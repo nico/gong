@@ -153,7 +153,8 @@ bool Parser::ParseImportDecl() {
   (void)ImportLoc;
 
   if (Tok.is(tok::l_paren)) {
-    ConsumeParen();
+    BalancedDelimiterTracker T(*this, tok::l_paren);
+    T.consumeOpen();
     // FIXME (BalancedDelimiterTracker?)
     bool Fails = false;
     while (Tok.isNot(tok::r_paren) && Tok.isNot(tok::eof)) {
@@ -185,8 +186,7 @@ bool Parser::ParseImportDecl() {
       } else
         ConsumeToken();
     }
-    if (Tok.is(tok::r_paren))
-      ConsumeParen();
+    T.consumeClose();
     return Fails;
   } else {
     bool Fail = ParseImportSpec();
