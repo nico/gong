@@ -455,7 +455,8 @@ Parser::ParseIndexOrSliceSuffix(ExprResult &LHS) {
 Action::ExprResult
 Parser::ParseCallSuffix(ExprResult &LHS) {
   assert(Tok.is(tok::l_paren) && "expected '('");
-  ConsumeParen();
+  BalancedDelimiterTracker T(*this, tok::l_paren);
+  T.consumeOpen();
 // FIXME: here
   if (Tok.isNot(tok::r_paren)) {
     ParseExpressionList();
@@ -464,12 +465,8 @@ Parser::ParseCallSuffix(ExprResult &LHS) {
     if (Tok.is(tok::comma))
       ConsumeToken();
   }
-  if (Tok.isNot(tok::r_paren)) {
-    Diag(Tok, diag::expected_r_paren);
-    SkipUntil(tok::r_paren);
+  if (T.consumeClose())
     return ExprError();
-  }
-  ConsumeParen();
   return LHS;
 }
 

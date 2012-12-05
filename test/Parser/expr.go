@@ -178,10 +178,11 @@ func f() {
 
   // PrimaryExpr TypeAssertion
   foo.(int)
-  foo.(type)  // expected-diag{{unexpected '.(type)'}}
+  foo.(type)  // expected-diag {{unexpected '.(type)'}}
 
   // PrimaryExpr Call
   foo()
+  foo(;  // expected-diag {{expected ')'}} expected-note {{to match this '('}}
   foo(,)  // FIXME: should-diag
   foo(4,)
   foo(...)  // FIXME: should-diag
