@@ -564,11 +564,11 @@ bool Parser::ParseStructType() {
   while (Tok.isNot(tok::r_brace) && Tok.isNot(tok::eof)) {
     if (Tok.isNot(tok::identifier) && Tok.isNot(tok::star)) {
       Diag(Tok, diag::expected_ident_or_star);
-      SkipUntil(tok::r_brace, /*StopAtSemi=*/false);
+      T.skipToEnd();
       return true;
     }
     if (ParseFieldDecl()) {
-      SkipUntil(tok::r_brace, /*StopAtSemi=*/false);
+      T.skipToEnd();
       return true;
     }
 
@@ -677,11 +677,11 @@ bool Parser::ParseInterfaceType() {
   while (Tok.isNot(tok::r_brace) && Tok.isNot(tok::eof)) {
     if (Tok.isNot(tok::identifier)) {
       Diag(Tok, diag::expected_ident);
-      SkipUntil(tok::r_brace, /*StopAtSemi=*/false);
+      T.skipToEnd();
       return true;
     }
     if (ParseMethodSpec()) {
-      SkipUntil(tok::r_brace, /*StopAtSemi=*/false);
+      T.skipToEnd();
       return true;
     }
 
@@ -927,7 +927,7 @@ bool Parser::ParseDeclGroup(DeclGroupKind Kind) {
   while (Tok.isNot(tok::r_paren) && Tok.isNot(tok::eof)) {
     if (Tok.isNot(tok::identifier)) {
       Diag(Tok, diag::expected_ident);
-      SkipUntil(tok::r_paren, /*StopAtSemi=*/false);
+      T.skipToEnd();
       return true;
     }
     bool Fail;

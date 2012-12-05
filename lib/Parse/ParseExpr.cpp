@@ -404,7 +404,7 @@ Parser::ParseSelectorOrTypeAssertionOrTypeSwitchGuardSuffix(
     } else {
       if (!IsType()) {
         Diag(Tok, diag::expected_type);
-        SkipUntil(tok::r_paren);
+        T.skipToEnd();
         return ExprError();
       }
       ParseType();
