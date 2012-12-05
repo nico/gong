@@ -32,8 +32,6 @@ IdentifierInfo::IdentifierInfo() {
   TokenID = tok::identifier;
   BuiltinID = 0;
   IsExtension = false;
-  IsPoisoned = false;
-  NeedsHandleIdentifier = false;
   IsFromAST = false;
   ChangedAfterLoad = false;
   RevertedTokenID = false;

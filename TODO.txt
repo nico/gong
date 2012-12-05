@@ -7,8 +7,6 @@ flag to dump stats
 
 do semicolon insertion on last line if file doesn't end with \n
 
-look at the "needs handle identifier" code in identifierinfo
-
 mark unknown tokens in the rune / string error cases as literals, so that semi
 insertion is done. Makes error recovery nicer. (`var a = ''\nvar b` doesn't
 recover well atm)

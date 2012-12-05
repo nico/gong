@@ -41,8 +41,6 @@ class IdentifierInfo {
   unsigned TokenID            : 9; // Front-end token ID or tok::identifier.
   unsigned BuiltinID          :11;
   bool IsExtension            : 1; // True if identifier is a lang extension.
-  bool IsPoisoned             : 1; // True if identifier is poisoned.
-  bool NeedsHandleIdentifier  : 1; // See "RecomputeNeedsHandleIdentifier".
   bool IsFromAST              : 1; // True if identifier was loaded (at least 
                                    // partially) from an AST file.
   bool ChangedAfterLoad       : 1; // True if identifier has changed from the
@@ -128,35 +126,13 @@ public:
   bool isExtensionToken() const { return IsExtension; }
   void setIsExtensionToken(bool Val) {
     IsExtension = Val;
-    if (Val)
-      NeedsHandleIdentifier = 1;
-    else
-      RecomputeNeedsHandleIdentifier();
   }
-
-  /// setIsPoisoned - Mark this identifier as poisoned.  After poisoning, the
-  /// Preprocessor will emit an error every time this token is used.
-  void setIsPoisoned(bool Value = true) {
-    IsPoisoned = Value;
-    if (Value)
-      NeedsHandleIdentifier = 1;
-    else
-      RecomputeNeedsHandleIdentifier();
-  }
-
-  /// isPoisoned - Return true if this token has been poisoned.
-  bool isPoisoned() const { return IsPoisoned; }
 
   /// getFETokenInfo/setFETokenInfo - The language front-end is allowed to
   /// associate arbitrary metadata with this token.
   template<typename T>
   T *getFETokenInfo() const { return static_cast<T*>(FETokenInfo); }
   void setFETokenInfo(void *T) { FETokenInfo = T; }
-
-  /// isHandleIdentifierCase - Return true if the Preprocessor::HandleIdentifier
-  /// must be called on a token of this identifier.  If this returns false, we
-  /// know that HandleIdentifier will not affect the token.
-  bool isHandleIdentifierCase() const { return NeedsHandleIdentifier; }
 
   /// isFromAST - Return true if the identifier in its current state was loaded
   /// from an AST file.
@@ -184,42 +160,6 @@ public:
   /// date with respect to the external source.
   void setOutOfDate(bool OOD) {
     OutOfDate = OOD;
-    if (OOD)
-      NeedsHandleIdentifier = true;
-    else
-      RecomputeNeedsHandleIdentifier();
-  }
-  
-private:
-  /// RecomputeNeedsHandleIdentifier - The Preprocessor::HandleIdentifier does
-  /// several special (but rare) things to identifiers of various sorts.  For
-  /// example, it changes the "for" keyword token from tok::identifier to
-  /// tok::for.
-  ///
-  /// This method is very tied to the definition of HandleIdentifier.  Any
-  /// change to it should be reflected here.
-  void RecomputeNeedsHandleIdentifier() {
-    NeedsHandleIdentifier =
-      (isPoisoned() | isExtensionToken()) || isOutOfDate();
-  }
-};
-
-/// \brief an RAII object for [un]poisoning an identifier
-/// within a certain scope. II is allowed to be null, in
-/// which case, objects of this type have no effect.
-class PoisonIdentifierRAIIObject {
-  IdentifierInfo *const II;
-  const bool OldValue;
-public:
-  PoisonIdentifierRAIIObject(IdentifierInfo *II, bool NewValue)
-    : II(II), OldValue(II ? II->isPoisoned() : false) {
-    if(II)
-      II->setIsPoisoned(NewValue);
-  }
-
-  ~PoisonIdentifierRAIIObject() {
-    if(II)
-      II->setIsPoisoned(OldValue);
   }
 };
 
