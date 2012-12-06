@@ -35,9 +35,15 @@ func f() {
   a, b, c += 4, 5, 6  // expected-diag{{expected ':=' or '='}}
   a[i], b += 3, 4  // expected-diag{{expected '='}}
   a, b = range 4  // expected-diag{{'range' is only valid in for statements}}
-  //a, b[i] = 1  FIXME
+  //a, b[i] = 1  FIXME should work
   a.foo = 1
   a.foo, b.foo = 1
+  // FIXME: These should all work
+  // (a), b = 1, 1
+  //a, (b) = 1, 1
+  //*(*int)(&a), b = 3, 1
+  //b, *(*int)(&a) = 3, 1
+  
 
   // SimpleStmts, ShortVarDecl:
   a, b, c := 1, 2, 3

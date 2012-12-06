@@ -92,6 +92,10 @@ bool Parser::ParseSimpleStmt(SimpleStmtKind *OutKind, SimpleStmtExts Ext) {
     ConsumeToken();
     return ParseSimpleStmtTail(II, OutKind, Ext);
   }
+  // Here: Statements starting with an unary operator, Conversions to
+  // type literals that don't start with an operator (array, slice, map,
+  // interface, chan), expressions in (), int / float / rune / string literals,
+  // array / slice / map literals.
   SourceLocation StartLoc = Tok.getLocation();
   TypeSwitchGuardParam Opt, *POpt = Ext == SSE_TypeSwitchGuard ? &Opt : NULL;
   // Could be: ExpressionStmt, SendStmt, IncDecStmt, Assignment. They all start
