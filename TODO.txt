@@ -22,10 +22,6 @@ data
 Parser
 =====
 
-composite lit parens issue
-  requires less asserty statement parser in the general case
-  would be nicer if BalancedDelimTracker was used more frequently
-
 type / identifier mismatch in function results / parameters
 
 Make golang issue 4479 (... in builtincalls) work

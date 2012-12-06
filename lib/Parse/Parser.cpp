@@ -369,32 +369,62 @@ bool Parser::ParseParameterList() {
 
 /// ParameterDecl  = [ IdentifierList ] [ "..." ] Type .
 bool Parser::ParseParameterDecl() {
+  // This tries to parse just a single ParameterDecl. However, it's not
+  // always clear if a list of identifiers is an identifier list or a type list,
+  // for example |int, int, int| are three ParameterDecls but
+  // |int, int, int int| is just one. Hence, this slurps up type lists without
+  // parameter lists too.
 
   if (Tok.is(tok::identifier)) {
-    // FIXME: This would be nicer if the lexer had 1 lookahead.
+    // FIXME: This would be marginally nicer if the lexer had 1 lookahead.
     IdentifierInfo *II = Tok.getIdentifierInfo();
     ConsumeToken();
 
-    if (Tok.isNot(tok::comma) && Tok.isNot(tok::ellipsis) && !IsType())
-      return ParseTypeNameTail(II);
+    bool SawIdentifiersOnly = Tok.isNot(tok::period);
+    ParseTypeNameTail(II);
+    ParseTypeListTail(&SawIdentifiersOnly);
 
     bool HadEllipsis = false;
-    ParseIdentifierListTail(II);
+    SourceLocation EllipsisLoc;
     if (Tok.is(tok::ellipsis)) {
-      ConsumeToken();
+      EllipsisLoc = ConsumeToken();
       HadEllipsis = true;
     }
 
-    if (!IsType()) {
-      if (HadEllipsis) {
-        Diag(Tok, diag::expected_type);
-        return true;
-      }
-      // If no Type follows the IdentifierList, the IdentifierList was
-      // actually a TypeList consisting solely of TypeNames.
-      return false;
+    bool HadTrailingType = false;
+    SourceLocation TypeLoc;
+    if (IsType()) {
+      TypeLoc = Tok.getLocation();
+      ParseType();
+      HadTrailingType = true;
     }
-    return ParseType();
+
+    // ident only  ellipsis  type
+    // 0           0         0       => ok
+    // 1           0         0       => ok
+    // 0           0         1       => unexpected type
+    // 1           0         1       => ok
+    // 0           1         0       => unexpected ...
+    // 1           1         0       => expected type
+    // 0           1         1       => expected only idents left of ...
+    // 1           1         1       => ok
+    if (!SawIdentifiersOnly && !HadEllipsis && HadTrailingType) {
+      Diag(TypeLoc, diag::unexpected_type);
+      return true;
+    }
+    if (!SawIdentifiersOnly && HadEllipsis && !HadTrailingType) {
+      Diag(EllipsisLoc, diag::unexpected_ellipsis);
+      return true;
+    }
+    if (SawIdentifiersOnly && HadEllipsis && !HadTrailingType) {
+      Diag(Tok, diag::expected_type);
+      return true;
+    }
+    if (!SawIdentifiersOnly && HadEllipsis && HadTrailingType) {
+      Diag(EllipsisLoc, diag::expected_idents_only_before_ellipsis);
+      return true;
+    }
+    return false;
   }
 
   if (Tok.is(tok::ellipsis))
@@ -778,10 +808,31 @@ bool Parser::ParseElementType() {
 /// TypeList        = Type { "," Type } .
 bool Parser::ParseTypeList() {
   ParseType();
+  return ParseTypeListTail();
+}
+
+/// This is called after the first Type in a TypeList has been called.
+/// If SawIdentifiersOnly is not NULL, it's set to false if not all types in
+/// the list were single identifiers (else it's not written).
+bool Parser::ParseTypeListTail(bool *SawIdentifiersOnly) {
   while (Tok.is(tok::comma)) {
     ConsumeToken();
     // FIXME: Diag if Tok doesn't start a type.
-    ParseType();
+
+    if (Tok.isNot(tok::identifier)) {
+      if (SawIdentifiersOnly)
+        *SawIdentifiersOnly = false;
+      ParseType();
+      continue;
+    }
+
+    IdentifierInfo *II = Tok.getIdentifierInfo();
+    ConsumeToken();
+    if (Tok.is(tok::period)) {
+      if (SawIdentifiersOnly)
+        *SawIdentifiersOnly = false;
+    }
+    ParseTypeNameTail(II);
   }
   return false;
 }

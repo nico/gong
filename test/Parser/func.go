@@ -33,11 +33,22 @@ func foo(a int) (int) {}
 func foo(a int) (int, int) {}
 func foo(foo bar) (bar... foo.bar) {}
 
+func foo(a.foo, b.foo) {}
+func foo(a, b) {}
+func foo(a.foo, b c) {}  // expected-diag {{unexpected type}}
+func foo(a, b c) {}
+func foo(a.foo, b.foo...) {}  // expected-diag {{unexpected '...'}}
+func foo(a, b...) {}  // expected-diag {{expected type}}
+func foo(a.foo, b ...c) {}  // expected-diag {{expected only identifiers before '...'}}
+func foo(a, b ...c) {}
+
 // Function and method bodies can be omitted.
 func a()
 func a(int, int)
 func a(p.int, int)
-//func a(int, p.int)  // FIXME
+func a(int, p.int)
+
+func a(int.foo, []int...)  // expected-diag {{unexpected '...'}}
 
 func a(p1 int, p2 int)
 func a(p1 p.int, p2 int)
