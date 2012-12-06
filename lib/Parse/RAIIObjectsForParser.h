@@ -103,6 +103,7 @@ namespace gong {
           Consumer = &Parser::ConsumeBracket;
           break;
       }      
+      TypeNameLitNeedsParensState = P.CompositeTypeNameLitNeedsParens;
     }
     ~BalancedDelimiterTracker() {
       P.CompositeTypeNameLitNeedsParens = TypeNameLitNeedsParensState;
@@ -119,7 +120,6 @@ namespace gong {
       if (getDepth() < MaxDepth) {
         LOpen = (P.*Consumer)();
 
-        TypeNameLitNeedsParensState = P.CompositeTypeNameLitNeedsParens;
         P.CompositeTypeNameLitNeedsParens = false;
 
         return false;

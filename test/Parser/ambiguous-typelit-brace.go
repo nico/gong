@@ -168,3 +168,10 @@ func f() {
   if 4 == a[mytype{4}.f] {}
   
 }
+
+// Shouldn't crash.
+func f() {
+  i := struct{M *map[string]int}{}
+  *i.M = map[string]int{}
+  if true {}
+}
