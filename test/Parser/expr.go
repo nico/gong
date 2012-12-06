@@ -95,6 +95,10 @@ func f() {
   mynestedtype{foo: {bar: 4 } }
   mynestedtype{foo: {bar: 4 }  // expected-diag {{expected '}'}} expected-note {{to match this '{'}}
 
+  // This has to work for unknown types too: They could be defined later at
+  // file scope, or in a different file of the same package.
+  unknowntype{}
+
   // PrimaryExpr, Operand, Literal, FunctionLit
   func(int) int{}
 

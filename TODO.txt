@@ -22,6 +22,8 @@ data
 Parser
 =====
 
+for f in $(find ~/src/go/src/pkg/ -name '*.go'); do echo $f; if ! ../../Release+Asserts/bin/gong $f; then break; fi; done
+
 check IsExpression() everywhere ParseExpression() is called
 
 Make golang issue 4479 (... in builtincalls) work

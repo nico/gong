@@ -254,6 +254,20 @@ Parser::ParsePrimaryExprTail(IdentifierInfo *II, bool *SawIdentifierOnly) {
   // result on to Action.
   // -> Since this is now done anyways, this could just always accept typelits
   //    and let Sema sort things out after the fact.
+
+
+  // If the next token is a '{', then this is a CompositeLit starting with a
+  // TypeName. (Expressions can't be followed by '{', so this can be done
+  // unconditionally for all IIs.)
+  // It's possible that II isn't known to be a type, for example if the
+  // type declaration happens later at file scope, or is in a different file of
+  // the same package.
+  if (Tok.is(tok::l_brace) && !CompositeTypeNameLitNeedsParens) {
+    if (SawIdentifierOnly)
+      *SawIdentifierOnly = false;
+    return ParseLiteralValue();
+  }
+
   Action::IdentifierInfoType IIT =
       Actions.classifyIdentifier(*II, getCurScope());
   switch (IIT) {
@@ -277,15 +291,6 @@ Parser::ParsePrimaryExprTail(IdentifierInfo *II, bool *SawIdentifierOnly) {
     // not correct, ParsePrimaryExprSuffix()'s call parsing will parse this.
     // (It'll accept too much though: Conversions get exactly one expr, but
     // ParsePrimaryExprSuffix() will accept 0-n.)
-
-    // If the next token is a '{', the this is a CompositeLit starting with a
-    // TypeName. (Expressions can't be followed by '{', so this could be done
-    // unconditionally for all IIs.)
-    if (Tok.is(tok::l_brace) && !CompositeTypeNameLitNeedsParens) {
-      if (SawIdentifierOnly)
-        *SawIdentifierOnly = false;
-      return ParseLiteralValue();
-    }
     break;
   case Action::IIT_BuiltinFunc: {
     // FIXME: It looks like gc just always accepts types in calls and lets
