@@ -375,27 +375,26 @@ bool Parser::ParseParameterDecl() {
     IdentifierInfo *II = Tok.getIdentifierInfo();
     ConsumeToken();
 
-    if (Tok.is(tok::comma) || Tok.is(tok::ellipsis) || IsType()) {
-      bool HadEllipsis = false;
-      ParseIdentifierListTail(II);
-      if (Tok.is(tok::ellipsis)) {
-        ConsumeToken();
-        HadEllipsis = true;
-      }
-
-      if (!IsType()) {
-        if (HadEllipsis) {
-          Diag(Tok, diag::expected_type);
-          return true;
-        }
-        // If no Type follows the IdentifierList, the IdentifierList was
-        // actually a TypeList consisting solely of TypeNames.
-        return false;
-      }
-      return ParseType();
-    } else {
+    if (Tok.isNot(tok::comma) && Tok.isNot(tok::ellipsis) && !IsType())
       return ParseTypeNameTail(II);
+
+    bool HadEllipsis = false;
+    ParseIdentifierListTail(II);
+    if (Tok.is(tok::ellipsis)) {
+      ConsumeToken();
+      HadEllipsis = true;
     }
+
+    if (!IsType()) {
+      if (HadEllipsis) {
+        Diag(Tok, diag::expected_type);
+        return true;
+      }
+      // If no Type follows the IdentifierList, the IdentifierList was
+      // actually a TypeList consisting solely of TypeNames.
+      return false;
+    }
+    return ParseType();
   }
 
   if (Tok.is(tok::ellipsis))
