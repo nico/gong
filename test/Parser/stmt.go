@@ -2,6 +2,8 @@
 
 package p
 
+import "somepackage"
+
 func f() {
   // Declaration
   //FIXME: var, const
@@ -51,6 +53,7 @@ func f() {
   a, b[i] := 1  // expected-diag{{expected '='}}
   a.foo := 1  // expected-diag{{unexpected expression before ':='}}
   if a[i] := 2; true {}  // expected-diag{{unexpected expression before ':='}}
+  somepackage := 4
 
   // GoStmt
   // FIXME: `go;` should diag

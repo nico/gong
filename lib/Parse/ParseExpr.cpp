@@ -275,8 +275,13 @@ Parser::ParsePrimaryExprTail(IdentifierInfo *II, bool *SawIdentifierOnly) {
     // For things in packages, perfect parser-level handling requires loading 
     // the package binary and looking up if the identifier is a type.  Instead,
     // always allow type literals and clean them up in sema.
-    ExpectAndConsume(tok::period, diag::expected_period);
-    ExpectAndConsume(tok::identifier, diag::expected_ident);
+    // For statements that introduce new bindings, like `packagename := 4`, it
+    // doesn't matter that a name refers to a package -- in this case don't
+    // expect a period.
+    if (Tok.is(tok::period)) {
+      ConsumeToken();
+      ExpectAndConsume(tok::identifier, diag::expected_ident);
+    }
     if (Tok.is(tok::l_brace) && !CompositeTypeNameLitNeedsParens) {
       if (SawIdentifierOnly)
         *SawIdentifierOnly = false;
