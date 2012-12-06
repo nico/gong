@@ -382,7 +382,7 @@ bool Parser::ParseParameterDecl() {
 
     bool SawIdentifiersOnly = true;
     ParseTypeNameTail(II, &SawIdentifiersOnly);
-    ParseTypeListTail(&SawIdentifiersOnly);
+    ParseTypeListTail(/*AcceptEllipsis=*/true, &SawIdentifiersOnly);
 
     bool HadEllipsis = false;
     SourceLocation EllipsisLoc;
@@ -817,10 +817,16 @@ bool Parser::ParseTypeList() {
 /// This is called after the first Type in a TypeList has been called.
 /// If SawIdentifiersOnly is not NULL, it's set to false if not all types in
 /// the list were single identifiers (else it's not written).
-bool Parser::ParseTypeListTail(bool *SawIdentifiersOnly) {
+bool Parser::ParseTypeListTail(bool AcceptEllipsis, bool *SawIdentifiersOnly) {
   while (Tok.is(tok::comma)) {
     ConsumeToken();
     // FIXME: Diag if Tok doesn't start a type.
+
+    if (Tok.is(tok::ellipsis)) {
+      if (!AcceptEllipsis)
+        Diag(Tok, diag::unexpected_ellipsis);
+      ConsumeToken();
+    }
 
     if (Tok.isNot(tok::identifier)) {
       if (SawIdentifiersOnly)

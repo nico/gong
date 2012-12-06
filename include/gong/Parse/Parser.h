@@ -210,7 +210,8 @@ public:
   bool IsElementType() { return IsType(); }
   bool ParseElementType();
   bool ParseTypeList();
-  bool ParseTypeListTail(bool *SawIdentifiersOnly = NULL);
+  bool ParseTypeListTail(bool AcceptEllipsis = false,
+                         bool *SawIdentifiersOnly = NULL);
 
   bool ParseIdentifierList();
   bool ParseIdentifierListTail(IdentifierInfo *Head);

@@ -42,6 +42,11 @@ func foo(a, b...) {}  // expected-diag {{expected type}}
 func foo(a.foo, b ...c) {}  // expected-diag {{expected only identifiers before '...'}}
 func foo(a, b ...c) {}
 
+func foo(a, interface{}) {}
+func foo(...interface{}, ...interface{}) {}
+func foo(a, b ...interface{}) {}
+func foo(int, ...interface{}) {}
+
 // Function and method bodies can be omitted.
 func a()
 func a(int, int)

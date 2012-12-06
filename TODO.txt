@@ -22,6 +22,9 @@ data
 Parser
 =====
 
+Allow parens around receiver types,
+https://code.google.com/p/go/source/detail?r=c7fe6d0e90eb
+
 for f in $(find ~/src/go/src/pkg/ -name '*.go'); do echo $f; if ! ../../Release+Asserts/bin/gong $f; then break; fi; done
 
 check IsExpression() everywhere ParseExpression() is called

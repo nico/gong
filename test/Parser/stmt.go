@@ -130,8 +130,8 @@ func f() {
   }
   switch i := 0; j := 0 {} // expected-diag{{expected expression or type switch guard}}
   switch !*foo {}
-
   switch i.(int) {}  // Note: This is an ExprSwitchStmt, Not a TypeSwitchStmt
+
   //   TypeSwitchStmts
   switch a.(type) {}
   switch a.(type) := a.(type) {}  // expected-diag{{unexpected expression before ':='}} expected-diag{{unexpected '.(type)'}}
@@ -168,6 +168,9 @@ func f() {
   switch {
     case
     true:
+  }
+  switch interface{}(4).(type) {
+  case int, ...int:  // expected-diag {{unexpected '...'}}
   }
 
   // SelectStmt
