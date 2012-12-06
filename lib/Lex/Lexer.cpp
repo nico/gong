@@ -590,12 +590,6 @@ bool Lexer::SkipBlockComment(Token &Result, const char *CurPtr) {
   FoundSlash:
       if (CurPtr[-2] == '*')  // We found the final */.  We're done!
         break;
-
-      if (CurPtr[0] == '*' && CurPtr[1] != '/') {
-        // If this is a /* inside of the comment, emit a warning.  Don't do this
-        // if this is a /*/, which will end the comment.
-        Diag(CurPtr-1, diag::nested_block_comment);
-      }
     } else if (C == 0 && CurPtr == BufferEnd+1) {
       Diag(BufferPtr, diag::unterminated_block_comment);
       // Note: the user probably forgot a */.  We could continue immediately
