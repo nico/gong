@@ -269,21 +269,29 @@ public:
   //FIXME: These should likely be OwningExprResult
   //FIXME: Also, now that this accepts types, ExprResult doesn't make much sense
   ExprResult ParseExpression(TypeSwitchGuardParam *TSGOpt = NULL,
-                             TypeParam *TOpt = NULL);
+                             TypeParam *TOpt = NULL,
+                             bool *SawIdentifierOnly = NULL);
   ExprResult ParseExpressionTail(IdentifierInfo *II,
-                                 TypeSwitchGuardParam *TSGOpt = NULL);
+                                 TypeSwitchGuardParam *TSGOpt = NULL,
+                                 bool *SawIdentifierOnly = NULL);
   ExprResult ParseRHSOfBinaryExpression(ExprResult LHS,
                                         prec::Level MinPrec,
-                                        TypeSwitchGuardParam *TSGOpt);
+                                        TypeSwitchGuardParam *TSGOpt,
+                                        bool *SawIdentifierOnly);
   bool IsUnaryOp();
   ExprResult ParseUnaryExpr(TypeSwitchGuardParam *TSGOpt = NULL,
-                            TypeParam *TOpt = NULL);
+                            TypeParam *TOpt = NULL,
+                            bool *SawIdentifierOnly = NULL);
   ExprResult ParsePrimaryExpr(TypeSwitchGuardParam *TSGOpt,
-                              TypeParam *TOpt);
-  ExprResult ParsePrimaryExprTail(IdentifierInfo *II);
+                              TypeParam *TOpt,
+                              bool *SawIdentifierOnly);
+  ExprResult ParsePrimaryExprTail(IdentifierInfo *II,
+                                  bool *SawIdentifierOnly);
   ExprResult ParseConversion(TypeParam *TOpt);
   ExprResult ParseConversionTail();
-  ExprResult ParsePrimaryExprSuffix(ExprResult &LHS, TypeSwitchGuardParam *TSGOpt);
+  ExprResult ParsePrimaryExprSuffix(ExprResult &LHS,
+                                    TypeSwitchGuardParam *TSGOpt,
+                                    bool *SawIdentifierOnly);
   ExprResult ParseSelectorOrTypeAssertionOrTypeSwitchGuardSuffix(
       ExprResult &LHS, TypeSwitchGuardParam *TSGOpt);
   ExprResult ParseIndexOrSliceSuffix(ExprResult &LHS);
@@ -295,7 +303,7 @@ public:
   ExprResult ParseElement();
   ExprResult ParseFunctionLitOrConversion(TypeParam *TOpt);
   ExprResult ParseExpressionList(TypeSwitchGuardParam *TSGOpt = NULL);
-  ExprResult ParseExpressionListTail(ExprResult &LHS);
+  ExprResult ParseExpressionListTail(ExprResult &LHS, bool *SawIdentifierOnly);
 
 
   // Statements
@@ -337,7 +345,8 @@ public:
                                           SourceLocation StartLoc,
                                           TypeSwitchGuardParam *TSGOpt,
                                           SimpleStmtKind *OutKind,
-                                          SimpleStmtExts Ext);
+                                          SimpleStmtExts Ext,
+                                          bool SawIdentifiersOnly);
 
   bool ParseShortVarDeclTail(TypeSwitchGuardParam *TSGOpt = NULL);
   bool ParseAssignmentTail(tok::TokenKind Op);

@@ -22,7 +22,7 @@ data
 Parser
 =====
 
-type / identifier mismatch in assignments
+check IsExpression() everywhere ParseExpression() is called
 
 Make golang issue 4479 (... in builtincalls) work
 

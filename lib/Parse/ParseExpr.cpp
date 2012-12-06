@@ -54,23 +54,28 @@ static prec::Level getBinOpPrecedence(tok::TokenKind Kind) {
 /// add_op     = "+" | "-" | "|" | "^" .
 /// mul_op     = "*" | "/" | "%" | "<<" | ">>" | "&" | "&^" .
 Parser::ExprResult
-Parser::ParseExpression(TypeSwitchGuardParam *TSGOpt, TypeParam *TOpt) {
-  ExprResult LHS = ParseUnaryExpr(TSGOpt, TOpt);
-  return ParseRHSOfBinaryExpression(LHS, prec::Lowest, TSGOpt);
+Parser::ParseExpression(TypeSwitchGuardParam *TSGOpt, TypeParam *TOpt,
+                        bool *SawIdentifierOnly) {
+  ExprResult LHS = ParseUnaryExpr(TSGOpt, TOpt, SawIdentifierOnly);
+  return ParseRHSOfBinaryExpression(LHS, prec::Lowest, TSGOpt,
+                                    SawIdentifierOnly);
 }
 
 /// This is called for expressions that start with an identifier, after the
 /// initial identifier has been read.
 Parser::ExprResult
-Parser::ParseExpressionTail(IdentifierInfo *II, TypeSwitchGuardParam *TSGOpt) {
-  ExprResult LHS = ParsePrimaryExprTail(II);
-  LHS = ParsePrimaryExprSuffix(LHS, TSGOpt);
-  return ParseRHSOfBinaryExpression(LHS, prec::Lowest, TSGOpt);
+Parser::ParseExpressionTail(IdentifierInfo *II, TypeSwitchGuardParam *TSGOpt,
+                            bool *SawIdentifierOnly) {
+  ExprResult LHS = ParsePrimaryExprTail(II, SawIdentifierOnly);
+  LHS = ParsePrimaryExprSuffix(LHS, TSGOpt, SawIdentifierOnly);
+  return ParseRHSOfBinaryExpression(LHS, prec::Lowest, TSGOpt,
+                                    SawIdentifierOnly);
 }
 
 Parser::ExprResult
 Parser::ParseRHSOfBinaryExpression(ExprResult LHS, prec::Level MinPrec,
-                                   TypeSwitchGuardParam *TSGOpt) {
+                                   TypeSwitchGuardParam *TSGOpt,
+                                   bool *SawIdentifierOnly) {
   prec::Level NextTokPrec = getBinOpPrecedence(Tok.getKind());
   SourceLocation ColonLoc;
 
@@ -81,6 +86,8 @@ Parser::ParseRHSOfBinaryExpression(ExprResult LHS, prec::Level MinPrec,
     if (NextTokPrec < MinPrec)
       return LHS;
 
+    if (SawIdentifierOnly)
+      *SawIdentifierOnly = false;
     if (TSGOpt)
       TSGOpt->Reset(*this);
 
@@ -107,7 +114,7 @@ Parser::ParseRHSOfBinaryExpression(ExprResult LHS, prec::Level MinPrec,
       // compile A+B+C+D as A+(B+(C+D)), where each paren is a level of
       // recursion here.  The function takes ownership of the RHS.
       RHS = ParseRHSOfBinaryExpression(
-          RHS, static_cast<prec::Level>(ThisPrec + 1), NULL);
+          RHS, static_cast<prec::Level>(ThisPrec + 1), NULL, NULL);
 
       if (RHS.isInvalid())
         LHS = ExprError();
@@ -142,13 +149,16 @@ bool Parser::IsUnaryOp() {
 /// UnaryExpr  = PrimaryExpr | unary_op UnaryExpr .
 /// unary_op   = "+" | "-" | "!" | "^" | "*" | "&" | "<-" .
 Action::ExprResult
-Parser::ParseUnaryExpr(TypeSwitchGuardParam *TSGOpt, TypeParam *TOpt) {
+Parser::ParseUnaryExpr(TypeSwitchGuardParam *TSGOpt, TypeParam *TOpt,
+                       bool *SawIdentifierOnly) {
   // FIXME: * and <- if TOpt is set.
   if (IsUnaryOp()) {
     TSGOpt = NULL;
+    if (SawIdentifierOnly)
+      *SawIdentifierOnly = false;
     ConsumeToken();  // FIXME: use
   }
-  return ParsePrimaryExpr(TSGOpt, TOpt);
+  return ParsePrimaryExpr(TSGOpt, TOpt, SawIdentifierOnly);
 }
 
 /// PrimaryExpr =
@@ -164,8 +174,12 @@ Parser::ParseUnaryExpr(TypeSwitchGuardParam *TSGOpt, TypeParam *TOpt) {
 /// Literal    = BasicLit | CompositeLit | FunctionLit .
 /// OperandName = identifier | QualifiedIdent.
 Action::ExprResult
-Parser::ParsePrimaryExpr(TypeSwitchGuardParam *TSGOpt, TypeParam *TOpt) {
+Parser::ParsePrimaryExpr(TypeSwitchGuardParam *TSGOpt, TypeParam *TOpt,
+                         bool *SawIdentifierOnly) {
   ExprResult Res;
+
+  if (SawIdentifierOnly && Tok.isNot(tok::identifier))
+    *SawIdentifierOnly = false;
 
   switch (Tok.getKind()) {
   default: return ExprError();
@@ -185,7 +199,7 @@ Parser::ParsePrimaryExpr(TypeSwitchGuardParam *TSGOpt, TypeParam *TOpt) {
   case tok::identifier: {
     IdentifierInfo *II = Tok.getIdentifierInfo();
     ConsumeToken();
-    Res = ParsePrimaryExprTail(II);
+    Res = ParsePrimaryExprTail(II, SawIdentifierOnly);
     break;
   }
   case tok::kw_chan:
@@ -226,13 +240,13 @@ Parser::ParsePrimaryExpr(TypeSwitchGuardParam *TSGOpt, TypeParam *TOpt) {
     break;
   }
   }
-  return ParsePrimaryExprSuffix(Res, TSGOpt);
+  return ParsePrimaryExprSuffix(Res, TSGOpt, SawIdentifierOnly);
 }
 
 /// This is called if the first token in a PrimaryExpression was an identifier,
 /// after that identifier has been read.
 Action::ExprResult
-Parser::ParsePrimaryExprTail(IdentifierInfo *II) {
+Parser::ParsePrimaryExprTail(IdentifierInfo *II, bool *SawIdentifierOnly) {
   // FIXME: Requiring this classification from the Action interface in the limit
   // means that MinimalAction needs to do module loading, which is probably
   // undesirable for most non-Sema clients.  Consider doing something like
@@ -249,8 +263,11 @@ Parser::ParsePrimaryExprTail(IdentifierInfo *II) {
     // always allow type literals and clean them up in sema.
     ExpectAndConsume(tok::period, diag::expected_period);
     ExpectAndConsume(tok::identifier, diag::expected_ident);
-    if (Tok.is(tok::l_brace) && !CompositeTypeNameLitNeedsParens)
+    if (Tok.is(tok::l_brace) && !CompositeTypeNameLitNeedsParens) {
+      if (SawIdentifierOnly)
+        *SawIdentifierOnly = false;
       return ParseLiteralValue();
+    }
     break;
   case Action::IIT_Type:
     // If the next token is a '.', this is a MethodExpr. While semantically not
@@ -264,8 +281,11 @@ Parser::ParsePrimaryExprTail(IdentifierInfo *II) {
     // If the next token is a '{', the this is a CompositeLit starting with a
     // TypeName. (Expressions can't be followed by '{', so this could be done
     // unconditionally for all IIs.)
-    if (Tok.is(tok::l_brace) && !CompositeTypeNameLitNeedsParens)
+    if (Tok.is(tok::l_brace) && !CompositeTypeNameLitNeedsParens) {
+      if (SawIdentifierOnly)
+        *SawIdentifierOnly = false;
       return ParseLiteralValue();
+    }
     break;
   case Action::IIT_BuiltinFunc: {
     // FIXME: It looks like gc just always accepts types in calls and lets
@@ -285,6 +305,8 @@ Parser::ParsePrimaryExprTail(IdentifierInfo *II) {
       //return true;
       break;
     }
+    if (SawIdentifierOnly)
+      *SawIdentifierOnly = false;
     BalancedDelimiterTracker T(*this, tok::l_paren);
     T.consumeOpen();
     if (Tok.isNot(tok::r_paren)) {
@@ -292,7 +314,7 @@ Parser::ParsePrimaryExprTail(IdentifierInfo *II) {
       // No builtin returns an interface type, so they can't be followed by
       // '.(type)'.
       ExprResult LHS = ParseExpression(NULL, &TypeOpt);
-      ParseExpressionListTail(LHS);
+      ParseExpressionListTail(LHS, NULL);
       if (Tok.is(tok::comma))
         ConsumeToken();
     }
@@ -344,24 +366,31 @@ Parser::ParseConversionTail() {
 }
 
 Action::ExprResult
-Parser::ParsePrimaryExprSuffix(ExprResult &LHS, TypeSwitchGuardParam *TSGOpt) {
+Parser::ParsePrimaryExprSuffix(ExprResult &LHS, TypeSwitchGuardParam *TSGOpt,
+                               bool *SawIdentifierOnly) {
   while (1) {
     switch (Tok.getKind()) {
     default:  // Not a postfix-expression suffix.
       return LHS;
     case tok::period: {  // Selector or TypeAssertion
+      if (SawIdentifierOnly)
+        *SawIdentifierOnly = false;
       if (TSGOpt)
         TSGOpt->Reset(*this);
       LHS = ParseSelectorOrTypeAssertionOrTypeSwitchGuardSuffix(LHS, TSGOpt);
       break;
     }
     case tok::l_square: {  // Index or Slice
+      if (SawIdentifierOnly)
+        *SawIdentifierOnly = false;
       if (TSGOpt)
         TSGOpt->Reset(*this);
       LHS = ParseIndexOrSliceSuffix(LHS);
       break;
     }
     case tok::l_paren: {  // Call
+      if (SawIdentifierOnly)
+        *SawIdentifierOnly = false;
       if (TSGOpt)
         TSGOpt->Reset(*this);
       LHS = ParseCallSuffix(LHS);
@@ -627,16 +656,27 @@ Parser::ParseExpressionList(TypeSwitchGuardParam *TSGOpt) {
   ExprResult LHS = ParseExpression(TSGOpt);
   if (Tok.is(tok::comma) && TSGOpt)
     TSGOpt->Reset(*this);
-  return ParseExpressionListTail(LHS);
+  return ParseExpressionListTail(LHS, NULL);
 }
 
 /// This is called after the initial Expression in ExpressionList has been read.
 Action::ExprResult
-Parser::ParseExpressionListTail(ExprResult &LHS) {
+Parser::ParseExpressionListTail(ExprResult &LHS, bool *SawIdentifiersOnly) {
   while (Tok.is(tok::comma)) {
     ConsumeToken();
+
     // FIXME: Diag if Tok doesn't start an expression.
-    ParseExpression();
+
+    if (Tok.isNot(tok::identifier)) {
+      if (SawIdentifiersOnly)
+        *SawIdentifiersOnly = false;
+      ParseExpression();
+      continue;
+    }
+
+    IdentifierInfo *II = Tok.getIdentifierInfo();
+    ConsumeToken();
+    ParseExpressionTail(II, NULL, SawIdentifiersOnly);
   }
   return LHS;
 }

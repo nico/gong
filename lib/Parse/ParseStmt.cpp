@@ -73,7 +73,7 @@ bool Parser::ParseStatement() {
   case tok::rune_literal:
   case tok::star:
   case tok::string_literal:
-    return ParseExpression().isInvalid();
+    return ParseSimpleStmt();
   
   default:
     Diag(Tok, diag::expected_stmt) << L.getSpelling(Tok);
@@ -87,6 +87,9 @@ bool Parser::ParseStatement() {
 bool Parser::ParseSimpleStmt(SimpleStmtKind *OutKind, SimpleStmtExts Ext) {
   if (Tok.is(tok::semi))
     return ParseEmptyStmt();
+
+  // Could be: ExpressionStmt, SendStmt, IncDecStmt, Assignment. They all start
+  // with an Expression.
   if (Tok.is(tok::identifier)) {
     IdentifierInfo *II = Tok.getIdentifierInfo();
     ConsumeToken();
@@ -98,10 +101,10 @@ bool Parser::ParseSimpleStmt(SimpleStmtKind *OutKind, SimpleStmtExts Ext) {
   // array / slice / map literals.
   SourceLocation StartLoc = Tok.getLocation();
   TypeSwitchGuardParam Opt, *POpt = Ext == SSE_TypeSwitchGuard ? &Opt : NULL;
-  // Could be: ExpressionStmt, SendStmt, IncDecStmt, Assignment. They all start
-  // with an Expression.
-  ExprResult LHS = ParseExpression(POpt);
-  return ParseSimpleStmtTailAfterExpression(LHS, StartLoc, POpt, OutKind, Ext);
+  bool SawIdentifiersOnly = true;
+  ExprResult LHS = ParseExpression(POpt, NULL, &SawIdentifiersOnly);
+  return ParseSimpleStmtTailAfterExpression(LHS, StartLoc, POpt, OutKind, Ext,
+                                            SawIdentifiersOnly);
 }
 
 namespace {
@@ -155,51 +158,12 @@ public:
 /// Called after the leading IdentifierInfo of a simple statement has been read.
 bool Parser::ParseSimpleStmtTail(IdentifierInfo *II, SimpleStmtKind *OutKind,
                                  SimpleStmtExts Ext) {
-  SourceLocation StartLoc = PrevTokLocation;
-
-  if (Tok.is(tok::comma)) {
-    // It's an identifier list! (Which can be interpreted as expression list.)
-    // If it's followed by ':=', this is a ShortVarDecl or a RangeClause (the
-    // only statements starting with an identifier list).
-    // If it's followed by '=', this is an Assignment or a RangeClause (the
-    // only statement starting with an expression list).
-    // FIXME: actually, not true, could still be an expression list with the
-    // first expression just being an OperandName
-    ParseIdentifierListTail(II);
-    if (Tok.isNot(tok::colonequal) && Tok.isNot(tok::equal)) {
-      Diag(Tok, diag::expected_colonequal_or_equal);
-      SkipUntil(tok::semi, /*StopAtSemi=*/false, /*DontConsume=*/true);
-      return true;
-      // FIXME: For bonus points, only suggest ':=' if at least one identifier
-      //        is new.
-    }
-    tok::TokenKind Op = Tok.getKind();
-    ConsumeToken();
-
-    if (Tok.is(tok::kw_range))
-      return ParseRangeClauseTail(Op, OutKind, Ext);
-    if (Op == tok::colonequal)
-      return ParseShortVarDeclTail();
-    if (Op == tok::equal)
-      // Since more than one element was parsed, only '=' is valid here.
-      return ParseAssignmentTail(tok::equal);
-  }
-
   TypeSwitchGuardParam Opt, *POpt = Ext == SSE_TypeSwitchGuard ? &Opt : NULL;
-
-  if (Tok.is(tok::colonequal)) {
-    ConsumeToken();
-    if (Tok.is(tok::kw_range))
-      return ParseRangeClauseTail(tok::colonequal, OutKind, Ext);
-    bool Result = ParseShortVarDeclTail(POpt);
-    if (POpt && POpt->Result == TypeSwitchGuardParam::Parsed && OutKind)
-      *OutKind = SSK_TypeSwitchGuard;
-    return Result;
-  }
-  // Could be: ExpressionStmt, SendStmt, IncDecStmt, Assignment. They all start
-  // with an Expression.
-  ExprResult LHS = ParseExpressionTail(II, POpt);
-  return ParseSimpleStmtTailAfterExpression(LHS, StartLoc, POpt, OutKind, Ext);
+  SourceLocation StartLoc = PrevTokLocation;
+  bool SawIdentifiersOnly = true;
+  ExprResult LHS = ParseExpressionTail(II, POpt, &SawIdentifiersOnly);
+  return ParseSimpleStmtTailAfterExpression(LHS, StartLoc, POpt, OutKind, Ext,
+                                            SawIdentifiersOnly);
 }
 
 /// Called after the leading Expression of a simple statement has been read.
@@ -208,32 +172,54 @@ Parser::ParseSimpleStmtTailAfterExpression(ExprResult &LHS,
                                            SourceLocation StartLoc,
                                            TypeSwitchGuardParam *Opt,
                                            SimpleStmtKind *OutKind,
-                                           SimpleStmtExts Ext) {
+                                           SimpleStmtExts Ext,
+                                           bool SawIdentifiersOnly) {
   // In a switch statement, ParseSimpleStmtTail() has to accept TypeSwitchGuards
   // which technically aren't SimpleStmts.  OptRAII will diag on all
   // TypeSwitchGuards when destructed unless it's explicitly disarm()ed.
   TypeSwitchGuardParamRAII OptRAII(this, Opt, OutKind);
 
-  if (Tok.is(tok::comma)) {
-    // Must be an expression list, and the simplestmt must be an assignment.
-    ParseExpressionListTail(LHS);
+  bool SawComma = Tok.is(tok::comma);
+  ParseExpressionListTail(LHS, &SawIdentifiersOnly);
 
+  if (SawComma) {
+    // If it's followed by ':=', this is a ShortVarDecl or a RangeClause (the
+    // only statements starting with an identifier list).
+    // If it's followed by '=', this is an Assignment or a RangeClause (the
+    // only statement starting with an expression list).
+    // TypeSwitchGuards can have only a single identifier, so they don't matter
+    // here.
     if (!IsAssignmentOp(Tok.getKind()) && Tok.isNot(tok::colonequal)) {
       Diag(Tok, diag::expected_assign_op);
+      SkipUntil(tok::semi, tok::l_brace,
+                /*StopAtSemi=*/false, /*DontConsume=*/true);
       return true;
+      // FIXME: For bonus points, only suggest ':=' if at least one identifier
+      //        is new.
     }
 
     tok::TokenKind Op = Tok.getKind();
     SourceLocation OpLocation = ConsumeToken();
+
     if (Tok.is(tok::kw_range))
       return ParseRangeClauseTail(Op, OutKind, Ext);
+
+    if (Op == tok::colonequal) {
+      if (!SawIdentifiersOnly) {
+        // FIXME: fixit
+        Diag(Tok, diag::expected_equal);
+      }
+      return ParseShortVarDeclTail();
+    }
+
     // "In assignment operations, both the left- and right-hand expression
     // lists must contain exactly one single-valued expression."
     // So expect a '=' for an assignment -- assignment operations (+= etc)
     // aren't permitted after an expression list.
     if (Op != tok::equal) {
       Diag(OpLocation, diag::expected_equal);
-      SkipUntil(tok::semi, /*StopAtSemi=*/false, /*DontConsume=*/true);
+      SkipUntil(tok::semi, tok::l_brace,
+                /*StopAtSemi=*/false, /*DontConsume=*/true);
       return true;
     }
     return ParseAssignmentTail(tok::equal);
@@ -253,10 +239,14 @@ Parser::ParseSimpleStmtTailAfterExpression(ExprResult &LHS,
     ConsumeToken();
     if (Tok.is(tok::kw_range))
       return ParseRangeClauseTail(tok::colonequal, OutKind, Ext);
-    // FIXME: fixit to change ':=' to '='
-    Diag(StartLoc, diag::invalid_expr_left_of_colonequal);
-    // FIXME: propagate error.
-    return ParseShortVarDeclTail();
+    if (!SawIdentifiersOnly) {
+      // FIXME: fixit to change ':=' to '=', but
+      // only if Result != Parser::TypeSwitchGuardParam::Parsed 
+      Diag(StartLoc, diag::invalid_expr_left_of_colonequal);
+    }
+    bool Result = ParseShortVarDeclTail(Opt);
+    OptRAII.disarm();
+    return Result;
   }
 
   if (Tok.is(tok::plusplus) || Tok.is(tok::minusminus))
@@ -617,7 +607,7 @@ bool Parser::ParseCommCase() {
   // This is a RecvStmt.
   bool FoundAssignOp = false;
   if (Tok.is(tok::comma)) {
-    LHS = ParseExpressionListTail(LHS);
+    LHS = ParseExpressionListTail(LHS, NULL);
 
     if (Tok.isNot(tok::equal) && Tok.isNot(tok::colonequal)) {
       Diag(Tok, diag::expected_colonequal_or_equal);

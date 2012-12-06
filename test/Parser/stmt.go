@@ -32,25 +32,25 @@ func f() {
   a[i], a[j] = 4, 5
   a += 4
   // FIXME: These would be nicer as "op= needs single expression" or similar.
-  a, b, c += 4, 5, 6  // expected-diag{{expected ':=' or '='}}
+  a, b, c += 4, 5, 6  // expected-diag{{expected '='}}
   a[i], b += 3, 4  // expected-diag{{expected '='}}
   a, b = range 4  // expected-diag{{'range' is only valid in for statements}}
-  //a, b[i] = 1  FIXME should work
+  a, b[i] = 1
   a.foo = 1
   a.foo, b.foo = 1
-  // FIXME: These should all work
-  // (a), b = 1, 1
-  //a, (b) = 1, 1
-  //*(*int)(&a), b = 3, 1
-  //b, *(*int)(&a) = 3, 1
+  (a), b = 1, 1
+  a, (b) = 1, 1
+  *(*int)(&a), b = 3, 1
+  b, *(*int)(&a) = 3, 1
   
 
   // SimpleStmts, ShortVarDecl:
   a, b, c := 1, 2, 3
   a := 1
   a[i] := 1  // expected-diag{{unexpected expression before ':='}}
-  //a, b[i] := 1  // should-diag{{unexpected expression before ':='}}  FIXME
+  a, b[i] := 1  // expected-diag{{expected '='}}
   a.foo := 1  // expected-diag{{unexpected expression before ':='}}
+  if a[i] := 2; true {}  // expected-diag{{unexpected expression before ':='}}
 
   // GoStmt
   // FIXME: `go;` should diag
@@ -129,6 +129,7 @@ func f() {
   switch i.(int) {}  // Note: This is an ExprSwitchStmt, Not a TypeSwitchStmt
   //   TypeSwitchStmts
   switch a.(type) {}
+  switch a.(type) := a.(type) {}  // expected-diag{{unexpected expression before ':='}} expected-diag{{unexpected '.(type)'}}
   switch a := a.(type) {}
   switch a.(type)++ {}  // expected-diag{{unexpected '.(type)'}} expected-diag{{expected expression or type switch guard}}
   switch a.(type) + 4 {}  // expected-diag{{unexpected '.(type)'}}
@@ -146,7 +147,7 @@ func f() {
   switch a.(type)() {}  // expected-diag{{unexpected '.(type)'}}
   switch a.(type)[3] {}  // expected-diag{{unexpected '.(type)'}}
   switch a.(type), a.(type) {}  // expected-diag 2 {{unexpected '.(type)'}} expected-diag{{expected assignment operator}} expected-diag{{expected expression or type switch guard}}
-  switch a.(type) := 4 {}  // expected-diag{{unexpected expression before ':='}} expected-diag{{unexpected '.(type)'}} expected-diag{{expected expression or type switch guard}}
+  switch a.(type) := 4 {}  // expected-diag{{unexpected expression before ':='}}
   switch interface{}(4).(type) {}
   switch i := x.(type) {
   case nil: printString("x is nil")
