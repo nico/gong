@@ -380,8 +380,8 @@ bool Parser::ParseParameterDecl() {
     IdentifierInfo *II = Tok.getIdentifierInfo();
     ConsumeToken();
 
-    bool SawIdentifiersOnly = Tok.isNot(tok::period);
-    ParseTypeNameTail(II);
+    bool SawIdentifiersOnly = true;
+    ParseTypeNameTail(II, &SawIdentifiersOnly);
     ParseTypeListTail(&SawIdentifiersOnly);
 
     bool HadEllipsis = false;
@@ -501,12 +501,15 @@ bool Parser::ParseTypeName() {
 }
 
 /// This is called for TypeName after the initial identifier has been read.
-bool Parser::ParseTypeNameTail(IdentifierInfo *Head) {
+bool Parser::ParseTypeNameTail(IdentifierInfo *Head, bool *SawIdentifierOnly) {
   if (Tok.isNot(tok::period))
     return false;  // The type name was just the identifier.
 
   // It's a QualifiedIdent.
   ConsumeToken();
+
+  if (SawIdentifierOnly)
+    *SawIdentifierOnly = false;
 
   if (Tok.isNot(tok::identifier)) {
     Diag(Tok, diag::expected_ident);
@@ -828,11 +831,7 @@ bool Parser::ParseTypeListTail(bool *SawIdentifiersOnly) {
 
     IdentifierInfo *II = Tok.getIdentifierInfo();
     ConsumeToken();
-    if (Tok.is(tok::period)) {
-      if (SawIdentifiersOnly)
-        *SawIdentifiersOnly = false;
-    }
-    ParseTypeNameTail(II);
+    ParseTypeNameTail(II, SawIdentifiersOnly);
   }
   return false;
 }

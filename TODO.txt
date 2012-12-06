@@ -22,7 +22,7 @@ data
 Parser
 =====
 
-type / identifier mismatch in function results / parameters
+type / identifier mismatch in assignments
 
 Make golang issue 4479 (... in builtincalls) work
 
@@ -135,6 +135,8 @@ http://llvm.org/docs/GarbageCollection.html
 libclang-style c api
 python bindings for that c api
 clang-complete clone on top of the python bindings
+code formatter (lexer, parser, or ast based?)
+tooling / refactoring stuff
 
 
 Notes

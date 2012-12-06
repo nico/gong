@@ -192,7 +192,7 @@ public:
 
   bool ParseType();
   bool ParseTypeName();
-  bool ParseTypeNameTail(IdentifierInfo *Head);
+  bool ParseTypeNameTail(IdentifierInfo *Head, bool *SawIdentifierOnly = NULL);
   bool ParseTypeLit();
   bool ParseArrayOrSliceType();
   bool ParseArrayType(BalancedDelimiterTracker &T);
