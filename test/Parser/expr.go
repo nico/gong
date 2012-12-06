@@ -143,6 +143,8 @@ func f() {
   (chan int).foo()  // expected-diag {{expected '('}}
   (func())(func(){ myprint("yo") })()
   func()(func(){myprint("yo")})()  // expected-diag{{expected ')'}} expected-note {{to match this '('}}
+  (+int)(4)
+  (*int)(&a)
 
   // PrimaryExpr, Conversion
   int(4.5)

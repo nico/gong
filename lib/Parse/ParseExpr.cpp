@@ -153,10 +153,10 @@ Parser::ParseUnaryExpr(TypeSwitchGuardParam *TSGOpt, TypeParam *TOpt,
                        bool *SawIdentifierOnly) {
   // FIXME: * and <- if TOpt is set.
   if (IsUnaryOp()) {
-    TSGOpt = NULL;
     if (SawIdentifierOnly)
       *SawIdentifierOnly = false;
     ConsumeToken();  // FIXME: use
+    return ParseUnaryExpr(NULL, TOpt, NULL);
   }
   return ParsePrimaryExpr(TSGOpt, TOpt, SawIdentifierOnly);
 }

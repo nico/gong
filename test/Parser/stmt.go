@@ -111,6 +111,7 @@ func f() {
   if chan int(4); true {}
   if interface{}(a); true {}
   if interface{}(a).(int); true {}
+  if !*foo {}
   // FIXME: if a := 4; {} // should-diag
 
   // SwitchStmt
@@ -128,6 +129,7 @@ func f() {
   default: continue
   }
   switch i := 0; j := 0 {} // expected-diag{{expected expression or type switch guard}}
+  switch !*foo {}
 
   switch i.(int) {}  // Note: This is an ExprSwitchStmt, Not a TypeSwitchStmt
   //   TypeSwitchStmts
@@ -202,6 +204,7 @@ func f() {
   for a := 4;; a++ {}
   for ; 5 < 6; a++ {}
   for a := 4; 5 < 6; a++ {}
+  for !*foo {}
 
   for a := range "hi" {}
   for a = range "hi" {}
