@@ -318,8 +318,11 @@ Parser::ParsePrimaryExprTail(IdentifierInfo *II, bool *SawIdentifierOnly) {
       TypeParam TypeOpt;
       // No builtin returns an interface type, so they can't be followed by
       // '.(type)'.
+      // FIXME This is not true if the builtin is shadowed.
       ExprResult LHS = ParseExpression(NULL, &TypeOpt);
       ParseExpressionListTail(LHS, NULL);
+      if (Tok.is(tok::ellipsis))
+        ConsumeToken();
       if (Tok.is(tok::comma))
         ConsumeToken();
     }
