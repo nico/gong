@@ -213,6 +213,8 @@ Lexer::Lexer(DiagnosticsEngine &Diags, llvm::SourceMgr& SM,
 /// This returns true if Result contains a token, false if PP.Lex should be
 /// called again.
 bool Lexer::LexEndOfFile(Token &Result, const char *CurPtr) {
+  if (InsertSemi(Result, CurPtr))
+    return true;
   Result.startToken();
   BufferPtr = BufferEnd;
   FormTokenWithChars(Result, BufferEnd, tok::eof);

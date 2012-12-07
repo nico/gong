@@ -1,4 +1,5 @@
 // RUN: %gong_cc1 -dump-tokens %s 2>&1 | FileCheck %s
+// vim:set binary noeol:
 
 // http://golang.org/ref/spec#Semicolons
 
@@ -124,3 +125,12 @@ switch
 type
 var
 case
+
+// semi should be inserted at end-of-file too.
+// CHECK: import 'import'
+// CHECK-NEXT: l_paren '('
+// CHECK-NEXT: r_paren ')'
+// CHECK-NEXT: semi ''
+// CHECK-NEXT: eof ''
+import (
+)
