@@ -2,7 +2,7 @@ Lexer
 =====
 
 Eventually: code completion markers
-fixits, ranges, notes
+fixits, ranges
 flag to dump stats
 
 do semicolon insertion on last line if file doesn't end with \n
@@ -28,8 +28,6 @@ https://code.google.com/p/go/source/detail?r=c7fe6d0e90eb
 for f in $(find ~/src/go/src/pkg/ -name '*.go'); do echo $f; if ! ../../Release+Asserts/bin/gong $f; then break; fi; done
 
 check IsExpression() everywhere ParseExpression() is called
-
-Make golang issue 4479 (... in builtincalls) work
 
 ExprResult/StmtResult for result passing
 
@@ -57,21 +55,37 @@ introduce a consistent naming scheme for functions that assert the current
 token type vs those that don't
     handle tok::unknown
   MaybeParse...() in clang is for stuff based on langopts
-  TryParse
-  MustParse
-  DoParse
-  DiagParse
-  SoftParse
+  TryParseFoo / TryFoo
+  ExpectFoo
+  MustParseFoo
+  DoParseFoo
+  DiagParseFoo
+  ErrParseFoo
+  SoftParseFoo
+  CanParseFoo
+  CouldParseFoo
   ConsumeFoo
+  EatFoo
+  CheckParseFoo
     ...but in all cases, only the head is asserted
+
+  parser.go does tryFoo / parseFoo. acorn.js mostly does parseFoo.
 
 share {} parsing code for interface{}, struct{}, and possibly blocks,
 selectstmts, and switchstmts
 
 maybe share the optional SimpleStmt parsing code in ifstmt, forstmt, switchstmt
 
-look at BalancedDelimTracker and friends, so that eg |type t ['4'.(int]int|
-gets only one diag
+make it so that eg |type t ['4'.(int]int| gets only one diag. clang does this
+with this code in ParseParenExpr() (at the very end):
+
+  if (Result.isInvalid()) {
+    SkipUntil(tok::r_paren);
+    return ExprError();
+  }
+
+  T.consumeClose();
+
 
 
 nice diag with fixit (insert '()') for `func main {}`
@@ -83,30 +97,10 @@ nice diag with fixit (insert ',') for
 
 nice diag with fixit (insert "()") for |if a == type{} { ... }|
 
-
-ParseStatement() just crashes on unexpected tokens (eg ')' or 'package')
-
 Add scopes:
 function parameters
 each if, for, and switch is in its own implicit block
 each clause of a switch or select acts as an implicit block
-
-
-# expressions:
-
-Builtins:
-
-close(chan expr)
-len(s), cap(s), s an expr
-new(T), T a type
-make(T), make(T, n), make(T, m, n), T a type, m, n exprs
-append(s, x...)
-copy(dst [], src[])
-delete(m, k)
-complex(r, i), real(c), imag(c)
-panic(interface{}), recover() interface{}
-
-print(), println(): implementation-specific; might not exist
 
 
 Actions
@@ -171,7 +165,8 @@ parse:
             so parsesimplestmt needs to allow that too :-/
 
 + annoying: func(a, b, c) is a typelist while func(a, b, c int) is an identifier
-            list with one type. (not terrible, but annoying.)
+            list with one type. (not terrible, but annoying. also annoying for
+            ... in type lists.)
 
 + annoying: |if a == b {}| can be a compositelit or just |b| and a block. But
             made less annoying by the spec:
