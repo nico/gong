@@ -20,6 +20,8 @@ data
 Parser
 =====
 
+Multi-file modules
+
 Allow parens around receiver types,
 https://code.google.com/p/go/source/detail?r=c7fe6d0e90eb
 
@@ -37,9 +39,6 @@ Only one diag when ending a file without a closing ) (imports) / } (blocks)
 Actions interface
 
 measureTokenLength
-
-go doesn't need predeclarations for methods, figure out how to do that
-=> similar to objc, check what clang does.
 
 Have nice fixit for toplevel `a := b`
 
@@ -101,6 +100,131 @@ each if, for, and switch is in its own implicit block
 each clause of a switch or select acts as an implicit block
 
 
+Sema / AST
+==========
+
+Find out:
+* DeclTy casting system
+  Sema::ActOnAlignOfExpr() for example just takes a void* and casts.
+  There's also ExprArg with a takeAs<Expr>() method
+  Calls have MultiExprArg (ActOnCallExpr)
+* go doesn't need predeclarations for methods, figure out how to do that
+  => similar to objc, check what clang does.
+* DeclTY etc allocation: new (Context) Whatevs(...)
+* Find out why Sema.h moved from lib/ to include/
+* QualType and Type
+* ASTContext turns Decls into QualTypes
+* QualType vs CanQualType
+* redeclarations in go -> not allowed at all!
+  ...except for init() 9_9
+* i-c-e handling
+  -> http://clang.llvm.org/docs/InternalsManual.html#Constants
+* Basic idea of package handling
+  Looks like all source files in the same package need to be compiled in one
+  compiler invocation. They're probably all parsed, then merged, then Sema'd
+  and codegenned as one?
+  _test.go files are magic somehow (sounds like everything is rebuilt?)
+
+
+constants / constant expressions:
+  http://tip.golang.org/ref/spec#Constant_expressions
+  http://tip.golang.org/ref/spec#Constants
+ integer, rune, float complex, string
+ operators
+ conversions()
+ identifiers referring to constants
+ typed and untyped constants
+ unsafe.Sizeof, cap() and len() sometimes (len of constant str, cap and len
+   of constant array with no func calls or channel recvs)
+ true false iota
+
+
+AST
+
+  File / TranslationUnit / ?
+
+  ImportSpec
+
+  Stmt
+    NullStmt
+    BlockStmt
+    CaseStmt?
+    IfStmt
+    ExprSwitchStmt
+    TypeSwitchStmt
+    ForStmt
+    RangeForStmt?
+    ExprStmt?
+    GotoStmt
+    ReturnStmt
+    BreakStmt
+    ContinueStmt
+    FallthroughStmt?
+    AsmStmt? :-D
+    DeclStmt
+    LabeledStmt
+    GoStmt
+    DeferStmt
+    SelectStmt
+    SendStmt
+    IncDecStmt
+    Assignment
+    ShortVarDecl
+
+   Expression
+    Literal
+     BasicLit
+       IntLit
+       FloatLit
+       ImaginaryLit
+       CharLit
+       StringLit
+     CompositeLit
+       ...
+     FunctionLit
+    OperandName (?) / DeclRefExpr
+    BinaryExpr
+    UnaryExpr
+    Conversion
+    BuiltinCall
+    SelectorExpr
+    IndexExpr
+    SliceExpr
+    TypeAssertionExpr
+    CallExpr
+    TypeClauseExpr?
+    RangeExpr?
+
+  Declaration
+    ConstDecl
+    TypeDecl
+    VarDecl
+   FunctionDecl
+   MethodDecl
+
+  Type
+    BooleanType
+    NumericType
+    ArrayType
+    SliceType
+    StructType
+    PointerType
+    FunctionType
+    InterfaceType
+    MapType
+    ChannelType
+ Strong typedefs => all types are canonical
+
+Type identity:
+  http://tip.golang.org/ref/spec#Properties_of_types_and_values
+
+  named types identical if from same typespec (ie `type foo int` and int are
+  different)
+  arrays are identical if same type and len
+  slices are identical if same type
+
+
+
 Actions
 =======
 
@@ -120,6 +244,13 @@ ParseOnlyAction
 PrintParseAction
 tools/driver/cc1_main.cpp
 clang/Frontend/FrontendActions.h
+
+
+
+Runtime
+=======
+
+runtime.Compiler?
 
 
 
