@@ -42,6 +42,8 @@ measureTokenLength
 
 Have nice fixit for toplevel `a := b`
 
+Nice fixit to replace "while" with "for" (if no identifier with same name found)
+
 Handle https://groups.google.com/forum/#!topic/golang-nuts/Bv4GDkPRMxA well
 
 missing closing braces after interface, struct, blocks, selects, switchs
@@ -103,6 +105,26 @@ each clause of a switch or select acts as an implicit block
 Sema / AST
 ==========
 
+- Name lookup, redecl errors, scope, decl ast
+  In clang: SemaDecl.cpp, ActOnDeclarator(), PushOnScopeChains()
+  ActOnFunctionDeclarator, ActOnTypedefDeclarator, ActOnVariableDeclarator,
+  ActOnParamDeclarator, ActOnCXXMemberDeclarator are all called by
+  ActOnDeclarator depending on the type of the declspec.
+
+  For structs: ActOnTag -> DeclPtr, ActOnTagStartDefinition(DeclPtr),
+    FinishDefinition(DeclPtr), DefinitionError(DeclPtr)
+
+  Functions: ActOnStartOfFunctionDef, ActOnFinishFunctionBody
+
+- Scopes
+
+  TopFunctionScope, FunctionScopes, TUScope, PopFunctionOrBlockScope()
+
+- Expression Sema & AST, Exprs vs Types
+- Constant expressions
+- Statement Sema & AST
+- Out-of-order parsing for toplevel
+
 Find out:
 * DeclTy casting system
   Sema::ActOnAlignOfExpr() for example just takes a void* and casts.
@@ -110,6 +132,32 @@ Find out:
   Calls have MultiExprArg (ActOnCallExpr)
 * go doesn't need predeclarations for methods, figure out how to do that
   => similar to objc, check what clang does.
+  Parser.h:
+    ObjCImplParsingDataRAII
+      typedef SmallVector<LexedMethod*, 8> LateParsedObjCMethodContainer;
+      LateParsedObjCMethodContainer LateParsedObjCMethods;
+  ParseObjc.cpp
+    Parser::parseLexedObjcMethodDefs() -> calls PP.EnterTokenStream()
+
+
+  (Also inline methods:
+  DeclSpec.h:992:
+    typedef SmallVector<Token, 4> clang::CachedTokens
+  Parser.h:
+    struct LateParsedDeclaration
+    struct LexedMethod : public LateParsedDeclaration
+      CachedTokens Toks;
+
+  ParseCXXInlineMethods.cpp:378
+    Parser::ParseLexedMethodDef() -> calls PP.EnterTokenStream())
+
+  => clang's design is to stash a way a vector with all Tokens and parse those.
+  => An alternative design would be to do two lex passes, with the first just
+     matching decls ("func foo", "var foo", "const foo", "type foo") quickly.
+  Implement both and measure, I guess :-/
+
+
+ http://lists.cs.uiuc.edu/pipermail/cfe-commits/Week-of-Mon-20120206/052791.html
 * DeclTY etc allocation: new (Context) Whatevs(...)
 * Find out why Sema.h moved from lib/ to include/
 * QualType and Type
@@ -259,6 +307,9 @@ Long term
 
 http://llvm.org/docs/GarbageCollection.html
 -> Can this work with the regular go collector?
+
+share diags code with clang
+  merge r169890
 
 libclang-style c api
 python bindings for that c api

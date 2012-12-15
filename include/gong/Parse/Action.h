@@ -2890,11 +2890,6 @@ public:
   /// Registers an identifier as function name.
   virtual void ActOnFunctionDecl(IdentifierInfo &II, Scope* S);
 
-  /// ActOnDeclarator - If this is a typedef declarator, we modify the
-  /// IdentifierInfo::FETokenInfo field to keep track of this fact, until S is
-  /// popped.
-  virtual DeclPtrTy ActOnDeclarator(Scope *S, Declarator &D);
-
   /// ActOnPopScope - When a scope is popped, if any typedefs are now
   /// out-of-scope, they are removed from the IdentifierInfo::FETokenInfo field.
   virtual void ActOnPopScope(SourceLocation Loc, Scope *S);

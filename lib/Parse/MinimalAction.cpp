@@ -168,33 +168,6 @@ void MinimalAction::ActOnTranslationUnitScope(Scope *S) {
   }
 }
 
-/// ActOnDeclarator - If this is a typedef declarator, we modify the
-/// IdentifierInfo::FETokenInfo field to keep track of this fact, until S is
-/// popped.
-Action::DeclPtrTy
-MinimalAction::ActOnDeclarator(Scope *S, Declarator &D) {
-  //IdentifierInfo *II = D.getIdentifier();
-
-  //// If there is no identifier associated with this declarator, bail out.
-  //if (II == 0) return DeclPtrTy();
-
-  //TypeNameInfo *weCurrentlyHaveTypeInfo = II->getFETokenInfo<TypeNameInfo>();
-  //bool isTypeName =
-  //  D.getDeclSpec().getStorageClassSpec() == DeclSpec::SCS_typedef;
-
-  //// this check avoids creating TypeNameInfo objects for the common case.
-  //// It does need to handle the uncommon case of shadowing a typedef name with a
-  //// non-typedef name. e.g. { typedef int a; a xx; { int a; } }
-  //if (weCurrentlyHaveTypeInfo || isTypeName) {
-  //  // Allocate and add the 'TypeNameInfo' "decl".
-  //  getTable(TypeNameInfoTablePtr)->AddEntry(isTypeName, II);
-
-  //  // Remember that this needs to be removed when the scope is popped.
-  //  S->AddDecl(DeclPtrTy::make(II));
-  //}
-  return DeclPtrTy();
-}
-
 /// ActOnPopScope - When a scope is popped, if any typedefs are now
 /// out-of-scope, they are removed from the IdentifierInfo::FETokenInfo field.
 void MinimalAction::ActOnPopScope(SourceLocation Loc, Scope *S) {
