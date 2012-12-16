@@ -116,14 +116,50 @@ Sema / AST
 
   Functions: ActOnStartOfFunctionDef, ActOnFinishFunctionBody
 
-- Scopes
+  - Scopes, in clang
 
-  TopFunctionScope, FunctionScopes, TUScope, PopFunctionOrBlockScope()
+    TopFunctionScope, FunctionScopes, TUScope, PopFunctionOrBlockScope()
+
+  In go, file scope is only used for imports. package-scoped stuff can't have
+  the same names as file-scoped stuff.
+
+  - Identifier resolving: IdentifierResolver.cpp
+
+  Plan:
+    ActOnDeclGroupStart/End() for () decls? With type, for iota
+        Sema needs a stack of groups
+      ActOnConstSpec(identlist, type*, sourceloc equalloc, exprlist*)
+      ActOnTypeSpec(identifier, type)
+      ActOnVarSpec(identlist, type, sourceloc equalloc, exprlist*)
+      ActOnVarSpec(identlist, equalloc, exprlist)
+    ActOnFunctionDecl(sourceloc funcloc, ident name, signature)
+    ActOnMethodDecl(ident, star, ident, funcloc, name, signature)
+
+    ActOnShortVarDecl(identlist, equalloc, exprlist)
+
+    Hm, these need Type and Expr already. Punt that part for now.
+
+  This is valid and has nested decl groups:
+  var (
+    A = func()int {const (C = iota); return C}()
+  )
+
+  identlists in gong vs declarators in clang: ActOnDeclarator called for every
+  single declarator
+
+  declspec: unsigned, inline, virtual, explicit, auto, signed, typeof,
+            TST_typename (for structs), struct
+  declaratorchunk: pionter, ref, arr, fun, memberpointer, paren
+  declarator: declspec, list of declaratorchunks,
+              single identifier (unqualifiedid), context
 
 - Expression Sema & AST, Exprs vs Types
 - Constant expressions
 - Statement Sema & AST
 - Out-of-order parsing for toplevel
+- Multi-file packages
+
+
 
 Find out:
 * DeclTy casting system
@@ -316,6 +352,7 @@ python bindings for that c api
 clang-complete clone on top of the python bindings
 code formatter (lexer, parser, or ast based?)
 tooling / refactoring stuff
+static analyzer
 
 
 Notes
