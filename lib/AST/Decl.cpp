@@ -576,8 +576,10 @@ static void clearLinkageForClass(const CXXRecordDecl *record) {
   }
 }
 
+#endif
 void NamedDecl::anchor() { }
 
+#if 0
 void NamedDecl::ClearLinkageCache() {
   // Note that we can't skip clearing the linkage of children just
   // because the parent doesn't have cached linkage:  we don't cache

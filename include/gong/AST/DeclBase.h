@@ -76,10 +76,12 @@ namespace gong {
     AR_Unavailable
   };
 
+#endif
 /// Decl - This represents one declaration (or definition), e.g. a variable,
 /// typedef, function, struct, etc.
 ///
 class Decl {
+#if 0
 public:
   /// \brief Lists the kind of concrete classes of Decl.
   enum Kind {
@@ -864,7 +866,9 @@ private:
 
 protected:
   ASTMutationListener *getASTMutationListener() const;
+#endif
 };
+#if 0
 
 /// \brief Determine whether two declarations declare the same entity.
 inline bool declaresSameEntity(const Decl *D1, const Decl *D2) {

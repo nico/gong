@@ -104,11 +104,11 @@ namespace gong {
   template <typename> class CanQual;
   typedef CanQual<Type> CanQualType;
 
+#endif
   // Provide forward declarations for all of the *Type classes
 #define TYPE(Class, Base) class Class##Type;
 #include "gong/AST/TypeNodes.def"
 
-#endif
 } // end gong.
 #if 0
 
@@ -194,11 +194,11 @@ class ExtQualsTypeCommonBase {
 class Type : public ExtQualsTypeCommonBase {
 public:
   enum TypeClass {
-//#define TYPE(Class, Base) Class,
-//#define LAST_TYPE(Class) TypeLast = Class,
-//#define ABSTRACT_TYPE(Class, Base)
-//#include "gong/AST/TypeNodes.def"
-    //TagFirst = Record, TagLast = Enum
+#define TYPE(Class, Base) Class,
+#define LAST_TYPE(Class) TypeLast = Class,
+#define ABSTRACT_TYPE(Class, Base)
+#include "gong/AST/TypeNodes.def"
+    TagFirst = Record, TagLast = Enum
   };
 
 private:
@@ -734,11 +734,6 @@ public:
 /// \brief This will check for a TypedefType by removing any existing sugar
 /// until it reaches a TypedefType or a non-sugared type.
 template <> const TypedefType *Type::getAs() const;
-
-/// \brief This will check for a TemplateSpecializationType by removing any
-/// existing sugar until it reaches a TemplateSpecializationType or a
-/// non-sugared type.
-template <> const TemplateSpecializationType *Type::getAs() const;
 
 // We can do canonical leaf types faster, because we don't have to
 // worry about preserving child type decoration.
@@ -2521,231 +2516,6 @@ public:
 
   static bool classof(const Type *T) {
     return T->getTypeClass() == Auto;
-  }
-};
-
-/// \brief Represents a type template specialization; the template
-/// must be a class template, a type alias template, or a template
-/// template parameter.  A template which cannot be resolved to one of
-/// these, e.g. because it is written with a dependent scope
-/// specifier, is instead represented as a
-/// @c DependentTemplateSpecializationType.
-///
-/// A non-dependent template specialization type is always "sugar",
-/// typically for a @c RecordType.  For example, a class template
-/// specialization type of @c vector<int> will refer to a tag type for
-/// the instantiation @c std::vector<int, std::allocator<int>>
-///
-/// Template specializations are dependent if either the template or
-/// any of the template arguments are dependent, in which case the
-/// type may also be canonical.
-///
-/// Instances of this type are allocated with a trailing array of
-/// TemplateArguments, followed by a QualType representing the
-/// non-canonical aliased type when the template is a type alias
-/// template.
-class TemplateSpecializationType
-  : public Type, public llvm::FoldingSetNode {
-  /// \brief The name of the template being specialized.  This is
-  /// either a TemplateName::Template (in which case it is a
-  /// ClassTemplateDecl*, a TemplateTemplateParmDecl*, or a
-  /// TypeAliasTemplateDecl*), a
-  /// TemplateName::SubstTemplateTemplateParmPack, or a
-  /// TemplateName::SubstTemplateTemplateParm (in which case the
-  /// replacement must, recursively, be one of these).
-  TemplateName Template;
-
-  /// \brief - The number of template arguments named in this class
-  /// template specialization.
-  unsigned NumArgs : 31;
-
-  /// \brief Whether this template specialization type is a substituted
-  /// type alias.
-  bool TypeAlias : 1;
-    
-  TemplateSpecializationType(TemplateName T,
-                             const TemplateArgument *Args,
-                             unsigned NumArgs, QualType Canon,
-                             QualType Aliased);
-
-  friend class ASTContext;  // ASTContext creates these
-
-public:
-  /// \brief Determine whether any of the given template arguments are
-  /// dependent.
-  static bool anyDependentTemplateArguments(const TemplateArgument *Args,
-                                            unsigned NumArgs,
-                                            bool &InstantiationDependent);
-
-  static bool anyDependentTemplateArguments(const TemplateArgumentLoc *Args,
-                                            unsigned NumArgs,
-                                            bool &InstantiationDependent);
-
-  static bool anyDependentTemplateArguments(const TemplateArgumentListInfo &,
-                                            bool &InstantiationDependent);
-
-  /// \brief Print a template argument list, including the '<' and '>'
-  /// enclosing the template arguments.
-  // FIXME: remove the string ones.
-  static std::string PrintTemplateArgumentList(const TemplateArgument *Args,
-                                               unsigned NumArgs,
-                                               const PrintingPolicy &Policy,
-                                               bool SkipBrackets = false);
-
-  static std::string PrintTemplateArgumentList(const TemplateArgumentLoc *Args,
-                                               unsigned NumArgs,
-                                               const PrintingPolicy &Policy);
-
-  static std::string PrintTemplateArgumentList(const TemplateArgumentListInfo &,
-                                               const PrintingPolicy &Policy);
-
-  /// \brief Print a template argument list, including the '<' and '>'
-  /// enclosing the template arguments.
-  static void PrintTemplateArgumentList(raw_ostream &OS,
-                                        const TemplateArgument *Args,
-                                        unsigned NumArgs,
-                                        const PrintingPolicy &Policy,
-                                        bool SkipBrackets = false);
-
-  static void PrintTemplateArgumentList(raw_ostream &OS,
-                                        const TemplateArgumentLoc *Args,
-                                        unsigned NumArgs,
-                                        const PrintingPolicy &Policy);
-
-  static void PrintTemplateArgumentList(raw_ostream &OS,
-                                        const TemplateArgumentListInfo &,
-                                        const PrintingPolicy &Policy);
-
-  /// True if this template specialization type matches a current
-  /// instantiation in the context in which it is found.
-  bool isCurrentInstantiation() const {
-    return isa<InjectedClassNameType>(getCanonicalTypeInternal());
-  }
-
-  /// \brief Determine if this template specialization type is for a type alias
-  /// template that has been substituted.
-  ///
-  /// Nearly every template specialization type whose template is an alias
-  /// template will be substituted. However, this is not the case when
-  /// the specialization contains a pack expansion but the template alias
-  /// does not have a corresponding parameter pack, e.g.,
-  ///
-  /// \code
-  /// template<typename T, typename U, typename V> struct S;
-  /// template<typename T, typename U> using A = S<T, int, U>;
-  /// template<typename... Ts> struct X {
-  ///   typedef A<Ts...> type; // not a type alias
-  /// };
-  /// \endcode
-  bool isTypeAlias() const { return TypeAlias; }
-    
-  /// Get the aliased type, if this is a specialization of a type alias
-  /// template.
-  QualType getAliasedType() const {
-    assert(isTypeAlias() && "not a type alias template specialization");
-    return *reinterpret_cast<const QualType*>(end());
-  }
-
-  typedef const TemplateArgument * iterator;
-
-  iterator begin() const { return getArgs(); }
-  iterator end() const; // defined inline in TemplateBase.h
-
-  /// \brief Retrieve the name of the template that we are specializing.
-  TemplateName getTemplateName() const { return Template; }
-
-  /// \brief Retrieve the template arguments.
-  const TemplateArgument *getArgs() const {
-    return reinterpret_cast<const TemplateArgument *>(this + 1);
-  }
-
-  /// \brief Retrieve the number of template arguments.
-  unsigned getNumArgs() const { return NumArgs; }
-
-  /// \brief Retrieve a specific template argument as a type.
-  /// \pre @c isArgType(Arg)
-  const TemplateArgument &getArg(unsigned Idx) const; // in TemplateBase.h
-
-  bool isSugared() const {
-    return !isDependentType() || isCurrentInstantiation() || isTypeAlias();
-  }
-  QualType desugar() const { return getCanonicalTypeInternal(); }
-
-  void Profile(llvm::FoldingSetNodeID &ID, const ASTContext &Ctx) {
-    Profile(ID, Template, getArgs(), NumArgs, Ctx);
-    if (isTypeAlias())
-      getAliasedType().Profile(ID);
-  }
-
-  static void Profile(llvm::FoldingSetNodeID &ID, TemplateName T,
-                      const TemplateArgument *Args,
-                      unsigned NumArgs,
-                      const ASTContext &Context);
-
-  static bool classof(const Type *T) {
-    return T->getTypeClass() == TemplateSpecialization;
-  }
-};
-
-/// \brief The injected class name of a C++ class template or class
-/// template partial specialization.  Used to record that a type was
-/// spelled with a bare identifier rather than as a template-id; the
-/// equivalent for non-templated classes is just RecordType.
-///
-/// Injected class name types are always dependent.  Template
-/// instantiation turns these into RecordTypes.
-///
-/// Injected class name types are always canonical.  This works
-/// because it is impossible to compare an injected class name type
-/// with the corresponding non-injected template type, for the same
-/// reason that it is impossible to directly compare template
-/// parameters from different dependent contexts: injected class name
-/// types can only occur within the scope of a particular templated
-/// declaration, and within that scope every template specialization
-/// will canonicalize to the injected class name (when appropriate
-/// according to the rules of the language).
-class InjectedClassNameType : public Type {
-  CXXRecordDecl *Decl;
-
-  /// The template specialization which this type represents.
-  /// For example, in
-  ///   template <class T> class A { ... };
-  /// this is A<T>, whereas in
-  ///   template <class X, class Y> class A<B<X,Y> > { ... };
-  /// this is A<B<X,Y> >.
-  ///
-  /// It is always unqualified, always a template specialization type,
-  /// and always dependent.
-  QualType InjectedType;
-
-  friend class ASTContext; // ASTContext creates these.
-  friend class ASTReader; // FIXME: ASTContext::getInjectedClassNameType is not
-                          // currently suitable for AST reading, too much
-                          // interdependencies.
-  InjectedClassNameType(CXXRecordDecl *D, QualType TST)
-    : Type(InjectedClassName, QualType(), /*Dependent=*/true,
-           /*InstantiationDependent=*/true,
-           /*VariablyModified=*/false,
-           /*ContainsUnexpandedParameterPack=*/false),
-      Decl(D), InjectedType(TST) {
-    assert(isa<TemplateSpecializationType>(TST));
-    assert(!TST.hasQualifiers());
-    assert(TST->isDependentType());
-  }
-
-public:
-  QualType getInjectedSpecializationType() const { return InjectedType; }
-  const TemplateSpecializationType *getInjectedTST() const {
-    return cast<TemplateSpecializationType>(InjectedType.getTypePtr());
-  }
-
-  CXXRecordDecl *getDecl() const;
-
-  bool isSugared() const { return false; }
-  QualType desugar() const { return QualType(this, 0); }
-
-  static bool classof(const Type *T) {
-    return T->getTypeClass() == InjectedClassName;
   }
 };
 

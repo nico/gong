@@ -99,10 +99,13 @@ public:
   }
 };
 
+#endif
+
 /// NamedDecl - This represents a decl with a name.  Many decls have names such
 /// as ObjCMethodDecl, but not \@class, etc.
 class NamedDecl : public Decl {
   virtual void anchor();
+#if 0
   /// Name - The name of this declaration, which is typically a normal
   /// identifier but may also be a special kind of name (C++
   /// constructor, Objective-C selector, etc.)
@@ -339,10 +342,12 @@ public:
   const NamedDecl *getUnderlyingDecl() const {
     return const_cast<NamedDecl*>(this)->getUnderlyingDecl();
   }
-
   static bool classof(const Decl *D) { return classofKind(D->getKind()); }
   static bool classofKind(Kind K) { return K >= firstNamed && K <= lastNamed; }
+#endif
+
 };
+#if 0
 
 inline raw_ostream &operator<<(raw_ostream &OS, const NamedDecl &ND) {
   ND.printName(OS);
@@ -2673,228 +2678,6 @@ public:
   friend class ASTDeclReader;
   friend class ASTDeclWriter;
 };
-
-/// EnumDecl - Represents an enum.  In C++11, enums can be forward-declared
-/// with a fixed underlying type, and in C we allow them to be forward-declared
-/// with no underlying type as an extension.
-class EnumDecl : public TagDecl {
-  virtual void anchor();
-  /// IntegerType - This represent the integer type that the enum corresponds
-  /// to for code generation purposes.  Note that the enumerator constants may
-  /// have a different type than this does.
-  ///
-  /// If the underlying integer type was explicitly stated in the source
-  /// code, this is a TypeSourceInfo* for that type. Otherwise this type
-  /// was automatically deduced somehow, and this is a Type*.
-  ///
-  /// Normally if IsFixed(), this would contain a TypeSourceInfo*, but in
-  /// some cases it won't.
-  ///
-  /// The underlying type of an enumeration never has any qualifiers, so
-  /// we can get away with just storing a raw Type*, and thus save an
-  /// extra pointer when TypeSourceInfo is needed.
-
-  llvm::PointerUnion<const Type*, TypeSourceInfo*> IntegerType;
-
-  /// PromotionType - The integer type that values of this type should
-  /// promote to.  In C, enumerators are generally of an integer type
-  /// directly, but gcc-style large enumerators (and all enumerators
-  /// in C++) are of the enum type instead.
-  QualType PromotionType;
-
-  /// \brief If this enumeration is an instantiation of a member enumeration
-  /// of a class template specialization, this is the member specialization
-  /// information.
-  MemberSpecializationInfo *SpecializationInfo;
-
-  EnumDecl(DeclContext *DC, SourceLocation StartLoc, SourceLocation IdLoc,
-           IdentifierInfo *Id, EnumDecl *PrevDecl,
-           bool Scoped, bool ScopedUsingClassTag, bool Fixed)
-    : TagDecl(Enum, TTK_Enum, DC, IdLoc, Id, PrevDecl, StartLoc),
-      SpecializationInfo(0) {
-    assert(Scoped || !ScopedUsingClassTag);
-    IntegerType = (const Type*)0;
-    NumNegativeBits = 0;
-    NumPositiveBits = 0;
-    IsScoped = Scoped;
-    IsScopedUsingClassTag = ScopedUsingClassTag;
-    IsFixed = Fixed;
-  }
-
-  void setInstantiationOfMemberEnum(ASTContext &C, EnumDecl *ED,
-                                    TemplateSpecializationKind TSK);
-public:
-  EnumDecl *getCanonicalDecl() {
-    return cast<EnumDecl>(TagDecl::getCanonicalDecl());
-  }
-  const EnumDecl *getCanonicalDecl() const {
-    return cast<EnumDecl>(TagDecl::getCanonicalDecl());
-  }
-
-  const EnumDecl *getPreviousDecl() const {
-    return cast_or_null<EnumDecl>(TagDecl::getPreviousDecl());
-  }
-  EnumDecl *getPreviousDecl() {
-    return cast_or_null<EnumDecl>(TagDecl::getPreviousDecl());
-  }
-
-  const EnumDecl *getMostRecentDecl() const {
-    return cast<EnumDecl>(TagDecl::getMostRecentDecl());
-  }
-  EnumDecl *getMostRecentDecl() {
-    return cast<EnumDecl>(TagDecl::getMostRecentDecl());
-  }
-
-  EnumDecl *getDefinition() const {
-    return cast_or_null<EnumDecl>(TagDecl::getDefinition());
-  }
-
-  static EnumDecl *Create(ASTContext &C, DeclContext *DC,
-                          SourceLocation StartLoc, SourceLocation IdLoc,
-                          IdentifierInfo *Id, EnumDecl *PrevDecl,
-                          bool IsScoped, bool IsScopedUsingClassTag,
-                          bool IsFixed);
-  static EnumDecl *CreateDeserialized(ASTContext &C, unsigned ID);
-
-  /// completeDefinition - When created, the EnumDecl corresponds to a
-  /// forward-declared enum. This method is used to mark the
-  /// declaration as being defined; it's enumerators have already been
-  /// added (via DeclContext::addDecl). NewType is the new underlying
-  /// type of the enumeration type.
-  void completeDefinition(QualType NewType,
-                          QualType PromotionType,
-                          unsigned NumPositiveBits,
-                          unsigned NumNegativeBits);
-
-  // enumerator_iterator - Iterates through the enumerators of this
-  // enumeration.
-  typedef specific_decl_iterator<EnumConstantDecl> enumerator_iterator;
-
-  enumerator_iterator enumerator_begin() const {
-    const EnumDecl *E = getDefinition();
-    if (!E)
-      E = this;
-    return enumerator_iterator(E->decls_begin());
-  }
-
-  enumerator_iterator enumerator_end() const {
-    const EnumDecl *E = getDefinition();
-    if (!E)
-      E = this;
-    return enumerator_iterator(E->decls_end());
-  }
-
-  /// getPromotionType - Return the integer type that enumerators
-  /// should promote to.
-  QualType getPromotionType() const { return PromotionType; }
-
-  /// \brief Set the promotion type.
-  void setPromotionType(QualType T) { PromotionType = T; }
-
-  /// getIntegerType - Return the integer type this enum decl corresponds to.
-  /// This returns a null qualtype for an enum forward definition.
-  QualType getIntegerType() const {
-    if (!IntegerType)
-      return QualType();
-    if (const Type* T = IntegerType.dyn_cast<const Type*>())
-      return QualType(T, 0);
-    return IntegerType.get<TypeSourceInfo*>()->getType();
-  }
-
-  /// \brief Set the underlying integer type.
-  void setIntegerType(QualType T) { IntegerType = T.getTypePtrOrNull(); }
-
-  /// \brief Set the underlying integer type source info.
-  void setIntegerTypeSourceInfo(TypeSourceInfo* TInfo) { IntegerType = TInfo; }
-
-  /// \brief Return the type source info for the underlying integer type,
-  /// if no type source info exists, return 0.
-  TypeSourceInfo* getIntegerTypeSourceInfo() const {
-    return IntegerType.dyn_cast<TypeSourceInfo*>();
-  }
-
-  /// \brief Returns the width in bits required to store all the
-  /// non-negative enumerators of this enum.
-  unsigned getNumPositiveBits() const {
-    return NumPositiveBits;
-  }
-  void setNumPositiveBits(unsigned Num) {
-    NumPositiveBits = Num;
-    assert(NumPositiveBits == Num && "can't store this bitcount");
-  }
-
-  /// \brief Returns the width in bits required to store all the
-  /// negative enumerators of this enum.  These widths include
-  /// the rightmost leading 1;  that is:
-  ///
-  /// MOST NEGATIVE ENUMERATOR     PATTERN     NUM NEGATIVE BITS
-  /// ------------------------     -------     -----------------
-  ///                       -1     1111111                     1
-  ///                      -10     1110110                     5
-  ///                     -101     1001011                     8
-  unsigned getNumNegativeBits() const {
-    return NumNegativeBits;
-  }
-  void setNumNegativeBits(unsigned Num) {
-    NumNegativeBits = Num;
-  }
-
-  /// \brief Returns true if this is a C++0x scoped enumeration.
-  bool isScoped() const {
-    return IsScoped;
-  }
-
-  /// \brief Returns true if this is a C++0x scoped enumeration.
-  bool isScopedUsingClassTag() const {
-    return IsScopedUsingClassTag;
-  }
-
-  /// \brief Returns true if this is a C++0x enumeration with fixed underlying
-  /// type.
-  bool isFixed() const {
-    return IsFixed;
-  }
-
-  /// \brief Returns true if this can be considered a complete type.
-  bool isComplete() const {
-    return isCompleteDefinition() || isFixed();
-  }
-
-  /// \brief Returns the enumeration (declared within the template)
-  /// from which this enumeration type was instantiated, or NULL if
-  /// this enumeration was not instantiated from any template.
-  EnumDecl *getInstantiatedFromMemberEnum() const;
-
-  /// \brief If this enumeration is a member of a specialization of a
-  /// templated class, determine what kind of template specialization
-  /// or instantiation this is.
-  TemplateSpecializationKind getTemplateSpecializationKind() const;
-
-  /// \brief For an enumeration member that was instantiated from a member
-  /// enumeration of a templated class, set the template specialiation kind.
-  void setTemplateSpecializationKind(TemplateSpecializationKind TSK,
-                        SourceLocation PointOfInstantiation = SourceLocation());
-
-  /// \brief If this enumeration is an instantiation of a member enumeration of
-  /// a class template specialization, retrieves the member specialization
-  /// information.
-  MemberSpecializationInfo *getMemberSpecializationInfo() const {
-    return SpecializationInfo;
-  }
-
-  /// \brief Specify that this enumeration is an instantiation of the
-  /// member enumeration ED.
-  void setInstantiationOfMemberEnum(EnumDecl *ED,
-                                    TemplateSpecializationKind TSK) {
-    setInstantiationOfMemberEnum(getASTContext(), ED, TSK);
-  }
-
-  static bool classof(const Decl *D) { return classofKind(D->getKind()); }
-  static bool classofKind(Kind K) { return K == Enum; }
-
-  friend class ASTDeclReader;
-};
-
 
 /// RecordDecl - Represents a struct/union/class.  For example:
 ///   struct X;                  // Forward declaration, no "body".
