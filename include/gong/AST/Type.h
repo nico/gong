@@ -76,7 +76,6 @@ namespace gong {
   class ASTContext;
   class TypedefNameDecl;
   class TemplateDecl;
-  class TemplateTypeParmDecl;
   class NonTypeTemplateParmDecl;
   class TemplateTemplateParmDecl;
   class TagDecl;
@@ -85,10 +84,6 @@ namespace gong {
   class EnumDecl;
   class FieldDecl;
   class FunctionDecl;
-  class ObjCInterfaceDecl;
-  class ObjCProtocolDecl;
-  class ObjCMethodDecl;
-  class UnresolvedUsingTypenameDecl;
   class Expr;
   class Stmt;
   class SourceLocation;
@@ -474,7 +469,7 @@ public:
   bool isFunctionNoProtoType() const { return getAs<FunctionNoProtoType>(); }
   bool isFunctionProtoType() const { return getAs<FunctionProtoType>(); }
   bool isPointerType() const;
-  bool isAnyPointerType() const;   // Any C pointer or ObjC object pointer
+  bool isAnyPointerType() const;   // Any C pointer
   bool isBlockPointerType() const;
   bool isVoidPointerType() const;
   bool isReferenceType() const;
@@ -488,7 +483,6 @@ public:
   bool isConstantArrayType() const;
   bool isIncompleteArrayType() const;
   bool isVariableArrayType() const;
-  bool isDependentSizedArrayType() const;
   bool isRecordType() const;
   bool isClassType() const;
   bool isStructureType() const;
@@ -498,40 +492,13 @@ public:
   bool isComplexIntegerType() const;            // GCC _Complex integer type.
   bool isVectorType() const;                    // GCC vector type.
   bool isExtVectorType() const;                 // Extended vector type.
-  bool isObjCObjectPointerType() const;         // pointer to ObjC object
-  bool isObjCRetainableType() const;            // ObjC object or block pointer
-  bool isObjCLifetimeType() const;              // (array of)* retainable type
-  bool isObjCIndirectLifetimeType() const;      // (pointer to)* lifetime type
-  bool isObjCNSObjectType() const;              // __attribute__((NSObject))
-  // FIXME: change this to 'raw' interface type, so we can used 'interface' type
-  // for the common case.
-  bool isObjCObjectType() const;                // NSString or typeof(*(id)0)
-  bool isObjCQualifiedInterfaceType() const;    // NSString<foo>
-  bool isObjCQualifiedIdType() const;           // id<foo>
-  bool isObjCQualifiedClassType() const;        // Class<foo>
-  bool isObjCObjectOrInterfaceType() const;
-  bool isObjCIdType() const;                    // id
-  bool isObjCClassType() const;                 // Class
-  bool isObjCSelType() const;                 // Class
-  bool isObjCBuiltinType() const;               // 'id' or 'Class'
-  bool isObjCARCBridgableType() const;
   bool isCARCBridgableType() const;
-  bool isTemplateTypeParmType() const;          // C++ template type parameter
   bool isNullPtrType() const;                   // C++0x nullptr_t
   bool isAtomicType() const;                    // C11 _Atomic()
-
-  /// Determines if this type, which must satisfy
-  /// isObjCLifetimeType(), is implicitly __unsafe_unretained rather
-  /// than implicitly __strong.
-  bool isObjCARCImplicitlyUnretainedType() const;
-
-  /// Return the implicit lifetime for this type, which must not be dependent.
-  Qualifiers::ObjCLifetime getObjCARCImplicitLifetime() const;
 
   enum ScalarTypeKind {
     STK_CPointer,
     STK_BlockPointer,
-    STK_ObjCObjectPointer,
     STK_MemberPointer,
     STK_Bool,
     STK_Integral,
@@ -578,10 +545,6 @@ public:
   /// interface types, as well as nullptr_t.
   bool hasPointerRepresentation() const;
 
-  /// hasObjCPointerRepresentation - Whether this type can represent
-  /// an objective pointer type for the purpose of GC'ability
-  bool hasObjCPointerRepresentation() const;
-
   /// \brief Determine whether this type has an integer representation
   /// of some sort, e.g., it is an integer type or a vector.
   bool hasIntegerRepresentation() const;
@@ -605,12 +568,6 @@ public:
   /// NOTE: getAs*ArrayType are methods on ASTContext.
   const RecordType *getAsUnionType() const;
   const ComplexType *getAsComplexIntegerType() const; // GCC complex int type.
-  // The following is a convenience method that returns an ObjCObjectPointerType
-  // for object declared using an interface.
-  const ObjCObjectPointerType *getAsObjCInterfacePointerType() const;
-  const ObjCObjectPointerType *getAsObjCQualifiedIdType() const;
-  const ObjCObjectPointerType *getAsObjCQualifiedClassType() const;
-  const ObjCObjectType *getAsObjCQualifiedInterfaceType() const;
 
   /// \brief Retrieves the CXXRecordDecl that this type refers to, either
   /// because the type is a RecordType or because it is the injected-class-name
@@ -663,7 +620,7 @@ public:
   /// This method should never be used when type qualifiers are meaningful.
   const Type *getArrayElementTypeNoTypeQual() const;
 
-  /// getPointeeType - If this is a pointer, ObjC object pointer, or block
+  /// getPointeeType - If this is a pointer, or block
   /// pointer, this returns the respective pointee.
   QualType getPointeeType() const;
 
@@ -1108,8 +1065,8 @@ protected:
   ArrayType(TypeClass tc, QualType et, QualType can,
             ArraySizeModifier sm, unsigned tq,
             bool ContainsUnexpandedParameterPack)
-    : Type(tc, can, et->isDependentType() || tc == DependentSizedArray,
-           et->isInstantiationDependentType() || tc == DependentSizedArray,
+    : Type(tc, can, et->isDependentType(),
+           et->isInstantiationDependentType(),
            (tc == VariableArray || et->isVariablyModifiedType()),
            ContainsUnexpandedParameterPack),
       ElementType(et) {
@@ -1134,8 +1091,7 @@ public:
   static bool classof(const Type *T) {
     return T->getTypeClass() == ConstantArray ||
            T->getTypeClass() == VariableArray ||
-           T->getTypeClass() == IncompleteArray ||
-           T->getTypeClass() == DependentSizedArray;
+           T->getTypeClass() == IncompleteArray
   }
 };
 
@@ -1276,109 +1232,6 @@ public:
     llvm_unreachable("Cannot unique VariableArrayTypes.");
   }
 };
-
-/// DependentSizedArrayType - This type represents an array type in
-/// C++ whose size is a value-dependent expression. For example:
-///
-/// \code
-/// template<typename T, int Size>
-/// class array {
-///   T data[Size];
-/// };
-/// \endcode
-///
-/// For these types, we won't actually know what the array bound is
-/// until template instantiation occurs, at which point this will
-/// become either a ConstantArrayType or a VariableArrayType.
-class DependentSizedArrayType : public ArrayType {
-  const ASTContext &Context;
-
-  /// \brief An assignment expression that will instantiate to the
-  /// size of the array.
-  ///
-  /// The expression itself might be NULL, in which case the array
-  /// type will have its size deduced from an initializer.
-  Stmt *SizeExpr;
-
-  /// Brackets - The left and right array brackets.
-  SourceRange Brackets;
-
-  DependentSizedArrayType(const ASTContext &Context, QualType et, QualType can,
-                          Expr *e, ArraySizeModifier sm, unsigned tq,
-                          SourceRange brackets);
-
-  friend class ASTContext;  // ASTContext creates these.
-
-public:
-  Expr *getSizeExpr() const {
-    // We use C-style casts instead of cast<> here because we do not wish
-    // to have a dependency of Type.h on Stmt.h/Expr.h.
-    return (Expr*) SizeExpr;
-  }
-  SourceRange getBracketsRange() const { return Brackets; }
-  SourceLocation getLBracketLoc() const { return Brackets.getBegin(); }
-  SourceLocation getRBracketLoc() const { return Brackets.getEnd(); }
-
-  bool isSugared() const { return false; }
-  QualType desugar() const { return QualType(this, 0); }
-
-  static bool classof(const Type *T) {
-    return T->getTypeClass() == DependentSizedArray;
-  }
-
-  friend class StmtIteratorBase;
-
-
-  void Profile(llvm::FoldingSetNodeID &ID) {
-    Profile(ID, Context, getElementType(),
-            getSizeModifier(), getIndexTypeCVRQualifiers(), getSizeExpr());
-  }
-
-  static void Profile(llvm::FoldingSetNodeID &ID, const ASTContext &Context,
-                      QualType ET, ArraySizeModifier SizeMod,
-                      unsigned TypeQuals, Expr *E);
-};
-
-/// DependentSizedExtVectorType - This type represent an extended vector type
-/// where either the type or size is dependent. For example:
-/// @code
-/// template<typename T, int Size>
-/// class vector {
-///   typedef T __attribute__((ext_vector_type(Size))) type;
-/// }
-/// @endcode
-class DependentSizedExtVectorType : public Type, public llvm::FoldingSetNode {
-  const ASTContext &Context;
-  Expr *SizeExpr;
-  /// ElementType - The element type of the array.
-  QualType ElementType;
-  SourceLocation loc;
-
-  DependentSizedExtVectorType(const ASTContext &Context, QualType ElementType,
-                              QualType can, Expr *SizeExpr, SourceLocation loc);
-
-  friend class ASTContext;
-
-public:
-  Expr *getSizeExpr() const { return SizeExpr; }
-  QualType getElementType() const { return ElementType; }
-  SourceLocation getAttributeLoc() const { return loc; }
-
-  bool isSugared() const { return false; }
-  QualType desugar() const { return QualType(this, 0); }
-
-  static bool classof(const Type *T) {
-    return T->getTypeClass() == DependentSizedExtVector;
-  }
-
-  void Profile(llvm::FoldingSetNodeID &ID) {
-    Profile(ID, Context, getElementType(), getSizeExpr());
-  }
-
-  static void Profile(llvm::FoldingSetNodeID &ID, const ASTContext &Context,
-                      QualType ElementType, Expr *SizeExpr);
-};
-
 
 /// VectorType - GCC generic vector type. This type is created using
 /// __attribute__((vector_size(n)), where "n" specifies the vector size in
@@ -1954,40 +1807,6 @@ public:
                       const ExtProtoInfo &EPI, const ASTContext &Context);
 };
 
-
-/// \brief Represents the dependent type named by a dependently-scoped
-/// typename using declaration, e.g.
-///   using typename Base<T>::foo;
-/// Template instantiation turns these into the underlying type.
-class UnresolvedUsingType : public Type {
-  UnresolvedUsingTypenameDecl *Decl;
-
-  UnresolvedUsingType(const UnresolvedUsingTypenameDecl *D)
-    : Type(UnresolvedUsing, QualType(), true, true, false,
-           /*ContainsUnexpandedParameterPack=*/false),
-      Decl(const_cast<UnresolvedUsingTypenameDecl*>(D)) {}
-  friend class ASTContext; // ASTContext creates these.
-public:
-
-  UnresolvedUsingTypenameDecl *getDecl() const { return Decl; }
-
-  bool isSugared() const { return false; }
-  QualType desugar() const { return QualType(this, 0); }
-
-  static bool classof(const Type *T) {
-    return T->getTypeClass() == UnresolvedUsing;
-  }
-
-  void Profile(llvm::FoldingSetNodeID &ID) {
-    return Profile(ID, Decl);
-  }
-  static void Profile(llvm::FoldingSetNodeID &ID,
-                      UnresolvedUsingTypenameDecl *D) {
-    ID.AddPointer(D);
-  }
-};
-
-
 class TypedefType : public Type {
   TypedefNameDecl *Decl;
 protected:
@@ -2242,11 +2061,9 @@ public:
     LastExprOperandKind = attr_neon_polyvector_type,
 
     // Enumerated operand (string or keyword).
-    attr_objc_gc,
-    attr_objc_ownership,
     attr_pcs,
 
-    FirstEnumOperandKind = attr_objc_gc,
+    FirstEnumOperandKind = attr_pcs,
     LastEnumOperandKind = attr_pcs,
 
     // No operand.
@@ -2299,181 +2116,6 @@ public:
 
   static bool classof(const Type *T) {
     return T->getTypeClass() == Attributed;
-  }
-};
-
-class TemplateTypeParmType : public Type, public llvm::FoldingSetNode {
-  // Helper data collector for canonical types.
-  struct CanonicalTTPTInfo {
-    unsigned Depth : 15;
-    unsigned ParameterPack : 1;
-    unsigned Index : 16;
-  };
-
-  union {
-    // Info for the canonical type.
-    CanonicalTTPTInfo CanTTPTInfo;
-    // Info for the non-canonical type.
-    TemplateTypeParmDecl *TTPDecl;
-  };
-
-  /// Build a non-canonical type.
-  TemplateTypeParmType(TemplateTypeParmDecl *TTPDecl, QualType Canon)
-    : Type(TemplateTypeParm, Canon, /*Dependent=*/true,
-           /*InstantiationDependent=*/true,
-           /*VariablyModified=*/false,
-           Canon->containsUnexpandedParameterPack()),
-      TTPDecl(TTPDecl) { }
-
-  /// Build the canonical type.
-  TemplateTypeParmType(unsigned D, unsigned I, bool PP)
-    : Type(TemplateTypeParm, QualType(this, 0),
-           /*Dependent=*/true,
-           /*InstantiationDependent=*/true,
-           /*VariablyModified=*/false, PP) {
-    CanTTPTInfo.Depth = D;
-    CanTTPTInfo.Index = I;
-    CanTTPTInfo.ParameterPack = PP;
-  }
-
-  friend class ASTContext;  // ASTContext creates these
-
-  const CanonicalTTPTInfo& getCanTTPTInfo() const {
-    QualType Can = getCanonicalTypeInternal();
-    return Can->castAs<TemplateTypeParmType>()->CanTTPTInfo;
-  }
-
-public:
-  unsigned getDepth() const { return getCanTTPTInfo().Depth; }
-  unsigned getIndex() const { return getCanTTPTInfo().Index; }
-  bool isParameterPack() const { return getCanTTPTInfo().ParameterPack; }
-
-  TemplateTypeParmDecl *getDecl() const {
-    return isCanonicalUnqualified() ? 0 : TTPDecl;
-  }
-
-  IdentifierInfo *getIdentifier() const;
-
-  bool isSugared() const { return false; }
-  QualType desugar() const { return QualType(this, 0); }
-
-  void Profile(llvm::FoldingSetNodeID &ID) {
-    Profile(ID, getDepth(), getIndex(), isParameterPack(), getDecl());
-  }
-
-  static void Profile(llvm::FoldingSetNodeID &ID, unsigned Depth,
-                      unsigned Index, bool ParameterPack,
-                      TemplateTypeParmDecl *TTPDecl) {
-    ID.AddInteger(Depth);
-    ID.AddInteger(Index);
-    ID.AddBoolean(ParameterPack);
-    ID.AddPointer(TTPDecl);
-  }
-
-  static bool classof(const Type *T) {
-    return T->getTypeClass() == TemplateTypeParm;
-  }
-};
-
-/// \brief Represents the result of substituting a type for a template
-/// type parameter.
-///
-/// Within an instantiated template, all template type parameters have
-/// been replaced with these.  They are used solely to record that a
-/// type was originally written as a template type parameter;
-/// therefore they are never canonical.
-class SubstTemplateTypeParmType : public Type, public llvm::FoldingSetNode {
-  // The original type parameter.
-  const TemplateTypeParmType *Replaced;
-
-  SubstTemplateTypeParmType(const TemplateTypeParmType *Param, QualType Canon)
-    : Type(SubstTemplateTypeParm, Canon, Canon->isDependentType(),
-           Canon->isInstantiationDependentType(),
-           Canon->isVariablyModifiedType(),
-           Canon->containsUnexpandedParameterPack()),
-      Replaced(Param) { }
-
-  friend class ASTContext;
-
-public:
-  /// Gets the template parameter that was substituted for.
-  const TemplateTypeParmType *getReplacedParameter() const {
-    return Replaced;
-  }
-
-  /// Gets the type that was substituted for the template
-  /// parameter.
-  QualType getReplacementType() const {
-    return getCanonicalTypeInternal();
-  }
-
-  bool isSugared() const { return true; }
-  QualType desugar() const { return getReplacementType(); }
-
-  void Profile(llvm::FoldingSetNodeID &ID) {
-    Profile(ID, getReplacedParameter(), getReplacementType());
-  }
-  static void Profile(llvm::FoldingSetNodeID &ID,
-                      const TemplateTypeParmType *Replaced,
-                      QualType Replacement) {
-    ID.AddPointer(Replaced);
-    ID.AddPointer(Replacement.getAsOpaquePtr());
-  }
-
-  static bool classof(const Type *T) {
-    return T->getTypeClass() == SubstTemplateTypeParm;
-  }
-};
-
-/// \brief Represents the result of substituting a set of types for a template
-/// type parameter pack.
-///
-/// When a pack expansion in the source code contains multiple parameter packs
-/// and those parameter packs correspond to different levels of template
-/// parameter lists, this type node is used to represent a template type
-/// parameter pack from an outer level, which has already had its argument pack
-/// substituted but that still lives within a pack expansion that itself
-/// could not be instantiated. When actually performing a substitution into
-/// that pack expansion (e.g., when all template parameters have corresponding
-/// arguments), this type will be replaced with the \c SubstTemplateTypeParmType
-/// at the current pack substitution index.
-class SubstTemplateTypeParmPackType : public Type, public llvm::FoldingSetNode {
-  /// \brief The original type parameter.
-  const TemplateTypeParmType *Replaced;
-
-  /// \brief A pointer to the set of template arguments that this
-  /// parameter pack is instantiated with.
-  const TemplateArgument *Arguments;
-
-  /// \brief The number of template arguments in \c Arguments.
-  unsigned NumArguments;
-
-  SubstTemplateTypeParmPackType(const TemplateTypeParmType *Param,
-                                QualType Canon,
-                                const TemplateArgument &ArgPack);
-
-  friend class ASTContext;
-
-public:
-  IdentifierInfo *getIdentifier() const { return Replaced->getIdentifier(); }
-
-  /// Gets the template parameter that was substituted for.
-  const TemplateTypeParmType *getReplacedParameter() const {
-    return Replaced;
-  }
-
-  bool isSugared() const { return false; }
-  QualType desugar() const { return QualType(this, 0); }
-
-  TemplateArgument getArgumentPack() const;
-
-  void Profile(llvm::FoldingSetNodeID &ID);
-  static void Profile(llvm::FoldingSetNodeID &ID,
-                      const TemplateTypeParmType *Replaced,
-                      const TemplateArgument &ArgPack);
-
-  static bool classof(const Type *T) {
-    return T->getTypeClass() == SubstTemplateTypeParmPack;
   }
 };
 
@@ -2665,219 +2307,6 @@ public:
   }
 };
 
-/// \brief Represents a qualified type name for which the type name is
-/// dependent.
-///
-/// DependentNameType represents a class of dependent types that involve a
-/// dependent nested-name-specifier (e.g., "T::") followed by a (dependent)
-/// name of a type. The DependentNameType may start with a "typename" (for a
-/// typename-specifier), "class", "struct", "union", or "enum" (for a
-/// dependent elaborated-type-specifier), or nothing (in contexts where we
-/// know that we must be referring to a type, e.g., in a base class specifier).
-class DependentNameType : public TypeWithKeyword, public llvm::FoldingSetNode {
-
-  /// \brief The nested name specifier containing the qualifier.
-  NestedNameSpecifier *NNS;
-
-  /// \brief The type that this typename specifier refers to.
-  const IdentifierInfo *Name;
-
-  DependentNameType(ElaboratedTypeKeyword Keyword, NestedNameSpecifier *NNS,
-                    const IdentifierInfo *Name, QualType CanonType)
-    : TypeWithKeyword(Keyword, DependentName, CanonType, /*Dependent=*/true,
-                      /*InstantiationDependent=*/true,
-                      /*VariablyModified=*/false,
-                      NNS->containsUnexpandedParameterPack()),
-      NNS(NNS), Name(Name) {
-    assert(NNS->isDependent() &&
-           "DependentNameType requires a dependent nested-name-specifier");
-  }
-
-  friend class ASTContext;  // ASTContext creates these
-
-public:
-  /// \brief Retrieve the qualification on this type.
-  NestedNameSpecifier *getQualifier() const { return NNS; }
-
-  /// \brief Retrieve the type named by the typename specifier as an
-  /// identifier.
-  ///
-  /// This routine will return a non-NULL identifier pointer when the
-  /// form of the original typename was terminated by an identifier,
-  /// e.g., "typename T::type".
-  const IdentifierInfo *getIdentifier() const {
-    return Name;
-  }
-
-  bool isSugared() const { return false; }
-  QualType desugar() const { return QualType(this, 0); }
-
-  void Profile(llvm::FoldingSetNodeID &ID) {
-    Profile(ID, getKeyword(), NNS, Name);
-  }
-
-  static void Profile(llvm::FoldingSetNodeID &ID, ElaboratedTypeKeyword Keyword,
-                      NestedNameSpecifier *NNS, const IdentifierInfo *Name) {
-    ID.AddInteger(Keyword);
-    ID.AddPointer(NNS);
-    ID.AddPointer(Name);
-  }
-
-  static bool classof(const Type *T) {
-    return T->getTypeClass() == DependentName;
-  }
-};
-
-/// DependentTemplateSpecializationType - Represents a template
-/// specialization type whose template cannot be resolved, e.g.
-///   A<T>::template B<T>
-class DependentTemplateSpecializationType :
-  public TypeWithKeyword, public llvm::FoldingSetNode {
-
-  /// \brief The nested name specifier containing the qualifier.
-  NestedNameSpecifier *NNS;
-
-  /// \brief The identifier of the template.
-  const IdentifierInfo *Name;
-
-  /// \brief - The number of template arguments named in this class
-  /// template specialization.
-  unsigned NumArgs;
-
-  const TemplateArgument *getArgBuffer() const {
-    return reinterpret_cast<const TemplateArgument*>(this+1);
-  }
-  TemplateArgument *getArgBuffer() {
-    return reinterpret_cast<TemplateArgument*>(this+1);
-  }
-
-  DependentTemplateSpecializationType(ElaboratedTypeKeyword Keyword,
-                                      NestedNameSpecifier *NNS,
-                                      const IdentifierInfo *Name,
-                                      unsigned NumArgs,
-                                      const TemplateArgument *Args,
-                                      QualType Canon);
-
-  friend class ASTContext;  // ASTContext creates these
-
-public:
-  NestedNameSpecifier *getQualifier() const { return NNS; }
-  const IdentifierInfo *getIdentifier() const { return Name; }
-
-  /// \brief Retrieve the template arguments.
-  const TemplateArgument *getArgs() const {
-    return getArgBuffer();
-  }
-
-  /// \brief Retrieve the number of template arguments.
-  unsigned getNumArgs() const { return NumArgs; }
-
-  const TemplateArgument &getArg(unsigned Idx) const; // in TemplateBase.h
-
-  typedef const TemplateArgument * iterator;
-  iterator begin() const { return getArgs(); }
-  iterator end() const; // inline in TemplateBase.h
-
-  bool isSugared() const { return false; }
-  QualType desugar() const { return QualType(this, 0); }
-
-  void Profile(llvm::FoldingSetNodeID &ID, const ASTContext &Context) {
-    Profile(ID, Context, getKeyword(), NNS, Name, NumArgs, getArgs());
-  }
-
-  static void Profile(llvm::FoldingSetNodeID &ID,
-                      const ASTContext &Context,
-                      ElaboratedTypeKeyword Keyword,
-                      NestedNameSpecifier *Qualifier,
-                      const IdentifierInfo *Name,
-                      unsigned NumArgs,
-                      const TemplateArgument *Args);
-
-  static bool classof(const Type *T) {
-    return T->getTypeClass() == DependentTemplateSpecialization;
-  }
-};
-
-/// \brief Represents a pack expansion of types.
-///
-/// Pack expansions are part of C++0x variadic templates. A pack
-/// expansion contains a pattern, which itself contains one or more
-/// "unexpanded" parameter packs. When instantiated, a pack expansion
-/// produces a series of types, each instantiated from the pattern of
-/// the expansion, where the Ith instantiation of the pattern uses the
-/// Ith arguments bound to each of the unexpanded parameter packs. The
-/// pack expansion is considered to "expand" these unexpanded
-/// parameter packs.
-///
-/// \code
-/// template<typename ...Types> struct tuple;
-///
-/// template<typename ...Types>
-/// struct tuple_of_references {
-///   typedef tuple<Types&...> type;
-/// };
-/// \endcode
-///
-/// Here, the pack expansion \c Types&... is represented via a
-/// PackExpansionType whose pattern is Types&.
-class PackExpansionType : public Type, public llvm::FoldingSetNode {
-  /// \brief The pattern of the pack expansion.
-  QualType Pattern;
-
-  /// \brief The number of expansions that this pack expansion will
-  /// generate when substituted (+1), or indicates that
-  ///
-  /// This field will only have a non-zero value when some of the parameter
-  /// packs that occur within the pattern have been substituted but others have
-  /// not.
-  unsigned NumExpansions;
-
-  PackExpansionType(QualType Pattern, QualType Canon,
-                    llvm::Optional<unsigned> NumExpansions)
-    : Type(PackExpansion, Canon, /*Dependent=*/Pattern->isDependentType(),
-           /*InstantiationDependent=*/true,
-           /*VariableModified=*/Pattern->isVariablyModifiedType(),
-           /*ContainsUnexpandedParameterPack=*/false),
-      Pattern(Pattern),
-      NumExpansions(NumExpansions? *NumExpansions + 1: 0) { }
-
-  friend class ASTContext;  // ASTContext creates these
-
-public:
-  /// \brief Retrieve the pattern of this pack expansion, which is the
-  /// type that will be repeatedly instantiated when instantiating the
-  /// pack expansion itself.
-  QualType getPattern() const { return Pattern; }
-
-  /// \brief Retrieve the number of expansions that this pack expansion will
-  /// generate, if known.
-  llvm::Optional<unsigned> getNumExpansions() const {
-    if (NumExpansions)
-      return NumExpansions - 1;
-
-    return llvm::Optional<unsigned>();
-  }
-
-  bool isSugared() const { return false; }
-  QualType desugar() const { return QualType(this, 0); }
-
-  void Profile(llvm::FoldingSetNodeID &ID) {
-    Profile(ID, getPattern(), getNumExpansions());
-  }
-
-  static void Profile(llvm::FoldingSetNodeID &ID, QualType Pattern,
-                      llvm::Optional<unsigned> NumExpansions) {
-    ID.AddPointer(Pattern.getAsOpaquePtr());
-    ID.AddBoolean(NumExpansions);
-    if (NumExpansions)
-      ID.AddInteger(*NumExpansions);
-  }
-
-  static bool classof(const Type *T) {
-    return T->getTypeClass() == PackExpansion;
-  }
-};
-
 class AtomicType : public Type, public llvm::FoldingSetNode {
   QualType ValueType;
 
@@ -3038,7 +2467,7 @@ inline bool Type::isPointerType() const {
   return isa<PointerType>(CanonicalType);
 }
 inline bool Type::isAnyPointerType() const {
-  return isPointerType() || isObjCObjectPointerType();
+  return isPointerType();
 }
 inline bool Type::isBlockPointerType() const {
   return isa<BlockPointerType>(CanonicalType);
@@ -3085,9 +2514,6 @@ inline bool Type::isIncompleteArrayType() const {
 inline bool Type::isVariableArrayType() const {
   return isa<VariableArrayType>(CanonicalType);
 }
-inline bool Type::isDependentSizedArrayType() const {
-  return isa<DependentSizedArrayType>(CanonicalType);
-}
 inline bool Type::isBuiltinType() const {
   return isa<BuiltinType>(CanonicalType);
 }
@@ -3106,50 +2532,8 @@ inline bool Type::isVectorType() const {
 inline bool Type::isExtVectorType() const {
   return isa<ExtVectorType>(CanonicalType);
 }
-inline bool Type::isObjCObjectPointerType() const {
-  return isa<ObjCObjectPointerType>(CanonicalType);
-}
-inline bool Type::isObjCObjectType() const {
-  return isa<ObjCObjectType>(CanonicalType);
-}
-inline bool Type::isObjCObjectOrInterfaceType() const {
-  return isa<ObjCInterfaceType>(CanonicalType) ||
-    isa<ObjCObjectType>(CanonicalType);
-}
 inline bool Type::isAtomicType() const {
   return isa<AtomicType>(CanonicalType);
-}
-
-inline bool Type::isObjCQualifiedIdType() const {
-  if (const ObjCObjectPointerType *OPT = getAs<ObjCObjectPointerType>())
-    return OPT->isObjCQualifiedIdType();
-  return false;
-}
-inline bool Type::isObjCQualifiedClassType() const {
-  if (const ObjCObjectPointerType *OPT = getAs<ObjCObjectPointerType>())
-    return OPT->isObjCQualifiedClassType();
-  return false;
-}
-inline bool Type::isObjCIdType() const {
-  if (const ObjCObjectPointerType *OPT = getAs<ObjCObjectPointerType>())
-    return OPT->isObjCIdType();
-  return false;
-}
-inline bool Type::isObjCClassType() const {
-  if (const ObjCObjectPointerType *OPT = getAs<ObjCObjectPointerType>())
-    return OPT->isObjCClassType();
-  return false;
-}
-inline bool Type::isObjCSelType() const {
-  if (const PointerType *OPT = getAs<PointerType>())
-    return OPT->getPointeeType()->isSpecificBuiltinType(BuiltinType::ObjCSel);
-  return false;
-}
-inline bool Type::isObjCBuiltinType() const {
-  return isObjCIdType() || isObjCClassType() || isObjCSelType();
-}
-inline bool Type::isTemplateTypeParmType() const {
-  return isa<TemplateTypeParmType>(CanonicalType);
 }
 
 inline bool Type::isSpecificBuiltinType(unsigned K) const {
@@ -3231,8 +2615,7 @@ inline bool Type::isScalarType() const {
   return isa<PointerType>(CanonicalType) ||
          isa<BlockPointerType>(CanonicalType) ||
          isa<MemberPointerType>(CanonicalType) ||
-         isa<ComplexType>(CanonicalType) ||
-         isa<ObjCObjectPointerType>(CanonicalType);
+         isa<ComplexType>(CanonicalType);
 }
 
 inline bool Type::isIntegralOrEnumerationType() const {
@@ -3267,11 +2650,7 @@ inline bool Type::canDecayToPointerType() const {
 
 inline bool Type::hasPointerRepresentation() const {
   return (isPointerType() || isReferenceType() || isBlockPointerType() ||
-          isObjCObjectPointerType() || isNullPtrType());
-}
-
-inline bool Type::hasObjCPointerRepresentation() const {
-  return isObjCObjectPointerType();
+          isNullPtrType());
 }
 
 inline const Type *Type::getBaseElementTypeUnsafe() const {
