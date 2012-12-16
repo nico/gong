@@ -37,15 +37,12 @@
 #endif
 
 namespace gong {
-  //enum {
-  //  TypeAlignmentInBits = 4,
-  //  TypeAlignment = 1 << TypeAlignmentInBits
-  //};
+  enum {
+    TypeAlignmentInBits = 4,
+    TypeAlignment = 1 << TypeAlignmentInBits
+  };
   class Type;
-  //class ExtQuals;
 }
-
-#if 0
 
 namespace llvm {
   template <typename T>
@@ -59,18 +56,8 @@ namespace llvm {
     }
     enum { NumLowBitsAvailable = gong::TypeAlignmentInBits };
   };
-  template<>
-  class PointerLikeTypeTraits< ::gong::ExtQuals*> {
-  public:
-    static inline void *getAsVoidPointer(::gong::ExtQuals *P) { return P; }
-    static inline ::gong::ExtQuals *getFromVoidPointer(void *P) {
-      return static_cast< ::gong::ExtQuals*>(P);
-    }
-    enum { NumLowBitsAvailable = gong::TypeAlignmentInBits };
-  };
 }
 
-#endif
 namespace gong {
 #if 0
   class ASTContext;
@@ -92,7 +79,6 @@ namespace gong {
   class TemplateArgumentLoc;
   class TemplateArgumentListInfo;
   class ElaboratedType;
-  class ExtQuals;
   class ExtQualsTypeCommonBase;
   struct PrintingPolicy;
 
@@ -104,40 +90,6 @@ namespace gong {
 #define TYPE(Class, Base) class Class##Type;
 #include "gong/AST/TypeNodes.def"
 
-} // end gong.
-#if 0
-
-namespace llvm {
-/// Implement simplify_type for QualType, so that we can dyn_cast from QualType
-/// to a specific Type class.
-template<> struct simplify_type<const ::gong::QualType> {
-  typedef const ::gong::Type *SimpleType;
-  static SimpleType getSimplifiedValue(const ::gong::QualType &Val) {
-    return Val.getTypePtr();
-  }
-};
-template<> struct simplify_type< ::gong::QualType>
-  : public simplify_type<const ::gong::QualType> {};
-
-// Teach SmallPtrSet that QualType is "basically a pointer".
-template<>
-class PointerLikeTypeTraits<gong::QualType> {
-public:
-  static inline void *getAsVoidPointer(gong::QualType P) {
-    return P.getAsOpaquePtr();
-  }
-  static inline gong::QualType getFromVoidPointer(void *P) {
-    return gong::QualType::getFromOpaquePtr(P);
-  }
-  // Various qualifiers go in low bits.
-  enum { NumLowBitsAvailable = 0 };
-};
-
-} // end namespace llvm
-
-#endif
-namespace gong {
-
 /// \brief Base class that is common to both the \c ExtQuals and \c Type
 /// classes, which allows \c QualType to access the common fields between the
 /// two.
@@ -146,8 +98,7 @@ class ExtQualsTypeCommonBase {
   ExtQualsTypeCommonBase(const Type *baseType, const Type *canon)
     : BaseType(baseType), CanonicalType(canon) {}
 
-  /// \brief The "base" type of an extended qualifiers type (\c ExtQuals) or
-  /// a self-referential pointer (for \c Type).
+  /// \brief A self-referential pointer (for \c Type).
   ///
   /// This pointer allows an efficient mapping from a QualType to its
   /// underlying type pointer.
@@ -158,7 +109,6 @@ class ExtQualsTypeCommonBase {
 
   friend class QualType;
   friend class Type;
-  friend class ExtQuals;
 };
 
 /// Type - This is the base class of the type hierarchy.  A central concept
@@ -211,19 +161,19 @@ private:
     /// \brief Nonzero if the cache (i.e. the bitfields here starting
     /// with 'Cache') is valid.  If so, then this is a
     /// LangOptions::VisibilityMode+1.
-    //mutable unsigned CacheValidAndVisibility : 2;
+    mutable unsigned CacheValidAndVisibility : 2;
 
     /// \brief True if the visibility was set explicitly in the source code.
-    //mutable unsigned CachedExplicitVisibility : 1;
+    mutable unsigned CachedExplicitVisibility : 1;
 
     /// \brief Linkage of this type.
-    //mutable unsigned CachedLinkage : 2;
+    mutable unsigned CachedLinkage : 2;
 
     /// \brief Whether this type involves and local or unnamed types.
-    //mutable unsigned CachedLocalOrUnnamed : 1;
+    mutable unsigned CachedLocalOrUnnamed : 1;
 
     /// \brief FromAST - Whether this type comes from an AST file.
-    //mutable unsigned FromAST : 1;
+    mutable unsigned FromAST : 1;
 
     //bool isCacheValid() const {
     //  return (CacheValidAndVisibility != 0);
@@ -245,7 +195,6 @@ private:
     //  return CachedLocalOrUnnamed;
     //}
   };
-#if 0
   enum { NumTypeBits = 19 };
 
 protected:
@@ -314,51 +263,29 @@ private:
 
   template <class T> friend class TypePropertyCache;
 
-#endif
 protected:
   // silence VC++ warning C4355: 'this' : used in base member initializer list
   Type *this_() { return this; }
   Type(TypeClass tc, const Type *canon, bool Dependent,
-       bool InstantiationDependent, bool VariablyModified,
-       bool ContainsUnexpandedParameterPack)
+       bool InstantiationDependent, bool VariablyModified)
     : ExtQualsTypeCommonBase(this, canon) {
-    //TypeBits.TC = tc;
+    TypeBits.TC = tc;
     //TypeBits.VariablyModified = VariablyModified;
-    //TypeBits.ContainsUnexpandedParameterPack = ContainsUnexpandedParameterPack;
     //TypeBits.CacheValidAndVisibility = 0;
     //TypeBits.CachedExplicitVisibility = false;
     //TypeBits.CachedLocalOrUnnamed = false;
     //TypeBits.CachedLinkage = NoLinkage;
-    //TypeBits.FromAST = false;
+    TypeBits.FromAST = false;
   }
   friend class ASTContext;
 
-#if 0
 public:
   TypeClass getTypeClass() const { return static_cast<TypeClass>(TypeBits.TC); }
 
   /// \brief Whether this type comes from an AST file.
   bool isFromAST() const { return TypeBits.FromAST; }
 
-  /// \brief Whether this type is or contains an unexpanded parameter
-  /// pack, used to support C++0x variadic templates.
-  ///
-  /// A type that contains a parameter pack shall be expanded by the
-  /// ellipsis operator at some point. For example, the typedef in the
-  /// following example contains an unexpanded parameter pack 'T':
-  ///
-  /// \code
-  /// template<typename ...T>
-  /// struct X {
-  ///   typedef T* pointer_types; // ill-formed; T is a parameter pack.
-  /// };
-  /// \endcode
-  ///
-  /// Note that this routine does not specify which
-  bool containsUnexpandedParameterPack() const {
-    return TypeBits.ContainsUnexpandedParameterPack;
-  }
-
+#if 0
   /// Determines if this type would be canonical if it had no further
   /// qualification.
   bool isCanonicalUnqualified() const {
@@ -2364,52 +2291,6 @@ public:
 
 
 // Inline function definitions.
-
-inline SplitQualType SplitQualType::getSingleStepDesugaredType() const {
-  SplitQualType desugar =
-    Ty->getLocallyUnqualifiedSingleStepDesugaredType().split();
-  desugar.Quals.addConsistentQualifiers(Quals);
-  return desugar;
-}
-
-inline const Type *QualType::getTypePtr() const {
-  return getCommonPtr()->BaseType;
-}
-
-inline const Type *QualType::getTypePtrOrNull() const {
-  return (isNull() ? 0 : getCommonPtr()->BaseType);
-}
-
-inline SplitQualType QualType::split() const {
-  if (!hasLocalNonFastQualifiers())
-    return SplitQualType(getTypePtrUnsafe(),
-                         Qualifiers::fromFastMask(getLocalFastQualifiers()));
-
-  const ExtQuals *eq = getExtQualsUnsafe();
-  Qualifiers qs = eq->getQualifiers();
-  qs.addFastQualifiers(getLocalFastQualifiers());
-  return SplitQualType(eq->getBaseType(), qs);
-}
-
-inline QualType QualType::getCanonicalType() const {
-  QualType canon = getCommonPtr()->CanonicalType;
-  return canon.withFastQualifiers(getLocalFastQualifiers());
-}
-
-inline bool QualType::isCanonical() const {
-  return getTypePtr()->isCanonicalUnqualified();
-}
-
-inline bool QualType::isCanonicalAsParam() const {
-  if (!isCanonical()) return false;
-  if (hasLocalQualifiers()) return false;
-
-  const Type *T = getTypePtr();
-  if (T->isVariablyModifiedType() && T->hasSizedVLAType())
-    return false;
-
-  return !isa<FunctionType>(T) && !isa<ArrayType>(T);
-}
 
 inline FunctionType::ExtInfo getFunctionExtInfo(const Type &t) {
   if (const PointerType *PT = t.getAs<PointerType>()) {
