@@ -25,8 +25,10 @@
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/Optional.h"
 #include "llvm/Support/Compiler.h"
+#endif
 
 namespace gong {
+#if 0
 struct ASTTemplateArgumentListInfo;
 class CXXTemporary;
 class CompoundStmt;
@@ -3124,8 +3126,8 @@ inline bool IsEnumDeclScoped(EnumDecl *ED) {
   return ED->isScoped();
 }
 
-}  // end namespace gong
-
 #endif
+
+}  // end namespace gong
 
 #endif

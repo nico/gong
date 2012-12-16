@@ -14,15 +14,22 @@
 #ifndef LLVM_GONG_AST_DECLBASE_H
 #define LLVM_GONG_AST_DECLBASE_H
 
-#if 0
+#include "gong/Basic/SourceLocation.h"
+#include "llvm/ADT/PointerUnion.h"
 
+#if 0
 #include "gong/AST/AttrIterator.h"
 #include "gong/AST/DeclarationName.h"
 #include "gong/Basic/Specifiers.h"
-#include "llvm/ADT/PointerUnion.h"
 #include "llvm/Support/Compiler.h"
 #include "llvm/Support/PrettyStackTrace.h"
+#endif
 
+namespace gong {
+class DeclContext;
+}
+
+#if 0
 namespace gong {
 class ASTMutationListener;
 class BlockDecl;
@@ -36,20 +43,13 @@ class FunctionDecl;
 class LinkageSpecDecl;
 class NamedDecl;
 class NamespaceDecl;
-class ObjCCategoryDecl;
-class ObjCCategoryImplDecl;
-class ObjCContainerDecl;
-class ObjCImplDecl;
-class ObjCImplementationDecl;
-class ObjCInterfaceDecl;
-class ObjCMethodDecl;
-class ObjCProtocolDecl;
 struct PrintingPolicy;
 class Stmt;
 class StoredDeclsMap;
 class TranslationUnitDecl;
 class UsingDirectiveDecl;
 }
+#endif
 
 namespace llvm {
 // DeclContext* is only 4-byte aligned on 32-bit systems.
@@ -76,7 +76,6 @@ namespace gong {
     AR_Unavailable
   };
 
-#endif
 /// Decl - This represents one declaration (or definition), e.g. a variable,
 /// typedef, function, struct, etc.
 ///
@@ -93,6 +92,7 @@ public:
         first##BASE = START, last##BASE = END
 #include "gong/AST/DeclNodes.inc"
   };
+#endif
 
   /// \brief A placeholder type used to construct an empty shell of a
   /// decl-derived type that will be filled in later (e.g., by some
@@ -138,9 +138,6 @@ public:
     /// or member ends up here.
     IDNS_Ordinary            = 0x0020,
 
-    /// Objective C @protocol.
-    IDNS_ObjCProtocol        = 0x0040,
-
     /// This declaration is a friend function.  A friend function
     /// declaration is always in this namespace but may also be in
     /// IDNS_Ordinary if it was previously declared.
@@ -161,30 +158,6 @@ public:
     /// context.  All such operators are also in IDNS_Ordinary.
     /// C++ lexical operator lookup looks for these.
     IDNS_NonMemberOperator   = 0x0400
-  };
-
-  /// ObjCDeclQualifier - 'Qualifiers' written next to the return and
-  /// parameter types in method declarations.  Other than remembering
-  /// them and mangling them into the method's signature string, these
-  /// are ignored by the compiler; they are consumed by certain
-  /// remote-messaging frameworks.
-  ///
-  /// in, inout, and out are mutually exclusive and apply only to
-  /// method parameters.  bycopy and byref are mutually exclusive and
-  /// apply only to method parameters (?).  oneway applies only to
-  /// results.  All of these expect their corresponding parameter to
-  /// have a particular type.  None of this is currently enforced by
-  /// gong.
-  ///
-  /// This should be kept in sync with ObjCDeclSpec::ObjCDeclQualifier.
-  enum ObjCDeclQualifier {
-    OBJC_TQ_None = 0x0,
-    OBJC_TQ_In = 0x1,
-    OBJC_TQ_Inout = 0x2,
-    OBJC_TQ_Out = 0x4,
-    OBJC_TQ_Bycopy = 0x8,
-    OBJC_TQ_Byref = 0x10,
-    OBJC_TQ_Oneway = 0x20
   };
 
 protected:
@@ -270,6 +243,7 @@ private:
   /// \brief Whether statistic collection is enabled.
   static bool StatisticsEnabled;
 
+#if 0
 protected:
   /// Access - Used by C++ decls for the access specifier.
   // NOTE: VC++ treats enums as signed, avoid using the AccessSpecifier enum
@@ -487,22 +461,6 @@ public:
   bool isReferenced() const;
 
   void setReferenced(bool R = true) { Referenced = R; }
-
-  /// \brief Whether this declaration is a top-level declaration (function,
-  /// global variable, etc.) that is lexically inside an objc container
-  /// definition.
-  bool isTopLevelDeclInObjCContainer() const {
-    return NextInContextAndBits.getInt() & TopLevelDeclInObjCContainerFlag;
-  }
-
-  void setTopLevelDeclInObjCContainer(bool V = true) {
-    unsigned Bits = NextInContextAndBits.getInt();
-    if (V)
-      Bits |= TopLevelDeclInObjCContainerFlag;
-    else
-      Bits &= ~TopLevelDeclInObjCContainerFlag;
-    NextInContextAndBits.setInt(Bits);
-  }
 
 protected:
   /// \brief Whether this declaration was marked as being private to the
@@ -928,8 +886,6 @@ public:
 ///   NamespaceDecl
 ///   FunctionDecl
 ///   TagDecl
-///   ObjCMethodDecl
-///   ObjCContainerDecl
 ///   LinkageSpecDecl
 ///   BlockDecl
 ///
@@ -1026,22 +982,9 @@ public:
     return DeclKind == Decl::Block;
   }
 
-  bool isObjCContainer() const {
-    switch (DeclKind) {
-        case Decl::ObjCCategory:
-        case Decl::ObjCCategoryImpl:
-        case Decl::ObjCImplementation:
-        case Decl::ObjCInterface:
-        case Decl::ObjCProtocol:
-            return true;
-    }
-    return false;
-  }
-
   bool isFunctionOrMethod() const {
     switch (DeclKind) {
     case Decl::Block:
-    case Decl::ObjCMethod:
       return true;
     default:
       return DeclKind >= Decl::firstFunction && DeclKind <= Decl::lastFunction;
@@ -1255,9 +1198,7 @@ public:
     /// end-of-declarations). If A is non-NULL, it is a pointer to a
     /// member function of SpecificDecl that should return true for
     /// all of the SpecificDecl instances that will be in the subset
-    /// of iterators. For example, if you want Objective-C instance
-    /// methods, SpecificDecl will be ObjCMethodDecl and A will be
-    /// &ObjCMethodDecl::isInstanceMethod.
+    /// of iterators.
     explicit specific_decl_iterator(DeclContext::decl_iterator C) : Current(C) {
       SkipToNextDecl();
     }
@@ -1573,8 +1514,9 @@ struct cast_convert_decl_context<ToTy, true> {
   }
 };
 
-
+#endif
 } // end gong.
+#if 0
 
 namespace llvm {
 

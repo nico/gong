@@ -153,6 +153,8 @@ Sema / AST
   declarator: declspec, list of declaratorchunks,
               single identifier (unqualifiedid), context
 
+  still need astcontext, identifierresolver
+
 - Expression Sema & AST, Exprs vs Types
   - Exprs vs Types: DeclRefExpr pointing to TypeDecl (pointing to Type) or
     VarDecl (pointing to ident, type)

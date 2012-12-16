@@ -13,6 +13,8 @@
 
 #include "gong/AST/Decl.h"
 
+using namespace gong;
+
 #if 0
 
 #include "gong/AST/ASTContext.h"
@@ -34,7 +36,6 @@
 #include "llvm/Support/ErrorHandling.h"
 #include <algorithm>
 
-using namespace gong;
 
 //===----------------------------------------------------------------------===//
 // NamedDecl Implementation
