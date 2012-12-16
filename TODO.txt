@@ -154,6 +154,8 @@ Sema / AST
               single identifier (unqualifiedid), context
 
 - Expression Sema & AST, Exprs vs Types
+  - Exprs vs Types: DeclRefExpr pointing to TypeDecl (pointing to Type) or
+    VarDecl (pointing to ident, type)
 - Constant expressions
 - Statement Sema & AST
 - Out-of-order parsing for toplevel
