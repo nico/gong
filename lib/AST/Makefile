@@ -1,4 +1,4 @@
-##===- lib/Makefile ----------------------------------------*- Makefile -*-===##
+##===- gong/lib/AST/Makefile -------------------------------*- Makefile -*-===##
 # 
 #                     The LLVM Compiler Infrastructure
 #
@@ -6,8 +6,13 @@
 # License. See LICENSE.TXT for details.
 # 
 ##===----------------------------------------------------------------------===##
-GONG_LEVEL := ..
+#
+#  This implements the AST library for the go language front-end.
+#
+##===----------------------------------------------------------------------===##
 
-PARALLEL_DIRS = Basic Frontend Lex Parse AST Sema
+GONG_LEVEL := ../..
+LIBRARYNAME := gongAST
 
 include $(GONG_LEVEL)/Makefile
+
