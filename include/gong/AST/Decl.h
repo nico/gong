@@ -28,6 +28,7 @@
 #endif
 
 namespace gong {
+class IdentifierInfo;
 #if 0
 struct ASTTemplateArgumentListInfo;
 class CXXTemporary;
@@ -107,6 +108,8 @@ public:
 /// as ObjCMethodDecl, but not \@class, etc.
 class NamedDecl : public Decl {
   virtual void anchor();
+  /// The name of this declaration.
+  IdentifierInfo *Name;
 #if 0
   /// Name - The name of this declaration, which is typically a normal
   /// identifier but may also be a special kind of name (C++
@@ -119,8 +122,10 @@ private:
 protected:
   NamedDecl(Kind DK, DeclContext *DC, SourceLocation L, DeclarationName N)
     : Decl(DK, DC, L), Name(N) { }
+#endif
 
 public:
+#if 0
   /// getIdentifier - Get the identifier that names this declaration,
   /// if there is one. This will return NULL if this declaration has
   /// no name (e.g., for an unnamed class) or if the name is a special
@@ -152,6 +157,9 @@ public:
   /// getDeclName - Get the actual, stored name of the declaration,
   /// which may be a special name.
   DeclarationName getDeclName() const { return Name; }
+#endif
+  IdentifierInfo &getDeclName() const { return *Name; }
+#if o
 
   /// \brief Set the name of this declaration.
   void setDeclName(DeclarationName N) { Name = N; }
