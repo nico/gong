@@ -11,6 +11,7 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include "gong/AST/Type.h"
 #if 0
 #include "gong/AST/ASTContext.h"
 #include "gong/AST/Attr.h"
@@ -20,7 +21,6 @@
 #include "gong/AST/DeclTemplate.h"
 #include "gong/AST/Expr.h"
 #include "gong/AST/PrettyPrinter.h"
-#include "gong/AST/Type.h"
 #include "gong/AST/TypeVisitor.h"
 #include "gong/Basic/Specifiers.h"
 #include "llvm/ADT/APSInt.h"
@@ -28,21 +28,6 @@
 #include "llvm/Support/raw_ostream.h"
 #include <algorithm>
 using namespace gong;
-
-bool Qualifiers::isStrictSupersetOf(Qualifiers Other) const {
-  return (*this != Other) &&
-    // CVR qualifiers superset
-    (((Mask & CVRMask) | (Other.Mask & CVRMask)) == (Mask & CVRMask)) &&
-    // ObjC GC qualifiers superset
-    ((getObjCGCAttr() == Other.getObjCGCAttr()) ||
-     (hasObjCGCAttr() && !Other.hasObjCGCAttr())) &&
-    // Address space superset.
-    ((getAddressSpace() == Other.getAddressSpace()) ||
-     (hasAddressSpace()&& !Other.hasAddressSpace())) &&
-    // Lifetime qualifier superset.
-    ((getObjCLifetime() == Other.getObjCLifetime()) ||
-     (hasObjCLifetime() && !Other.hasObjCLifetime()));
-}
 
 const IdentifierInfo* QualType::getBaseTypeIdentifier() const {
   const Type* ty = getTypePtr();
@@ -62,16 +47,6 @@ const IdentifierInfo* QualType::getBaseTypeIdentifier() const {
   if (ND)
     return ND->getIdentifier();
   return NULL;
-}
-
-bool QualType::isConstant(QualType T, ASTContext &Ctx) {
-  if (T.isConstQualified())
-    return true;
-
-  if (const ArrayType *AT = Ctx.getAsArrayType(T))
-    return AT->getElementType().isConstant(Ctx);
-
-  return false;
 }
 
 unsigned ConstantArrayType::getNumAddressingBits(ASTContext &Context,

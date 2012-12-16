@@ -14,6 +14,7 @@
 #ifndef LLVM_GONG_AST_TYPE_H
 #define LLVM_GONG_AST_TYPE_H
 
+#include "llvm/Support/Compiler.h"
 #if 0
 #include "gong/AST/NestedNameSpecifier.h"
 #include "gong/AST/TemplateName.h"
@@ -33,16 +34,18 @@
 #include "llvm/ADT/Twine.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/type_traits.h"
+#endif
 
 namespace gong {
-  enum {
-    TypeAlignmentInBits = 4,
-    TypeAlignment = 1 << TypeAlignmentInBits
-  };
+  //enum {
+  //  TypeAlignmentInBits = 4,
+  //  TypeAlignment = 1 << TypeAlignmentInBits
+  //};
   class Type;
-  class ExtQuals;
-  class QualType;
+  //class ExtQuals;
 }
+
+#if 0
 
 namespace llvm {
   template <typename T>
@@ -65,9 +68,6 @@ namespace llvm {
     }
     enum { NumLowBitsAvailable = gong::TypeAlignmentInBits };
   };
-
-  template <>
-  struct isPodLike<gong::QualType> { static const bool value = true; };
 }
 
 #endif
@@ -108,894 +108,6 @@ namespace gong {
 #define TYPE(Class, Base) class Class##Type;
 #include "gong/AST/TypeNodes.def"
 
-/// Qualifiers - The collection of all-type qualifiers we support.
-/// gong supports five independent qualifiers:
-/// * C99: const, volatile, and restrict
-/// * Embedded C (TR18037): address spaces
-/// * Objective C: the GC attributes (none, weak, or strong)
-class Qualifiers {
-public:
-  enum TQ { // NOTE: These flags must be kept in sync with DeclSpec::TQ.
-    Const    = 0x1,
-    Restrict = 0x2,
-    Volatile = 0x4,
-    CVRMask = Const | Volatile | Restrict
-  };
-
-  enum GC {
-    GCNone = 0,
-    Weak,
-    Strong
-  };
-
-  enum ObjCLifetime {
-    /// There is no lifetime qualification on this type.
-    OCL_None,
-
-    /// This object can be modified without requiring retains or
-    /// releases.
-    OCL_ExplicitNone,
-
-    /// Assigning into this object requires the old value to be
-    /// released and the new value to be retained.  The timing of the
-    /// release of the old value is inexact: it may be moved to
-    /// immediately after the last known point where the value is
-    /// live.
-    OCL_Strong,
-
-    /// Reading or writing from this object requires a barrier call.
-    OCL_Weak,
-
-    /// Assigning into this object requires a lifetime extension.
-    OCL_Autoreleasing
-  };
-
-  enum {
-    /// The maximum supported address space number.
-    /// 24 bits should be enough for anyone.
-    MaxAddressSpace = 0xffffffu,
-
-    /// The width of the "fast" qualifier mask.
-    FastWidth = 3,
-
-    /// The fast qualifier mask.
-    FastMask = (1 << FastWidth) - 1
-  };
-
-  Qualifiers() : Mask(0) {}
-
-  /// \brief Returns the common set of qualifiers while removing them from
-  /// the given sets.
-  static Qualifiers removeCommonQualifiers(Qualifiers &L, Qualifiers &R) {
-    // If both are only CVR-qualified, bit operations are sufficient.
-    if (!(L.Mask & ~CVRMask) && !(R.Mask & ~CVRMask)) {
-      Qualifiers Q;
-      Q.Mask = L.Mask & R.Mask;
-      L.Mask &= ~Q.Mask;
-      R.Mask &= ~Q.Mask;
-      return Q;
-    }
-
-    Qualifiers Q;
-    unsigned CommonCRV = L.getCVRQualifiers() & R.getCVRQualifiers();
-    Q.addCVRQualifiers(CommonCRV);
-    L.removeCVRQualifiers(CommonCRV);
-    R.removeCVRQualifiers(CommonCRV);
-
-    if (L.getObjCGCAttr() == R.getObjCGCAttr()) {
-      Q.setObjCGCAttr(L.getObjCGCAttr());
-      L.removeObjCGCAttr();
-      R.removeObjCGCAttr();
-    }
-
-    if (L.getObjCLifetime() == R.getObjCLifetime()) {
-      Q.setObjCLifetime(L.getObjCLifetime());
-      L.removeObjCLifetime();
-      R.removeObjCLifetime();
-    }
-
-    if (L.getAddressSpace() == R.getAddressSpace()) {
-      Q.setAddressSpace(L.getAddressSpace());
-      L.removeAddressSpace();
-      R.removeAddressSpace();
-    }
-    return Q;
-  }
-
-  static Qualifiers fromFastMask(unsigned Mask) {
-    Qualifiers Qs;
-    Qs.addFastQualifiers(Mask);
-    return Qs;
-  }
-
-  static Qualifiers fromCVRMask(unsigned CVR) {
-    Qualifiers Qs;
-    Qs.addCVRQualifiers(CVR);
-    return Qs;
-  }
-
-  // Deserialize qualifiers from an opaque representation.
-  static Qualifiers fromOpaqueValue(unsigned opaque) {
-    Qualifiers Qs;
-    Qs.Mask = opaque;
-    return Qs;
-  }
-
-  // Serialize these qualifiers into an opaque representation.
-  unsigned getAsOpaqueValue() const {
-    return Mask;
-  }
-
-  bool hasConst() const { return Mask & Const; }
-  void setConst(bool flag) {
-    Mask = (Mask & ~Const) | (flag ? Const : 0);
-  }
-  void removeConst() { Mask &= ~Const; }
-  void addConst() { Mask |= Const; }
-
-  bool hasVolatile() const { return Mask & Volatile; }
-  void setVolatile(bool flag) {
-    Mask = (Mask & ~Volatile) | (flag ? Volatile : 0);
-  }
-  void removeVolatile() { Mask &= ~Volatile; }
-  void addVolatile() { Mask |= Volatile; }
-
-  bool hasRestrict() const { return Mask & Restrict; }
-  void setRestrict(bool flag) {
-    Mask = (Mask & ~Restrict) | (flag ? Restrict : 0);
-  }
-  void removeRestrict() { Mask &= ~Restrict; }
-  void addRestrict() { Mask |= Restrict; }
-
-  bool hasCVRQualifiers() const { return getCVRQualifiers(); }
-  unsigned getCVRQualifiers() const { return Mask & CVRMask; }
-  void setCVRQualifiers(unsigned mask) {
-    assert(!(mask & ~CVRMask) && "bitmask contains non-CVR bits");
-    Mask = (Mask & ~CVRMask) | mask;
-  }
-  void removeCVRQualifiers(unsigned mask) {
-    assert(!(mask & ~CVRMask) && "bitmask contains non-CVR bits");
-    Mask &= ~mask;
-  }
-  void removeCVRQualifiers() {
-    removeCVRQualifiers(CVRMask);
-  }
-  void addCVRQualifiers(unsigned mask) {
-    assert(!(mask & ~CVRMask) && "bitmask contains non-CVR bits");
-    Mask |= mask;
-  }
-
-  bool hasObjCGCAttr() const { return Mask & GCAttrMask; }
-  GC getObjCGCAttr() const { return GC((Mask & GCAttrMask) >> GCAttrShift); }
-  void setObjCGCAttr(GC type) {
-    Mask = (Mask & ~GCAttrMask) | (type << GCAttrShift);
-  }
-  void removeObjCGCAttr() { setObjCGCAttr(GCNone); }
-  void addObjCGCAttr(GC type) {
-    assert(type);
-    setObjCGCAttr(type);
-  }
-  Qualifiers withoutObjCGCAttr() const {
-    Qualifiers qs = *this;
-    qs.removeObjCGCAttr();
-    return qs;
-  }
-  Qualifiers withoutObjCLifetime() const {
-    Qualifiers qs = *this;
-    qs.removeObjCLifetime();
-    return qs;
-  }
-
-  bool hasObjCLifetime() const { return Mask & LifetimeMask; }
-  ObjCLifetime getObjCLifetime() const {
-    return ObjCLifetime((Mask & LifetimeMask) >> LifetimeShift);
-  }
-  void setObjCLifetime(ObjCLifetime type) {
-    Mask = (Mask & ~LifetimeMask) | (type << LifetimeShift);
-  }
-  void removeObjCLifetime() { setObjCLifetime(OCL_None); }
-  void addObjCLifetime(ObjCLifetime type) {
-    assert(type);
-    assert(!hasObjCLifetime());
-    Mask |= (type << LifetimeShift);
-  }
-
-  /// True if the lifetime is neither None or ExplicitNone.
-  bool hasNonTrivialObjCLifetime() const {
-    ObjCLifetime lifetime = getObjCLifetime();
-    return (lifetime > OCL_ExplicitNone);
-  }
-
-  /// True if the lifetime is either strong or weak.
-  bool hasStrongOrWeakObjCLifetime() const {
-    ObjCLifetime lifetime = getObjCLifetime();
-    return (lifetime == OCL_Strong || lifetime == OCL_Weak);
-  }
-
-  bool hasAddressSpace() const { return Mask & AddressSpaceMask; }
-  unsigned getAddressSpace() const { return Mask >> AddressSpaceShift; }
-  void setAddressSpace(unsigned space) {
-    assert(space <= MaxAddressSpace);
-    Mask = (Mask & ~AddressSpaceMask)
-         | (((uint32_t) space) << AddressSpaceShift);
-  }
-  void removeAddressSpace() { setAddressSpace(0); }
-  void addAddressSpace(unsigned space) {
-    assert(space);
-    setAddressSpace(space);
-  }
-
-  // Fast qualifiers are those that can be allocated directly
-  // on a QualType object.
-  bool hasFastQualifiers() const { return getFastQualifiers(); }
-  unsigned getFastQualifiers() const { return Mask & FastMask; }
-  void setFastQualifiers(unsigned mask) {
-    assert(!(mask & ~FastMask) && "bitmask contains non-fast qualifier bits");
-    Mask = (Mask & ~FastMask) | mask;
-  }
-  void removeFastQualifiers(unsigned mask) {
-    assert(!(mask & ~FastMask) && "bitmask contains non-fast qualifier bits");
-    Mask &= ~mask;
-  }
-  void removeFastQualifiers() {
-    removeFastQualifiers(FastMask);
-  }
-  void addFastQualifiers(unsigned mask) {
-    assert(!(mask & ~FastMask) && "bitmask contains non-fast qualifier bits");
-    Mask |= mask;
-  }
-
-  /// hasNonFastQualifiers - Return true if the set contains any
-  /// qualifiers which require an ExtQuals node to be allocated.
-  bool hasNonFastQualifiers() const { return Mask & ~FastMask; }
-  Qualifiers getNonFastQualifiers() const {
-    Qualifiers Quals = *this;
-    Quals.setFastQualifiers(0);
-    return Quals;
-  }
-
-  /// hasQualifiers - Return true if the set contains any qualifiers.
-  bool hasQualifiers() const { return Mask; }
-  bool empty() const { return !Mask; }
-
-  /// \brief Add the qualifiers from the given set to this set.
-  void addQualifiers(Qualifiers Q) {
-    // If the other set doesn't have any non-boolean qualifiers, just
-    // bit-or it in.
-    if (!(Q.Mask & ~CVRMask))
-      Mask |= Q.Mask;
-    else {
-      Mask |= (Q.Mask & CVRMask);
-      if (Q.hasAddressSpace())
-        addAddressSpace(Q.getAddressSpace());
-      if (Q.hasObjCGCAttr())
-        addObjCGCAttr(Q.getObjCGCAttr());
-      if (Q.hasObjCLifetime())
-        addObjCLifetime(Q.getObjCLifetime());
-    }
-  }
-
-  /// \brief Remove the qualifiers from the given set from this set.
-  void removeQualifiers(Qualifiers Q) {
-    // If the other set doesn't have any non-boolean qualifiers, just
-    // bit-and the inverse in.
-    if (!(Q.Mask & ~CVRMask))
-      Mask &= ~Q.Mask;
-    else {
-      Mask &= ~(Q.Mask & CVRMask);
-      if (getObjCGCAttr() == Q.getObjCGCAttr())
-        removeObjCGCAttr();
-      if (getObjCLifetime() == Q.getObjCLifetime())
-        removeObjCLifetime();
-      if (getAddressSpace() == Q.getAddressSpace())
-        removeAddressSpace();
-    }
-  }
-
-  /// \brief Add the qualifiers from the given set to this set, given that
-  /// they don't conflict.
-  void addConsistentQualifiers(Qualifiers qs) {
-    assert(getAddressSpace() == qs.getAddressSpace() ||
-           !hasAddressSpace() || !qs.hasAddressSpace());
-    assert(getObjCGCAttr() == qs.getObjCGCAttr() ||
-           !hasObjCGCAttr() || !qs.hasObjCGCAttr());
-    assert(getObjCLifetime() == qs.getObjCLifetime() ||
-           !hasObjCLifetime() || !qs.hasObjCLifetime());
-    Mask |= qs.Mask;
-  }
-
-  /// \brief Determines if these qualifiers compatibly include another set.
-  /// Generally this answers the question of whether an object with the other
-  /// qualifiers can be safely used as an object with these qualifiers.
-  bool compatiblyIncludes(Qualifiers other) const {
-    return
-      // Address spaces must match exactly.
-      getAddressSpace() == other.getAddressSpace() &&
-      // ObjC GC qualifiers can match, be added, or be removed, but can't be
-      // changed.
-      (getObjCGCAttr() == other.getObjCGCAttr() ||
-       !hasObjCGCAttr() || !other.hasObjCGCAttr()) &&
-      // ObjC lifetime qualifiers must match exactly.
-      getObjCLifetime() == other.getObjCLifetime() &&
-      // CVR qualifiers may subset.
-      (((Mask & CVRMask) | (other.Mask & CVRMask)) == (Mask & CVRMask));
-  }
-
-  /// \brief Determines if these qualifiers compatibly include another set of
-  /// qualifiers from the narrow perspective of Objective-C ARC lifetime.
-  ///
-  /// One set of Objective-C lifetime qualifiers compatibly includes the other
-  /// if the lifetime qualifiers match, or if both are non-__weak and the
-  /// including set also contains the 'const' qualifier.
-  bool compatiblyIncludesObjCLifetime(Qualifiers other) const {
-    if (getObjCLifetime() == other.getObjCLifetime())
-      return true;
-
-    if (getObjCLifetime() == OCL_Weak || other.getObjCLifetime() == OCL_Weak)
-      return false;
-
-    return hasConst();
-  }
-
-  /// \brief Determine whether this set of qualifiers is a strict superset of
-  /// another set of qualifiers, not considering qualifier compatibility.
-  bool isStrictSupersetOf(Qualifiers Other) const;
-
-  bool operator==(Qualifiers Other) const { return Mask == Other.Mask; }
-  bool operator!=(Qualifiers Other) const { return Mask != Other.Mask; }
-
-  operator bool() const { return hasQualifiers(); }
-
-  Qualifiers &operator+=(Qualifiers R) {
-    addQualifiers(R);
-    return *this;
-  }
-
-  // Union two qualifier sets.  If an enumerated qualifier appears
-  // in both sets, use the one from the right.
-  friend Qualifiers operator+(Qualifiers L, Qualifiers R) {
-    L += R;
-    return L;
-  }
-
-  Qualifiers &operator-=(Qualifiers R) {
-    removeQualifiers(R);
-    return *this;
-  }
-
-  /// \brief Compute the difference between two qualifier sets.
-  friend Qualifiers operator-(Qualifiers L, Qualifiers R) {
-    L -= R;
-    return L;
-  }
-
-  std::string getAsString() const;
-  std::string getAsString(const PrintingPolicy &Policy) const;
-
-  bool isEmptyWhenPrinted(const PrintingPolicy &Policy) const;
-  void print(raw_ostream &OS, const PrintingPolicy &Policy,
-             bool appendSpaceIfNonEmpty = false) const;
-
-  void Profile(llvm::FoldingSetNodeID &ID) const {
-    ID.AddInteger(Mask);
-  }
-
-private:
-
-  // bits:     |0 1 2|3 .. 4|5  ..  7|8   ...   31|
-  //           |C R V|GCAttr|Lifetime|AddressSpace|
-  uint32_t Mask;
-
-  static const uint32_t GCAttrMask = 0x18;
-  static const uint32_t GCAttrShift = 3;
-  static const uint32_t LifetimeMask = 0xE0;
-  static const uint32_t LifetimeShift = 5;
-  static const uint32_t AddressSpaceMask = ~(CVRMask|GCAttrMask|LifetimeMask);
-  static const uint32_t AddressSpaceShift = 8;
-};
-
-/// A std::pair-like structure for storing a qualified type split
-/// into its local qualifiers and its locally-unqualified type.
-struct SplitQualType {
-  /// The locally-unqualified type.
-  const Type *Ty;
-
-  /// The local qualifiers.
-  Qualifiers Quals;
-
-  SplitQualType() : Ty(0), Quals() {}
-  SplitQualType(const Type *ty, Qualifiers qs) : Ty(ty), Quals(qs) {}
-
-  SplitQualType getSingleStepDesugaredType() const; // end of this file
-
-  // Make llvm::tie work.
-  operator std::pair<const Type *,Qualifiers>() const {
-    return std::pair<const Type *,Qualifiers>(Ty, Quals);
-  }
-
-  friend bool operator==(SplitQualType a, SplitQualType b) {
-    return a.Ty == b.Ty && a.Quals == b.Quals;
-  }
-  friend bool operator!=(SplitQualType a, SplitQualType b) {
-    return a.Ty != b.Ty || a.Quals != b.Quals;
-  }
-};
-
-/// QualType - For efficiency, we don't store CV-qualified types as nodes on
-/// their own: instead each reference to a type stores the qualifiers.  This
-/// greatly reduces the number of nodes we need to allocate for types (for
-/// example we only need one for 'int', 'const int', 'volatile int',
-/// 'const volatile int', etc).
-///
-/// As an added efficiency bonus, instead of making this a pair, we
-/// just store the two bits we care about in the low bits of the
-/// pointer.  To handle the packing/unpacking, we make QualType be a
-/// simple wrapper class that acts like a smart pointer.  A third bit
-/// indicates whether there are extended qualifiers present, in which
-/// case the pointer points to a special structure.
-class QualType {
-  // Thankfully, these are efficiently composable.
-  llvm::PointerIntPair<llvm::PointerUnion<const Type*,const ExtQuals*>,
-                       Qualifiers::FastWidth> Value;
-
-  const ExtQuals *getExtQualsUnsafe() const {
-    return Value.getPointer().get<const ExtQuals*>();
-  }
-
-  const Type *getTypePtrUnsafe() const {
-    return Value.getPointer().get<const Type*>();
-  }
-
-  const ExtQualsTypeCommonBase *getCommonPtr() const {
-    assert(!isNull() && "Cannot retrieve a NULL type pointer");
-    uintptr_t CommonPtrVal
-      = reinterpret_cast<uintptr_t>(Value.getOpaqueValue());
-    CommonPtrVal &= ~(uintptr_t)((1 << TypeAlignmentInBits) - 1);
-    return reinterpret_cast<ExtQualsTypeCommonBase*>(CommonPtrVal);
-  }
-
-  friend class QualifierCollector;
-public:
-  QualType() {}
-
-  QualType(const Type *Ptr, unsigned Quals)
-    : Value(Ptr, Quals) {}
-  QualType(const ExtQuals *Ptr, unsigned Quals)
-    : Value(Ptr, Quals) {}
-
-  unsigned getLocalFastQualifiers() const { return Value.getInt(); }
-  void setLocalFastQualifiers(unsigned Quals) { Value.setInt(Quals); }
-
-  /// Retrieves a pointer to the underlying (unqualified) type.
-  ///
-  /// This function requires that the type not be NULL. If the type might be
-  /// NULL, use the (slightly less efficient) \c getTypePtrOrNull().
-  const Type *getTypePtr() const;
-
-  const Type *getTypePtrOrNull() const;
-
-  /// Retrieves a pointer to the name of the base type.
-  const IdentifierInfo *getBaseTypeIdentifier() const;
-
-  /// Divides a QualType into its unqualified type and a set of local
-  /// qualifiers.
-  SplitQualType split() const;
-
-  void *getAsOpaquePtr() const { return Value.getOpaqueValue(); }
-  static QualType getFromOpaquePtr(const void *Ptr) {
-    QualType T;
-    T.Value.setFromOpaqueValue(const_cast<void*>(Ptr));
-    return T;
-  }
-
-  const Type &operator*() const {
-    return *getTypePtr();
-  }
-
-  const Type *operator->() const {
-    return getTypePtr();
-  }
-
-  bool isCanonical() const;
-  bool isCanonicalAsParam() const;
-
-  /// isNull - Return true if this QualType doesn't point to a type yet.
-  bool isNull() const {
-    return Value.getPointer().isNull();
-  }
-
-  /// \brief Determine whether this particular QualType instance has the
-  /// "const" qualifier set, without looking through typedefs that may have
-  /// added "const" at a different level.
-  bool isLocalConstQualified() const {
-    return (getLocalFastQualifiers() & Qualifiers::Const);
-  }
-
-  /// \brief Determine whether this type is const-qualified.
-  bool isConstQualified() const;
-
-  /// \brief Determine whether this particular QualType instance has the
-  /// "restrict" qualifier set, without looking through typedefs that may have
-  /// added "restrict" at a different level.
-  bool isLocalRestrictQualified() const {
-    return (getLocalFastQualifiers() & Qualifiers::Restrict);
-  }
-
-  /// \brief Determine whether this type is restrict-qualified.
-  bool isRestrictQualified() const;
-
-  /// \brief Determine whether this particular QualType instance has the
-  /// "volatile" qualifier set, without looking through typedefs that may have
-  /// added "volatile" at a different level.
-  bool isLocalVolatileQualified() const {
-    return (getLocalFastQualifiers() & Qualifiers::Volatile);
-  }
-
-  /// \brief Determine whether this type is volatile-qualified.
-  bool isVolatileQualified() const;
-
-  /// \brief Determine whether this particular QualType instance has any
-  /// qualifiers, without looking through any typedefs that might add
-  /// qualifiers at a different level.
-  bool hasLocalQualifiers() const {
-    return getLocalFastQualifiers() || hasLocalNonFastQualifiers();
-  }
-
-  /// \brief Determine whether this type has any qualifiers.
-  bool hasQualifiers() const;
-
-  /// \brief Determine whether this particular QualType instance has any
-  /// "non-fast" qualifiers, e.g., those that are stored in an ExtQualType
-  /// instance.
-  bool hasLocalNonFastQualifiers() const {
-    return Value.getPointer().is<const ExtQuals*>();
-  }
-
-  /// \brief Retrieve the set of qualifiers local to this particular QualType
-  /// instance, not including any qualifiers acquired through typedefs or
-  /// other sugar.
-  Qualifiers getLocalQualifiers() const;
-
-  /// \brief Retrieve the set of qualifiers applied to this type.
-  Qualifiers getQualifiers() const;
-
-  /// \brief Retrieve the set of CVR (const-volatile-restrict) qualifiers
-  /// local to this particular QualType instance, not including any qualifiers
-  /// acquired through typedefs or other sugar.
-  unsigned getLocalCVRQualifiers() const {
-    return getLocalFastQualifiers();
-  }
-
-  /// \brief Retrieve the set of CVR (const-volatile-restrict) qualifiers
-  /// applied to this type.
-  unsigned getCVRQualifiers() const;
-
-  bool isConstant(ASTContext& Ctx) const {
-    return QualType::isConstant(*this, Ctx);
-  }
-
-  /// \brief Determine whether this is a Plain Old Data (POD) type (C++ 3.9p10).
-  bool isPODType(ASTContext &Context) const;
-
-  /// isCXX98PODType() - Return true if this is a POD type according to the
-  /// rules of the C++98 standard, regardless of the current compilation's
-  /// language.
-  bool isCXX98PODType(ASTContext &Context) const;
-
-  /// isCXX11PODType() - Return true if this is a POD type according to the
-  /// more relaxed rules of the C++11 standard, regardless of the current
-  /// compilation's language.
-  /// (C++0x [basic.types]p9)
-  bool isCXX11PODType(ASTContext &Context) const;
-
-  /// isTrivialType - Return true if this is a trivial type
-  /// (C++0x [basic.types]p9)
-  bool isTrivialType(ASTContext &Context) const;
-
-  /// isTriviallyCopyableType - Return true if this is a trivially
-  /// copyable type (C++0x [basic.types]p9)
-  bool isTriviallyCopyableType(ASTContext &Context) const;
-
-  // Don't promise in the API that anything besides 'const' can be
-  // easily added.
-
-  /// addConst - add the specified type qualifier to this QualType.
-  void addConst() {
-    addFastQualifiers(Qualifiers::Const);
-  }
-  QualType withConst() const {
-    return withFastQualifiers(Qualifiers::Const);
-  }
-
-  /// addVolatile - add the specified type qualifier to this QualType.
-  void addVolatile() {
-    addFastQualifiers(Qualifiers::Volatile);
-  }
-  QualType withVolatile() const {
-    return withFastQualifiers(Qualifiers::Volatile);
-  }
-  
-  /// Add the restrict qualifier to this QualType.
-  void addRestrict() {
-    addFastQualifiers(Qualifiers::Restrict);
-  }
-  QualType withRestrict() const {
-    return withFastQualifiers(Qualifiers::Restrict);
-  }
-
-  QualType withCVRQualifiers(unsigned CVR) const {
-    return withFastQualifiers(CVR);
-  }
-
-  void addFastQualifiers(unsigned TQs) {
-    assert(!(TQs & ~Qualifiers::FastMask)
-           && "non-fast qualifier bits set in mask!");
-    Value.setInt(Value.getInt() | TQs);
-  }
-
-  void removeLocalConst();
-  void removeLocalVolatile();
-  void removeLocalRestrict();
-  void removeLocalCVRQualifiers(unsigned Mask);
-
-  void removeLocalFastQualifiers() { Value.setInt(0); }
-  void removeLocalFastQualifiers(unsigned Mask) {
-    assert(!(Mask & ~Qualifiers::FastMask) && "mask has non-fast qualifiers");
-    Value.setInt(Value.getInt() & ~Mask);
-  }
-
-  // Creates a type with the given qualifiers in addition to any
-  // qualifiers already on this type.
-  QualType withFastQualifiers(unsigned TQs) const {
-    QualType T = *this;
-    T.addFastQualifiers(TQs);
-    return T;
-  }
-
-  // Creates a type with exactly the given fast qualifiers, removing
-  // any existing fast qualifiers.
-  QualType withExactLocalFastQualifiers(unsigned TQs) const {
-    return withoutLocalFastQualifiers().withFastQualifiers(TQs);
-  }
-
-  // Removes fast qualifiers, but leaves any extended qualifiers in place.
-  QualType withoutLocalFastQualifiers() const {
-    QualType T = *this;
-    T.removeLocalFastQualifiers();
-    return T;
-  }
-
-  QualType getCanonicalType() const;
-
-  /// \brief Return this type with all of the instance-specific qualifiers
-  /// removed, but without removing any qualifiers that may have been applied
-  /// through typedefs.
-  QualType getLocalUnqualifiedType() const { return QualType(getTypePtr(), 0); }
-
-  /// \brief Retrieve the unqualified variant of the given type,
-  /// removing as little sugar as possible.
-  ///
-  /// This routine looks through various kinds of sugar to find the
-  /// least-desugared type that is unqualified. For example, given:
-  ///
-  /// \code
-  /// typedef int Integer;
-  /// typedef const Integer CInteger;
-  /// typedef CInteger DifferenceType;
-  /// \endcode
-  ///
-  /// Executing \c getUnqualifiedType() on the type \c DifferenceType will
-  /// desugar until we hit the type \c Integer, which has no qualifiers on it.
-  ///
-  /// The resulting type might still be qualified if it's an array
-  /// type.  To strip qualifiers even from within an array type, use
-  /// ASTContext::getUnqualifiedArrayType.
-  inline QualType getUnqualifiedType() const;
-
-  /// getSplitUnqualifiedType - Retrieve the unqualified variant of the
-  /// given type, removing as little sugar as possible.
-  ///
-  /// Like getUnqualifiedType(), but also returns the set of
-  /// qualifiers that were built up.
-  ///
-  /// The resulting type might still be qualified if it's an array
-  /// type.  To strip qualifiers even from within an array type, use
-  /// ASTContext::getUnqualifiedArrayType.
-  inline SplitQualType getSplitUnqualifiedType() const;
-
-  /// \brief Determine whether this type is more qualified than the other
-  /// given type, requiring exact equality for non-CVR qualifiers.
-  bool isMoreQualifiedThan(QualType Other) const;
-
-  /// \brief Determine whether this type is at least as qualified as the other
-  /// given type, requiring exact equality for non-CVR qualifiers.
-  bool isAtLeastAsQualifiedAs(QualType Other) const;
-
-  QualType getNonReferenceType() const;
-
-  /// \brief Determine the type of a (typically non-lvalue) expression with the
-  /// specified result type.
-  ///
-  /// This routine should be used for expressions for which the return type is
-  /// explicitly specified (e.g., in a cast or call) and isn't necessarily
-  /// an lvalue. It removes a top-level reference (since there are no
-  /// expressions of reference type) and deletes top-level cvr-qualifiers
-  /// from non-class types (in C++) or all types (in C).
-  QualType getNonLValueExprType(ASTContext &Context) const;
-
-  /// getDesugaredType - Return the specified type with any "sugar" removed from
-  /// the type.  This takes off typedefs, typeof's etc.  If the outer level of
-  /// the type is already concrete, it returns it unmodified.  This is similar
-  /// to getting the canonical type, but it doesn't remove *all* typedefs.  For
-  /// example, it returns "T*" as "T*", (not as "int*"), because the pointer is
-  /// concrete.
-  ///
-  /// Qualifiers are left in place.
-  QualType getDesugaredType(const ASTContext &Context) const {
-    return getDesugaredType(*this, Context);
-  }
-
-  SplitQualType getSplitDesugaredType() const {
-    return getSplitDesugaredType(*this);
-  }
-
-  /// \brief Return the specified type with one level of "sugar" removed from
-  /// the type.
-  ///
-  /// This routine takes off the first typedef, typeof, etc. If the outer level
-  /// of the type is already concrete, it returns it unmodified.
-  QualType getSingleStepDesugaredType(const ASTContext &Context) const {
-    return getSingleStepDesugaredTypeImpl(*this, Context);
-  }
-
-  /// IgnoreParens - Returns the specified type after dropping any
-  /// outer-level parentheses.
-  QualType IgnoreParens() const {
-    if (isa<ParenType>(*this))
-      return QualType::IgnoreParens(*this);
-    return *this;
-  }
-
-  /// operator==/!= - Indicate whether the specified types and qualifiers are
-  /// identical.
-  friend bool operator==(const QualType &LHS, const QualType &RHS) {
-    return LHS.Value == RHS.Value;
-  }
-  friend bool operator!=(const QualType &LHS, const QualType &RHS) {
-    return LHS.Value != RHS.Value;
-  }
-  std::string getAsString() const {
-    return getAsString(split());
-  }
-  static std::string getAsString(SplitQualType split) {
-    return getAsString(split.Ty, split.Quals);
-  }
-  static std::string getAsString(const Type *ty, Qualifiers qs);
-
-  std::string getAsString(const PrintingPolicy &Policy) const;
-
-  void print(raw_ostream &OS, const PrintingPolicy &Policy,
-             const Twine &PlaceHolder = Twine()) const {
-    print(split(), OS, Policy, PlaceHolder);
-  }
-  static void print(SplitQualType split, raw_ostream &OS,
-                    const PrintingPolicy &policy, const Twine &PlaceHolder) {
-    return print(split.Ty, split.Quals, OS, policy, PlaceHolder);
-  }
-  static void print(const Type *ty, Qualifiers qs,
-                    raw_ostream &OS, const PrintingPolicy &policy,
-                    const Twine &PlaceHolder);
-
-  void getAsStringInternal(std::string &Str,
-                           const PrintingPolicy &Policy) const {
-    return getAsStringInternal(split(), Str, Policy);
-  }
-  static void getAsStringInternal(SplitQualType split, std::string &out,
-                                  const PrintingPolicy &policy) {
-    return getAsStringInternal(split.Ty, split.Quals, out, policy);
-  }
-  static void getAsStringInternal(const Type *ty, Qualifiers qs,
-                                  std::string &out,
-                                  const PrintingPolicy &policy);
-
-  class StreamedQualTypeHelper {
-    const QualType &T;
-    const PrintingPolicy &Policy;
-    const Twine &PlaceHolder;
-  public:
-    StreamedQualTypeHelper(const QualType &T, const PrintingPolicy &Policy,
-                           const Twine &PlaceHolder)
-      : T(T), Policy(Policy), PlaceHolder(PlaceHolder) { }
-
-    friend raw_ostream &operator<<(raw_ostream &OS,
-                                   const StreamedQualTypeHelper &SQT) {
-      SQT.T.print(OS, SQT.Policy, SQT.PlaceHolder);
-      return OS;
-    }
-  };
-
-  StreamedQualTypeHelper stream(const PrintingPolicy &Policy,
-                                const Twine &PlaceHolder = Twine()) const {
-    return StreamedQualTypeHelper(*this, Policy, PlaceHolder);
-  }
-
-  void dump(const char *s) const;
-  void dump() const;
-
-  void Profile(llvm::FoldingSetNodeID &ID) const {
-    ID.AddPointer(getAsOpaquePtr());
-  }
-
-  /// getAddressSpace - Return the address space of this type.
-  inline unsigned getAddressSpace() const;
-
-  /// getObjCGCAttr - Returns gc attribute of this type.
-  inline Qualifiers::GC getObjCGCAttr() const;
-
-  /// isObjCGCWeak true when Type is objc's weak.
-  bool isObjCGCWeak() const {
-    return getObjCGCAttr() == Qualifiers::Weak;
-  }
-
-  /// isObjCGCStrong true when Type is objc's strong.
-  bool isObjCGCStrong() const {
-    return getObjCGCAttr() == Qualifiers::Strong;
-  }
-
-  /// getObjCLifetime - Returns lifetime attribute of this type.
-  Qualifiers::ObjCLifetime getObjCLifetime() const {
-    return getQualifiers().getObjCLifetime();
-  }
-
-  bool hasNonTrivialObjCLifetime() const {
-    return getQualifiers().hasNonTrivialObjCLifetime();
-  }
-
-  bool hasStrongOrWeakObjCLifetime() const {
-    return getQualifiers().hasStrongOrWeakObjCLifetime();
-  }
-
-  enum DestructionKind {
-    DK_none,
-    DK_cxx_destructor,
-    DK_objc_strong_lifetime,
-    DK_objc_weak_lifetime
-  };
-
-  /// isDestructedType - nonzero if objects of this type require
-  /// non-trivial work to clean up after.  Non-zero because it's
-  /// conceivable that qualifiers (objc_gc(weak)?) could make
-  /// something require destruction.
-  DestructionKind isDestructedType() const {
-    return isDestructedTypeImpl(*this);
-  }
-
-  /// \brief Determine whether expressions of the given type are forbidden
-  /// from being lvalues in C.
-  ///
-  /// The expression types that are forbidden to be lvalues are:
-  ///   - 'void', but not qualified void
-  ///   - function types
-  ///
-  /// The exact rule here is C99 6.3.2.1:
-  ///   An lvalue is an expression with an object type or an incomplete
-  ///   type other than void.
-  bool isCForbiddenLValueType() const;
-
-private:
-  // These methods are implemented in a separate translation unit;
-  // "static"-ize them to avoid creating temporary QualTypes in the
-  // caller.
-  static bool isConstant(QualType T, ASTContext& Ctx);
-  static QualType getDesugaredType(QualType T, const ASTContext &Context);
-  static SplitQualType getSplitDesugaredType(QualType T);
-  static SplitQualType getSplitUnqualifiedTypeImpl(QualType type);
-  static QualType getSingleStepDesugaredTypeImpl(QualType type,
-                                                 const ASTContext &C);
-  static QualType IgnoreParens(QualType T);
-  static DestructionKind isDestructedTypeImpl(QualType type);
-};
-
 #endif
 } // end gong.
 #if 0
@@ -1028,6 +140,7 @@ public:
 
 } // end namespace llvm
 
+#endif
 namespace gong {
 
 /// \brief Base class that is common to both the \c ExtQuals and \c Type
@@ -1035,7 +148,7 @@ namespace gong {
 /// two.
 ///
 class ExtQualsTypeCommonBase {
-  ExtQualsTypeCommonBase(const Type *baseType, QualType canon)
+  ExtQualsTypeCommonBase(const Type *baseType, const Type *canon)
     : BaseType(baseType), CanonicalType(canon) {}
 
   /// \brief The "base" type of an extended qualifiers type (\c ExtQuals) or
@@ -1046,93 +159,11 @@ class ExtQualsTypeCommonBase {
   const Type *const BaseType;
 
   /// \brief The canonical type of this type.  A QualType.
-  QualType CanonicalType;
+  const Type *CanonicalType;
 
   friend class QualType;
   friend class Type;
   friend class ExtQuals;
-};
-
-/// ExtQuals - We can encode up to four bits in the low bits of a
-/// type pointer, but there are many more type qualifiers that we want
-/// to be able to apply to an arbitrary type.  Therefore we have this
-/// struct, intended to be heap-allocated and used by QualType to
-/// store qualifiers.
-///
-/// The current design tags the 'const', 'restrict', and 'volatile' qualifiers
-/// in three low bits on the QualType pointer; a fourth bit records whether
-/// the pointer is an ExtQuals node. The extended qualifiers (address spaces,
-/// Objective-C GC attributes) are much more rare.
-class ExtQuals : public ExtQualsTypeCommonBase, public llvm::FoldingSetNode {
-  // NOTE: changing the fast qualifiers should be straightforward as
-  // long as you don't make 'const' non-fast.
-  // 1. Qualifiers:
-  //    a) Modify the bitmasks (Qualifiers::TQ and DeclSpec::TQ).
-  //       Fast qualifiers must occupy the low-order bits.
-  //    b) Update Qualifiers::FastWidth and FastMask.
-  // 2. QualType:
-  //    a) Update is{Volatile,Restrict}Qualified(), defined inline.
-  //    b) Update remove{Volatile,Restrict}, defined near the end of
-  //       this header.
-  // 3. ASTContext:
-  //    a) Update get{Volatile,Restrict}Type.
-
-  /// Quals - the immutable set of qualifiers applied by this
-  /// node;  always contains extended qualifiers.
-  Qualifiers Quals;
-
-  ExtQuals *this_() { return this; }
-
-public:
-  ExtQuals(const Type *baseType, QualType canon, Qualifiers quals)
-    : ExtQualsTypeCommonBase(baseType,
-                             canon.isNull() ? QualType(this_(), 0) : canon),
-      Quals(quals)
-  {
-    assert(Quals.hasNonFastQualifiers()
-           && "ExtQuals created with no fast qualifiers");
-    assert(!Quals.hasFastQualifiers()
-           && "ExtQuals created with fast qualifiers");
-  }
-
-  Qualifiers getQualifiers() const { return Quals; }
-
-  bool hasObjCGCAttr() const { return Quals.hasObjCGCAttr(); }
-  Qualifiers::GC getObjCGCAttr() const { return Quals.getObjCGCAttr(); }
-
-  bool hasObjCLifetime() const { return Quals.hasObjCLifetime(); }
-  Qualifiers::ObjCLifetime getObjCLifetime() const {
-    return Quals.getObjCLifetime();
-  }
-
-  bool hasAddressSpace() const { return Quals.hasAddressSpace(); }
-  unsigned getAddressSpace() const { return Quals.getAddressSpace(); }
-
-  const Type *getBaseType() const { return BaseType; }
-
-public:
-  void Profile(llvm::FoldingSetNodeID &ID) const {
-    Profile(ID, getBaseType(), Quals);
-  }
-  static void Profile(llvm::FoldingSetNodeID &ID,
-                      const Type *BaseType,
-                      Qualifiers Quals) {
-    assert(!Quals.hasFastQualifiers() && "fast qualifiers in ExtQuals hash!");
-    ID.AddPointer(BaseType);
-    Quals.Profile(ID);
-  }
-};
-
-/// \brief The kind of C++0x ref-qualifier associated with a function type,
-/// which determines whether a member function's "this" object can be an
-/// lvalue, rvalue, or neither.
-enum RefQualifierKind {
-  /// \brief No ref-qualifier was provided.
-  RQ_None = 0,
-  /// \brief An lvalue ref-qualifier was provided (\c &).
-  RQ_LValue,
-  /// \brief An rvalue ref-qualifier was provided (\c &&).
-  RQ_RValue
 };
 
 /// Type - This is the base class of the type hierarchy.  A central concept
@@ -1163,11 +194,11 @@ enum RefQualifierKind {
 class Type : public ExtQualsTypeCommonBase {
 public:
   enum TypeClass {
-#define TYPE(Class, Base) Class,
-#define LAST_TYPE(Class) TypeLast = Class,
-#define ABSTRACT_TYPE(Class, Base)
-#include "gong/AST/TypeNodes.def"
-    TagFirst = Record, TagLast = Enum
+//#define TYPE(Class, Base) Class,
+//#define LAST_TYPE(Class) TypeLast = Class,
+//#define ABSTRACT_TYPE(Class, Base)
+//#include "gong/AST/TypeNodes.def"
+    //TagFirst = Record, TagLast = Enum
   };
 
 private:
@@ -1182,57 +213,44 @@ private:
     /// TypeClass bitfield - Enum that specifies what subclass this belongs to.
     unsigned TC : 8;
 
-    /// Dependent - Whether this type is a dependent type (C++ [temp.dep.type]).
-    unsigned Dependent : 1;
-
-    /// \brief Whether this type somehow involves a template parameter, even
-    /// if the resolution of the type does not depend on a template parameter.
-    unsigned InstantiationDependent : 1;
-
-    /// \brief Whether this type is a variably-modified type (C99 6.7.5).
-    unsigned VariablyModified : 1;
-
-    /// \brief Whether this type contains an unexpanded parameter pack
-    /// (for C++0x variadic templates).
-    unsigned ContainsUnexpandedParameterPack : 1;
-
     /// \brief Nonzero if the cache (i.e. the bitfields here starting
     /// with 'Cache') is valid.  If so, then this is a
     /// LangOptions::VisibilityMode+1.
-    mutable unsigned CacheValidAndVisibility : 2;
+    //mutable unsigned CacheValidAndVisibility : 2;
 
     /// \brief True if the visibility was set explicitly in the source code.
-    mutable unsigned CachedExplicitVisibility : 1;
+    //mutable unsigned CachedExplicitVisibility : 1;
 
     /// \brief Linkage of this type.
-    mutable unsigned CachedLinkage : 2;
+    //mutable unsigned CachedLinkage : 2;
 
     /// \brief Whether this type involves and local or unnamed types.
-    mutable unsigned CachedLocalOrUnnamed : 1;
+    //mutable unsigned CachedLocalOrUnnamed : 1;
 
     /// \brief FromAST - Whether this type comes from an AST file.
-    mutable unsigned FromAST : 1;
+    //mutable unsigned FromAST : 1;
 
-    bool isCacheValid() const {
-      return (CacheValidAndVisibility != 0);
-    }
-    Visibility getVisibility() const {
-      assert(isCacheValid() && "getting linkage from invalid cache");
-      return static_cast<Visibility>(CacheValidAndVisibility-1);
-    }
-    bool isVisibilityExplicit() const {
-      assert(isCacheValid() && "getting linkage from invalid cache");
-      return CachedExplicitVisibility;
-    }
-    Linkage getLinkage() const {
-      assert(isCacheValid() && "getting linkage from invalid cache");
-      return static_cast<Linkage>(CachedLinkage);
-    }
-    bool hasLocalOrUnnamedType() const {
-      assert(isCacheValid() && "getting linkage from invalid cache");
-      return CachedLocalOrUnnamed;
-    }
+    //bool isCacheValid() const {
+    //  return (CacheValidAndVisibility != 0);
+    //}
+    //Visibility getVisibility() const {
+    //  assert(isCacheValid() && "getting linkage from invalid cache");
+    //  return static_cast<Visibility>(CacheValidAndVisibility-1);
+    //}
+    //bool isVisibilityExplicit() const {
+    //  assert(isCacheValid() && "getting linkage from invalid cache");
+    //  return CachedExplicitVisibility;
+    //}
+    //Linkage getLinkage() const {
+    //  assert(isCacheValid() && "getting linkage from invalid cache");
+    //  return static_cast<Linkage>(CachedLinkage);
+    //}
+    //bool hasLocalOrUnnamedType() const {
+    //  assert(isCacheValid() && "getting linkage from invalid cache");
+    //  return CachedLocalOrUnnamed;
+    //}
   };
+#if 0
   enum { NumTypeBits = 19 };
 
 protected:
@@ -1286,80 +304,11 @@ protected:
     unsigned RefQualifier : 2;
   };
 
-  class ObjCObjectTypeBitfields {
-    friend class ObjCObjectType;
-
-    unsigned : NumTypeBits;
-
-    /// NumProtocols - The number of protocols stored directly on this
-    /// object type.
-    unsigned NumProtocols : 32 - NumTypeBits;
-  };
-
-  class ReferenceTypeBitfields {
-    friend class ReferenceType;
-
-    unsigned : NumTypeBits;
-
-    /// True if the type was originally spelled with an lvalue sigil.
-    /// This is never true of rvalue references but can also be false
-    /// on lvalue references because of C++0x [dcl.typedef]p9,
-    /// as follows:
-    ///
-    ///   typedef int &ref;    // lvalue, spelled lvalue
-    ///   typedef int &&rvref; // rvalue
-    ///   ref &a;              // lvalue, inner ref, spelled lvalue
-    ///   ref &&a;             // lvalue, inner ref
-    ///   rvref &a;            // lvalue, inner ref, spelled lvalue
-    ///   rvref &&a;           // rvalue, inner ref
-    unsigned SpelledAsLValue : 1;
-
-    /// True if the inner type is a reference type.  This only happens
-    /// in non-canonical forms.
-    unsigned InnerRef : 1;
-  };
-
-  class TypeWithKeywordBitfields {
-    friend class TypeWithKeyword;
-
-    unsigned : NumTypeBits;
-
-    /// An ElaboratedTypeKeyword.  8 bits for efficient access.
-    unsigned Keyword : 8;
-  };
-
-  class VectorTypeBitfields {
-    friend class VectorType;
-
-    unsigned : NumTypeBits;
-
-    /// VecKind - The kind of vector, either a generic vector type or some
-    /// target-specific vector type such as for AltiVec or Neon.
-    unsigned VecKind : 3;
-
-    /// NumElements - The number of elements in the vector.
-    unsigned NumElements : 29 - NumTypeBits;
-  };
-
-  class AttributedTypeBitfields {
-    friend class AttributedType;
-
-    unsigned : NumTypeBits;
-
-    /// AttrKind - an AttributedType::Kind
-    unsigned AttrKind : 32 - NumTypeBits;
-  };
-
   union {
     TypeBitfields TypeBits;
     ArrayTypeBitfields ArrayTypeBits;
-    AttributedTypeBitfields AttributedTypeBits;
     BuiltinTypeBitfields BuiltinTypeBits;
     FunctionTypeBitfields FunctionTypeBits;
-    ObjCObjectTypeBitfields ObjCObjectTypeBits;
-    ReferenceTypeBitfields ReferenceTypeBits;
-    TypeWithKeywordBitfields TypeWithKeywordBits;
-    VectorTypeBitfields VectorTypeBits;
   };
 
 private:
@@ -1370,40 +319,26 @@ private:
 
   template <class T> friend class TypePropertyCache;
 
+#endif
 protected:
   // silence VC++ warning C4355: 'this' : used in base member initializer list
   Type *this_() { return this; }
-  Type(TypeClass tc, QualType canon, bool Dependent,
+  Type(TypeClass tc, const Type *canon, bool Dependent,
        bool InstantiationDependent, bool VariablyModified,
        bool ContainsUnexpandedParameterPack)
-    : ExtQualsTypeCommonBase(this,
-                             canon.isNull() ? QualType(this_(), 0) : canon) {
-    TypeBits.TC = tc;
-    TypeBits.Dependent = Dependent;
-    TypeBits.InstantiationDependent = Dependent || InstantiationDependent;
-    TypeBits.VariablyModified = VariablyModified;
-    TypeBits.ContainsUnexpandedParameterPack = ContainsUnexpandedParameterPack;
-    TypeBits.CacheValidAndVisibility = 0;
-    TypeBits.CachedExplicitVisibility = false;
-    TypeBits.CachedLocalOrUnnamed = false;
-    TypeBits.CachedLinkage = NoLinkage;
-    TypeBits.FromAST = false;
+    : ExtQualsTypeCommonBase(this, canon) {
+    //TypeBits.TC = tc;
+    //TypeBits.VariablyModified = VariablyModified;
+    //TypeBits.ContainsUnexpandedParameterPack = ContainsUnexpandedParameterPack;
+    //TypeBits.CacheValidAndVisibility = 0;
+    //TypeBits.CachedExplicitVisibility = false;
+    //TypeBits.CachedLocalOrUnnamed = false;
+    //TypeBits.CachedLinkage = NoLinkage;
+    //TypeBits.FromAST = false;
   }
   friend class ASTContext;
 
-  void setDependent(bool D = true) {
-    TypeBits.Dependent = D;
-    if (D)
-      TypeBits.InstantiationDependent = true;
-  }
-  void setInstantiationDependent(bool D = true) {
-    TypeBits.InstantiationDependent = D; }
-  void setVariablyModified(bool VM = true) { TypeBits.VariablyModified = VM;
-  }
-  void setContainsUnexpandedParameterPack(bool PP = true) {
-    TypeBits.ContainsUnexpandedParameterPack = PP;
-  }
-
+#if 0
 public:
   TypeClass getTypeClass() const { return static_cast<TypeClass>(TypeBits.TC); }
 
@@ -1792,7 +727,9 @@ public:
 
   friend class ASTReader;
   friend class ASTWriter;
+#endif
 };
+#if 0
 
 /// \brief This will check for a TypedefType by removing any existing sugar
 /// until it reaches a TypedefType or a non-sugared type.
@@ -4171,328 +3108,6 @@ public:
   }
 };
 
-/// ObjCObjectType - Represents a class type in Objective C.
-/// Every Objective C type is a combination of a base type and a
-/// list of protocols.
-///
-/// Given the following declarations:
-/// \code
-///   \@class C;
-///   \@protocol P;
-/// \endcode
-///
-/// 'C' is an ObjCInterfaceType C.  It is sugar for an ObjCObjectType
-/// with base C and no protocols.
-///
-/// 'C<P>' is an ObjCObjectType with base C and protocol list [P].
-///
-/// 'id' is a TypedefType which is sugar for an ObjCPointerType whose
-/// pointee is an ObjCObjectType with base BuiltinType::ObjCIdType
-/// and no protocols.
-///
-/// 'id<P>' is an ObjCPointerType whose pointee is an ObjCObjecType
-/// with base BuiltinType::ObjCIdType and protocol list [P].  Eventually
-/// this should get its own sugar class to better represent the source.
-class ObjCObjectType : public Type {
-  // ObjCObjectType.NumProtocols - the number of protocols stored
-  // after the ObjCObjectPointerType node.
-  //
-  // These protocols are those written directly on the type.  If
-  // protocol qualifiers ever become additive, the iterators will need
-  // to get kindof complicated.
-  //
-  // In the canonical object type, these are sorted alphabetically
-  // and uniqued.
-
-  /// Either a BuiltinType or an InterfaceType or sugar for either.
-  QualType BaseType;
-
-  ObjCProtocolDecl * const *getProtocolStorage() const {
-    return const_cast<ObjCObjectType*>(this)->getProtocolStorage();
-  }
-
-  ObjCProtocolDecl **getProtocolStorage();
-
-protected:
-  ObjCObjectType(QualType Canonical, QualType Base,
-                 ObjCProtocolDecl * const *Protocols, unsigned NumProtocols);
-
-  enum Nonce_ObjCInterface { Nonce_ObjCInterface };
-  ObjCObjectType(enum Nonce_ObjCInterface)
-        : Type(ObjCInterface, QualType(), false, false, false, false),
-      BaseType(QualType(this_(), 0)) {
-    ObjCObjectTypeBits.NumProtocols = 0;
-  }
-
-public:
-  /// getBaseType - Gets the base type of this object type.  This is
-  /// always (possibly sugar for) one of:
-  ///  - the 'id' builtin type (as opposed to the 'id' type visible to the
-  ///    user, which is a typedef for an ObjCPointerType)
-  ///  - the 'Class' builtin type (same caveat)
-  ///  - an ObjCObjectType (currently always an ObjCInterfaceType)
-  QualType getBaseType() const { return BaseType; }
-
-  bool isObjCId() const {
-    return getBaseType()->isSpecificBuiltinType(BuiltinType::ObjCId);
-  }
-  bool isObjCClass() const {
-    return getBaseType()->isSpecificBuiltinType(BuiltinType::ObjCClass);
-  }
-  bool isObjCUnqualifiedId() const { return qual_empty() && isObjCId(); }
-  bool isObjCUnqualifiedClass() const { return qual_empty() && isObjCClass(); }
-  bool isObjCUnqualifiedIdOrClass() const {
-    if (!qual_empty()) return false;
-    if (const BuiltinType *T = getBaseType()->getAs<BuiltinType>())
-      return T->getKind() == BuiltinType::ObjCId ||
-             T->getKind() == BuiltinType::ObjCClass;
-    return false;
-  }
-  bool isObjCQualifiedId() const { return !qual_empty() && isObjCId(); }
-  bool isObjCQualifiedClass() const { return !qual_empty() && isObjCClass(); }
-
-  /// Gets the interface declaration for this object type, if the base type
-  /// really is an interface.
-  ObjCInterfaceDecl *getInterface() const;
-
-  typedef ObjCProtocolDecl * const *qual_iterator;
-
-  qual_iterator qual_begin() const { return getProtocolStorage(); }
-  qual_iterator qual_end() const { return qual_begin() + getNumProtocols(); }
-
-  bool qual_empty() const { return getNumProtocols() == 0; }
-
-  /// getNumProtocols - Return the number of qualifying protocols in this
-  /// interface type, or 0 if there are none.
-  unsigned getNumProtocols() const { return ObjCObjectTypeBits.NumProtocols; }
-
-  /// \brief Fetch a protocol by index.
-  ObjCProtocolDecl *getProtocol(unsigned I) const {
-    assert(I < getNumProtocols() && "Out-of-range protocol access");
-    return qual_begin()[I];
-  }
-
-  bool isSugared() const { return false; }
-  QualType desugar() const { return QualType(this, 0); }
-
-  static bool classof(const Type *T) {
-    return T->getTypeClass() == ObjCObject ||
-           T->getTypeClass() == ObjCInterface;
-  }
-};
-
-/// ObjCObjectTypeImpl - A class providing a concrete implementation
-/// of ObjCObjectType, so as to not increase the footprint of
-/// ObjCInterfaceType.  Code outside of ASTContext and the core type
-/// system should not reference this type.
-class ObjCObjectTypeImpl : public ObjCObjectType, public llvm::FoldingSetNode {
-  friend class ASTContext;
-
-  // If anyone adds fields here, ObjCObjectType::getProtocolStorage()
-  // will need to be modified.
-
-  ObjCObjectTypeImpl(QualType Canonical, QualType Base,
-                     ObjCProtocolDecl * const *Protocols,
-                     unsigned NumProtocols)
-    : ObjCObjectType(Canonical, Base, Protocols, NumProtocols) {}
-
-public:
-  void Profile(llvm::FoldingSetNodeID &ID);
-  static void Profile(llvm::FoldingSetNodeID &ID,
-                      QualType Base,
-                      ObjCProtocolDecl *const *protocols,
-                      unsigned NumProtocols);
-};
-
-inline ObjCProtocolDecl **ObjCObjectType::getProtocolStorage() {
-  return reinterpret_cast<ObjCProtocolDecl**>(
-            static_cast<ObjCObjectTypeImpl*>(this) + 1);
-}
-
-/// ObjCInterfaceType - Interfaces are the core concept in Objective-C for
-/// object oriented design.  They basically correspond to C++ classes.  There
-/// are two kinds of interface types, normal interfaces like "NSString" and
-/// qualified interfaces, which are qualified with a protocol list like
-/// "NSString<NSCopyable, NSAmazing>".
-///
-/// ObjCInterfaceType guarantees the following properties when considered
-/// as a subtype of its superclass, ObjCObjectType:
-///   - There are no protocol qualifiers.  To reinforce this, code which
-///     tries to invoke the protocol methods via an ObjCInterfaceType will
-///     fail to compile.
-///   - It is its own base type.  That is, if T is an ObjCInterfaceType*,
-///     T->getBaseType() == QualType(T, 0).
-class ObjCInterfaceType : public ObjCObjectType {
-  mutable ObjCInterfaceDecl *Decl;
-
-  ObjCInterfaceType(const ObjCInterfaceDecl *D)
-    : ObjCObjectType(Nonce_ObjCInterface),
-      Decl(const_cast<ObjCInterfaceDecl*>(D)) {}
-  friend class ASTContext;  // ASTContext creates these.
-  friend class ASTReader;
-  friend class ObjCInterfaceDecl;
-
-public:
-  /// getDecl - Get the declaration of this interface.
-  ObjCInterfaceDecl *getDecl() const { return Decl; }
-
-  bool isSugared() const { return false; }
-  QualType desugar() const { return QualType(this, 0); }
-
-  static bool classof(const Type *T) {
-    return T->getTypeClass() == ObjCInterface;
-  }
-
-  // Nonsense to "hide" certain members of ObjCObjectType within this
-  // class.  People asking for protocols on an ObjCInterfaceType are
-  // not going to get what they want: ObjCInterfaceTypes are
-  // guaranteed to have no protocols.
-  enum {
-    qual_iterator,
-    qual_begin,
-    qual_end,
-    getNumProtocols,
-    getProtocol
-  };
-};
-
-inline ObjCInterfaceDecl *ObjCObjectType::getInterface() const {
-  if (const ObjCInterfaceType *T =
-        getBaseType()->getAs<ObjCInterfaceType>())
-    return T->getDecl();
-  return 0;
-}
-
-/// ObjCObjectPointerType - Used to represent a pointer to an
-/// Objective C object.  These are constructed from pointer
-/// declarators when the pointee type is an ObjCObjectType (or sugar
-/// for one).  In addition, the 'id' and 'Class' types are typedefs
-/// for these, and the protocol-qualified types 'id<P>' and 'Class<P>'
-/// are translated into these.
-///
-/// Pointers to pointers to Objective C objects are still PointerTypes;
-/// only the first level of pointer gets it own type implementation.
-class ObjCObjectPointerType : public Type, public llvm::FoldingSetNode {
-  QualType PointeeType;
-
-  ObjCObjectPointerType(QualType Canonical, QualType Pointee)
-    : Type(ObjCObjectPointer, Canonical, false, false, false, false),
-      PointeeType(Pointee) {}
-  friend class ASTContext;  // ASTContext creates these.
-
-public:
-  /// getPointeeType - Gets the type pointed to by this ObjC pointer.
-  /// The result will always be an ObjCObjectType or sugar thereof.
-  QualType getPointeeType() const { return PointeeType; }
-
-  /// getObjCObjectType - Gets the type pointed to by this ObjC
-  /// pointer.  This method always returns non-null.
-  ///
-  /// This method is equivalent to getPointeeType() except that
-  /// it discards any typedefs (or other sugar) between this
-  /// type and the "outermost" object type.  So for:
-  /// \code
-  ///   \@class A; \@protocol P; \@protocol Q;
-  ///   typedef A<P> AP;
-  ///   typedef A A1;
-  ///   typedef A1<P> A1P;
-  ///   typedef A1P<Q> A1PQ;
-  /// \endcode
-  /// For 'A*', getObjectType() will return 'A'.
-  /// For 'A<P>*', getObjectType() will return 'A<P>'.
-  /// For 'AP*', getObjectType() will return 'A<P>'.
-  /// For 'A1*', getObjectType() will return 'A'.
-  /// For 'A1<P>*', getObjectType() will return 'A1<P>'.
-  /// For 'A1P*', getObjectType() will return 'A1<P>'.
-  /// For 'A1PQ*', getObjectType() will return 'A1<Q>', because
-  ///   adding protocols to a protocol-qualified base discards the
-  ///   old qualifiers (for now).  But if it didn't, getObjectType()
-  ///   would return 'A1P<Q>' (and we'd have to make iterating over
-  ///   qualifiers more complicated).
-  const ObjCObjectType *getObjectType() const {
-    return PointeeType->castAs<ObjCObjectType>();
-  }
-
-  /// getInterfaceType - If this pointer points to an Objective C
-  /// \@interface type, gets the type for that interface.  Any protocol
-  /// qualifiers on the interface are ignored.
-  ///
-  /// \return null if the base type for this pointer is 'id' or 'Class'
-  const ObjCInterfaceType *getInterfaceType() const {
-    return getObjectType()->getBaseType()->getAs<ObjCInterfaceType>();
-  }
-
-  /// getInterfaceDecl - If this pointer points to an Objective \@interface
-  /// type, gets the declaration for that interface.
-  ///
-  /// \return null if the base type for this pointer is 'id' or 'Class'
-  ObjCInterfaceDecl *getInterfaceDecl() const {
-    return getObjectType()->getInterface();
-  }
-
-  /// isObjCIdType - True if this is equivalent to the 'id' type, i.e. if
-  /// its object type is the primitive 'id' type with no protocols.
-  bool isObjCIdType() const {
-    return getObjectType()->isObjCUnqualifiedId();
-  }
-
-  /// isObjCClassType - True if this is equivalent to the 'Class' type,
-  /// i.e. if its object tive is the primitive 'Class' type with no protocols.
-  bool isObjCClassType() const {
-    return getObjectType()->isObjCUnqualifiedClass();
-  }
-
-  /// isObjCQualifiedIdType - True if this is equivalent to 'id<P>' for some
-  /// non-empty set of protocols.
-  bool isObjCQualifiedIdType() const {
-    return getObjectType()->isObjCQualifiedId();
-  }
-
-  /// isObjCQualifiedClassType - True if this is equivalent to 'Class<P>' for
-  /// some non-empty set of protocols.
-  bool isObjCQualifiedClassType() const {
-    return getObjectType()->isObjCQualifiedClass();
-  }
-
-  /// An iterator over the qualifiers on the object type.  Provided
-  /// for convenience.  This will always iterate over the full set of
-  /// protocols on a type, not just those provided directly.
-  typedef ObjCObjectType::qual_iterator qual_iterator;
-
-  qual_iterator qual_begin() const {
-    return getObjectType()->qual_begin();
-  }
-  qual_iterator qual_end() const {
-    return getObjectType()->qual_end();
-  }
-  bool qual_empty() const { return getObjectType()->qual_empty(); }
-
-  /// getNumProtocols - Return the number of qualifying protocols on
-  /// the object type.
-  unsigned getNumProtocols() const {
-    return getObjectType()->getNumProtocols();
-  }
-
-  /// \brief Retrieve a qualifying protocol by index on the object
-  /// type.
-  ObjCProtocolDecl *getProtocol(unsigned I) const {
-    return getObjectType()->getProtocol(I);
-  }
-
-  bool isSugared() const { return false; }
-  QualType desugar() const { return QualType(this, 0); }
-
-  void Profile(llvm::FoldingSetNodeID &ID) {
-    Profile(ID, getPointeeType());
-  }
-  static void Profile(llvm::FoldingSetNodeID &ID, QualType T) {
-    ID.AddPointer(T.getAsOpaquePtr());
-  }
-  static bool classof(const Type *T) {
-    return T->getTypeClass() == ObjCObjectPointer;
-  }
-};
-
 class AtomicType : public Type, public llvm::FoldingSetNode {
   QualType ValueType;
 
@@ -4577,26 +3192,6 @@ inline SplitQualType QualType::split() const {
   return SplitQualType(eq->getBaseType(), qs);
 }
 
-inline Qualifiers QualType::getLocalQualifiers() const {
-  Qualifiers Quals;
-  if (hasLocalNonFastQualifiers())
-    Quals = getExtQualsUnsafe()->getQualifiers();
-  Quals.addFastQualifiers(getLocalFastQualifiers());
-  return Quals;
-}
-
-inline Qualifiers QualType::getQualifiers() const {
-  Qualifiers quals = getCommonPtr()->CanonicalType.getLocalQualifiers();
-  quals.addFastQualifiers(getLocalFastQualifiers());
-  return quals;
-}
-
-inline unsigned QualType::getCVRQualifiers() const {
-  unsigned cvr = getCommonPtr()->CanonicalType.getLocalCVRQualifiers();
-  cvr |= getLocalCVRQualifiers();
-  return cvr;
-}
-
 inline QualType QualType::getCanonicalType() const {
   QualType canon = getCommonPtr()->CanonicalType;
   return canon.withFastQualifiers(getLocalFastQualifiers());
@@ -4617,71 +3212,6 @@ inline bool QualType::isCanonicalAsParam() const {
   return !isa<FunctionType>(T) && !isa<ArrayType>(T);
 }
 
-inline bool QualType::isConstQualified() const {
-  return isLocalConstQualified() ||
-         getCommonPtr()->CanonicalType.isLocalConstQualified();
-}
-
-inline bool QualType::isRestrictQualified() const {
-  return isLocalRestrictQualified() ||
-         getCommonPtr()->CanonicalType.isLocalRestrictQualified();
-}
-
-
-inline bool QualType::isVolatileQualified() const {
-  return isLocalVolatileQualified() ||
-         getCommonPtr()->CanonicalType.isLocalVolatileQualified();
-}
-
-inline bool QualType::hasQualifiers() const {
-  return hasLocalQualifiers() ||
-         getCommonPtr()->CanonicalType.hasLocalQualifiers();
-}
-
-inline QualType QualType::getUnqualifiedType() const {
-  if (!getTypePtr()->getCanonicalTypeInternal().hasLocalQualifiers())
-    return QualType(getTypePtr(), 0);
-
-  return QualType(getSplitUnqualifiedTypeImpl(*this).Ty, 0);
-}
-
-inline SplitQualType QualType::getSplitUnqualifiedType() const {
-  if (!getTypePtr()->getCanonicalTypeInternal().hasLocalQualifiers())
-    return split();
-
-  return getSplitUnqualifiedTypeImpl(*this);
-}
-
-inline void QualType::removeLocalConst() {
-  removeLocalFastQualifiers(Qualifiers::Const);
-}
-
-inline void QualType::removeLocalRestrict() {
-  removeLocalFastQualifiers(Qualifiers::Restrict);
-}
-
-inline void QualType::removeLocalVolatile() {
-  removeLocalFastQualifiers(Qualifiers::Volatile);
-}
-
-inline void QualType::removeLocalCVRQualifiers(unsigned Mask) {
-  assert(!(Mask & ~Qualifiers::CVRMask) && "mask has non-CVR bits");
-  assert((int)Qualifiers::CVRMask == (int)Qualifiers::FastMask);
-
-  // Fast path: we don't need to touch the slow qualifiers.
-  removeLocalFastQualifiers(Mask);
-}
-
-/// getAddressSpace - Return the address space of this type.
-inline unsigned QualType::getAddressSpace() const {
-  return getQualifiers().getAddressSpace();
-}
-
-/// getObjCGCAttr - Return the gc attribute of this type.
-inline Qualifiers::GC QualType::getObjCGCAttr() const {
-  return getQualifiers().getObjCGCAttr();
-}
-
 inline FunctionType::ExtInfo getFunctionExtInfo(const Type &t) {
   if (const PointerType *PT = t.getAs<PointerType>()) {
     if (const FunctionType *FT = PT->getPointeeType()->getAs<FunctionType>())
@@ -4694,46 +3224,6 @@ inline FunctionType::ExtInfo getFunctionExtInfo(const Type &t) {
 
 inline FunctionType::ExtInfo getFunctionExtInfo(QualType t) {
   return getFunctionExtInfo(*t);
-}
-
-/// isMoreQualifiedThan - Determine whether this type is more
-/// qualified than the Other type. For example, "const volatile int"
-/// is more qualified than "const int", "volatile int", and
-/// "int". However, it is not more qualified than "const volatile
-/// int".
-inline bool QualType::isMoreQualifiedThan(QualType other) const {
-  Qualifiers myQuals = getQualifiers();
-  Qualifiers otherQuals = other.getQualifiers();
-  return (myQuals != otherQuals && myQuals.compatiblyIncludes(otherQuals));
-}
-
-/// isAtLeastAsQualifiedAs - Determine whether this type is at last
-/// as qualified as the Other type. For example, "const volatile
-/// int" is at least as qualified as "const int", "volatile int",
-/// "int", and "const volatile int".
-inline bool QualType::isAtLeastAsQualifiedAs(QualType other) const {
-  return getQualifiers().compatiblyIncludes(other.getQualifiers());
-}
-
-/// getNonReferenceType - If Type is a reference type (e.g., const
-/// int&), returns the type that the reference refers to ("const
-/// int"). Otherwise, returns the type itself. This routine is used
-/// throughout Sema to implement C++ 5p6:
-///
-///   If an expression initially has the type "reference to T" (8.3.2,
-///   8.5.3), the type is adjusted to "T" prior to any further
-///   analysis, the expression designates the object or function
-///   denoted by the reference, and the expression is an lvalue.
-inline QualType QualType::getNonReferenceType() const {
-  if (const ReferenceType *RefType = (*this)->getAs<ReferenceType>())
-    return RefType->getPointeeType();
-  else
-    return *this;
-}
-
-inline bool QualType::isCForbiddenLValueType() const {
-  return ((getTypePtr()->isVoidType() && !hasQualifiers()) ||
-          getTypePtr()->isFunctionType());
 }
 
 /// \brief Tests whether the type is categorized as a fundamental type.
@@ -5096,8 +3586,8 @@ inline const ArrayType *Type::castAsArrayTypeUnsafe() const {
   return cast<ArrayType>(getUnqualifiedDesugaredType());
 }
 
-}  // end namespace gong
-
 #endif
+
+}  // end namespace gong
 
 #endif
