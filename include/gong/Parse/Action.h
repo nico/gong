@@ -184,7 +184,7 @@ public:
   /// \param IsLocal True for |import . "lib/math"| imports. If this is true,
   /// LocalName will be NULL.
   //FIXME: Needs More SourceLocation params
-  virtual void ActOnImportSpec(StringRef ImportPath,
+  virtual void ActOnImportSpec(SourceLocation PathLoc, StringRef ImportPath,
                                IdentifierInfo *LocalName,
                                bool IsLocal) {}
   // FIXME: Need to distinguish between one-line and grouped ImportDecls
@@ -2875,7 +2875,7 @@ public:
   ~MinimalAction();
 
   /// Registers an identifier as package name, unless \a IsLocal is set.
-  virtual void ActOnImportSpec(StringRef ImportPath,
+  virtual void ActOnImportSpec(SourceLocation PathLoc, StringRef ImportPath,
                                IdentifierInfo *LocalName,
                                bool IsLocal);
 

@@ -125,3 +125,6 @@ DIAG(unexpected_ellipsis,          CLASS_ERROR, "unexpected '...'")
 DIAG(unexpected_type,              CLASS_ERROR, "unexpected type")
 DIAG(expected_idents_only_before_ellipsis, CLASS_ERROR,
     "expected only identifiers before '...'")
+
+// FIXME: move to DiagnosticSemaKinds
+DIAG(unimplemented_package_import, CLASS_ERROR, "sema cannot handle import yet")

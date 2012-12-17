@@ -15,6 +15,7 @@
 #ifndef LLVM_GONG_SEMA_SEMA_H
 #define LLVM_GONG_SEMA_SEMA_H
 
+#include "gong/Basic/Diagnostic.h"
 #include "gong/Sema/IdentifierResolver.h"
 #include "gong/Parse/Action.h"
 #include "llvm/ADT/SetVector.h"
@@ -837,6 +838,13 @@ public:
     DiagnosticBuilder DB = Diags.Report(Loc, DiagID);
     return SemaDiagnosticBuilder(DB, *this, DiagID);
   }
+#endif
+
+  /// \brief Emit a diagnostic.
+  DiagnosticBuilder Diag(SourceLocation Loc, unsigned DiagID) {
+    return Diags.Report(Loc, DiagID);
+  }
+#if 0
 
   /// \brief Emit a partial diagnostic.
   SemaDiagnosticBuilder Diag(SourceLocation Loc, const PartialDiagnostic& PD);
@@ -1421,6 +1429,11 @@ public:
 
 #endif
   /// Scope actions.
+
+  void ActOnImportSpec(SourceLocation PathLoc, StringRef ImportPath,
+                       IdentifierInfo *LocalName,
+                       bool IsLocal);
+
   void ActOnPopScope(SourceLocation Loc, Scope *S);
   void ActOnTranslationUnitScope(Scope *S);
 #if 0

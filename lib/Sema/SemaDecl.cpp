@@ -1358,6 +1358,12 @@ static void CheckPoppedLabel(LabelDecl *L, Sema &S) {
 }
 #endif
 
+void Sema::ActOnImportSpec(SourceLocation PathLoc, StringRef ImportPath,
+                           IdentifierInfo *LocalName,
+                           bool IsLocal) {
+  Diag(PathLoc, diag::unimplemented_package_import);
+}
+
 void Sema::ActOnPopScope(SourceLocation Loc, Scope *S) {
   if (S->decl_empty()) return;
   assert((S->getFlags() & Scope::DeclScope) &&

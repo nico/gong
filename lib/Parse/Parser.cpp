@@ -222,10 +222,7 @@ bool Parser::ParseImportSpec() {
   StringRef Import(Tok.getLiteralData(), Tok.getLength());
   SourceLocation ImportLoc = ConsumeStringToken();
 
-  Actions.ActOnImportSpec(Import, II, IsDot);
-
-  // FIXME: pass on
-  (void)ImportLoc;
+  Actions.ActOnImportSpec(ImportLoc, Import, II, IsDot);
 
   return false;
 }

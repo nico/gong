@@ -83,7 +83,7 @@ MinimalAction::~MinimalAction() {
   delete getTable(TypeNameInfoTablePtr);
 }
 
-void MinimalAction::ActOnImportSpec(StringRef ImportPath,
+void MinimalAction::ActOnImportSpec(SourceLocation PathLoc, StringRef ImportPath,
                                     IdentifierInfo *LocalName,
                                     bool IsLocal) {
   if (IsLocal)
