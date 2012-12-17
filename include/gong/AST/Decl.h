@@ -2319,7 +2319,6 @@ class TypeDecl : public NamedDecl {
   friend class ASTContext;
   friend class DeclContext;
   friend class TagDecl;
-  friend class TemplateTypeParmDecl;
   friend class TagType;
   friend class ASTReader;
 
