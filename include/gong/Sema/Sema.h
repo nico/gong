@@ -2027,6 +2027,7 @@ public:
   void CheckCXXDefaultArguments(FunctionDecl *FD);
   void CheckExtraCXXDefaultArguments(Declarator &D);
   Scope *getNonFieldDeclScope(Scope *S);
+#endif
 
   /// \name Name lookup
   ///
@@ -2105,6 +2106,7 @@ public:
     ForRedeclaration
   };
 
+#if 0
   /// \brief The possible outcomes of name lookup for a literal operator.
   enum LiteralOperatorLookupResult {
     /// \brief The lookup resulted in an error.

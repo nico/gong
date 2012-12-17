@@ -15,6 +15,7 @@
 
 #include "gong/AST/Decl.h"
 #include "gong/Parse/Scope.h"
+#include "gong/Sema/Lookup.h"
 using namespace gong;
 
 #if 0
@@ -42,7 +43,6 @@ using namespace gong;
 #include "gong/Sema/DeclSpec.h"
 #include "gong/Sema/DelayedDiagnostic.h"
 #include "gong/Sema/Initialization.h"
-#include "gong/Sema/Lookup.h"
 #include "gong/Sema/ParsedTemplate.h"
 #include "gong/Sema/Scope.h"
 #include "gong/Sema/ScopeInfo.h"
