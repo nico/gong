@@ -26,6 +26,11 @@ func myfun() {}  // should-diag {{duplicate declaration}}
 func init() {}
 func init() {}  // This is fine :-/
 
+func initfun() {
+  var init = func() {}
+  var init = func() {}  // should-diag {{duplicate declaration}}
+}
+
 func init()int {}  // should-diag{{invalid signature for 'init'}}
 func (A) init() {}  // This is fine, huh.
 
@@ -33,3 +38,13 @@ func g() {
   myfun()
   init()  // should-diag {{cannot call initializer function}}
 }
+
+var _ int
+var _ int  // Ok, the blank identifier doesn't introduce new bindings.
+type _ int
+type _ int
+
+func (A) mymeth() {}
+func (A) mymeth() {}  // should-diag {{duplicate declaration}}
+
+func (B) mymeth() {}  // Fine.
