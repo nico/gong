@@ -1358,11 +1358,29 @@ static void CheckPoppedLabel(LabelDecl *L, Sema &S) {
 }
 #endif
 
+/// Handles package imports, registers an identifier as package name.
 void Sema::ActOnImportSpec(SourceLocation PathLoc, StringRef ImportPath,
                            IdentifierInfo *LocalName,
                            bool IsLocal) {
   Diag(PathLoc, diag::unimplemented_package_import);
 }
+
+/// Registers an identifier as type name.
+void Sema::ActOnTypeSpec(IdentifierInfo &II, Scope* S) {
+  //getTable(TypeNameInfoTablePtr)->AddEntry(Action::IIT_Type, &II);
+
+  // Remember that this needs to be removed when the scope is popped.
+  //S->AddDecl(DeclPtrTy::make(&II));
+}
+
+/// Registers an identifier as function name.
+void Sema::ActOnFunctionDecl(IdentifierInfo &II, Scope* S) {
+  //getTable(TypeNameInfoTablePtr)->AddEntry(Action::IIT_Func, &II);
+
+  // Remember that this needs to be removed when the scope is popped.
+  //S->AddDecl(DeclPtrTy::make(&II));
+}
+
 
 void Sema::ActOnPopScope(SourceLocation Loc, Scope *S) {
   if (S->decl_empty()) return;

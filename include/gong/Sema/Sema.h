@@ -1432,10 +1432,12 @@ public:
 
   void ActOnImportSpec(SourceLocation PathLoc, StringRef ImportPath,
                        IdentifierInfo *LocalName,
-                       bool IsLocal);
+                       bool IsLocal) LLVM_OVERRIDE;
+  void ActOnTypeSpec(IdentifierInfo &II, Scope* S) LLVM_OVERRIDE;
+  void ActOnFunctionDecl(IdentifierInfo &II, Scope* S) LLVM_OVERRIDE;
 
-  void ActOnPopScope(SourceLocation Loc, Scope *S);
-  void ActOnTranslationUnitScope(Scope *S);
+  void ActOnPopScope(SourceLocation Loc, Scope *S) LLVM_OVERRIDE;
+  void ActOnTranslationUnitScope(Scope *S) LLVM_OVERRIDE;
 #if 0
 
   Decl *ParsedFreeStandingDeclSpec(Scope *S, AccessSpecifier AS,

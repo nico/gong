@@ -128,6 +128,8 @@ Sema / AST
   Plan:
     ActOnDeclGroupStart/End() for () decls? With type, for iota
         Sema needs a stack of groups
+        Where is the SourceLoc for the 'var'/'const'/'type' keywords stored?
+        Groups need paren locs too
       ActOnConstSpec(identlist, type*, sourceloc equalloc, exprlist*)
       ActOnTypeSpec(identifier, type)
       ActOnVarSpec(identlist, type, sourceloc equalloc, exprlist*)
