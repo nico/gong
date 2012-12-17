@@ -11,9 +11,14 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include "gong/Sema/Sema.h"
+
+#include "gong/AST/Decl.h"
+#include "gong/Parse/Scope.h"
+using namespace gong;
+
 #if 0
 
-#include "gong/Sema/SemaInternal.h"
 #include "TypeLocBuilder.h"
 #include "gong/AST/ASTConsumer.h"
 #include "gong/AST/ASTContext.h"
@@ -46,7 +51,6 @@
 #include <algorithm>
 #include <cstring>
 #include <functional>
-using namespace gong;
 using namespace sema;
 
 Sema::DeclGroupPtrTy Sema::ConvertDeclToDeclGroup(Decl *Ptr, Decl *OwnedType) {
@@ -1352,35 +1356,37 @@ static void CheckPoppedLabel(LabelDecl *L, Sema &S) {
   if (L->getStmt() == 0)
     S.Diag(L->getLocation(), diag::err_undeclared_label_use) <<L->getDeclName();
 }
+#endif
 
 void Sema::ActOnPopScope(SourceLocation Loc, Scope *S) {
   if (S->decl_empty()) return;
-  assert((S->getFlags() & (Scope::DeclScope | Scope::TemplateParamScope)) &&
+  assert((S->getFlags() & Scope::DeclScope) &&
          "Scope shouldn't contain decls!");
 
   for (Scope::decl_iterator I = S->decl_begin(), E = S->decl_end();
        I != E; ++I) {
-    Decl *TmpD = (*I);
+    Decl *TmpD = (*I).getAs<Decl>();
     assert(TmpD && "This decl didn't get pushed??");
 
     assert(isa<NamedDecl>(TmpD) && "Decl isn't NamedDecl?");
     NamedDecl *D = cast<NamedDecl>(TmpD);
 
-    if (!D->getDeclName()) continue;
+    //if (!D->getDeclName()) continue;
 
     // Diagnose unused variables in this scope.
-    if (!S->hasErrorOccurred())
-      DiagnoseUnusedDecl(D);
+    //if (!S->hasErrorOccurred())
+      //DiagnoseUnusedDecl(D);  // FIXME
     
     // If this was a forward reference to a label, verify it was defined.
-    if (LabelDecl *LD = dyn_cast<LabelDecl>(D))
-      CheckPoppedLabel(LD, *this);
+    //if (LabelDecl *LD = dyn_cast<LabelDecl>(D))  // FIXME
+      //CheckPoppedLabel(LD, *this);
     
     // Remove this name from our lexical scope.
     IdResolver.RemoveDecl(D);
   }
 }
 
+#if 0
 void Sema::ActOnStartFunctionDeclarator() {
   ++InFunctionDeclarator;
 }

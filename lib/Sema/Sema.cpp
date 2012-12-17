@@ -62,14 +62,12 @@ PrintingPolicy Sema::getPrintingPolicy(const ASTContext &Context,
   return Policy;
 }
 
-void Sema::ActOnTranslationUnitScope(Scope *S) {
-  TUScope = S;
-  PushDeclContext(S, Context.getTranslationUnitDecl());
-
-  VAListTagName = PP.getIdentifierInfo("__va_list_tag");
-}
-
 #endif
+
+void Sema::ActOnTranslationUnitScope(Scope *S) {
+  //TUScope = S;
+  //PushDeclContext(S, Context.getTranslationUnitDecl());
+}
 
 Sema::Sema(Lexer &L /*Preprocessor &pp, ASTContext &ctxt, ASTConsumer &consumer,
            TranslationUnitKind TUKind,

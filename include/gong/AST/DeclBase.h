@@ -80,19 +80,17 @@ namespace gong {
 /// typedef, function, struct, etc.
 ///
 class Decl {
-#if 0
 public:
   /// \brief Lists the kind of concrete classes of Decl.
   enum Kind {
 #define DECL(DERIVED, BASE) DERIVED,
-#define ABSTRACT_DECL(DECL)
+#define ABSTRACT_DECL(DERIVED, BASE)
 #define DECL_RANGE(BASE, START, END) \
         first##BASE = START, last##BASE = END,
 #define LAST_DECL_RANGE(BASE, START, END) \
         first##BASE = START, last##BASE = END
-#include "gong/AST/DeclNodes.inc"
+#include "gong/AST/DeclNodes.def"
   };
-#endif
 
   /// \brief A placeholder type used to construct an empty shell of a
   /// decl-derived type that will be filled in later (e.g., by some
@@ -315,7 +313,9 @@ protected:
                                         unsigned ID,
                                         unsigned Size);
   
+#endif
 public:
+#if 0
 
   /// \brief Source range that this declaration covers.
   virtual SourceRange getSourceRange() const LLVM_READONLY {
@@ -331,7 +331,9 @@ public:
   SourceLocation getLocation() const { return Loc; }
   void setLocation(SourceLocation L) { Loc = L; }
 
+#endif
   Kind getKind() const { return static_cast<Kind>(DeclKind); }
+#if 0
   const char *getDeclKindName() const;
 
   Decl *getNextDeclInContext() { return NextInContextAndBits.getPointer(); }

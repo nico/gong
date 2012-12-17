@@ -159,7 +159,7 @@ public:
   DeclarationName getDeclName() const { return Name; }
 #endif
   IdentifierInfo &getDeclName() const { return *Name; }
-#if o
+#if 0
 
   /// \brief Set the name of this declaration.
   void setDeclName(DeclarationName N) { Name = N; }
@@ -352,10 +352,9 @@ public:
   const NamedDecl *getUnderlyingDecl() const {
     return const_cast<NamedDecl*>(this)->getUnderlyingDecl();
   }
+#endif
   static bool classof(const Decl *D) { return classofKind(D->getKind()); }
   static bool classofKind(Kind K) { return K >= firstNamed && K <= lastNamed; }
-#endif
-
 };
 #if 0
 

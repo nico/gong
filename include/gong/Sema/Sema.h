@@ -1419,9 +1419,11 @@ public:
   static PrintingPolicy getPrintingPolicy(const ASTContext &Ctx,
                                           const Preprocessor &PP);
 
+#endif
   /// Scope actions.
   void ActOnPopScope(SourceLocation Loc, Scope *S);
   void ActOnTranslationUnitScope(Scope *S);
+#if 0
 
   Decl *ParsedFreeStandingDeclSpec(Scope *S, AccessSpecifier AS,
                                    DeclSpec &DS);
