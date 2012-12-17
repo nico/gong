@@ -12,15 +12,15 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include "gong/Sema/Sema.h"
+
 #if 0
 
-#include "gong/Sema/SemaInternal.h"
 #include "TargetAttributesSema.h"
 #include "gong/AST/ASTContext.h"
 #include "gong/AST/ASTDiagnostic.h"
 #include "gong/AST/DeclCXX.h"
 #include "gong/AST/DeclFriend.h"
-#include "gong/AST/DeclObjC.h"
 #include "gong/AST/Expr.h"
 #include "gong/AST/ExprCXX.h"
 #include "gong/AST/StmtCXX.h"
@@ -33,7 +33,6 @@
 #include "gong/Sema/DelayedDiagnostic.h"
 #include "gong/Sema/ExternalSemaSource.h"
 #include "gong/Sema/MultiplexExternalSemaSource.h"
-#include "gong/Sema/ObjCMethodList.h"
 #include "gong/Sema/PrettyDeclStackTrace.h"
 #include "gong/Sema/Scope.h"
 #include "gong/Sema/ScopeInfo.h"
@@ -99,9 +98,6 @@ Sema::Sema(Preprocessor &pp, ASTContext &ctxt, ASTConsumer &consumer,
   for (unsigned I = 0; I != NSAPI::NumNSNumberLiteralMethods; ++I)
     NSNumberLiteralMethods[I] = 0;
 
-  if (getLangOpts().ObjC1)
-    NSAPIObj.reset(new NSAPI(Context));
-
   if (getLangOpts().CPlusPlus)
     FieldCollector.reset(new CXXFieldCollector());
 
@@ -142,31 +138,6 @@ void Sema::Initialize() {
       PushOnScopeChains(Context.getUInt128Decl(), TUScope);
   }
   
-
-  // Initialize predefined Objective-C types:
-  if (PP.getLangOpts().ObjC1) {
-    // If 'SEL' does not yet refer to any declarations, make it refer to the
-    // predefined 'SEL'.
-    DeclarationName SEL = &Context.Idents.get("SEL");
-    if (IdResolver.begin(SEL) == IdResolver.end())
-      PushOnScopeChains(Context.getObjCSelDecl(), TUScope);
-
-    // If 'id' does not yet refer to any declarations, make it refer to the
-    // predefined 'id'.
-    DeclarationName Id = &Context.Idents.get("id");
-    if (IdResolver.begin(Id) == IdResolver.end())
-      PushOnScopeChains(Context.getObjCIdDecl(), TUScope);
-    
-    // Create the built-in typedef for 'Class'.
-    DeclarationName Class = &Context.Idents.get("Class");
-    if (IdResolver.begin(Class) == IdResolver.end())
-      PushOnScopeChains(Context.getObjCClassDecl(), TUScope);
-
-    // Create the built-in forward declaratino for 'Protocol'.
-    DeclarationName Protocol = &Context.Idents.get("Protocol");
-    if (IdResolver.begin(Protocol) == IdResolver.end())
-      PushOnScopeChains(Context.getObjCProtocolDecl(), TUScope);
-  }
 
   DeclarationName BuiltinVaList = &Context.Idents.get("__builtin_va_list");
   if (IdResolver.begin(BuiltinVaList) == IdResolver.end())
@@ -285,9 +256,6 @@ ExprResult Sema::ImpCastExprToType(Expr *E, QualType Ty,
   if (ExprTy == TypeTy)
     return Owned(E);
 
-  if (getLangOpts().ObjCAutoRefCount)
-    CheckObjCARCConversion(SourceRange(), Ty, E, CCK);
-
   // If this is a derived-to-base cast to a through a virtual base, we
   // need a vtable.
   if (Kind == CK_DerivedToBase && 
@@ -318,7 +286,6 @@ CastKind Sema::ScalarTypeToBooleanCastKind(QualType ScalarTy) {
   case Type::STK_Bool: return CK_NoOp;
   case Type::STK_CPointer: return CK_PointerToBoolean;
   case Type::STK_BlockPointer: return CK_PointerToBoolean;
-  case Type::STK_ObjCObjectPointer: return CK_PointerToBoolean;
   case Type::STK_MemberPointer: return CK_MemberPointerToBoolean;
   case Type::STK_Integral: return CK_IntegralToBoolean;
   case Type::STK_Floating: return CK_FloatingToBoolean;
