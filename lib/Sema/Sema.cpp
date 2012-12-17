@@ -13,6 +13,10 @@
 //===----------------------------------------------------------------------===//
 
 #include "gong/Sema/Sema.h"
+#include "gong/Lex/Lexer.h"
+
+using namespace gong;
+using namespace sema;
 
 #if 0
 
@@ -42,8 +46,6 @@
 #include "llvm/ADT/DenseMap.h"
 #include "llvm/ADT/SmallSet.h"
 #include "llvm/Support/CrashRecoveryContext.h"
-using namespace gong;
-using namespace sema;
 
 PrintingPolicy Sema::getPrintingPolicy(const ASTContext &Context,
                                        const Preprocessor &PP) {
@@ -67,16 +69,18 @@ void Sema::ActOnTranslationUnitScope(Scope *S) {
   VAListTagName = PP.getIdentifierInfo("__va_list_tag");
 }
 
-Sema::Sema(Preprocessor &pp, ASTContext &ctxt, ASTConsumer &consumer,
+#endif
+
+Sema::Sema(Lexer &L /*Preprocessor &pp, ASTContext &ctxt, ASTConsumer &consumer,
            TranslationUnitKind TUKind,
-           CodeCompleteConsumer *CodeCompleter)
-  : TheTargetAttributesSema(0), ExternalSource(0), 
+           CodeCompleteConsumer *CodeCompleter*/)
+  : /*TheTargetAttributesSema(0), ExternalSource(0), 
     isMultiplexExternalSource(false), FPFeatures(pp.getLangOpts()),
-    LangOpts(pp.getLangOpts()), PP(pp), Context(ctxt), Consumer(consumer),
-    Diags(PP.getDiagnostics()), SourceMgr(PP.getSourceManager()),
+    LangOpts(pp.getLangOpts()), PP(pp), Context(ctxt), Consumer(consumer),*/
+    Diags(L.getDiagnostics())/*, SourceMgr(PP.getSourceManager()),
     CollectStats(false), CodeCompleter(CodeCompleter),
     CurContext(0), OriginalLexicalContext(0),
-    PackContext(0), MSStructPragmaOn(false), VisContext(0),
+    PackContext(0), VisContext(0),
     IsBuildingRecoveryCallExpr(false),
     ExprNeedsCleanups(false), LateTemplateParser(0), OpaqueParser(0),
     IdResolver(pp), StdInitializerList(0), CXXTypeInfoDecl(0), MSVCGuidDecl(0),
@@ -90,84 +94,85 @@ Sema::Sema(Preprocessor &pp, ASTContext &ctxt, ASTConsumer &consumer,
     AccessCheckingSFINAE(false), InNonInstantiationSFINAEContext(false),
     NonInstantiationEntries(0), ArgumentPackSubstitutionIndex(-1),
     CurrentInstantiationScope(0), TyposCorrected(0),
-    AnalysisWarnings(*this)
+    AnalysisWarnings(*this) */
 {
-  TUScope = 0;
-  
-  LoadedExternalKnownNamespaces = false;
-  for (unsigned I = 0; I != NSAPI::NumNSNumberLiteralMethods; ++I)
-    NSNumberLiteralMethods[I] = 0;
+  //TUScope = 0;
+  //
+  //LoadedExternalKnownNamespaces = false;
+  //for (unsigned I = 0; I != NSAPI::NumNSNumberLiteralMethods; ++I)
+  //  NSNumberLiteralMethods[I] = 0;
 
-  if (getLangOpts().CPlusPlus)
-    FieldCollector.reset(new CXXFieldCollector());
+  //if (getLangOpts().CPlusPlus)
+  //  FieldCollector.reset(new CXXFieldCollector());
 
-  // Tell diagnostics how to render things from the AST library.
-  PP.getDiagnostics().SetArgToStringFn(&FormatASTNodeDiagnosticArgument, 
-                                       &Context);
+  //// Tell diagnostics how to render things from the AST library.
+  //PP.getDiagnostics().SetArgToStringFn(&FormatASTNodeDiagnosticArgument, 
+  //                                     &Context);
 
-  ExprEvalContexts.push_back(
-        ExpressionEvaluationContextRecord(PotentiallyEvaluated, 0,
-                                          false, 0, false));
+  //ExprEvalContexts.push_back(
+  //      ExpressionEvaluationContextRecord(PotentiallyEvaluated, 0,
+  //                                        false, 0, false));
 
-  FunctionScopes.push_back(new FunctionScopeInfo(Diags));
+  //FunctionScopes.push_back(new FunctionScopeInfo(Diags));
 }
 
 void Sema::Initialize() {
-  // Tell the AST consumer about this Sema object.
-  Consumer.Initialize(Context);
-  
-  // FIXME: Isn't this redundant with the initialization above?
-  if (SemaConsumer *SC = dyn_cast<SemaConsumer>(&Consumer))
-    SC->InitializeSema(*this);
-  
-  // Tell the external Sema source about this Sema object.
-  if (ExternalSemaSource *ExternalSema
-      = dyn_cast_or_null<ExternalSemaSource>(Context.getExternalSource()))
-    ExternalSema->InitializeSema(*this);
+  //// Tell the AST consumer about this Sema object.
+  //Consumer.Initialize(Context);
+  //
+  //// FIXME: Isn't this redundant with the initialization above?
+  //if (SemaConsumer *SC = dyn_cast<SemaConsumer>(&Consumer))
+  //  SC->InitializeSema(*this);
+  //
+  //// Tell the external Sema source about this Sema object.
+  //if (ExternalSemaSource *ExternalSema
+  //    = dyn_cast_or_null<ExternalSemaSource>(Context.getExternalSource()))
+  //  ExternalSema->InitializeSema(*this);
 
-  // Initialize predefined 128-bit integer types, if needed.
-  if (PP.getTargetInfo().hasInt128Type()) {
-    // If either of the 128-bit integer types are unavailable to name lookup,
-    // define them now.
-    DeclarationName Int128 = &Context.Idents.get("__int128_t");
-    if (IdResolver.begin(Int128) == IdResolver.end())
-      PushOnScopeChains(Context.getInt128Decl(), TUScope);
+  //// Initialize predefined 128-bit integer types, if needed.
+  //if (PP.getTargetInfo().hasInt128Type()) {
+  //  // If either of the 128-bit integer types are unavailable to name lookup,
+  //  // define them now.
+  //  DeclarationName Int128 = &Context.Idents.get("__int128_t");
+  //  if (IdResolver.begin(Int128) == IdResolver.end())
+  //    PushOnScopeChains(Context.getInt128Decl(), TUScope);
 
-    DeclarationName UInt128 = &Context.Idents.get("__uint128_t");
-    if (IdResolver.begin(UInt128) == IdResolver.end())
-      PushOnScopeChains(Context.getUInt128Decl(), TUScope);
-  }
-  
+  //  DeclarationName UInt128 = &Context.Idents.get("__uint128_t");
+  //  if (IdResolver.begin(UInt128) == IdResolver.end())
+  //    PushOnScopeChains(Context.getUInt128Decl(), TUScope);
+  //}
+  //
 
-  DeclarationName BuiltinVaList = &Context.Idents.get("__builtin_va_list");
-  if (IdResolver.begin(BuiltinVaList) == IdResolver.end())
-    PushOnScopeChains(Context.getBuiltinVaListDecl(), TUScope);
+  //DeclarationName BuiltinVaList = &Context.Idents.get("__builtin_va_list");
+  //if (IdResolver.begin(BuiltinVaList) == IdResolver.end())
+  //  PushOnScopeChains(Context.getBuiltinVaListDecl(), TUScope);
 }
 
 Sema::~Sema() {
-  if (PackContext) FreePackedContext();
-  if (VisContext) FreeVisContext();
-  delete TheTargetAttributesSema;
-  MSStructPragmaOn = false;
-  // Kill all the active scopes.
-  for (unsigned I = 1, E = FunctionScopes.size(); I != E; ++I)
-    delete FunctionScopes[I];
-  if (FunctionScopes.size() == 1)
-    delete FunctionScopes[0];
-  
-  // Tell the SemaConsumer to forget about us; we're going out of scope.
-  if (SemaConsumer *SC = dyn_cast<SemaConsumer>(&Consumer))
-    SC->ForgetSema();
+  //if (PackContext) FreePackedContext();
+  //if (VisContext) FreeVisContext();
+  //delete TheTargetAttributesSema;
+  //// Kill all the active scopes.
+  //for (unsigned I = 1, E = FunctionScopes.size(); I != E; ++I)
+  //  delete FunctionScopes[I];
+  //if (FunctionScopes.size() == 1)
+  //  delete FunctionScopes[0];
+  //
+  //// Tell the SemaConsumer to forget about us; we're going out of scope.
+  //if (SemaConsumer *SC = dyn_cast<SemaConsumer>(&Consumer))
+  //  SC->ForgetSema();
 
-  // Detach from the external Sema source.
-  if (ExternalSemaSource *ExternalSema
-        = dyn_cast_or_null<ExternalSemaSource>(Context.getExternalSource()))
-    ExternalSema->ForgetSema();
+  //// Detach from the external Sema source.
+  //if (ExternalSemaSource *ExternalSema
+  //      = dyn_cast_or_null<ExternalSemaSource>(Context.getExternalSource()))
+  //  ExternalSema->ForgetSema();
 
-  // If Sema's ExternalSource is the multiplexer - we own it.
-  if (isMultiplexExternalSource)
-    delete ExternalSource;
+  //// If Sema's ExternalSource is the multiplexer - we own it.
+  //if (isMultiplexExternalSource)
+  //  delete ExternalSource;
 }
+
+#if 0
 
 /// makeUnavailableInSystemHeader - There is an error in the current
 /// context.  If we're still in a system header, and we can plausibly

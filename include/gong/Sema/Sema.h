@@ -754,15 +754,23 @@ public:
     bool OldFPContractState : 1;
   };
 
+#endif
 public:
-  Sema(Preprocessor &pp, ASTContext &ctxt, ASTConsumer &consumer,
+  Sema(Lexer &L /*Preprocessor &pp, ASTContext &ctxt, ASTConsumer &consumer,
        TranslationUnitKind TUKind = TU_Complete,
-       CodeCompleteConsumer *CompletionConsumer = 0);
+       CodeCompleteConsumer *CompletionConsumer = 0*/);
   ~Sema();
 
   /// \brief Perform initialization that occurs after the parser has been
   /// initialized but before it parses anything.
   void Initialize();
+
+  virtual IdentifierInfoType classifyIdentifier(const IdentifierInfo &II,
+                                                const Scope* S) {
+    return IIT_Unknown;  // FIXME
+  }
+  
+#if 0
 
   const LangOptions &getLangOpts() const { return LangOpts; }
   OpenCLOptions &getOpenCLOptions() { return OpenCLFeatures; }

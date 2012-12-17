@@ -20,6 +20,7 @@
 #include "gong/Frontend/VerifyDiagnosticConsumer.h"
 #include "gong/Lex/Lexer.h"
 #include "gong/Parse/Parser.h"
+#include "gong/Sema/Sema.h"
 
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/SmallString.h"
@@ -59,6 +60,7 @@ int main(int argc_, const char **argv_) {
 
   bool dumpTokens = false;
   bool verify = false;
+  bool sema = false;
   const char* FileName = NULL;
   for (int i = 1; i < argc_; ++i)
     if (argv_[i][0] != '-' || !argv_[i][1]) {
@@ -67,6 +69,8 @@ int main(int argc_, const char **argv_) {
       dumpTokens = true;
     } else if (argv_[i] == std::string("-verify")) {
       verify = true;
+    } else if (argv_[i] == std::string("-sema")) {
+      sema = true;  // This should become opt-out once sema is useful.
     }
 
   llvm::SourceMgr SM;
@@ -92,9 +96,15 @@ int main(int argc_, const char **argv_) {
       if (dumpTokens)
         DumpTokens(L);
       else {
-        MinimalAction ParseActions(L);
-        Parser P(L, ParseActions);
-        P.ParseSourceFile();
+        if (sema) {
+          Sema ParseActions(L);
+          Parser P(L, ParseActions);
+          P.ParseSourceFile();
+        } else {
+          MinimalAction ParseActions(L);
+          Parser P(L, ParseActions);
+          P.ParseSourceFile();
+        }
         /*Token Tok;
         do {
           L.Lex(Tok);
