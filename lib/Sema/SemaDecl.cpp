@@ -1367,7 +1367,54 @@ void Sema::ActOnImportSpec(SourceLocation PathLoc, StringRef ImportPath,
 
 /// Registers an identifier as type name.
 void Sema::ActOnTypeSpec(IdentifierInfo &II, Scope* S) {
+  SourceLocation NameLoc;  // FIXME: pass in
   //getTable(TypeNameInfoTablePtr)->AddEntry(Action::IIT_Type, &II);
+
+  // FIXME: look up II, diag conflicts
+
+  // The scope passed in may not be a decl scope.  Zip up the scope tree until
+  // we find one that is.
+  while ((S->getFlags() & Scope::DeclScope) == 0)
+    S = S->getParent();
+
+  DeclContext *DC = CurContext;
+
+  /*if (DiagnoseClassNameShadow(DC, NameInfo))
+    // If this is a typedef, we'll end up spewing multiple diagnostics.
+    // Just return early; it's safer.
+    if (D.getDeclSpec().getStorageClassSpec() == DeclSpec::SCS_typedef)
+      return 0;*/
+  
+  //TypeSourceInfo *TInfo = GetTypeForDeclarator(D, S);
+  //QualType R = TInfo->getType();
+
+  //LookupResult Previous(*this, &II, NameLoc, LookupOrdinaryName,
+                        //ForRedeclaration);
+
+  //LookupName(Previous, S, /* CreateBuiltins = */ true);
+
+  NamedDecl *New = 0;
+  //if (D.getDeclSpec().getStorageClassSpec() == DeclSpec::SCS_typedef) {
+  //  New = ActOnTypedefDeclarator(S, D, DC, TInfo, Previous);
+  //} else if (R->isFunctionType()) {
+  //  New = ActOnFunctionDeclarator(S, D, DC, TInfo, Previous,
+  //                                TemplateParamLists,
+  //                                /*AddToScope=*/true);
+  //} else {
+  //  New = ActOnVariableDeclarator(S, D, DC, TInfo, Previous,
+  //                                TemplateParamLists);
+  //}
+
+  //if (New == 0)
+  //  return 0;
+
+  // If this has an identifier and is not an invalid redeclaration or 
+  // function template specialization, add it to the scope stack.
+  //if (New->getDeclName() &&
+  //     !(D.isRedeclaration() && New->isInvalidDecl()))
+  //  PushOnScopeChains(New, S);
+
+  //return New;
 
   // Remember that this needs to be removed when the scope is popped.
   //S->AddDecl(DeclPtrTy::make(&II));

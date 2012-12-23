@@ -67,6 +67,7 @@ namespace sema {
   class FunctionScopeInfo;
 }
 
+  class LookupResult;
 #if 0
   class ADLResult;
   class ASTConsumer;
@@ -125,7 +126,6 @@ namespace sema {
   class LambdaExpr;
   class LangOptions;
   class LocalInstantiationScope;
-  class LookupResult;
   class MacroInfo;
   class MultiLevelTemplateArgumentList;
   class NamedDecl;
@@ -2132,8 +2132,6 @@ public:
                                                    bool VolatileThis);
 
 private:
-  bool CppLookupName(LookupResult &R, Scope *S);
-
   // \brief The set of known/encountered (unique, canonicalized) NamespaceDecls.
   //
   // The boolean value will be true to indicate that the namespace was loaded
@@ -2144,7 +2142,9 @@ private:
   /// source.
   bool LoadedExternalKnownNamespaces;
 
+#endif
 public:
+#if 0
   /// \brief Look up a name, looking for a single declaration.  Return
   /// null if the results were absent, ambiguous, or overloaded.
   ///
@@ -2155,8 +2155,10 @@ public:
                               LookupNameKind NameKind,
                               RedeclarationKind Redecl
                                 = NotForRedeclaration);
+#endif
   bool LookupName(LookupResult &R, Scope *S,
                   bool AllowBuiltinCreation = false);
+#if 0
   bool LookupQualifiedName(LookupResult &R, DeclContext *LookupCtx,
                            bool InUnqualifiedLookup = false);
   bool LookupParsedName(LookupResult &R, Scope *S, CXXScopeSpec *SS,

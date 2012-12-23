@@ -11,6 +11,11 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include "gong/Sema/Sema.h"
+
+using namespace gong;
+using namespace sema;
+
 #if 0
 #include "gong/Sema/Lookup.h"
 #include "gong/AST/ASTContext.h"
@@ -29,7 +34,6 @@
 #include "gong/Sema/Overload.h"
 #include "gong/Sema/Scope.h"
 #include "gong/Sema/ScopeInfo.h"
-#include "gong/Sema/Sema.h"
 #include "gong/Sema/SemaInternal.h"
 #include "gong/Sema/TemplateDeduction.h"
 #include "gong/Sema/TypoCorrection.h"
@@ -48,9 +52,6 @@
 #include <set>
 #include <utility>
 #include <vector>
-
-using namespace gong;
-using namespace sema;
 
 namespace {
   class UnqualUsingEntry {
@@ -569,83 +570,10 @@ void Sema::ForceDeclarationOfImplicitMembers(CXXRecordDecl *Class) {
     DeclareImplicitDestructor(Class);
 }
 
-/// \brief Determine whether this is the name of an implicitly-declared
-/// special member function.
-static bool isImplicitlyDeclaredMemberFunctionName(DeclarationName Name) {
-  switch (Name.getNameKind()) {
-  case DeclarationName::CXXConstructorName:
-  case DeclarationName::CXXDestructorName:
-    return true;
-
-  case DeclarationName::CXXOperatorName:
-    return Name.getCXXOverloadedOperator() == OO_Equal;
-
-  default:
-    break;
-  }
-
-  return false;
-}
-
-/// \brief If there are any implicit member functions with the given name
-/// that need to be declared in the given declaration context, do so.
-static void DeclareImplicitMemberFunctionsWithName(Sema &S,
-                                                   DeclarationName Name,
-                                                   const DeclContext *DC) {
-  if (!DC)
-    return;
-
-  switch (Name.getNameKind()) {
-  case DeclarationName::CXXConstructorName:
-    if (const CXXRecordDecl *Record = dyn_cast<CXXRecordDecl>(DC))
-      if (Record->getDefinition() && CanDeclareSpecialMemberFunction(Record)) {
-        CXXRecordDecl *Class = const_cast<CXXRecordDecl *>(Record);
-        if (Record->needsImplicitDefaultConstructor())
-          S.DeclareImplicitDefaultConstructor(Class);
-        if (Record->needsImplicitCopyConstructor())
-          S.DeclareImplicitCopyConstructor(Class);
-        if (S.getLangOpts().CPlusPlus0x &&
-            Record->needsImplicitMoveConstructor())
-          S.DeclareImplicitMoveConstructor(Class);
-      }
-    break;
-
-  case DeclarationName::CXXDestructorName:
-    if (const CXXRecordDecl *Record = dyn_cast<CXXRecordDecl>(DC))
-      if (Record->getDefinition() && Record->needsImplicitDestructor() &&
-          CanDeclareSpecialMemberFunction(Record))
-        S.DeclareImplicitDestructor(const_cast<CXXRecordDecl *>(Record));
-    break;
-
-  case DeclarationName::CXXOperatorName:
-    if (Name.getCXXOverloadedOperator() != OO_Equal)
-      break;
-
-    if (const CXXRecordDecl *Record = dyn_cast<CXXRecordDecl>(DC)) {
-      if (Record->getDefinition() && CanDeclareSpecialMemberFunction(Record)) {
-        CXXRecordDecl *Class = const_cast<CXXRecordDecl *>(Record);
-        if (Record->needsImplicitCopyAssignment())
-          S.DeclareImplicitCopyAssignment(Class);
-        if (S.getLangOpts().CPlusPlus0x &&
-            Record->needsImplicitMoveAssignment())
-          S.DeclareImplicitMoveAssignment(Class);
-      }
-    }
-    break;
-
-  default:
-    break;
-  }
-}
-
 // Adds all qualifying matches for a name within a decl context to the
 // given lookup result.  Returns true if any matches were found.
 static bool LookupDirect(Sema &S, LookupResult &R, const DeclContext *DC) {
   bool Found = false;
-
-  // Lazily declare C++ special member functions.
-  if (S.getLangOpts().CPlusPlus)
-    DeclareImplicitMemberFunctionsWithName(S, R.getLookupName(), DC);
 
   // Perform lookup into this declaration context.
   DeclContext::lookup_const_result DR = DC->lookup(R.getLookupName());
@@ -732,30 +660,6 @@ static bool LookupDirect(Sema &S, LookupResult &R, const DeclContext *DC) {
   return Found;
 }
 
-// Performs C++ unqualified lookup into the given file context.
-static bool
-CppNamespaceLookup(Sema &S, LookupResult &R, ASTContext &Context,
-                   DeclContext *NS, UnqualUsingDirectiveSet &UDirs) {
-
-  assert(NS && NS->isFileContext() && "CppNamespaceLookup() requires namespace!");
-
-  // Perform direct name lookup into the LookupCtx.
-  bool Found = LookupDirect(S, R, NS);
-
-  // Perform direct name lookup into the namespaces nominated by the
-  // using directives whose common ancestor is this namespace.
-  UnqualUsingDirectiveSet::const_iterator UI, UEnd;
-  llvm::tie(UI, UEnd) = UDirs.getNamespacesFor(NS);
-
-  for (; UI != UEnd; ++UI)
-    if (LookupDirect(S, R, UI->getNominatedNamespace()))
-      Found = true;
-
-  R.resolveKind();
-
-  return Found;
-}
-
 static bool isNamespaceOrTranslationUnitScope(Scope *S) {
   if (DeclContext *Ctx = static_cast<DeclContext*>(S->getEntity()))
     return Ctx->isFileContext();
@@ -831,224 +735,6 @@ static std::pair<DeclContext *, bool> findOuterContext(Scope *S) {
   return std::make_pair(Lexical, false);
 }
 
-bool Sema::CppLookupName(LookupResult &R, Scope *S) {
-  assert(getLangOpts().CPlusPlus && "Can perform only C++ lookup");
-
-  DeclarationName Name = R.getLookupName();
-
-  // If this is the name of an implicitly-declared special member function,
-  // go through the scope stack to implicitly declare
-  if (isImplicitlyDeclaredMemberFunctionName(Name)) {
-    for (Scope *PreS = S; PreS; PreS = PreS->getParent())
-      if (DeclContext *DC = static_cast<DeclContext *>(PreS->getEntity()))
-        DeclareImplicitMemberFunctionsWithName(*this, Name, DC);
-  }
-
-  // Implicitly declare member functions with the name we're looking for, if in
-  // fact we are in a scope where it matters.
-
-  Scope *Initial = S;
-  IdentifierResolver::iterator
-    I = IdResolver.begin(Name),
-    IEnd = IdResolver.end();
-
-  // First we lookup local scope.
-  // We don't consider using-directives, as per 7.3.4.p1 [namespace.udir]
-  // ...During unqualified name lookup (3.4.1), the names appear as if
-  // they were declared in the nearest enclosing namespace which contains
-  // both the using-directive and the nominated namespace.
-  // [Note: in this context, "contains" means "contains directly or
-  // indirectly".
-  //
-  // For example:
-  // namespace A { int i; }
-  // void foo() {
-  //   int i;
-  //   {
-  //     using namespace A;
-  //     ++i; // finds local 'i', A::i appears at global scope
-  //   }
-  // }
-  //
-  DeclContext *OutsideOfTemplateParamDC = 0;
-  for (; S && !isNamespaceOrTranslationUnitScope(S); S = S->getParent()) {
-    DeclContext *Ctx = static_cast<DeclContext*>(S->getEntity());
-
-    // Check whether the IdResolver has anything in this scope.
-    bool Found = false;
-    for (; I != IEnd && S->isDeclScope(*I); ++I) {
-      if (NamedDecl *ND = R.getAcceptableDecl(*I)) {
-        Found = true;
-        R.addDecl(ND);
-      }
-    }
-    if (Found) {
-      R.resolveKind();
-      if (S->isClassScope())
-        if (CXXRecordDecl *Record = dyn_cast_or_null<CXXRecordDecl>(Ctx))
-          R.setNamingClass(Record);
-      return true;
-    }
-
-    if (!Ctx && S->isTemplateParamScope() && OutsideOfTemplateParamDC &&
-        S->getParent() && !S->getParent()->isTemplateParamScope()) {
-      // We've just searched the last template parameter scope and
-      // found nothing, so look into the contexts between the
-      // lexical and semantic declaration contexts returned by
-      // findOuterContext(). This implements the name lookup behavior
-      // of C++ [temp.local]p8.
-      Ctx = OutsideOfTemplateParamDC;
-      OutsideOfTemplateParamDC = 0;
-    }
-
-    if (Ctx) {
-      DeclContext *OuterCtx;
-      bool SearchAfterTemplateScope;
-      llvm::tie(OuterCtx, SearchAfterTemplateScope) = findOuterContext(S);
-      if (SearchAfterTemplateScope)
-        OutsideOfTemplateParamDC = OuterCtx;
-
-      for (; Ctx && !Ctx->Equals(OuterCtx); Ctx = Ctx->getLookupParent()) {
-        // We do not directly look into transparent contexts, since
-        // those entities will be found in the nearest enclosing
-        // non-transparent context.
-        if (Ctx->isTransparentContext())
-          continue;
-
-        // We do not look directly into function or method contexts,
-        // since all of the local variables and parameters of the
-        // function/method are present within the Scope.
-        if (Ctx->isFunctionOrMethod()) {
-          // If we have an Objective-C instance method, look for ivars
-          // in the corresponding interface.
-          if (ObjCMethodDecl *Method = dyn_cast<ObjCMethodDecl>(Ctx)) {
-            if (Method->isInstanceMethod() && Name.getAsIdentifierInfo())
-              if (ObjCInterfaceDecl *Class = Method->getClassInterface()) {
-                ObjCInterfaceDecl *ClassDeclared;
-                if (ObjCIvarDecl *Ivar = Class->lookupInstanceVariable(
-                                                 Name.getAsIdentifierInfo(),
-                                                             ClassDeclared)) {
-                  if (NamedDecl *ND = R.getAcceptableDecl(Ivar)) {
-                    R.addDecl(ND);
-                    R.resolveKind();
-                    return true;
-                  }
-                }
-              }
-          }
-
-          continue;
-        }
-
-        // Perform qualified name lookup into this context.
-        // FIXME: In some cases, we know that every name that could be found by
-        // this qualified name lookup will also be on the identifier chain. For
-        // example, inside a class without any base classes, we never need to
-        // perform qualified lookup because all of the members are on top of the
-        // identifier chain.
-        if (LookupQualifiedName(R, Ctx, /*InUnqualifiedLookup=*/true))
-          return true;
-      }
-    }
-  }
-
-  // Stop if we ran out of scopes.
-  // FIXME:  This really, really shouldn't be happening.
-  if (!S) return false;
-
-  // If we are looking for members, no need to look into global/namespace scope.
-  if (R.getLookupKind() == LookupMemberName)
-    return false;
-
-  // Collect UsingDirectiveDecls in all scopes, and recursively all
-  // nominated namespaces by those using-directives.
-  //
-  // FIXME: Cache this sorted list in Scope structure, and DeclContext, so we
-  // don't build it for each lookup!
-
-  UnqualUsingDirectiveSet UDirs;
-  UDirs.visitScopeChain(Initial, S);
-  UDirs.done();
-
-  // Lookup namespace scope, and global scope.
-  // Unqualified name lookup in C++ requires looking into scopes
-  // that aren't strictly lexical, and therefore we walk through the
-  // context as well as walking through the scopes.
-
-  for (; S; S = S->getParent()) {
-    // Check whether the IdResolver has anything in this scope.
-    bool Found = false;
-    for (; I != IEnd && S->isDeclScope(*I); ++I) {
-      if (NamedDecl *ND = R.getAcceptableDecl(*I)) {
-        // We found something.  Look for anything else in our scope
-        // with this same name and in an acceptable identifier
-        // namespace, so that we can construct an overload set if we
-        // need to.
-        Found = true;
-        R.addDecl(ND);
-      }
-    }
-
-    if (Found && S->isTemplateParamScope()) {
-      R.resolveKind();
-      return true;
-    }
-
-    DeclContext *Ctx = static_cast<DeclContext *>(S->getEntity());
-    if (!Ctx && S->isTemplateParamScope() && OutsideOfTemplateParamDC &&
-        S->getParent() && !S->getParent()->isTemplateParamScope()) {
-      // We've just searched the last template parameter scope and
-      // found nothing, so look into the contexts between the
-      // lexical and semantic declaration contexts returned by
-      // findOuterContext(). This implements the name lookup behavior
-      // of C++ [temp.local]p8.
-      Ctx = OutsideOfTemplateParamDC;
-      OutsideOfTemplateParamDC = 0;
-    }
-
-    if (Ctx) {
-      DeclContext *OuterCtx;
-      bool SearchAfterTemplateScope;
-      llvm::tie(OuterCtx, SearchAfterTemplateScope) = findOuterContext(S);
-      if (SearchAfterTemplateScope)
-        OutsideOfTemplateParamDC = OuterCtx;
-
-      for (; Ctx && !Ctx->Equals(OuterCtx); Ctx = Ctx->getLookupParent()) {
-        // We do not directly look into transparent contexts, since
-        // those entities will be found in the nearest enclosing
-        // non-transparent context.
-        if (Ctx->isTransparentContext())
-          continue;
-
-        // If we have a context, and it's not a context stashed in the
-        // template parameter scope for an out-of-line definition, also
-        // look into that context.
-        if (!(Found && S && S->isTemplateParamScope())) {
-          assert(Ctx->isFileContext() &&
-              "We should have been looking only at file context here already.");
-
-          // Look into context considering using-directives.
-          if (CppNamespaceLookup(*this, R, Context, Ctx, UDirs))
-            Found = true;
-        }
-
-        if (Found) {
-          R.resolveKind();
-          return true;
-        }
-
-        if (R.isForRedeclaration() && !Ctx->isTransparentContext())
-          return false;
-      }
-    }
-
-    if (R.isForRedeclaration() && Ctx && !Ctx->isTransparentContext())
-      return false;
-  }
-
-  return !R.empty();
-}
-
 /// \brief Retrieve the visible declaration corresponding to D, if any.
 ///
 /// This routine determines whether the declaration D is visible in the current
@@ -1100,110 +786,105 @@ static NamedDecl *getVisibleDecl(NamedDecl *D) {
 /// used to diagnose ambiguities.
 ///
 /// @returns \c true if lookup succeeded and false otherwise.
+//#endif
 bool Sema::LookupName(LookupResult &R, Scope *S, bool AllowBuiltinCreation) {
   DeclarationName Name = R.getLookupName();
   if (!Name) return false;
 
   LookupNameKind NameKind = R.getLookupKind();
 
-  if (!getLangOpts().CPlusPlus) {
-    // Unqualified name lookup in C/Objective-C is purely lexical, so
-    // search in the declarations attached to the name.
-    if (NameKind == Sema::LookupRedeclarationWithLinkage) {
-      // Find the nearest non-transparent declaration scope.
-      while (!(S->getFlags() & Scope::DeclScope) ||
-             (S->getEntity() &&
-              static_cast<DeclContext *>(S->getEntity())
-                ->isTransparentContext()))
-        S = S->getParent();
-    }
+  // Unqualified name lookup in C/Objective-C is purely lexical, so
+  // search in the declarations attached to the name.
+  if (NameKind == Sema::LookupRedeclarationWithLinkage) {
+    // Find the nearest non-transparent declaration scope.
+    while (!(S->getFlags() & Scope::DeclScope) ||
+           (S->getEntity() &&
+            static_cast<DeclContext *>(S->getEntity())
+              ->isTransparentContext()))
+      S = S->getParent();
+  }
 
-    unsigned IDNS = R.getIdentifierNamespace();
+  unsigned IDNS = R.getIdentifierNamespace();
 
-    // Scan up the scope chain looking for a decl that matches this
-    // identifier that is in the appropriate namespace.  This search
-    // should not take long, as shadowing of names is uncommon, and
-    // deep shadowing is extremely uncommon.
-    bool LeftStartingScope = false;
+  // Scan up the scope chain looking for a decl that matches this
+  // identifier that is in the appropriate namespace.  This search
+  // should not take long, as shadowing of names is uncommon, and
+  // deep shadowing is extremely uncommon.
+  bool LeftStartingScope = false;
 
-    for (IdentifierResolver::iterator I = IdResolver.begin(Name),
-                                   IEnd = IdResolver.end();
-         I != IEnd; ++I)
-      if ((*I)->isInIdentifierNamespace(IDNS)) {
-        if (NameKind == LookupRedeclarationWithLinkage) {
-          // Determine whether this (or a previous) declaration is
-          // out-of-scope.
-          if (!LeftStartingScope && !S->isDeclScope(*I))
-            LeftStartingScope = true;
+  for (IdentifierResolver::iterator I = IdResolver.begin(Name),
+                                    IEnd = IdResolver.end();
+       I != IEnd; ++I)
+    if ((*I)->isInIdentifierNamespace(IDNS)) {
+      if (NameKind == LookupRedeclarationWithLinkage) {
+        // Determine whether this (or a previous) declaration is
+        // out-of-scope.
+        if (!LeftStartingScope && !S->isDeclScope(*I))
+          LeftStartingScope = true;
 
-          // If we found something outside of our starting scope that
-          // does not have linkage, skip it.
-          if (LeftStartingScope && !((*I)->hasLinkage()))
-            continue;
-        }
-        else if (NameKind == LookupObjCImplicitSelfParam &&
-                 !isa<ImplicitParamDecl>(*I))
+        // If we found something outside of our starting scope that
+        // does not have linkage, skip it.
+        if (LeftStartingScope && !((*I)->hasLinkage()))
           continue;
-        
-        // If this declaration is module-private and it came from an AST
-        // file, we can't see it.
-        NamedDecl *D = R.isHiddenDeclarationVisible()? *I : getVisibleDecl(*I);
-        if (!D)
-          continue;
-                
-        R.addDecl(D);
+      }
+      else if (NameKind == LookupObjCImplicitSelfParam &&
+               !isa<ImplicitParamDecl>(*I))
+        continue;
+      
+      // If this declaration is module-private and it came from an AST
+      // file, we can't see it.
+      NamedDecl *D = R.isHiddenDeclarationVisible()? *I : getVisibleDecl(*I);
+      if (!D)
+        continue;
 
-        // Check whether there are any other declarations with the same name
-        // and in the same scope.
-        if (I != IEnd) {
-          // Find the scope in which this declaration was declared (if it
-          // actually exists in a Scope).
-          while (S && !S->isDeclScope(D))
-            S = S->getParent();
-          
-          // If the scope containing the declaration is the translation unit,
-          // then we'll need to perform our checks based on the matching
-          // DeclContexts rather than matching scopes.
-          if (S && isNamespaceOrTranslationUnitScope(S))
-            S = 0;
+      R.addDecl(D);
 
-          // Compute the DeclContext, if we need it.
-          DeclContext *DC = 0;
-          if (!S)
-            DC = (*I)->getDeclContext()->getRedeclContext();
-            
-          IdentifierResolver::iterator LastI = I;
-          for (++LastI; LastI != IEnd; ++LastI) {
-            if (S) {
-              // Match based on scope.
-              if (!S->isDeclScope(*LastI))
-                break;
-            } else {
-              // Match based on DeclContext.
-              DeclContext *LastDC 
-                = (*LastI)->getDeclContext()->getRedeclContext();
-              if (!LastDC->Equals(DC))
-                break;
-            }
-            
-            // If the declaration isn't in the right namespace, skip it.
-            if (!(*LastI)->isInIdentifierNamespace(IDNS))
-              continue;
-                        
-            D = R.isHiddenDeclarationVisible()? *LastI : getVisibleDecl(*LastI);
-            if (D)
-              R.addDecl(D);
+      // Check whether there are any other declarations with the same name
+      // and in the same scope.
+      if (I != IEnd) {
+        // Find the scope in which this declaration was declared (if it
+        // actually exists in a Scope).
+        while (S && !S->isDeclScope(D))
+          S = S->getParent();
+
+        // If the scope containing the declaration is the translation unit,
+        // then we'll need to perform our checks based on the matching
+        // DeclContexts rather than matching scopes.
+        if (S && isNamespaceOrTranslationUnitScope(S))
+          S = 0;
+
+        // Compute the DeclContext, if we need it.
+        DeclContext *DC = 0;
+        if (!S)
+          DC = (*I)->getDeclContext()->getRedeclContext();
+
+        IdentifierResolver::iterator LastI = I;
+        for (++LastI; LastI != IEnd; ++LastI) {
+          if (S) {
+            // Match based on scope.
+            if (!S->isDeclScope(*LastI))
+              break;
+          } else {
+            // Match based on DeclContext.
+            DeclContext *LastDC =
+                (*LastI)->getDeclContext()->getRedeclContext();
+            if (!LastDC->Equals(DC))
+              break;
           }
 
-          R.resolveKind();
+          // If the declaration isn't in the right namespace, skip it.
+          if (!(*LastI)->isInIdentifierNamespace(IDNS))
+            continue;
+                      
+          D = R.isHiddenDeclarationVisible()? *LastI : getVisibleDecl(*LastI);
+          if (D)
+            R.addDecl(D);
         }
-        return true;
+
+        R.resolveKind();
       }
-  } else {
-    // Perform C++ unqualified name lookup.
-    if (CppLookupName(R, S))
       return true;
-  }
+    }
 
   // If we didn't find a use of this identifier, and if the identifier
   // corresponds to a compiler builtin, create the decl object for the builtin
@@ -1218,6 +899,7 @@ bool Sema::LookupName(LookupResult &R, Scope *S, bool AllowBuiltinCreation) {
   return (ExternalSource && ExternalSource->LookupUnqualified(R, S));
 }
 
+//#if 0
 /// @brief Perform qualified name lookup in the namespaces nominated by
 /// using directives by the given context.
 ///
