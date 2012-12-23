@@ -128,5 +128,5 @@ DIAG(expected_idents_only_before_ellipsis, CLASS_ERROR,
 
 // FIXME: move to DiagnosticSemaKinds
 DIAG(unimplemented_package_import, CLASS_ERROR, "sema cannot handle import yet")
-DIAG(redefinition,              CLASS_ERROR, "redefinition of %1")
+DIAG(redefinition,              CLASS_ERROR, "redefinition of %0")
 DIAG(note_previous_definition,  CLASS_NOTE, "previous definition is here")
