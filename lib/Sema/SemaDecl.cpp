@@ -1421,13 +1421,14 @@ void Sema::ActOnTypeSpec(IdentifierInfo &II, SourceLocation IILoc, Scope* S) {
   }
 
 
-  //if (New == 0)
-  //  return 0;
+  if (New == 0)
+    return; // 0;
 
   // If this has an identifier and is not an invalid redeclaration or 
   // function template specialization, add it to the scope stack.
   //if (New->getDeclName() &&
-  //     !(D.isRedeclaration() && New->isInvalidDecl()))
+       //!(D.isRedeclaration() && New->isInvalidDecl()))
+  if (!New->isInvalidDecl())
     PushOnScopeChains(New, S);
 
   //return New;

@@ -179,9 +179,19 @@ Sema / AST
     decl chains, canonical decls
     decl merging
 
+  substeps
+  - ast nodes for specs, spec groups
+    - for all types too eventually
+  - actions interface for specs, scopes
+  - get scoping right
+  - special rules: don't bind to '_', allow redefinitions of global 'init()'
+  - later: structs, methoddecls, type correction for structs, modules
+  - DeclTy ownership
+
 - Expression Sema & AST, Exprs vs Types
   - Exprs vs Types: DeclRefExpr pointing to TypeDecl (pointing to Type) or
     VarDecl (pointing to ident, type)
+  - typo correction!
 - Constant expressions
 - Statement Sema & AST
 - Out-of-order parsing for toplevel
