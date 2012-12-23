@@ -1433,7 +1433,8 @@ public:
   void ActOnImportSpec(SourceLocation PathLoc, StringRef ImportPath,
                        IdentifierInfo *LocalName,
                        bool IsLocal) LLVM_OVERRIDE;
-  void ActOnTypeSpec(IdentifierInfo &II, Scope* S) LLVM_OVERRIDE;
+  void ActOnTypeSpec(IdentifierInfo &II, SourceLocation IILoc,
+                     Scope *S) LLVM_OVERRIDE;
   void ActOnFunctionDecl(IdentifierInfo &II, Scope* S) LLVM_OVERRIDE;
 
   void ActOnPopScope(SourceLocation Loc, Scope *S) LLVM_OVERRIDE;

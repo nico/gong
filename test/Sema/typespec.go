@@ -1,9 +1,8 @@
 // RUN: %gong_cc1 -verify %s -sema
-// XFAIL: *
 
 package p
 
 type B A
-type A int
+type A int  // expected-note{{previous definition is here}}
 
-type A float32  // should-diag
+type A float32  // expected-diag{{redefinition of 'A'}}

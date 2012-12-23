@@ -926,12 +926,12 @@ bool Parser::ParseTypeDecl() {
 bool Parser::ParseTypeSpec() {
   assert(Tok.is(tok::identifier) && "Expected identifier");
   IdentifierInfo *TypeName = Tok.getIdentifierInfo();
-  ConsumeToken();
+  SourceLocation TypeNameLoc = ConsumeToken();
   if (!IsType()) {
     Diag(Tok, diag::expected_type);
     return true;
   }
-  Actions.ActOnTypeSpec(*TypeName, getCurScope());
+  Actions.ActOnTypeSpec(*TypeName, TypeNameLoc, getCurScope());
   return ParseType();
 }
 

@@ -222,7 +222,8 @@ public:
   ///
   /// \param II The name of the new type.
   //FIXME: Pass in the type too.
-  virtual void ActOnTypeSpec(IdentifierInfo &II, Scope* S) {}
+  virtual void ActOnTypeSpec(IdentifierInfo &II, SourceLocation IILoc,
+                             Scope *S) {}
 
   /// Registers an identifier as function name.
   ///
@@ -2885,7 +2886,8 @@ public:
                                                 const Scope* S);
 
   /// Registers an identifier as type name.
-  virtual void ActOnTypeSpec(IdentifierInfo &II, Scope* S) LLVM_OVERRIDE;
+  virtual void ActOnTypeSpec(IdentifierInfo &II, SourceLocation IILoc,
+                             Scope *S) LLVM_OVERRIDE;
 
   /// Registers an identifier as function name.
   virtual void ActOnFunctionDecl(IdentifierInfo &II, Scope* S) LLVM_OVERRIDE;

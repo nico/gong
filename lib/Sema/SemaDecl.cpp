@@ -1367,8 +1367,7 @@ void Sema::ActOnImportSpec(SourceLocation PathLoc, StringRef ImportPath,
 }
 
 /// Registers an identifier as type name.
-void Sema::ActOnTypeSpec(IdentifierInfo &II, Scope* S) {
-  SourceLocation NameLoc;  // FIXME: pass in
+void Sema::ActOnTypeSpec(IdentifierInfo &II, SourceLocation IILoc, Scope* S) {
   //getTable(TypeNameInfoTablePtr)->AddEntry(Action::IIT_Type, &II);
 
   // FIXME: look up II, diag conflicts
@@ -1391,7 +1390,7 @@ void Sema::ActOnTypeSpec(IdentifierInfo &II, Scope* S) {
   //TypeSourceInfo *TInfo = GetTypeForDeclarator(D, S);
   //QualType R = TInfo->getType();
 
-  LookupResult Previous(*this, &II, NameLoc, LookupOrdinaryName,
+  LookupResult Previous(*this, &II, IILoc, LookupOrdinaryName,
                         ForRedeclaration);
 
   LookupName(Previous, S, /* CreateBuiltins = */ true);
@@ -1399,7 +1398,7 @@ void Sema::ActOnTypeSpec(IdentifierInfo &II, Scope* S) {
   NamedDecl *New = 0;
 
   // FIXME: ASTContext, ownership, etc
-  New = new TypeDecl(Decl::Enum, DC, NameLoc, &II);
+  New = new TypeDecl(Decl::Enum, DC, IILoc, &II);
 
   //if (D.getDeclSpec().getStorageClassSpec() == DeclSpec::SCS_typedef) {
   //  New = ActOnTypedefDeclarator(S, D, DC, TInfo, Previous);
