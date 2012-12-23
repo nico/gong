@@ -119,7 +119,7 @@ public:
 
   typedef UnresolvedSetImpl::iterator iterator;
 
-  LookupResult(Sema &SemaRef, const IdentifierInfo *Name,
+  LookupResult(Sema &SemaRef, IdentifierInfo *Name,
                SourceLocation NameLoc, Sema::LookupNameKind LookupKind,
                Sema::RedeclarationKind Redecl = Sema::NotForRedeclaration)
     : ResultKind(NotFound),
@@ -154,12 +154,12 @@ public:
   }
 
   /// Gets the name info to look up.
-  const IdentifierInfo *getLookupNameInfo() const {
+  IdentifierInfo *getLookupName() {
     return NameInfo;
   }
 
   /// \brief Sets the name info to look up.
-  void setLookupName(const IdentifierInfo *NameInfo) {
+  void setLookupName(IdentifierInfo *NameInfo) {
     this->NameInfo = NameInfo;
   }
 
@@ -223,16 +223,16 @@ public:
 
   /// \brief Determine whether the given declaration is visible to the
   /// program.
-  //static bool isVisible(NamedDecl *D) {
-  //  // If this declaration is not hidden, it's visible.
-  //  if (!D->isHidden())
-  //    return true;
-  //  
-  //  // FIXME: We should be allowed to refer to a module-private name from 
-  //  // within the same module, e.g., during template instantiation.
-  //  // This requires us know which module a particular declaration came from.
-  //  return false;
-  //}
+  static bool isVisible(NamedDecl *D) {
+    // If this declaration is not hidden, it's visible.
+    if (!D->isHidden())
+      return true;
+    
+    // FIXME: We should be allowed to refer to a module-private name from 
+    // within the same module, e.g., during template instantiation.
+    // This requires us know which module a particular declaration came from.
+    return false;
+  }
   
   /// \brief Retrieve the accepted (re)declaration of the given declaration,
   /// if there is one.
@@ -476,7 +476,7 @@ private:
 
   // Parameters.
   Sema &SemaRef;
-  const IdentifierInfo *NameInfo;
+  IdentifierInfo *NameInfo;
   SourceLocation NameLoc;
   SourceRange NameContextRange;
   Sema::LookupNameKind LookupKind;

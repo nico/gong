@@ -205,10 +205,12 @@ public:
 
   using Decl::isModulePrivate;
   using Decl::setModulePrivate;
+#endif
   
   /// \brief Determine whether this declaration is hidden from name lookup.
   bool isHidden() const { return Hidden; }
   
+#if 0
   /// \brief Determine whether this declaration is a C++ class member.
   bool isCXXClassMember() const {
     const DeclContext *DC = getDeclContext();

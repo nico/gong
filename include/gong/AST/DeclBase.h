@@ -16,17 +16,22 @@
 
 #include "gong/Basic/SourceLocation.h"
 #include "llvm/ADT/PointerUnion.h"
+#include "llvm/Support/Compiler.h"
+
+#include <iterator>
 
 #if 0
 #include "gong/AST/AttrIterator.h"
 #include "gong/AST/DeclarationName.h"
 #include "gong/Basic/Specifiers.h"
-#include "llvm/Support/Compiler.h"
 #include "llvm/Support/PrettyStackTrace.h"
 #endif
 
 namespace gong {
 class DeclContext;
+class IdentifierInfo;
+class NamedDecl;
+class StoredDeclsMap;
 }
 
 #if 0
@@ -41,11 +46,9 @@ class DependentDiagnostic;
 class EnumDecl;
 class FunctionDecl;
 class LinkageSpecDecl;
-class NamedDecl;
 class NamespaceDecl;
 struct PrintingPolicy;
 class Stmt;
-class StoredDeclsMap;
 class TranslationUnitDecl;
 class UsingDirectiveDecl;
 }
@@ -241,8 +244,8 @@ private:
   /// \brief Whether statistic collection is enabled.
   static bool StatisticsEnabled;
 
-#if 0
 protected:
+#if 0
   /// Access - Used by C++ decls for the access specifier.
   // NOTE: VC++ treats enums as signed, avoid using the AccessSpecifier enum
   unsigned Access : 2;
@@ -250,12 +253,14 @@ protected:
 
   /// \brief Whether this declaration was loaded from an AST file.
   unsigned FromASTFile : 1;
+#endif
 
   /// \brief Whether this declaration is hidden from normal name lookup, e.g.,
   /// because it is was loaded from an AST file is either module-private or
   /// because its submodule has not been made visible.
   unsigned Hidden : 1;
   
+#if 0
   /// IdentifierNamespace - This specifies what IDNS_* namespace this lives in.
   unsigned IdentifierNamespace : 12;
 
@@ -333,7 +338,6 @@ public:
 
 #endif
   Kind getKind() const { return static_cast<Kind>(DeclKind); }
-#if 0
   const char *getDeclKindName() const;
 
   Decl *getNextDeclInContext() { return NextInContextAndBits.getPointer(); }
@@ -355,13 +359,14 @@ public:
     return const_cast<Decl*>(this)->getNonClosureContext();
   }
 
-  TranslationUnitDecl *getTranslationUnitDecl();
-  const TranslationUnitDecl *getTranslationUnitDecl() const {
-    return const_cast<Decl*>(this)->getTranslationUnitDecl();
-  }
+  //TranslationUnitDecl *getTranslationUnitDecl();
+  //const TranslationUnitDecl *getTranslationUnitDecl() const {
+  //  return const_cast<Decl*>(this)->getTranslationUnitDecl();
+  //}
 
-  bool isInAnonymousNamespace() const;
+  //bool isInAnonymousNamespace() const;
 
+#if 0
   ASTContext &getASTContext() const LLVM_READONLY;
 
   void setAccess(AccessSpecifier AS) {
@@ -627,6 +632,7 @@ public:
   /// \brief Whether this particular Decl is a canonical one.
   bool isCanonicalDecl() const { return getCanonicalDecl() == this; }
   
+#endif
 protected:
   /// \brief Returns the next redeclaration or itself if this is the only decl.
   ///
@@ -692,6 +698,7 @@ public:
   }
   redecl_iterator redecls_end() const { return redecl_iterator(); }
 
+#if 0
   /// \brief Retrieve the previous declaration that declares the same entity
   /// as this declaration, or NULL if there is no previous declaration.
   Decl *getPreviousDecl() { return getPreviousDeclImpl(); }
@@ -801,9 +808,11 @@ public:
     IdentifierNamespace |= IDNS_NonMemberOperator;
   }
 
+#endif
   static bool classofKind(Kind K) { return true; }
   static DeclContext *castToDeclContext(const Decl *);
   static Decl *castFromDeclContext(const DeclContext *);
+#if 0
 
   void print(raw_ostream &Out, unsigned Indentation = 0,
              bool PrintInstantiation = false) const;
@@ -855,6 +864,7 @@ public:
 
   virtual void print(raw_ostream &OS) const;
 };
+#endif
 
 class DeclContextLookupResult
   : public std::pair<NamedDecl**,NamedDecl**> {
@@ -963,12 +973,12 @@ public:
   ///   struct A::S {}; // getParent() == namespace 'A'
   ///                   // getLexicalParent() == translation unit
   ///
-  DeclContext *getLexicalParent() {
-    return cast<Decl>(this)->getLexicalDeclContext();
-  }
-  const DeclContext *getLexicalParent() const {
-    return const_cast<DeclContext*>(this)->getLexicalParent();
-  }
+  //DeclContext *getLexicalParent() {
+    //return cast<Decl>(this)->getLexicalDeclContext();
+  //}
+  //const DeclContext *getLexicalParent() const {
+    //return const_cast<DeclContext*>(this)->getLexicalParent();
+  //}
 
   DeclContext *getLookupParent();
 
@@ -976,9 +986,9 @@ public:
     return const_cast<DeclContext*>(this)->getLookupParent();
   }
 
-  ASTContext &getParentASTContext() const {
-    return cast<Decl>(this)->getASTContext();
-  }
+  //ASTContext &getParentASTContext() const {
+    //return cast<Decl>(this)->getASTContext();
+  //}
 
   bool isClosure() const {
     return DeclKind == Decl::Block;
@@ -1359,8 +1369,12 @@ public:
   /// the declarations with this name, with object, function, member,
   /// and enumerator names preceding any tag name. Note that this
   /// routine will not look into parent contexts.
-  lookup_result lookup(DeclarationName Name);
-  lookup_const_result lookup(DeclarationName Name) const {
+  //lookup_result lookup(DeclarationName Name);
+  //lookup_const_result lookup(DeclarationName Name) const {
+  //  return const_cast<DeclContext*>(this)->lookup(Name);
+  //}
+  lookup_result lookup(IdentifierInfo &Name);
+  lookup_const_result lookup(IdentifierInfo &Name) const {
     return const_cast<DeclContext*>(this)->lookup(Name);
   }
 
@@ -1370,7 +1384,7 @@ public:
   /// This function should almost never be used, because it subverts the
   /// usual relationship between a DeclContext and the external source.
   /// See the ASTImporter for the (few, but important) use cases.
-  void localUncachedLookup(DeclarationName Name,
+  void localUncachedLookup(IdentifierInfo &Name,
                            llvm::SmallVectorImpl<NamedDecl *> &Results);
 
   /// @brief Makes a declaration visible within this context.
@@ -1399,24 +1413,24 @@ public:
 
   /// udir_iterator - Iterates through the using-directives stored
   /// within this context.
-  typedef UsingDirectiveDecl * const * udir_iterator;
+  //typedef UsingDirectiveDecl * const * udir_iterator;
 
-  typedef std::pair<udir_iterator, udir_iterator> udir_iterator_range;
+  //typedef std::pair<udir_iterator, udir_iterator> udir_iterator_range;
 
-  udir_iterator_range getUsingDirectives() const;
+  //udir_iterator_range getUsingDirectives() const;
 
-  udir_iterator using_directives_begin() const {
-    return getUsingDirectives().first;
-  }
+  //udir_iterator using_directives_begin() const {
+    //return getUsingDirectives().first;
+  //}
 
-  udir_iterator using_directives_end() const {
-    return getUsingDirectives().second;
-  }
+  //udir_iterator using_directives_end() const {
+    //return getUsingDirectives().second;
+  //}
 
   // These are all defined in DependentDiagnostic.h.
-  class ddiag_iterator;
-  inline ddiag_iterator ddiag_begin() const;
-  inline ddiag_iterator ddiag_end() const;
+  //class ddiag_iterator;
+  //inline ddiag_iterator ddiag_begin() const;
+  //inline ddiag_iterator ddiag_end() const;
 
   // Low-level accessors
     
@@ -1477,8 +1491,7 @@ private:
   /// use of addDeclInternal().
   void makeDeclVisibleInContextInternal(NamedDecl *D);
 
-  friend class DependentDiagnostic;
-  StoredDeclsMap *CreateStoredDeclsMap(ASTContext &C) const;
+  //StoredDeclsMap *CreateStoredDeclsMap(ASTContext &C) const;
 
   void buildLookupImpl(DeclContext *DCtx);
   void makeDeclVisibleInContextWithFlags(NamedDecl *D, bool Internal,
@@ -1486,10 +1499,12 @@ private:
   void makeDeclVisibleInContextImpl(NamedDecl *D, bool Internal);
 };
 
+#if 0
 inline bool Decl::isTemplateParameter() const {
   return getKind() == TemplateTypeParm || getKind() == NonTypeTemplateParm ||
          getKind() == TemplateTemplateParm;
 }
+#endif
 
 // Specialization selected when ToTy is not a known subclass of DeclContext.
 template <class ToTy,
@@ -1516,9 +1531,7 @@ struct cast_convert_decl_context<ToTy, true> {
   }
 };
 
-#endif
 } // end gong.
-#if 0
 
 namespace llvm {
 
@@ -1533,26 +1546,26 @@ struct isa_impl<To, ::gong::DeclContext> {
 /// cast<T>(DeclContext*)
 template<class ToTy>
 struct cast_convert_val<ToTy,
-                        const ::gong::DeclContext,const ::clang::DeclContext> {
+                        const ::gong::DeclContext,const ::gong::DeclContext> {
   static const ToTy &doit(const ::gong::DeclContext &Val) {
     return *::gong::cast_convert_decl_context<ToTy>::doit(&Val);
   }
 };
 template<class ToTy>
-struct cast_convert_val<ToTy, ::gong::DeclContext, ::clang::DeclContext> {
+struct cast_convert_val<ToTy, ::gong::DeclContext, ::gong::DeclContext> {
   static ToTy &doit(::gong::DeclContext &Val) {
     return *::gong::cast_convert_decl_context<ToTy>::doit(&Val);
   }
 };
 template<class ToTy>
 struct cast_convert_val<ToTy,
-                     const ::gong::DeclContext*, const ::clang::DeclContext*> {
+                     const ::gong::DeclContext*, const ::gong::DeclContext*> {
   static const ToTy *doit(const ::gong::DeclContext *Val) {
     return ::gong::cast_convert_decl_context<ToTy>::doit(Val);
   }
 };
 template<class ToTy>
-struct cast_convert_val<ToTy, ::gong::DeclContext*, ::clang::DeclContext*> {
+struct cast_convert_val<ToTy, ::gong::DeclContext*, ::gong::DeclContext*> {
   static ToTy *doit(::gong::DeclContext *Val) {
     return ::gong::cast_convert_decl_context<ToTy>::doit(Val);
   }
@@ -1588,7 +1601,5 @@ struct cast_convert_val< const ::gong::DeclContext, FromTy*, FromTy*> {
 };
 
 } // end namespace llvm
-
-#endif
 
 #endif

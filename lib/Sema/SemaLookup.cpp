@@ -13,14 +13,15 @@
 
 #include "gong/Sema/Sema.h"
 
+#include "gong/AST/Decl.h"
+#include "gong/Parse/Scope.h"
+#include "gong/Sema/Lookup.h"
 using namespace gong;
 using namespace sema;
 
 #if 0
-#include "gong/Sema/Lookup.h"
 #include "gong/AST/ASTContext.h"
 #include "gong/AST/CXXInheritance.h"
-#include "gong/AST/Decl.h"
 #include "gong/AST/DeclCXX.h"
 #include "gong/AST/DeclLookups.h"
 #include "gong/AST/DeclObjC.h"
@@ -32,7 +33,6 @@ using namespace sema;
 #include "gong/Sema/DeclSpec.h"
 #include "gong/Sema/ExternalSemaSource.h"
 #include "gong/Sema/Overload.h"
-#include "gong/Sema/Scope.h"
 #include "gong/Sema/ScopeInfo.h"
 #include "gong/Sema/SemaInternal.h"
 #include "gong/Sema/TemplateDeduction.h"
@@ -735,6 +735,7 @@ static std::pair<DeclContext *, bool> findOuterContext(Scope *S) {
   return std::make_pair(Lexical, false);
 }
 
+#endif
 /// \brief Retrieve the visible declaration corresponding to D, if any.
 ///
 /// This routine determines whether the declaration D is visible in the current
@@ -758,6 +759,7 @@ static NamedDecl *getVisibleDecl(NamedDecl *D) {
   return 0;
 }
 
+#if 0
 /// @brief Perform unqualified name lookup starting from a given
 /// scope.
 ///
@@ -786,9 +788,9 @@ static NamedDecl *getVisibleDecl(NamedDecl *D) {
 /// used to diagnose ambiguities.
 ///
 /// @returns \c true if lookup succeeded and false otherwise.
-//#endif
+#endif
 bool Sema::LookupName(LookupResult &R, Scope *S, bool AllowBuiltinCreation) {
-  DeclarationName Name = R.getLookupName();
+  IdentifierInfo *Name = R.getLookupName();
   if (!Name) return false;
 
   LookupNameKind NameKind = R.getLookupKind();
@@ -804,102 +806,93 @@ bool Sema::LookupName(LookupResult &R, Scope *S, bool AllowBuiltinCreation) {
       S = S->getParent();
   }
 
-  unsigned IDNS = R.getIdentifierNamespace();
-
   // Scan up the scope chain looking for a decl that matches this
   // identifier that is in the appropriate namespace.  This search
   // should not take long, as shadowing of names is uncommon, and
   // deep shadowing is extremely uncommon.
   bool LeftStartingScope = false;
 
-  for (IdentifierResolver::iterator I = IdResolver.begin(Name),
+  for (IdentifierResolver::iterator I = IdResolver.begin(*Name),
                                     IEnd = IdResolver.end();
-       I != IEnd; ++I)
-    if ((*I)->isInIdentifierNamespace(IDNS)) {
-      if (NameKind == LookupRedeclarationWithLinkage) {
-        // Determine whether this (or a previous) declaration is
-        // out-of-scope.
-        if (!LeftStartingScope && !S->isDeclScope(*I))
-          LeftStartingScope = true;
+       I != IEnd; ++I) {
+    if (NameKind == LookupRedeclarationWithLinkage) {
+      // Determine whether this (or a previous) declaration is
+      // out-of-scope.
+      if (!LeftStartingScope && !S->isDeclScope(Action::DeclPtrTy::make(*I)))
+        LeftStartingScope = true;
 
-        // If we found something outside of our starting scope that
-        // does not have linkage, skip it.
-        if (LeftStartingScope && !((*I)->hasLinkage()))
-          continue;
-      }
-      else if (NameKind == LookupObjCImplicitSelfParam &&
-               !isa<ImplicitParamDecl>(*I))
-        continue;
-      
-      // If this declaration is module-private and it came from an AST
-      // file, we can't see it.
-      NamedDecl *D = R.isHiddenDeclarationVisible()? *I : getVisibleDecl(*I);
-      if (!D)
-        continue;
+      // If we found something outside of our starting scope that
+      // does not have linkage, skip it.
+      //if (LeftStartingScope && !((*I)->hasLinkage()))
+        //continue;
+    }
+    
+    // If this declaration is module-private and it came from an AST
+    // file, we can't see it.
+    NamedDecl *D = R.isHiddenDeclarationVisible()? *I : getVisibleDecl(*I);
+    if (!D)
+      continue;
 
-      R.addDecl(D);
+    R.addDecl(D);
 
-      // Check whether there are any other declarations with the same name
-      // and in the same scope.
-      if (I != IEnd) {
-        // Find the scope in which this declaration was declared (if it
-        // actually exists in a Scope).
-        while (S && !S->isDeclScope(D))
-          S = S->getParent();
+    // Check whether there are any other declarations with the same name
+    // and in the same scope.
+    if (I != IEnd) {
+      // Find the scope in which this declaration was declared (if it
+      // actually exists in a Scope).
+      while (S && !S->isDeclScope(Action::DeclPtrTy::make(D)))
+        S = S->getParent();
 
-        // If the scope containing the declaration is the translation unit,
-        // then we'll need to perform our checks based on the matching
-        // DeclContexts rather than matching scopes.
-        if (S && isNamespaceOrTranslationUnitScope(S))
-          S = 0;
+      // If the scope containing the declaration is the translation unit,
+      // then we'll need to perform our checks based on the matching
+      // DeclContexts rather than matching scopes.
+      //if (S && isNamespaceOrTranslationUnitScope(S))  // FIXME?
+        //S = 0;
 
-        // Compute the DeclContext, if we need it.
-        DeclContext *DC = 0;
-        if (!S)
-          DC = (*I)->getDeclContext()->getRedeclContext();
+      // Compute the DeclContext, if we need it.
+      DeclContext *DC = 0;
+      if (!S)
+        DC = (*I)->getDeclContext()->getRedeclContext();
 
-        IdentifierResolver::iterator LastI = I;
-        for (++LastI; LastI != IEnd; ++LastI) {
-          if (S) {
-            // Match based on scope.
-            if (!S->isDeclScope(*LastI))
-              break;
-          } else {
-            // Match based on DeclContext.
-            DeclContext *LastDC =
-                (*LastI)->getDeclContext()->getRedeclContext();
-            if (!LastDC->Equals(DC))
-              break;
-          }
-
-          // If the declaration isn't in the right namespace, skip it.
-          if (!(*LastI)->isInIdentifierNamespace(IDNS))
-            continue;
-                      
-          D = R.isHiddenDeclarationVisible()? *LastI : getVisibleDecl(*LastI);
-          if (D)
-            R.addDecl(D);
+      IdentifierResolver::iterator LastI = I;
+      for (++LastI; LastI != IEnd; ++LastI) {
+        if (S) {
+          // Match based on scope.
+          if (!S->isDeclScope(Action::DeclPtrTy::make(*LastI)))
+            break;
+        } else {
+          // Match based on DeclContext.
+          DeclContext *LastDC =
+              (*LastI)->getDeclContext()->getRedeclContext();
+          if (!LastDC->Equals(DC))
+            break;
         }
 
-        R.resolveKind();
+        D = R.isHiddenDeclarationVisible()? *LastI : getVisibleDecl(*LastI);
+        if (D)
+          R.addDecl(D);
       }
-      return true;
+
+      R.resolveKind();
     }
+    return true;
+  }
 
   // If we didn't find a use of this identifier, and if the identifier
   // corresponds to a compiler builtin, create the decl object for the builtin
   // now, injecting it into translation unit scope, and return it.
-  if (AllowBuiltinCreation && LookupBuiltin(*this, R))
-    return true;
+  //if (AllowBuiltinCreation && LookupBuiltin(*this, R))
+    //return true;
 
   // If we didn't find a use of this identifier, the ExternalSource 
   // may be able to handle the situation. 
   // Note: some lookup failures are expected!
   // See e.g. R.isForRedeclaration().
-  return (ExternalSource && ExternalSource->LookupUnqualified(R, S));
+  //return (ExternalSource && ExternalSource->LookupUnqualified(R, S));
+  return false;
 }
 
-//#if 0
+#if 0
 /// @brief Perform qualified name lookup in the namespaces nominated by
 /// using directives by the given context.
 ///
