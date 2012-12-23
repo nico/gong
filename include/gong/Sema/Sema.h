@@ -509,13 +509,13 @@ public:
 
 #endif
   IdentifierResolver IdResolver;
-#if 0
 
   /// Translation Unit Scope - useful to Objective-C actions that need
   /// to lookup file scope declarations in the "ordinary" C decl namespace.
   /// For example, user-defined classes, built-in "id" type, etc.
   Scope *TUScope;
 
+#if 0
   /// \brief The C++ "std" namespace, where the standard library resides.
   LazyDeclPtr StdNamespace;
 

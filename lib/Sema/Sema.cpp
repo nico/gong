@@ -65,7 +65,7 @@ PrintingPolicy Sema::getPrintingPolicy(const ASTContext &Context,
 #endif
 
 void Sema::ActOnTranslationUnitScope(Scope *S) {
-  //TUScope = S;
+  TUScope = S;
   //PushDeclContext(S, Context.getTranslationUnitDecl());
 }
 
