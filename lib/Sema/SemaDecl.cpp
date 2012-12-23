@@ -1372,8 +1372,10 @@ void Sema::ActOnTypeSpec(IdentifierInfo &II, Scope* S) {
 
   // The scope passed in may not be a decl scope.  Zip up the scope tree until
   // we find one that is.
-  while ((S->getFlags() & Scope::DeclScope) == 0)
-    S = S->getParent();
+  //while ((S->getFlags() & Scope::DeclScope) == 0)
+    //S = S->getParent();
+  assert(S->getFlags() & Scope::DeclScope);  // FIXME: Is this always true?
+                                             //        If so, remove DeclScope.
 
   DeclContext *DC = CurContext;
 
@@ -1392,6 +1394,10 @@ void Sema::ActOnTypeSpec(IdentifierInfo &II, Scope* S) {
   LookupName(Previous, S, /* CreateBuiltins = */ true);
 
   NamedDecl *New = 0;
+
+  // FIXME: ASTContext, ownership, etc
+  New = new TypeDecl(Decl::Enum, DC, NameLoc, &II);
+
   //if (D.getDeclSpec().getStorageClassSpec() == DeclSpec::SCS_typedef) {
   //  New = ActOnTypedefDeclarator(S, D, DC, TInfo, Previous);
   //} else if (R->isFunctionType()) {
@@ -1402,6 +1408,16 @@ void Sema::ActOnTypeSpec(IdentifierInfo &II, Scope* S) {
   //  New = ActOnVariableDeclarator(S, D, DC, TInfo, Previous,
   //                                TemplateParamLists);
   //}
+
+  if (!Previous.empty()) {
+    // FIXME: maybe check if this is a type redecl and do something more useful?
+    Diag(New->getLocation(), diag::redefinition)
+      << &New->getDeclName();
+    NamedDecl *Old = Previous.getRepresentativeDecl();
+    Diag(Old->getLocation(), diag::note_previous_definition);
+    //return New->setInvalidDecl();
+  }
+
 
   //if (New == 0)
   //  return 0;

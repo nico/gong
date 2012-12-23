@@ -2934,9 +2934,11 @@ SourceRange EnumConstantDecl::getSourceRange() const {
     End = Init->getLocEnd();
   return SourceRange(getLocation(), End);
 }
+#endif
 
 void TypeDecl::anchor() { }
 
+#if 0
 TypedefDecl *TypedefDecl::Create(ASTContext &C, DeclContext *DC,
                                  SourceLocation StartLoc, SourceLocation IdLoc,
                                  IdentifierInfo *Id, TypeSourceInfo *TInfo) {

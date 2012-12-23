@@ -193,10 +193,12 @@ void PrettyStackTraceDecl::print(raw_ostream &OS) const {
 //===----------------------------------------------------------------------===//
 // Decl Implementation
 //===----------------------------------------------------------------------===//
+#endif
 
 // Out-of-line virtual method providing a home for Decl.
 Decl::~Decl() { }
 
+#if 0
 void Decl::setDeclContext(DeclContext *DC) {
   DeclCtx = DC;
 }

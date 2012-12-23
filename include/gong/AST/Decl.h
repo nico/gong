@@ -119,10 +119,10 @@ class NamedDecl : public Decl {
 private:
   NamedDecl *getUnderlyingDeclImpl();
 
-protected:
-  NamedDecl(Kind DK, DeclContext *DC, SourceLocation L, DeclarationName N)
-    : Decl(DK, DC, L), Name(N) { }
 #endif
+protected:
+  NamedDecl(Kind DK, DeclContext *DC, SourceLocation L, IdentifierInfo *N)
+    : Decl(DK, DC, L), Name(N) { }
 
 public:
 #if 0
@@ -2306,6 +2306,7 @@ public:
   static bool classofKind(Kind K) { return K == IndirectField; }
   friend class ASTDeclReader;
 };
+#endif
 
 /// TypeDecl - Represents a declaration of a type.
 ///
@@ -2324,7 +2325,8 @@ class TypeDecl : public NamedDecl {
   friend class TagType;
   friend class ASTReader;
 
-protected:
+//protected:
+public:  // FIXME: Make protected
   TypeDecl(Kind DK, DeclContext *DC, SourceLocation L, IdentifierInfo *Id,
            SourceLocation StartL = SourceLocation())
     : NamedDecl(DK, DC, L, Id), TypeForDecl(0), LocStart(StartL) {}
@@ -2339,19 +2341,19 @@ public:
 
   SourceLocation getLocStart() const LLVM_READONLY { return LocStart; }
   void setLocStart(SourceLocation L) { LocStart = L; }
-  virtual SourceRange getSourceRange() const LLVM_READONLY {
-    if (LocStart.isValid())
-      return SourceRange(LocStart, getLocation());
-    else
-      return SourceRange(getLocation());
-  }
+  //virtual SourceRange getSourceRange() const LLVM_READONLY {
+  //  if (LocStart.isValid())
+  //    return SourceRange(LocStart, getLocation());
+  //  else
+  //    return SourceRange(getLocation());
+  //}
 
   // Implement isa/cast/dyncast/etc.
   static bool classof(const Decl *D) { return classofKind(D->getKind()); }
   static bool classofKind(Kind K) { return K >= firstType && K <= lastType; }
 };
 
-
+#if 0
 /// Base class for declarations which introduce a typedef-name.
 class TypedefNameDecl : public TypeDecl, public Redeclarable<TypedefNameDecl> {
   virtual void anchor();

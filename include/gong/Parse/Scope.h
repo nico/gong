@@ -58,11 +58,7 @@ public:
 
     /// FunctionPrototypeScope - This is a scope that corresponds to the
     /// parameters within a function prototype.
-    FunctionPrototypeScope = 0x100,
-
-    /// ObjCMethodScope - This scope corresponds to an Objective-C method body.
-    /// It always has FnScope and DeclScope set as well.
-    ObjCMethodScope = 0x400
+    FunctionPrototypeScope = 0x100
   };
 private:
   /// The parent scope for this scope.  This is null for the translation-unit
@@ -216,17 +212,6 @@ public:
     return false;
   }
   
-  /// isInObjcMethodScope - Return true if this scope is, or is contained in, an
-  /// Objective-C method body.  Note that this method is not constant time.
-  bool isInObjcMethodScope() const {
-    for (const Scope *S = this; S; S = S->getParent()) {
-      // If this scope is an objc method scope, then we succeed.
-      if (S->getFlags() & ObjCMethodScope)
-        return true;
-    }
-    return false;
-  }
-
   /// isFunctionPrototypeScope - Return true if this scope is a
   /// function prototype scope.
   bool isFunctionPrototypeScope() const {

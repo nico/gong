@@ -157,6 +157,28 @@ Sema / AST
 
   still need astcontext
 
+  Parser:
+    Scope
+      Scope::getEntity() is a DeclContext in Sema
+        via Sema::PushDeclContext() / PopDeclContext()
+      scope flags: 
+        Scope::DeclScope
+  AST:
+    DeclContext
+    Decl
+    Redeclarable<>
+  Sema:
+    IdentifierResolver
+    LookupResult
+    LookupName()
+    PushOnScopeChains()
+
+  concepts:
+    lexical decl context and semantic decl context
+    scope chains
+    decl chains, canonical decls
+    decl merging
+
 - Expression Sema & AST, Exprs vs Types
   - Exprs vs Types: DeclRefExpr pointing to TypeDecl (pointing to Type) or
     VarDecl (pointing to ident, type)

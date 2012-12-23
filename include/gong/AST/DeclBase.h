@@ -281,31 +281,32 @@ protected:
 private:
   void CheckAccessDeclContext() const;
 
+#endif
 protected:
 
   Decl(Kind DK, DeclContext *DC, SourceLocation L)
     : NextInContextAndBits(), DeclCtx(DC),
       Loc(L), DeclKind(DK), InvalidDecl(0),
       HasAttrs(false), Implicit(false), Used(false), Referenced(false),
-      Access(AS_none), FromASTFile(0), Hidden(0),
+      /*Access(AS_none), FromASTFile(0),*/ Hidden(0)/*,
       IdentifierNamespace(getIdentifierNamespaceForKind(DK)),
-      HasCachedLinkage(0)
+      HasCachedLinkage(0)*/
   {
-    if (StatisticsEnabled) add(DK);
+    //if (StatisticsEnabled) add(DK);
   }
 
   Decl(Kind DK, EmptyShell Empty)
     : NextInContextAndBits(), DeclKind(DK), InvalidDecl(0),
       HasAttrs(false), Implicit(false), Used(false), Referenced(false),
-      Access(AS_none), FromASTFile(0), Hidden(0),
+      /*Access(AS_none), FromASTFile(0),*/ Hidden(0)/*,
       IdentifierNamespace(getIdentifierNamespaceForKind(DK)),
-      HasCachedLinkage(0)
+      HasCachedLinkage(0)*/
   {
-    if (StatisticsEnabled) add(DK);
+    //if (StatisticsEnabled) add(DK);
   }
 
   virtual ~Decl();
-
+#if 0
   /// \brief Allocate memory for a deserialized declaration.
   ///
   /// This routine must be used to allocate memory for any declaration that is
@@ -332,11 +333,11 @@ public:
   SourceLocation getLocEnd() const LLVM_READONLY {
     return getSourceRange().getEnd();
   }
+#endif
 
   SourceLocation getLocation() const { return Loc; }
   void setLocation(SourceLocation L) { Loc = L; }
 
-#endif
   Kind getKind() const { return static_cast<Kind>(DeclKind); }
   const char *getDeclKindName() const;
 
