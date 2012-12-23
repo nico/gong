@@ -1035,10 +1035,11 @@ void DeclContext::removeDecl(Decl *D) {
       Pos->second.remove(ND);
   }
 }
+#endif
 
 void DeclContext::addHiddenDecl(Decl *D) {
-  assert(D->getLexicalDeclContext() == this &&
-         "Decl inserted into wrong lexical context");
+  //assert(D->getLexicalDeclContext() == this &&
+         //"Decl inserted into wrong lexical context");
   assert(!D->getNextDeclInContext() && D != LastDecl &&
          "Decl already inserted into a DeclContext");
 
@@ -1051,15 +1052,15 @@ void DeclContext::addHiddenDecl(Decl *D) {
 
   // Notify a C++ record declaration that we've added a member, so it can
   // update it's class-specific state.
-  if (CXXRecordDecl *Record = dyn_cast<CXXRecordDecl>(this))
-    Record->addedMember(D);
+  //if (CXXRecordDecl *Record = dyn_cast<CXXRecordDecl>(this))
+    //Record->addedMember(D);
 
   // If this is a newly-created (not de-serialized) import declaration, wire
   // it in to the list of local import declarations.
-  if (!D->isFromASTFile()) {
-    if (ImportDecl *Import = dyn_cast<ImportDecl>(D))
-      D->getASTContext().addedLocalImportDecl(Import);
-  }
+  //if (!D->isFromASTFile()) {
+    //if (ImportDecl *Import = dyn_cast<ImportDecl>(D))
+      //D->getASTContext().addedLocalImportDecl(Import);
+  //}
 }
 
 void DeclContext::addDecl(Decl *D) {
@@ -1070,6 +1071,7 @@ void DeclContext::addDecl(Decl *D) {
         makeDeclVisibleInContextWithFlags(ND, false, true);
 }
 
+#if 0
 void DeclContext::addDeclInternal(Decl *D) {
   addHiddenDecl(D);
 
@@ -1263,6 +1265,7 @@ void DeclContext::makeDeclVisibleInContext(NamedDecl *D) {
   // need to ensure that we eagerly build the lookup information for it.
   PrimaryDC->makeDeclVisibleInContextWithFlags(D, false, PrimaryDC == DeclDC);
 }
+#endif
 
 void DeclContext::makeDeclVisibleInContextWithFlags(NamedDecl *D, bool Internal,
                                                     bool Recoverable) {
@@ -1276,12 +1279,12 @@ void DeclContext::makeDeclVisibleInContextWithFlags(NamedDecl *D, bool Internal,
   // classes, and consequently accept the following invalid code:
   //
   //   void f() { void g(); { int g; struct S { friend void g(); }; } }
-  if (isFunctionOrMethod() && !isa<FunctionDecl>(D))
+  if (isFunctionOrMethod()); // && !isa<FunctionDecl>(D))
     return;
 
   // Skip declarations which should be invisible to name lookup.
-  if (shouldBeHidden(D))
-    return;
+  //if (shouldBeHidden(D))
+    //return;
 
   // If we already have a lookup data structure, perform the insertion into
   // it. If we might have externally-stored decls with this name, look them
@@ -1292,9 +1295,8 @@ void DeclContext::makeDeclVisibleInContextWithFlags(NamedDecl *D, bool Internal,
   // unit unless we're in C++, since qualified lookup into the TU is never
   // performed.
   if (LookupPtr.getPointer() || hasExternalVisibleStorage() ||
-      ((!Recoverable || D->getDeclContext() != D->getLexicalDeclContext()) &&
-       (getParentASTContext().getLangOpts().CPlusPlus ||
-        !isTranslationUnit()))) {
+      ((!Recoverable /*|| D->getDeclContext() != D->getLexicalDeclContext()*/) &&
+       !isTranslationUnit())) {
     // If we have lazily omitted any decls, they might have the same name as
     // the decl which we are adding, so build a full lookup table before adding
     // this decl.
@@ -1310,13 +1312,14 @@ void DeclContext::makeDeclVisibleInContextWithFlags(NamedDecl *D, bool Internal,
     getParent()->getPrimaryContext()->
         makeDeclVisibleInContextWithFlags(D, Internal, Recoverable);
 
-  Decl *DCAsDecl = cast<Decl>(this);
-  // Notify that a decl was made visible unless we are a Tag being defined.
-  if (!(isa<TagDecl>(DCAsDecl) && cast<TagDecl>(DCAsDecl)->isBeingDefined()))
-    if (ASTMutationListener *L = DCAsDecl->getASTMutationListener())
-      L->AddedVisibleDecl(this, D);
+  //Decl *DCAsDecl = cast<Decl>(this);
+  //// Notify that a decl was made visible unless we are a Tag being defined.
+  //if (!(isa<TagDecl>(DCAsDecl) && cast<TagDecl>(DCAsDecl)->isBeingDefined()))
+  //  if (ASTMutationListener *L = DCAsDecl->getASTMutationListener())
+  //    L->AddedVisibleDecl(this, D);
 }
 
+#if 0
 void DeclContext::makeDeclVisibleInContextImpl(NamedDecl *D, bool Internal) {
   // Find or create the stored declaration map.
   StoredDeclsMap *Map = LookupPtr.getPointer();

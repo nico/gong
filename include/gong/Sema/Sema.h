@@ -1597,10 +1597,12 @@ public:
   /// or C function we're in, otherwise return null.  If we're currently
   /// in a 'block', this returns the containing context.
   NamedDecl *getCurFunctionOrMethodDecl();
+#endif
 
   /// Add this decl to the scope shadowed decl chains.
   void PushOnScopeChains(NamedDecl *D, Scope *S, bool AddToContext = true);
 
+#if 0
   /// \brief Make the given externally-produced declaration visible at the
   /// top level scope.
   ///

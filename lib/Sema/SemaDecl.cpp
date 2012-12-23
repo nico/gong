@@ -1032,6 +1032,7 @@ static bool AllowOverloadingOfFunction(LookupResult &Previous,
   return (Previous.getResultKind() == LookupResult::Found
           && Previous.getFoundDecl()->hasAttr<OverloadableAttr>());
 }
+#endif
 
 /// Add this decl to the scope shadowed decl chains.
 void Sema::PushOnScopeChains(NamedDecl *D, Scope *S, bool AddToContext) {
@@ -1050,51 +1051,48 @@ void Sema::PushOnScopeChains(NamedDecl *D, Scope *S, bool AddToContext) {
 
   // Out-of-line definitions shouldn't be pushed into scope in C++.
   // Out-of-line variable and function definitions shouldn't even in C.
-  if ((getLangOpts().CPlusPlus || isa<VarDecl>(D) || isa<FunctionDecl>(D)) &&
-      D->isOutOfLine() &&
-      !D->getDeclContext()->getRedeclContext()->Equals(
-        D->getLexicalDeclContext()->getRedeclContext()))
-    return;
-
-  // Template instantiations should also not be pushed into scope.
-  if (isa<FunctionDecl>(D) &&
-      cast<FunctionDecl>(D)->isFunctionTemplateSpecialization())
-    return;
+  //if ((isa<VarDecl>(D) || isa<FunctionDecl>(D)) &&
+  //    D->isOutOfLine() &&
+  //    !D->getDeclContext()->getRedeclContext()->Equals(
+  //      D->getLexicalDeclContext()->getRedeclContext()))
+  //  return;
 
   // If this replaces anything in the current scope, 
-  IdentifierResolver::iterator I = IdResolver.begin(D->getDeclName()),
-                               IEnd = IdResolver.end();
-  for (; I != IEnd; ++I) {
-    if (S->isDeclScope(*I) && D->declarationReplaces(*I)) {
-      S->RemoveDecl(*I);
-      IdResolver.RemoveDecl(*I);
+  //IdentifierResolver::iterator I = IdResolver.begin(D->getDeclName()),
+  //                             IEnd = IdResolver.end();
+  //for (; I != IEnd; ++I) {
+  //  if (S->isDeclScope(Action::DeclPtrTy::make(*I)) &&
+  //      D->declarationReplaces(*I)) {
+  //    S->RemoveDecl(*I);
+  //    IdResolver.RemoveDecl(*I);
 
-      // Should only need to replace one decl.
-      break;
-    }
-  }
+  //    // Should only need to replace one decl.
+  //    break;
+  //  }
+  //}
 
-  S->AddDecl(D);
+  S->AddDecl(Action::DeclPtrTy::make(D));
   
-  if (isa<LabelDecl>(D) && !cast<LabelDecl>(D)->isGnuLocal()) {
-    // Implicitly-generated labels may end up getting generated in an order that
-    // isn't strictly lexical, which breaks name lookup. Be careful to insert
-    // the label at the appropriate place in the identifier chain.
-    for (I = IdResolver.begin(D->getDeclName()); I != IEnd; ++I) {
-      DeclContext *IDC = (*I)->getLexicalDeclContext()->getRedeclContext();
-      if (IDC == CurContext) {
-        if (!S->isDeclScope(*I))
-          continue;
-      } else if (IDC->Encloses(CurContext))
-        break;
-    }
-    
-    IdResolver.InsertDeclAfter(I, D);
-  } else {
+  //if (isa<LabelDecl>(D) && !cast<LabelDecl>(D)->isGnuLocal()) {
+  //  // Implicitly-generated labels may end up getting generated in an order that
+  //  // isn't strictly lexical, which breaks name lookup. Be careful to insert
+  //  // the label at the appropriate place in the identifier chain.
+  //  for (I = IdResolver.begin(D->getDeclName()); I != IEnd; ++I) {
+  //    DeclContext *IDC = (*I)->getLexicalDeclContext()->getRedeclContext();
+  //    if (IDC == CurContext) {
+  //      if (!S->isDeclScope(*I))
+  //        continue;
+  //    } else if (IDC->Encloses(CurContext))
+  //      break;
+  //  }
+  //  
+  //  IdResolver.InsertDeclAfter(I, D);
+  //} else {
     IdResolver.AddDecl(D);
-  }
+  //}
 }
 
+#if 0
 void Sema::pushExternalDeclIntoScope(NamedDecl *D, DeclarationName Name) {
   if (IdResolver.tryAddTopLevelDecl(D, Name) && TUScope)
     TUScope->AddDecl(D);
@@ -1412,7 +1410,7 @@ void Sema::ActOnTypeSpec(IdentifierInfo &II, Scope* S) {
   // function template specialization, add it to the scope stack.
   //if (New->getDeclName() &&
   //     !(D.isRedeclaration() && New->isInvalidDecl()))
-  //  PushOnScopeChains(New, S);
+    PushOnScopeChains(New, S);
 
   //return New;
 
