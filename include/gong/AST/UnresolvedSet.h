@@ -135,8 +135,8 @@ public:
     decls().append(I.ir, E.ir);
   }
 
-  NamedDecl *operator[](unsigned I) { return decls()[I]; }
-  const NamedDecl *operator[](unsigned I) const { return decls()[I]; }
+  NamedDecl *&operator[](unsigned I) { return decls()[I]; }
+  NamedDecl * const&operator[](unsigned I) const { return decls()[I]; }
 
 private:
   // These work because the only permitted subclass is UnresolvedSetImpl

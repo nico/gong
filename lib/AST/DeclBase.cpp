@@ -13,12 +13,14 @@
 
 #include "gong/AST/DeclBase.h"
 
+#include "gong/AST/Decl.h"
+#include "llvm/Support/ErrorHandling.h"
+using namespace gong;
 #if 0
 
 #include "gong/AST/ASTContext.h"
 #include "gong/AST/ASTMutationListener.h"
 #include "gong/AST/Attr.h"
-#include "gong/AST/Decl.h"
 #include "gong/AST/DeclCXX.h"
 #include "gong/AST/DeclContextInternals.h"
 #include "gong/AST/DeclFriend.h"
@@ -33,7 +35,6 @@
 #include "llvm/ADT/DenseMap.h"
 #include "llvm/Support/raw_ostream.h"
 #include <algorithm>
-using namespace gong;
 
 //===----------------------------------------------------------------------===//
 //  Statistics
@@ -606,26 +607,28 @@ void Decl::swapAttrs(Decl *RHS) {
   this->HasAttrs = false;
   RHS->HasAttrs = true;
 }
+#endif
 
 Decl *Decl::castFromDeclContext (const DeclContext *D) {
   Decl::Kind DK = D->getDeclKind();
   switch(DK) {
-#define DECL(NAME, BASE)
-#define DECL_CONTEXT(NAME) \
-    case Decl::NAME:       \
-      return static_cast<NAME##Decl*>(const_cast<DeclContext*>(D));
-#define DECL_CONTEXT_BASE(NAME)
-#include "gong/AST/DeclNodes.inc"
-    default:
-#define DECL(NAME, BASE)
-#define DECL_CONTEXT_BASE(NAME)                  \
-      if (DK >= first##NAME && DK <= last##NAME) \
-        return static_cast<NAME##Decl*>(const_cast<DeclContext*>(D));
-#include "gong/AST/DeclNodes.inc"
+//#define DECL(NAME, BASE)
+//#define DECL_CONTEXT(NAME) \
+//    case Decl::NAME:       \
+//      return static_cast<NAME##Decl*>(const_cast<DeclContext*>(D));
+//#define DECL_CONTEXT_BASE(NAME)
+//#include "gong/AST/DeclNodes.def"
+//    default:
+//#define DECL(NAME, BASE)
+//#define DECL_CONTEXT_BASE(NAME)                  \
+//      if (DK >= first##NAME && DK <= last##NAME) \
+//        return static_cast<NAME##Decl*>(const_cast<DeclContext*>(D));
+//#include "gong/AST/DeclNodes.def"
       llvm_unreachable("a decl that inherits DeclContext isn't handled");
   }
 }
 
+#if 0
 DeclContext *Decl::castToDeclContext(const Decl *D) {
   Decl::Kind DK = D->getKind();
   switch(DK) {
@@ -779,16 +782,18 @@ bool DeclContext::isDependentContext() const {
 
   return getParent() && getParent()->isDependentContext();
 }
+#endif
 
 bool DeclContext::isTransparentContext() const {
-  if (DeclKind == Decl::Enum)
+  /*if (DeclKind == Decl::Enum)
     return !cast<EnumDecl>(this)->isScoped();
-  else if (DeclKind == Decl::LinkageSpec)
+  else*/ if (DeclKind == Decl::LinkageSpec)
     return true;
 
   return false;
 }
 
+#if 0
 bool DeclContext::isExternCContext() const {
   const DeclContext *DC = this;
   while (DC->DeclKind != Decl::TranslationUnit) {
@@ -809,6 +814,7 @@ bool DeclContext::Encloses(const DeclContext *DC) const {
       return true;
   return false;
 }
+#endif
 
 DeclContext *DeclContext::getPrimaryContext() {
   switch (DeclKind) {
@@ -818,53 +824,31 @@ DeclContext *DeclContext::getPrimaryContext() {
     // There is only one DeclContext for these entities.
     return this;
 
-  case Decl::Namespace:
+  //case Decl::Namespace:
     // The original namespace is our primary context.
-    return static_cast<NamespaceDecl*>(this)->getOriginalNamespace();
-
-  case Decl::ObjCMethod:
-    return this;
-
-  case Decl::ObjCInterface:
-    if (ObjCInterfaceDecl *Def = cast<ObjCInterfaceDecl>(this)->getDefinition())
-      return Def;
-      
-    return this;
-      
-  case Decl::ObjCProtocol:
-    if (ObjCProtocolDecl *Def = cast<ObjCProtocolDecl>(this)->getDefinition())
-      return Def;
-    
-    return this;
-      
-  case Decl::ObjCCategory:
-    return this;
-
-  case Decl::ObjCImplementation:
-  case Decl::ObjCCategoryImpl:
-    return this;
+    //return static_cast<NamespaceDecl*>(this)->getOriginalNamespace();
 
   default:
-    if (DeclKind >= Decl::firstTag && DeclKind <= Decl::lastTag) {
-      // If this is a tag type that has a definition or is currently
-      // being defined, that definition is our primary context.
-      TagDecl *Tag = cast<TagDecl>(this);
-      assert(isa<TagType>(Tag->TypeForDecl) ||
-             isa<InjectedClassNameType>(Tag->TypeForDecl));
+    //if (DeclKind >= Decl::firstTag && DeclKind <= Decl::lastTag) {
+    //  // If this is a tag type that has a definition or is currently
+    //  // being defined, that definition is our primary context.
+    //  TagDecl *Tag = cast<TagDecl>(this);
+    //  assert(isa<TagType>(Tag->TypeForDecl) ||
+    //         isa<InjectedClassNameType>(Tag->TypeForDecl));
 
-      if (TagDecl *Def = Tag->getDefinition())
-        return Def;
+    //  if (TagDecl *Def = Tag->getDefinition())
+    //    return Def;
 
-      if (!isa<InjectedClassNameType>(Tag->TypeForDecl)) {
-        const TagType *TagTy = cast<TagType>(Tag->TypeForDecl);
-        if (TagTy->isBeingDefined())
-          // FIXME: is it necessarily being defined in the decl
-          // that owns the type?
-          return TagTy->getDecl();
-      }
+    //  if (!isa<InjectedClassNameType>(Tag->TypeForDecl)) {
+    //    const TagType *TagTy = cast<TagType>(Tag->TypeForDecl);
+    //    if (TagTy->isBeingDefined())
+    //      // FIXME: is it necessarily being defined in the decl
+    //      // that owns the type?
+    //      return TagTy->getDecl();
+    //  }
 
-      return Tag;
-    }
+    //  return Tag;
+    //}
 
     assert(DeclKind >= Decl::firstFunction && DeclKind <= Decl::lastFunction &&
           "Unknown DeclContext kind");
@@ -872,6 +856,7 @@ DeclContext *DeclContext::getPrimaryContext() {
   }
 }
 
+#if 0
 void 
 DeclContext::collectAllContexts(llvm::SmallVectorImpl<DeclContext *> &Contexts){
   Contexts.clear();
@@ -1234,6 +1219,7 @@ void DeclContext::localUncachedLookup(DeclarationName Name,
         Results.push_back(ND);
   }
 }
+#endif
 
 DeclContext *DeclContext::getRedeclContext() {
   DeclContext *Ctx = this;
@@ -1243,6 +1229,7 @@ DeclContext *DeclContext::getRedeclContext() {
   return Ctx;
 }
 
+#if 0
 DeclContext *DeclContext::getEnclosingNamespaceContext() {
   DeclContext *Ctx = this;
   // Skip through non-namespace, non-translation-unit contexts.

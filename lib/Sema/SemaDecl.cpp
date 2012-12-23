@@ -1388,10 +1388,10 @@ void Sema::ActOnTypeSpec(IdentifierInfo &II, Scope* S) {
   //TypeSourceInfo *TInfo = GetTypeForDeclarator(D, S);
   //QualType R = TInfo->getType();
 
-  //LookupResult Previous(*this, &II, NameLoc, LookupOrdinaryName,
-                        //ForRedeclaration);
+  LookupResult Previous(*this, &II, NameLoc, LookupOrdinaryName,
+                        ForRedeclaration);
 
-  //LookupName(Previous, S, /* CreateBuiltins = */ true);
+  LookupName(Previous, S, /* CreateBuiltins = */ true);
 
   NamedDecl *New = 0;
   //if (D.getDeclSpec().getStorageClassSpec() == DeclSpec::SCS_typedef) {
