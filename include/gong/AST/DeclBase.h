@@ -974,12 +974,13 @@ public:
   ///   struct A::S {}; // getParent() == namespace 'A'
   ///                   // getLexicalParent() == translation unit
   ///
-  //DeclContext *getLexicalParent() {
+  DeclContext *getLexicalParent() {
     //return cast<Decl>(this)->getLexicalDeclContext();
-  //}
-  //const DeclContext *getLexicalParent() const {
-    //return const_cast<DeclContext*>(this)->getLexicalParent();
-  //}
+    return getLexicalParent();  // FIXME
+  }
+  const DeclContext *getLexicalParent() const {
+    return const_cast<DeclContext*>(this)->getLexicalParent();
+  }
 
   DeclContext *getLookupParent();
 

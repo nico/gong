@@ -1565,6 +1565,7 @@ public:
                      SourceLocation RBraceLoc, Decl *EnumDecl,
                      Decl **Elements, unsigned NumElements,
                      Scope *S, AttributeList *Attr);
+#endif
 
   DeclContext *getContainingDC(DeclContext *DC);
 
@@ -1572,6 +1573,7 @@ public:
   void PushDeclContext(Scope *S, DeclContext *DC);
   void PopDeclContext();
 
+#if 0
   /// EnterDeclaratorContext - Used when we must lookup names in the context
   /// of a declarator's nested name specifier.
   void EnterDeclaratorContext(Scope *S, DeclContext *DC);

@@ -884,6 +884,7 @@ Corrected:
   bool ADL = UseArgumentDependentLookup(SS, Result, NextToken.is(tok::l_paren));
   return BuildDeclarationNameExpr(SS, Result, ADL);
 }
+#endif
 
 // Determines the context to return to after temporarily entering a
 // context.  This depends in an unnecessarily complicated way on the
@@ -893,24 +894,25 @@ DeclContext *Sema::getContainingDC(DeclContext *DC) {
   // Functions defined inline within classes aren't parsed until we've
   // finished parsing the top-level class, so the top-level class is
   // the context we'll need to return to.
-  if (isa<FunctionDecl>(DC)) {
-    DC = DC->getLexicalParent();
+  // FIXME: figure out how this meshes with no-forward-decl go
+  //if (isa<FunctionDecl>(DC)) {
+  //  DC = DC->getLexicalParent();
 
-    // A function not defined within a class will always return to its
-    // lexical context.
-    if (!isa<CXXRecordDecl>(DC))
-      return DC;
+  //  // A function not defined within a class will always return to its
+  //  // lexical context.
+  //  if (!isa<CXXRecordDecl>(DC))
+  //    return DC;
 
-    // A C++ inline method/friend is parsed *after* the topmost class
-    // it was declared in is fully parsed ("complete");  the topmost
-    // class is the context we need to return to.
-    while (CXXRecordDecl *RD = dyn_cast<CXXRecordDecl>(DC->getLexicalParent()))
-      DC = RD;
+  //  // A C++ inline method/friend is parsed *after* the topmost class
+  //  // it was declared in is fully parsed ("complete");  the topmost
+  //  // class is the context we need to return to.
+  //  while (CXXRecordDecl *RD = dyn_cast<CXXRecordDecl>(DC->getLexicalParent()))
+  //    DC = RD;
 
-    // Return the declaration context of the topmost class the inline method is
-    // declared in.
-    return DC;
-  }
+  //  // Return the declaration context of the topmost class the inline method is
+  //  // declared in.
+  //  return DC;
+  //}
 
   return DC->getLexicalParent();
 }
@@ -929,6 +931,7 @@ void Sema::PopDeclContext() {
   assert(CurContext && "Popped translation unit!");
 }
 
+#if 0
 /// EnterDeclaratorContext - Used when we must lookup names in the context
 /// of a declarator's nested name specifier.
 ///

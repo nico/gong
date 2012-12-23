@@ -13,6 +13,8 @@
 //===----------------------------------------------------------------------===//
 
 #include "gong/Sema/Sema.h"
+
+#include "gong/AST/ASTContext.h"
 #include "gong/Lex/Lexer.h"
 
 using namespace gong;
@@ -21,7 +23,6 @@ using namespace sema;
 #if 0
 
 #include "TargetAttributesSema.h"
-#include "gong/AST/ASTContext.h"
 #include "gong/AST/ASTDiagnostic.h"
 #include "gong/AST/DeclCXX.h"
 #include "gong/AST/DeclFriend.h"
@@ -66,7 +67,7 @@ PrintingPolicy Sema::getPrintingPolicy(const ASTContext &Context,
 
 void Sema::ActOnTranslationUnitScope(Scope *S) {
   TUScope = S;
-  //PushDeclContext(S, Context.getTranslationUnitDecl());
+  PushDeclContext(S, Context.getTranslationUnitDecl());
 }
 
 Sema::Sema(Lexer &L, /*Preprocessor &pp,*/ ASTContext &ctxt
