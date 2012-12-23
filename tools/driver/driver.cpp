@@ -12,6 +12,7 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include "gong/AST/ASTContext.h"
 #include "gong/Basic/Diagnostic.h"
 #include "gong/Basic/DiagnosticIDs.h"
 #include "gong/Basic/LLVM.h"
@@ -97,7 +98,8 @@ int main(int argc_, const char **argv_) {
         DumpTokens(L);
       else {
         if (sema) {
-          Sema ParseActions(L);
+          ASTContext Context;
+          Sema ParseActions(L, Context);
           Parser P(L, ParseActions);
           P.ParseSourceFile();
         } else {

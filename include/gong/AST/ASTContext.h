@@ -15,10 +15,14 @@
 #ifndef LLVM_GONG_AST_ASTCONTEXT_H
 #define LLVM_GONG_AST_ASTCONTEXT_H
 
+#include "gong/AST/Decl.h"
+#include "gong/Basic/LLVM.h"
+#include "llvm/ADT/IntrusiveRefCntPtr.h"
+#include "llvm/Support/Allocator.h"
+
 #if 0
 #include "gong/AST/CanonicalType.h"
 #include "gong/AST/CommentCommandTraits.h"
-#include "gong/AST/Decl.h"
 #include "gong/AST/LambdaMangleContext.h"
 #include "gong/AST/NestedNameSpecifier.h"
 #include "gong/AST/PrettyPrinter.h"
@@ -33,18 +37,18 @@
 #include "gong/Basic/VersionTuple.h"
 #include "llvm/ADT/DenseMap.h"
 #include "llvm/ADT/FoldingSet.h"
-#include "llvm/ADT/IntrusiveRefCntPtr.h"
 #include "llvm/ADT/OwningPtr.h"
 #include "llvm/ADT/SmallPtrSet.h"
 #include "llvm/ADT/TinyPtrVector.h"
-#include "llvm/Support/Allocator.h"
 #include <vector>
 
 namespace llvm {
   struct fltSemantics;
 }
 
+#endif
 namespace gong {
+#if 0
   class FileManager;
   class ASTRecordLayout;
   class BlockExpr;
@@ -87,9 +91,11 @@ namespace gong {
     class FullComment;
   }
 
+#endif
 /// \brief Holds long-lived AST nodes (such as types and decls) that can be
 /// referred to throughout the semantic analysis of a file.
 class ASTContext : public RefCountedBase<ASTContext> {
+#if 0
   ASTContext &this_() { return *this; }
 
   mutable std::vector<Type*> Types;
@@ -183,7 +189,9 @@ class ASTContext : public RefCountedBase<ASTContext> {
   class CanonicalTemplateTemplateParm : public llvm::FoldingSetNode {
     TemplateTemplateParmDecl *Parm;
     
+#endif
   public:
+#if 0
     CanonicalTemplateTemplateParm(TemplateTemplateParmDecl *Parm) 
       : Parm(Parm) { }
     
@@ -355,15 +363,18 @@ class ASTContext : public RefCountedBase<ASTContext> {
   
   ImportDecl *FirstLocalImport;
   ImportDecl *LastLocalImport;
+#endif
   
   TranslationUnitDecl *TUDecl;
 
+#if 0
   /// \brief The associated SourceManager object.a
   SourceManager &SourceMgr;
 
   /// \brief The language options used to create the AST associated with
   ///  this ASTContext object.
   LangOptions &LangOpts;
+#endif
 
   /// \brief The allocator used to create AST objects.
   ///
@@ -371,6 +382,7 @@ class ASTContext : public RefCountedBase<ASTContext> {
   /// AST objects will be released when the ASTContext itself is destroyed.
   mutable llvm::BumpPtrAllocator BumpAlloc;
 
+#if 0
   /// \brief Allocator for partial diagnostics.
   PartialDiagnostic::StorageAllocator DiagAllocator;
 
@@ -411,12 +423,14 @@ public:
   llvm::BumpPtrAllocator &getAllocator() const {
     return BumpAlloc;
   }
+#endif
 
   void *Allocate(unsigned Size, unsigned Align = 8) const {
     return BumpAlloc.Allocate(Size, Align);
   }
   void Deallocate(void *Ptr) const { }
   
+#if 0
   /// Return the total amount of physical memory allocated for representing
   /// AST nodes and type information.
   size_t getASTAllocatedMemory() const {
@@ -693,10 +707,11 @@ public:
     return import_iterator(FirstLocalImport); 
   }
   import_iterator local_import_end() const { return import_iterator(); }
+#endif
   
   TranslationUnitDecl *getTranslationUnitDecl() const { return TUDecl; }
 
-
+#if 0
   // Builtin Types.
   CanQualType VoidTy;
   CanQualType BoolTy;
@@ -728,15 +743,17 @@ public:
   // Type used to help define __builtin_va_list for some targets.
   // The type is built when constructing 'BuiltinVaListDecl'.
   mutable QualType VaListTagTy;
+#endif
 
-  ASTContext(LangOptions& LOpts, SourceManager &SM, const TargetInfo *t,
+  ASTContext(/*LangOptions& LOpts, SourceManager &SM, const TargetInfo *t,
              IdentifierTable &idents, SelectorTable &sels,
              Builtin::Context &builtins,
              unsigned size_reserve,
-             bool DelayInitialization = false);
+             bool DelayInitialization = false*/);
 
   ~ASTContext();
 
+#if 0
   /// \brief Attach an external AST source to the AST context.
   ///
   /// The external AST source provides the ability to load parts of
@@ -2124,7 +2141,9 @@ private:
   friend class DeclContext;
   friend class DeclarationNameTable;
   void ReleaseDeclContextMaps();
+#endif
 };
+#if 0
   
 /// \brief Utility function for constructing a nullary selector.
 static inline Selector GetNullarySelector(StringRef name, ASTContext& Ctx) {
@@ -2138,6 +2157,7 @@ static inline Selector GetUnarySelector(StringRef name, ASTContext& Ctx) {
   return Ctx.Selectors.getSelector(1, &II);
 }
 
+#endif
 }  // end namespace gong
 
 // operator new and delete aren't allowed inside namespaces.
@@ -2171,7 +2191,7 @@ static inline Selector GetUnarySelector(StringRef name, ASTContext& Ctx) {
 ///                  allocator supports it).
 /// @return The allocated memory. Could be NULL.
 inline void *operator new(size_t Bytes, const gong::ASTContext &C,
-                          size_t Alignment) {
+                          size_t Alignment = 16) {
   return C.Allocate(Bytes, Alignment);
 }
 /// @brief Placement delete companion to the new above.
@@ -2221,6 +2241,5 @@ inline void *operator new[](size_t Bytes, const gong::ASTContext& C,
 inline void operator delete[](void *Ptr, const gong::ASTContext &C, size_t) {
   C.Deallocate(Ptr);
 }
-#endif
 
 #endif

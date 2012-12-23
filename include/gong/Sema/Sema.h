@@ -60,18 +60,18 @@ namespace llvm {
 
 #endif
 namespace gong {
-  class DiagnosticsEngine;
-  class Expr;
+class DiagnosticsEngine;
+class Expr;
 
 namespace sema {
   class FunctionScopeInfo;
 }
 
-  class LookupResult;
+class ASTContext;
+class LookupResult;
 #if 0
   class ADLResult;
   class ASTConsumer;
-  class ASTContext;
   class ASTMutationListener;
   class ASTReader;
   class ASTWriter;
@@ -203,7 +203,7 @@ class Sema : public Action {
 public:
   //const LangOptions &LangOpts;
   //Preprocessor &PP;
-  //ASTContext &Context;
+  ASTContext &Context;
   //ASTConsumer &Consumer;
   DiagnosticsEngine &Diags;
   //SourceManager &SourceMgr;
@@ -757,7 +757,7 @@ public:
 
 #endif
 public:
-  Sema(Lexer &L /*Preprocessor &pp, ASTContext &ctxt, ASTConsumer &consumer,
+  Sema(Lexer &L, /*Preprocessor &pp,*/ ASTContext &ctxt/*,ASTConsumer &consumer,
        TranslationUnitKind TUKind = TU_Complete,
        CodeCompleteConsumer *CompletionConsumer = 0*/);
   ~Sema();

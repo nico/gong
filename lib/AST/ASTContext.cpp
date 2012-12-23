@@ -13,6 +13,8 @@
 
 #include "gong/AST/ASTContext.h"
 
+using namespace gong;
+
 #if 0
 
 #include "CXXABI.h"
@@ -39,8 +41,6 @@
 #include "llvm/Support/MathExtras.h"
 #include "llvm/Support/raw_ostream.h"
 #include <map>
-
-using namespace gong;
 
 unsigned ASTContext::NumImplicitDefaultConstructors;
 unsigned ASTContext::NumImplicitDefaultConstructorsDeclared;
@@ -604,14 +604,15 @@ static const LangAS::Map *getAddressSpaceMap(const TargetInfo &T,
     return &T.getAddressSpaceMap();
   }
 }
+#endif
 
-ASTContext::ASTContext(LangOptions& LOpts, SourceManager &SM,
+ASTContext::ASTContext(/*LangOptions& LOpts, SourceManager &SM,
                        const TargetInfo *t,
                        IdentifierTable &idents, SelectorTable &sels,
                        Builtin::Context &builtins,
                        unsigned size_reserve,
-                       bool DelayInitialization) 
-  : FunctionProtoTypes(this_()),
+                       bool DelayInitialization*/) 
+  /*: FunctionProtoTypes(this_()),
     TemplateSpecializationTypes(this_()),
     DependentTemplateSpecializationTypes(this_()),
     SubstTemplateTemplateParmPacks(this_()),
@@ -636,18 +637,19 @@ ASTContext::ASTContext(LangOptions& LOpts, SourceManager &SM,
     Comments(SM), CommentsLoaded(false),
     CommentCommandTraits(BumpAlloc),
     LastSDM(0, 0),
-    UniqueBlockByRefTypeID(0) 
+    UniqueBlockByRefTypeID(0)*/
 {
-  if (size_reserve > 0) Types.reserve(size_reserve);
+  //if (size_reserve > 0) Types.reserve(size_reserve);
   TUDecl = TranslationUnitDecl::Create(*this);
   
-  if (!DelayInitialization) {
-    assert(t && "No target supplied for ASTContext initialization");
-    InitBuiltinTypes(*t);
-  }
+  //if (!DelayInitialization) {
+  //  assert(t && "No target supplied for ASTContext initialization");
+  //  InitBuiltinTypes(*t);
+  //}
 }
 
 ASTContext::~ASTContext() {
+#if 0
   // Release the DenseMaps associated with DeclContext objects.
   // FIXME: Is this the ideal solution?
   ReleaseDeclContextMaps();
@@ -676,8 +678,10 @@ ASTContext::~ASTContext() {
                                                     AEnd = DeclAttrs.end();
        A != AEnd; ++A)
     A->second->~AttrVec();
+#endif
 }
 
+#if 0
 void ASTContext::AddDeallocation(void (*Callback)(void*), void *Data) {
   Deallocations.push_back(std::make_pair(Callback, Data));
 }

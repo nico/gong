@@ -28,6 +28,7 @@
 #endif
 
 namespace gong {
+class ASTContext;
 class IdentifierInfo;
 #if 0
 struct ASTTemplateArgumentListInfo;
@@ -70,7 +71,9 @@ public:
   /// \brief Return the TypeLoc wrapper for the type source info.
   TypeLoc getTypeLoc() const; // implemented in TypeLoc.h
 };
+#endif
 
+// FIXME Rename to ModuleDecl or FileDecl.
 /// TranslationUnitDecl - The top declaration context.
 class TranslationUnitDecl : public Decl, public DeclContext {
   virtual void anchor();
@@ -78,17 +81,17 @@ class TranslationUnitDecl : public Decl, public DeclContext {
 
   /// The (most recently entered) anonymous namespace for this
   /// translation unit, if one has been created.
-  NamespaceDecl *AnonymousNamespace;
+  //NamespaceDecl *AnonymousNamespace;
 
   explicit TranslationUnitDecl(ASTContext &ctx)
     : Decl(TranslationUnit, 0, SourceLocation()),
       DeclContext(TranslationUnit),
-      Ctx(ctx), AnonymousNamespace(0) {}
+      Ctx(ctx)/*, AnonymousNamespace(0)*/ {}
 public:
   ASTContext &getASTContext() const { return Ctx; }
 
-  NamespaceDecl *getAnonymousNamespace() const { return AnonymousNamespace; }
-  void setAnonymousNamespace(NamespaceDecl *D) { AnonymousNamespace = D; }
+  //NamespaceDecl *getAnonymousNamespace() const { return AnonymousNamespace; }
+  //void setAnonymousNamespace(NamespaceDecl *D) { AnonymousNamespace = D; }
 
   static TranslationUnitDecl *Create(ASTContext &C);
   // Implement isa/cast/dyncast/etc.
@@ -101,8 +104,6 @@ public:
     return static_cast<TranslationUnitDecl *>(const_cast<DeclContext*>(DC));
   }
 };
-
-#endif
 
 /// NamedDecl - This represents a decl with a name.  Many decls have names such
 /// as ObjCMethodDecl, but not \@class, etc.

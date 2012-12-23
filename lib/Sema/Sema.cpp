@@ -69,12 +69,13 @@ void Sema::ActOnTranslationUnitScope(Scope *S) {
   //PushDeclContext(S, Context.getTranslationUnitDecl());
 }
 
-Sema::Sema(Lexer &L /*Preprocessor &pp, ASTContext &ctxt, ASTConsumer &consumer,
+Sema::Sema(Lexer &L, /*Preprocessor &pp,*/ ASTContext &ctxt
+           /*, ASTConsumer &consumer,
            TranslationUnitKind TUKind,
            CodeCompleteConsumer *CodeCompleter*/)
   : /*TheTargetAttributesSema(0), ExternalSource(0), 
     isMultiplexExternalSource(false), FPFeatures(pp.getLangOpts()),
-    LangOpts(pp.getLangOpts()), PP(pp), Context(ctxt), Consumer(consumer),*/
+    LangOpts(pp.getLangOpts()), PP(pp),*/ Context(ctxt), /*Consumer(consumer),*/
     Diags(L.getDiagnostics())/*, SourceMgr(PP.getSourceManager()),
     CollectStats(false), CodeCompleter(CodeCompleter),
     CurContext(0), OriginalLexicalContext(0),

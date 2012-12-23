@@ -733,9 +733,11 @@ bool DeclContext::classof(const Decl *D) {
       return false;
   }
 }
+#endif
 
 DeclContext::~DeclContext() { }
 
+#if 0
 /// \brief Find the parent context of this context that will be
 /// used for unqualified name lookup.
 ///

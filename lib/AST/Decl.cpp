@@ -11,13 +11,13 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include "gong/AST/ASTContext.h"
 #include "gong/AST/Decl.h"
 
 using namespace gong;
 
 #if 0
 
-#include "gong/AST/ASTContext.h"
 #include "gong/AST/ASTMutationListener.h"
 #include "gong/AST/Attr.h"
 #include "gong/AST/DeclCXX.h"
@@ -2816,12 +2816,14 @@ SourceRange BlockDecl::getSourceRange() const {
 // Other Decl Allocation/Deallocation Method Implementations
 //===----------------------------------------------------------------------===//
 
+#endif
 void TranslationUnitDecl::anchor() { }
 
 TranslationUnitDecl *TranslationUnitDecl::Create(ASTContext &C) {
   return new (C) TranslationUnitDecl(C);
 }
 
+#if 0
 void LabelDecl::anchor() { }
 
 LabelDecl *LabelDecl::Create(ASTContext &C, DeclContext *DC,
