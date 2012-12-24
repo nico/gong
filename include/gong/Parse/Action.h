@@ -218,12 +218,29 @@ public:
   virtual IdentifierInfoType classifyIdentifier(const IdentifierInfo &II,
                                                 const Scope* S) = 0;
 
+  /// Called after the 'type' in a TypeDecl without parentheses has been
+  /// parsed.  ActOnTypeSpec() will be called once after.
+  virtual DeclPtrTy ActOnSingleTypeDecl(SourceLocation TypeLoc) {
+    return DeclPtrTy();
+  }
+
+  /// Called after 'type (' in a TypeDecl with parentheses has been parsed.
+  /// ActOnTypeSpec() will be called for each TypeSpec in this TypeDecl.
+  virtual DeclPtrTy ActOnMultiTypeDeclStart(SourceLocation TypeLoc,
+                                            SourceLocation LParenLoc) {
+    return DeclPtrTy();
+  }
+  /// Called after the closing ')' of a TypeDecl has been parsed.
+  virtual void ActOnMultiTypeDeclEnd(DeclPtrTy Decl, SourceLocation RParenLoc) {
+  }
+
   /// Called after a type spec has been parsed.
   ///
-  /// \param II The name of the new type.
-  //FIXME: Pass in the type too.
-  virtual void ActOnTypeSpec(IdentifierInfo &II, SourceLocation IILoc,
-                             Scope *S) {}
+  /// \param Decl The Decl returned by either ActOnSingleTypeDecl() or
+  ///             ActOnMultiTypeDeclStart().
+  virtual void ActOnTypeSpec(DeclPtrTy Decl, SourceLocation IILoc,
+                             IdentifierInfo &II, Scope *S) {}
+
 
   /// Registers an identifier as function name.
   ///
@@ -2886,8 +2903,8 @@ public:
                                                 const Scope* S);
 
   /// Registers an identifier as type name.
-  virtual void ActOnTypeSpec(IdentifierInfo &II, SourceLocation IILoc,
-                             Scope *S) LLVM_OVERRIDE;
+  virtual void ActOnTypeSpec(DeclPtrTy Decl, SourceLocation IILoc,
+                             IdentifierInfo &II, Scope *S) LLVM_OVERRIDE;
 
   /// Registers an identifier as function name.
   virtual void ActOnFunctionDecl(IdentifierInfo &II, Scope* S) LLVM_OVERRIDE;

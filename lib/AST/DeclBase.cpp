@@ -62,16 +62,16 @@ void *Decl::AllocateDeserializedDecl(const ASTContext &Context,
   
   return Result;
 }
+#endif
 
 const char *Decl::getDeclKindName() const {
   switch (DeclKind) {
-  default: llvm_unreachable("Declaration not in DeclNodes.inc!");
+  default: llvm_unreachable("Declaration not in DeclNodes.def!");
 #define DECL(DERIVED, BASE) case DERIVED: return #DERIVED;
-#define ABSTRACT_DECL(DECL)
-#include "gong/AST/DeclNodes.inc"
+#define ABSTRACT_DECL(DECL, BASE)
+#include "gong/AST/DeclNodes.def"
   }
 }
-#endif
 
 void Decl::setInvalidDecl(bool Invalid) {
   InvalidDecl = Invalid;
@@ -83,16 +83,16 @@ void Decl::setInvalidDecl(bool Invalid) {
   //}
 }
 
-#if 0
 const char *DeclContext::getDeclKindName() const {
   switch (DeclKind) {
-  default: llvm_unreachable("Declaration context not in DeclNodes.inc!");
+  default: llvm_unreachable("Declaration context not in DeclNodes.def!");
 #define DECL(DERIVED, BASE) case Decl::DERIVED: return #DERIVED;
-#define ABSTRACT_DECL(DECL)
-#include "gong/AST/DeclNodes.inc"
+#define ABSTRACT_DECL(DECL, BASE)
+#include "gong/AST/DeclNodes.def"
   }
 }
 
+#if 0
 bool Decl::StatisticsEnabled = false;
 void Decl::EnableStatistics() {
   StatisticsEnabled = true;
@@ -694,13 +694,14 @@ DeclContext *DeclContext::getNonClosureAncestor() {
 //===----------------------------------------------------------------------===//
 // DeclContext Implementation
 //===----------------------------------------------------------------------===//
+#endif
 
 bool DeclContext::classof(const Decl *D) {
   switch (D->getKind()) {
 #define DECL(NAME, BASE)
 #define DECL_CONTEXT(NAME) case Decl::NAME:
 #define DECL_CONTEXT_BASE(NAME)
-#include "gong/AST/DeclNodes.inc"
+#include "gong/AST/DeclNodes.def"
       return true;
     default:
 #define DECL(NAME, BASE)
@@ -708,11 +709,10 @@ bool DeclContext::classof(const Decl *D) {
       if (D->getKind() >= Decl::first##NAME &&  \
           D->getKind() <= Decl::last##NAME)     \
         return true;
-#include "gong/AST/DeclNodes.inc"
+#include "gong/AST/DeclNodes.def"
       return false;
   }
 }
-#endif
 
 DeclContext::~DeclContext() { }
 
@@ -804,6 +804,8 @@ DeclContext *DeclContext::getPrimaryContext() {
   case Decl::TranslationUnit:
   case Decl::LinkageSpec:
   case Decl::Block:
+  case Decl::SingleType:
+  case Decl::MultiType:
     // There is only one DeclContext for these entities.
     return this;
 

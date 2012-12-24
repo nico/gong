@@ -151,11 +151,10 @@ Sema / AST
 
   declspec: unsigned, inline, virtual, explicit, auto, signed, typeof,
             TST_typename (for structs), struct
-  declaratorchunk: pionter, ref, arr, fun, memberpointer, paren
+  declaratorchunk: pointer, ref, arr, fun, memberpointer, paren
   declarator: declspec, list of declaratorchunks,
               single identifier (unqualifiedid), context
-
-  still need astcontext
+              parameter info
 
   Parser:
     Scope

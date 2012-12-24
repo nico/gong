@@ -1366,55 +1366,55 @@ void Sema::ActOnImportSpec(SourceLocation PathLoc, StringRef ImportPath,
   Diag(PathLoc, diag::unimplemented_package_import);
 }
 
-/// Registers an identifier as type name.
-void Sema::ActOnTypeSpec(IdentifierInfo &II, SourceLocation IILoc, Scope* S) {
-  assert(S->getFlags() & Scope::DeclScope);  // FIXME: Is this always true?
-                                             //        If so, remove DeclScope.
-
-  DeclContext *DC = CurContext;
-
-  //TypeSourceInfo *TInfo = GetTypeForDeclarator(D, S);
-  //QualType R = TInfo->getType();
-
-  LookupResult Previous(*this, &II, IILoc, LookupOrdinaryName,
-                        ForRedeclaration);
-  LookupName(Previous, S, /* CreateBuiltins = */ true);
-
-  // FIXME: ownership, pass type
-  TypeSpec *New =
-      TypeSpec::Create(getASTContext(), DC, IILoc, &II, /*Type=*/ NULL);
-
-  //if (D.getDeclSpec().getStorageClassSpec() == DeclSpec::SCS_typedef) {
-  //  New = ActOnTypedefDeclarator(S, D, DC, TInfo, Previous);
-  //} else if (R->isFunctionType()) {
-  //  New = ActOnFunctionDeclarator(S, D, DC, TInfo, Previous,
-  //                                TemplateParamLists,
-  //                                /*AddToScope=*/true);
-  //} else {
-  //  New = ActOnVariableDeclarator(S, D, DC, TInfo, Previous,
-  //                                TemplateParamLists);
-  //}
+static void CheckRedefinitionAndPushOnScope(Sema &Self, DeclContext *DC,
+                                            Scope *S, NamedDecl *New) {
+  LookupResult Previous(Self, &New->getDeclName(), New->getLocation(),
+                        Sema::LookupOrdinaryName, Sema::ForRedeclaration);
+  Self.LookupName(Previous, S, /* CreateBuiltins = */ true);
 
   if (!Previous.empty()) {
     // FIXME: maybe check if this is a type redecl and do something more useful?
-    Diag(New->getLocation(), diag::redefinition)
+    Self.Diag(New->getLocation(), diag::redefinition)
       << &New->getDeclName();
     NamedDecl *Old = Previous.getRepresentativeDecl();
-    Diag(Old->getLocation(), diag::note_previous_definition);
+    Self.Diag(Old->getLocation(), diag::note_previous_definition);
     New->setInvalidDecl();
   }
-
-
-  if (New == 0)
-    return; // 0;
 
   // If this has an identifier and is not an invalid redeclaration or 
   // function template specialization, add it to the scope stack.
   //if (New->getDeclName() &&
        //!(D.isRedeclaration() && New->isInvalidDecl()))
   if (!New->isInvalidDecl())
-    PushOnScopeChains(New, S);
+    Self.PushOnScopeChains(New, S);
+}
 
+Action::DeclPtrTy Sema::ActOnSingleTypeDecl(SourceLocation TypeLoc) {
+  return DeclPtrTy::make(SingleTypeDecl::Create(Context, CurContext, TypeLoc));
+}
+
+Action::DeclPtrTy Sema::ActOnMultiTypeDeclStart(SourceLocation TypeLoc,
+                                                SourceLocation LParenLoc) {
+  MultiTypeDecl *D = MultiTypeDecl::Create(Context, CurContext, TypeLoc);
+  D->setLParenLoc(LParenLoc);
+  return DeclPtrTy::make(D);
+}
+
+void Sema::ActOnMultiTypeDeclEnd(DeclPtrTy Decl, SourceLocation RParenLoc) {
+  Decl.getAs<MultiTypeDecl>()->setRParenLoc(RParenLoc);
+}
+
+/// Registers an identifier as type name.
+void Sema::ActOnTypeSpec(DeclPtrTy Decl, SourceLocation IILoc,
+                         IdentifierInfo &II, Scope *S) {
+  assert(S->getFlags() & Scope::DeclScope);  // FIXME: Is this always true?
+                                             //        If so, remove DeclScope.
+  DeclContext *DC = Decl.getAs<GoTypeDecl>();
+
+  // FIXME: ownership, pass type
+  TypeSpec *New =
+      TypeSpec::Create(Context, DC, IILoc, &II, /*Type=*/ NULL);
+  CheckRedefinitionAndPushOnScope(*this, DC, S, New);
   //return New;
 }
 

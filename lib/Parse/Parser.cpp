@@ -877,11 +877,11 @@ bool Parser::ParseDeclaration() {
 /// ConstDecl      = "const" ( ConstSpec | "(" { ConstSpec ";" } ")" ) .
 bool Parser::ParseConstDecl() {
   assert(Tok.is(tok::kw_const) && "Expected 'const'");
-  ConsumeToken();
+  SourceLocation ConstLoc = ConsumeToken();
   if (Tok.is(tok::identifier))
     return ParseConstSpec();
   if (Tok.is(tok::l_paren))
-    return ParseDeclGroup(DGK_Const);
+    return ParseDeclGroup(DGK_Const, ConstLoc);
   Diag(Tok, diag::expected_ident_or_l_paren);
   SkipUntil(tok::semi, /*StopAtSemi=*/false, /*DontConsume=*/true);
   return true;
@@ -912,18 +912,20 @@ bool Parser::ParseConstSpec() {
 /// TypeDecl     = "type" ( TypeSpec | "(" { TypeSpec ";" } ")" ) .
 bool Parser::ParseTypeDecl() {
   assert(Tok.is(tok::kw_type) && "Expected 'type'");
-  ConsumeToken();
-  if (Tok.is(tok::identifier))
-    return ParseTypeSpec();
+  SourceLocation TypeLoc = ConsumeToken();
+  if (Tok.is(tok::identifier)) {
+    Action::DeclPtrTy TypeDecl = Actions.ActOnSingleTypeDecl(TypeLoc);
+    return ParseTypeSpec(TypeDecl);
+  }
   if (Tok.is(tok::l_paren))
-    return ParseDeclGroup(DGK_Type);
+    return ParseDeclGroup(DGK_Type, TypeLoc);
   Diag(Tok, diag::expected_ident_or_l_paren);
   SkipUntil(tok::semi, /*StopAtSemi=*/false, /*DontConsume=*/true);
   return true;
 }
 
 /// TypeSpec     = identifier Type .
-bool Parser::ParseTypeSpec() {
+bool Parser::ParseTypeSpec(Action::DeclPtrTy TypeDecl) {
   assert(Tok.is(tok::identifier) && "Expected identifier");
   IdentifierInfo *TypeName = Tok.getIdentifierInfo();
   SourceLocation TypeNameLoc = ConsumeToken();
@@ -931,18 +933,18 @@ bool Parser::ParseTypeSpec() {
     Diag(Tok, diag::expected_type);
     return true;
   }
-  Actions.ActOnTypeSpec(*TypeName, TypeNameLoc, getCurScope());
+  Actions.ActOnTypeSpec(TypeDecl, TypeNameLoc, *TypeName, getCurScope());
   return ParseType();
 }
 
 /// VarDecl     = "var" ( VarSpec | "(" { VarSpec ";" } ")" ) .
 bool Parser::ParseVarDecl() {
   assert(Tok.is(tok::kw_var) && "Expected 'var'");
-  ConsumeToken();
+  SourceLocation VarLoc = ConsumeToken();
   if (Tok.is(tok::identifier))
     return ParseVarSpec();
   if (Tok.is(tok::l_paren))
-    return ParseDeclGroup(DGK_Var);
+    return ParseDeclGroup(DGK_Var, VarLoc);
   Diag(Tok, diag::expected_ident_or_l_paren);
   SkipUntil(tok::semi, /*StopAtSemi=*/false, /*DontConsume=*/true);
   return true;
@@ -970,10 +972,17 @@ bool Parser::ParseVarSpec() {
   return ParseExpressionList().isInvalid();
 }
 
-bool Parser::ParseDeclGroup(DeclGroupKind Kind) {
+bool Parser::ParseDeclGroup(DeclGroupKind Kind, SourceLocation KWLoc) {
   assert(Tok.is(tok::l_paren) && "Expected '('");
   BalancedDelimiterTracker T(*this, tok::l_paren);
   T.consumeOpen();
+
+  // FIXME: Do this for var and const too
+  // FIXME: Alternatively, this could collect all the Specs in a vector and
+  //        pass them at once to ActOnMultiDecl?
+  Action::DeclPtrTy DeclGroup;
+  if (Kind == DGK_Type)
+    DeclGroup = Actions.ActOnMultiTypeDeclStart(KWLoc, T.getOpenLocation());
 
   // FIXME: Similar to importspec block parsing
   while (Tok.isNot(tok::r_paren) && Tok.isNot(tok::eof)) {
@@ -985,11 +994,12 @@ bool Parser::ParseDeclGroup(DeclGroupKind Kind) {
     bool Fail;
     switch (Kind) {
     case DGK_Const: Fail = ParseConstSpec(); break;
-    case DGK_Type:  Fail = ParseTypeSpec(); break;
+    case DGK_Type:  Fail = ParseTypeSpec(DeclGroup); break;
     case DGK_Var:   Fail = ParseVarSpec(); break;
     }
     if (Fail) {
       T.skipToEnd();
+      // FIXME: This doesn't call ActOnMultiTypeDeclEnd(). Does it matter?
       return true;
     }
 
@@ -1000,7 +1010,12 @@ bool Parser::ParseDeclGroup(DeclGroupKind Kind) {
     if (Tok.is(tok::semi))
       ConsumeToken();
   }
-  return T.consumeClose();
+  T.consumeClose();
+
+  // FIXME: Do this for var and const too
+  if (Kind == DGK_Type)
+    Actions.ActOnMultiTypeDeclEnd(DeclGroup, T.getCloseLocation());
+  return false;
 }
 
 bool Parser::IsType() {
