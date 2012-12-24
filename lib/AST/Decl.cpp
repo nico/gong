@@ -580,6 +580,29 @@ static void clearLinkageForClass(const CXXRecordDecl *record) {
 #endif
 void NamedDecl::anchor() { }
 
+void TypeSpec::anchor() { }
+
+TypeSpec *TypeSpec::Create(ASTContext &C, DeclContext *DC, SourceLocation L,
+                           IdentifierInfo *II, Type *T) {
+  return new (C) TypeSpec(DC, L, II, T);
+}
+
+void GoTypeDecl::anchor() { }
+
+void SingleTypeDecl::anchor() { }
+
+SingleTypeDecl *SingleTypeDecl::Create(ASTContext &C, DeclContext *DC,
+                                       SourceLocation TypeLoc) {
+  return new (C) SingleTypeDecl(DC, TypeLoc);
+}
+
+void MultiTypeDecl::anchor() { }
+
+MultiTypeDecl *MultiTypeDecl::Create(ASTContext &C, DeclContext *DC,
+                                     SourceLocation TypeLoc) {
+  return new (C) MultiTypeDecl(DC, TypeLoc);
+}
+
 #if 0
 void NamedDecl::ClearLinkageCache() {
   // Note that we can't skip clearing the linkage of children just

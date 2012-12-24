@@ -165,8 +165,12 @@ Sema / AST
         Scope::DeclScope
   AST:
     DeclContext
+      decl_iterator of decls; specific_decl_iterator to limit
     Decl
+      has source loc, attrs, used, invalid etc bits
+      NextInContext list
     Redeclarable<>
+      linked list of decls (with cycle and some bool)
   Sema:
     IdentifierResolver
     LookupResult
@@ -265,7 +269,9 @@ AST
 
   File / TranslationUnit / ?
 
-  ImportSpec
+  ImportSpec  <- Decl?
+    SingleImportSpec
+    MultiImportSpec
 
   Stmt
     NullStmt
@@ -317,10 +323,28 @@ AST
     TypeClauseExpr?
     RangeExpr?
 
-  Declaration
+ TopLevelDecl
+   Declaration
     ConstDecl
-    TypeDecl
+      SingleConstSpec
+      MultiConstSpec
+
+    blah, ConstSpec has to be a child of NamedDecl
+    => This is similar to LinkageSpecDecl in clang. Make all the Decls be
+    transparent DeclContexts, and have FooSpec be a child class of NamedDecl
+
+    TypeDecl  ('type' is in 'loc' of decl superclass)
+      SingleTypeDecl
+      MultiTypeDecl
+
+      void ActOnSingleTypeDecl(typeloc, ii, iiloc, type*)
+      DeclTy ActOnStartMultiTypeDecl(typeloc, lparenloc)
+      void ActOnMultiTypeDeclSpec(DeclTy, ii, iiloc, type*)
+      void ActOnEndMultiTypeDecl(DeclTy, rparenloc)
+
     VarDecl
+      SingleVarDecl
+      MultiVarDecl
    FunctionDecl
    MethodDecl
 

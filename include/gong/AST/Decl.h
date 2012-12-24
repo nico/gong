@@ -359,6 +359,79 @@ public:
   static bool classof(const Decl *D) { return classofKind(D->getKind()); }
   static bool classofKind(Kind K) { return K >= firstNamed && K <= lastNamed; }
 };
+
+/// Represents a TypeSpec in Go. A TypeSpec is just a name for a type.
+class TypeSpec : public NamedDecl {
+  virtual void anchor();
+
+  Type *T;
+
+  TypeSpec(DeclContext *DC, SourceLocation L, IdentifierInfo *N, Type *T)
+    : NamedDecl(Decl::TypeSpec, DC, L, N), T(T) { }
+public:
+  static TypeSpec *Create(ASTContext &C, DeclContext *DC, SourceLocation L,
+                          IdentifierInfo *II, Type *T);
+
+  // Implement isa/cast/dyncast/etc.
+  static bool classof(const Decl *D) { return classofKind(D->getKind()); }
+  static bool classofKind(Kind K) { return K == Decl::TypeSpec; }
+};
+
+/// Represents a TypeDecl in Go.  This is an abstract class.
+class GoTypeDecl : public Decl, public DeclContext {
+  virtual void anchor();
+
+protected:
+  GoTypeDecl(Kind DK, DeclContext *DC, SourceLocation L)
+    : Decl(DK, DC, L), DeclContext(DK) { }
+
+public:
+  static bool classof(const Decl *D) { return classofKind(D->getKind()); }
+  static bool classofKind(Kind K) {
+    return K >= firstGoType && K <= lastGoType;
+  }
+};
+
+/// Represents a TypeDecl with a single TypeSpec, for example "type foo int".
+class SingleTypeDecl : public GoTypeDecl {
+  virtual void anchor();
+
+  SingleTypeDecl(DeclContext *DC, SourceLocation TypeLoc)
+    : GoTypeDecl(SingleType, DC, TypeLoc) {}
+public:
+  static SingleTypeDecl *Create(ASTContext &C, DeclContext *DC,
+                                SourceLocation TypeLoc);
+
+  // Implement isa/cast/dyncast/etc.
+  static bool classof(const Decl *D) { return classofKind(D->getKind()); }
+  static bool classofKind(Kind K) { return K == SingleType; }
+};
+
+/// Represents a TypeDecl with a parentheses, for example
+/// "type (foo int; bar int)".
+class MultiTypeDecl : public GoTypeDecl {
+  virtual void anchor();
+  SourceLocation LParenLoc, RParenLoc;
+
+  MultiTypeDecl(DeclContext *DC, SourceLocation TypeLoc)
+    : GoTypeDecl(MultiType, DC, TypeLoc) {}
+public:
+  static MultiTypeDecl *Create(ASTContext &C, DeclContext *DC,
+                               SourceLocation TypeLoc);
+
+  /// \brief Get the location of the left parenthesis '('.
+  SourceLocation getLParenLoc() const { return LParenLoc; }
+  void setLParenLoc(SourceLocation Loc) { LParenLoc = Loc; }
+
+  /// \brief Get the location of the right parenthesis ')'.
+  SourceLocation getRParenLoc() const { return RParenLoc; }
+  void setRParenLoc(SourceLocation Loc) { RParenLoc = Loc; }
+
+  // Implement isa/cast/dyncast/etc.
+  static bool classof(const Decl *D) { return classofKind(D->getKind()); }
+  static bool classofKind(Kind K) { return K == MultiType; }
+};
+
 #if 0
 
 inline raw_ostream &operator<<(raw_ostream &OS, const NamedDecl &ND) {

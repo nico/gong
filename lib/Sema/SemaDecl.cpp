@@ -1368,37 +1368,21 @@ void Sema::ActOnImportSpec(SourceLocation PathLoc, StringRef ImportPath,
 
 /// Registers an identifier as type name.
 void Sema::ActOnTypeSpec(IdentifierInfo &II, SourceLocation IILoc, Scope* S) {
-  //getTable(TypeNameInfoTablePtr)->AddEntry(Action::IIT_Type, &II);
-
-  // FIXME: look up II, diag conflicts
-
-  // The scope passed in may not be a decl scope.  Zip up the scope tree until
-  // we find one that is.
-  //while ((S->getFlags() & Scope::DeclScope) == 0)
-    //S = S->getParent();
   assert(S->getFlags() & Scope::DeclScope);  // FIXME: Is this always true?
                                              //        If so, remove DeclScope.
 
   DeclContext *DC = CurContext;
 
-  /*if (DiagnoseClassNameShadow(DC, NameInfo))
-    // If this is a typedef, we'll end up spewing multiple diagnostics.
-    // Just return early; it's safer.
-    if (D.getDeclSpec().getStorageClassSpec() == DeclSpec::SCS_typedef)
-      return 0;*/
-  
   //TypeSourceInfo *TInfo = GetTypeForDeclarator(D, S);
   //QualType R = TInfo->getType();
 
   LookupResult Previous(*this, &II, IILoc, LookupOrdinaryName,
                         ForRedeclaration);
-
   LookupName(Previous, S, /* CreateBuiltins = */ true);
 
-  NamedDecl *New = 0;
-
-  // FIXME: ASTContext, ownership, etc
-  New = new TypeDecl(Decl::Enum, DC, IILoc, &II);
+  // FIXME: ownership, pass type
+  TypeSpec *New =
+      TypeSpec::Create(getASTContext(), DC, IILoc, &II, /*Type=*/ NULL);
 
   //if (D.getDeclSpec().getStorageClassSpec() == DeclSpec::SCS_typedef) {
   //  New = ActOnTypedefDeclarator(S, D, DC, TInfo, Previous);
@@ -1417,7 +1401,7 @@ void Sema::ActOnTypeSpec(IdentifierInfo &II, SourceLocation IILoc, Scope* S) {
       << &New->getDeclName();
     NamedDecl *Old = Previous.getRepresentativeDecl();
     Diag(Old->getLocation(), diag::note_previous_definition);
-    //return New->setInvalidDecl();
+    New->setInvalidDecl();
   }
 
 
@@ -1432,9 +1416,6 @@ void Sema::ActOnTypeSpec(IdentifierInfo &II, SourceLocation IILoc, Scope* S) {
     PushOnScopeChains(New, S);
 
   //return New;
-
-  // Remember that this needs to be removed when the scope is popped.
-  //S->AddDecl(DeclPtrTy::make(&II));
 }
 
 /// Registers an identifier as function name.
@@ -3601,26 +3582,6 @@ Decl *Sema::ActOnDeclarator(Scope *S, Declarator &D) {
     Dcl->setTopLevelDeclInObjCContainer();
 
   return Dcl;
-}
-
-/// DiagnoseClassNameShadow - Implement C++ [class.mem]p13:
-///   If T is the name of a class, then each of the following shall have a 
-///   name different from T:
-///     - every static data member of class T;
-///     - every member function of class T
-///     - every member of class T that is itself a type;
-/// \returns true if the declaration name violates these rules.
-bool Sema::DiagnoseClassNameShadow(DeclContext *DC,
-                                   DeclarationNameInfo NameInfo) {
-  DeclarationName Name = NameInfo.getName();
-
-  if (CXXRecordDecl *Record = dyn_cast<CXXRecordDecl>(DC)) 
-    if (Record->getIdentifier() && Record->getDeclName() == Name) {
-      Diag(NameInfo.getLoc(), diag::err_member_name_of_class) << Name;
-      return true;
-    }
-
-  return false;
 }
 
 /// \brief Diagnose a declaration whose declarator-id has the given 

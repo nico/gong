@@ -74,8 +74,16 @@
 #endif
 
 DECL(TranslationUnit, Decl)
+
+ABSTRACT_DECL(GoType, Decl)  // FIXME: rename if Type below disappears?
+  DECL(SingleType, GoType)
+  DECL(MultiType, GoType)
+
 ABSTRACT_DECL(Named,  Decl)
   DECL(Namespace, NamedDecl)
+
+  DECL(TypeSpec, NamedDecl)
+
   ABSTRACT_DECL(Type, NamedDecl)
     DECL(Typedef, TypeDecl)
     ABSTRACT_DECL(Tag, TypeDecl)
@@ -104,6 +112,7 @@ LAST_DECL(Block, Decl)
 
 // Declaration contexts. DECL_CONTEXT_BASE indicates that it has subclasses.
 DECL_CONTEXT(TranslationUnit)
+DECL_CONTEXT_BASE(GoType)
 DECL_CONTEXT(Namespace)
 DECL_CONTEXT(LinkageSpec)
 DECL_CONTEXT_BASE(Tag)
@@ -112,6 +121,7 @@ LAST_DECL_CONTEXT(Block)
 
 // Declaration ranges
 DECL_RANGE(Named, Namespace, UsingShadow)
+DECL_RANGE(GoType, SingleType, MultiType)
 DECL_RANGE(Type, Typedef, CXXRecord)
 DECL_RANGE(Tag, Enum, CXXRecord)
 DECL_RANGE(Record, Record, CXXRecord)

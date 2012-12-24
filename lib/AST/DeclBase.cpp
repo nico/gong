@@ -71,17 +71,19 @@ const char *Decl::getDeclKindName() const {
 #include "gong/AST/DeclNodes.inc"
   }
 }
+#endif
 
 void Decl::setInvalidDecl(bool Invalid) {
   InvalidDecl = Invalid;
-  if (Invalid && !isa<ParmVarDecl>(this)) {
-    // Defensive maneuver for ill-formed code: we're likely not to make it to
-    // a point where we set the access specifier, so default it to "public"
-    // to avoid triggering asserts elsewhere in the front end. 
-    setAccess(AS_public);
-  }
+  //if (Invalid && !isa<ParmVarDecl>(this)) {
+  //  // Defensive maneuver for ill-formed code: we're likely not to make it to
+  //  // a point where we set the access specifier, so default it to "public"
+  //  // to avoid triggering asserts elsewhere in the front end. 
+  //  setAccess(AS_public);
+  //}
 }
 
+#if 0
 const char *DeclContext::getDeclKindName() const {
   switch (DeclKind) {
   default: llvm_unreachable("Declaration context not in DeclNodes.inc!");
@@ -128,34 +130,11 @@ void Decl::add(Kind k) {
   }
 }
 
-bool Decl::isTemplateParameterPack() const {
-  if (const TemplateTypeParmDecl *TTP = dyn_cast<TemplateTypeParmDecl>(this))
-    return TTP->isParameterPack();
-  if (const NonTypeTemplateParmDecl *NTTP
-                                = dyn_cast<NonTypeTemplateParmDecl>(this))
-    return NTTP->isParameterPack();
-  if (const TemplateTemplateParmDecl *TTP
-                                    = dyn_cast<TemplateTemplateParmDecl>(this))
-    return TTP->isParameterPack();
-  return false;
-}
-
-bool Decl::isParameterPack() const {
-  if (const ParmVarDecl *Parm = dyn_cast<ParmVarDecl>(this))
-    return Parm->isParameterPack();
-  
-  return isTemplateParameterPack();
-}
-
 bool Decl::isFunctionOrFunctionTemplate() const {
   if (const UsingShadowDecl *UD = dyn_cast<UsingShadowDecl>(this))
     return UD->getTargetDecl()->isFunctionOrFunctionTemplate();
 
   return isa<FunctionDecl>(this) || isa<FunctionTemplateDecl>(this);
-}
-
-bool Decl::isTemplateDecl() const {
-  return isa<TemplateDecl>(this);
 }
 
 const DeclContext *Decl::getParentFunctionOrMethod() const {
@@ -791,7 +770,7 @@ bool DeclContext::isDependentContext() const {
 bool DeclContext::isTransparentContext() const {
   /*if (DeclKind == Decl::Enum)
     return !cast<EnumDecl>(this)->isScoped();
-  else*/ if (DeclKind == Decl::LinkageSpec)
+  else*/ if (isa<GoTypeDecl>(this)) //DeclKind == Decl::LinkageSpec)
     return true;
 
   return false;
