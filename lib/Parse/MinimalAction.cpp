@@ -131,13 +131,15 @@ void MinimalAction::ActOnTypeSpec(DeclPtrTy Decl, SourceLocation IILoc,
   S->AddDecl(DeclPtrTy::make(&II));
 }
 
-void MinimalAction::ActOnFunctionDecl(SourceLocation FuncLoc,
-                                      SourceLocation NameLoc,
-                                      IdentifierInfo &II, Scope *S) {
+Action::DeclPtrTy MinimalAction::ActOnFunctionDecl(SourceLocation FuncLoc,
+                                                   SourceLocation NameLoc,
+                                                   IdentifierInfo &II,
+                                                   Scope *S) {
   getTable(TypeNameInfoTablePtr)->AddEntry(Action::IIT_Func, &II);
 
   // Remember that this needs to be removed when the scope is popped.
   S->AddDecl(DeclPtrTy::make(&II));
+  return DeclPtrTy();
 }
 
 void MinimalAction::ActOnTranslationUnitScope(Scope *S) {

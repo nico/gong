@@ -374,6 +374,7 @@ public:
   bool ParseDeferStmt();
   bool ParseEmptyStmt();
   bool ParseBlock();
+  bool ParseBlockBody();
 
   /// ConsumeToken - Consume the current 'peek token' and lex the next one.
   /// This does not work with all kinds of tokens: strings and specific other

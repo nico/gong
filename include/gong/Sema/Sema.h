@@ -1444,8 +1444,11 @@ public:
   void ActOnTypeSpec(DeclPtrTy Decl, SourceLocation IILoc, IdentifierInfo &II,
                      Scope *S) LLVM_OVERRIDE;
 
-  void ActOnFunctionDecl(SourceLocation FuncLoc, SourceLocation NameLoc,
-                         IdentifierInfo &II, Scope *S) LLVM_OVERRIDE;
+  DeclPtrTy ActOnFunctionDecl(SourceLocation FuncLoc, SourceLocation NameLoc,
+                              IdentifierInfo &II, Scope *S) LLVM_OVERRIDE;
+
+  void ActOnStartOfFunctionDef(DeclPtrTy Fun, Scope *FnBodyScope) LLVM_OVERRIDE;
+  void ActOnFinishFunctionBody(DeclPtrTy Decl/*, StmtArg Body*/) LLVM_OVERRIDE;
 
   void ActOnPopScope(SourceLocation Loc, Scope *S) LLVM_OVERRIDE;
   void ActOnTranslationUnitScope(Scope *S) LLVM_OVERRIDE;

@@ -1392,15 +1392,161 @@ void Sema::ActOnTypeSpec(DeclPtrTy Decl, SourceLocation IILoc,
 }
 
 /// Registers an identifier as function name.
-void Sema::ActOnFunctionDecl(SourceLocation FuncLoc, SourceLocation NameLoc,
-                             IdentifierInfo &II, Scope *S) {
+Action::DeclPtrTy Sema::ActOnFunctionDecl(SourceLocation FuncLoc,
+                                          SourceLocation NameLoc,
+                                          IdentifierInfo &II, Scope *S) {
   assert(S->getFlags() & Scope::DeclScope);
   DeclContext *DC = CurContext;
 
   FunctionDecl *New = FunctionDecl::Create(Context, DC, FuncLoc, NameLoc, &II);
   CheckRedefinitionAndPushOnScope(*this, DC, S, New);
+  return DeclPtrTy::make(New);
 }
 
+void Sema::ActOnStartOfFunctionDef(DeclPtrTy Fun, Scope *FnBodyScope) {
+  // assert(getCurFunctionDecl() == 0 && "Function parsing confused");
+
+  if (!Fun)
+    return;
+  FunctionDecl *FD = Fun.getAs<FunctionDecl>();
+
+  // Enter a new function scope
+  //PushFunctionScope();  // FIXME
+
+fprintf(stderr, ": %p\n", FnBodyScope);
+  if (FnBodyScope)
+    PushDeclContext(FnBodyScope, FD);
+
+#if 0
+  // Check the validity of our function parameters
+  CheckParmsForFunctionDef(FD->param_begin(), FD->param_end(),
+                           /*CheckParameterNames=*/true);
+
+  // Introduce our parameters into the function scope
+  for (unsigned p = 0, NumParams = FD->getNumParams(); p < NumParams; ++p) {
+    ParmVarDecl *Param = FD->getParamDecl(p);
+    Param->setOwningFunction(FD);
+
+    // If this has an identifier, add it to the scope stack.
+    if (Param->getIdentifier() && FnBodyScope) {
+      CheckShadow(FnBodyScope, Param);
+
+      PushOnScopeChains(Param, FnBodyScope);
+    }
+  }
+
+  // If we had any tags defined in the function prototype,
+  // introduce them into the function scope.
+  if (FnBodyScope) {
+    for (llvm::ArrayRef<NamedDecl*>::iterator I = FD->getDeclsInPrototypeScope().begin(),
+           E = FD->getDeclsInPrototypeScope().end(); I != E; ++I) {
+      NamedDecl *D = *I;
+
+      // Some of these decls (like enums) may have been pinned to the translation unit
+      // for lack of a real context earlier. If so, remove from the translation unit
+      // and reattach to the current context.
+      if (D->getLexicalDeclContext() == Context.getTranslationUnitDecl()) {
+        // Is the decl actually in the context?
+        for (DeclContext::decl_iterator DI = Context.getTranslationUnitDecl()->decls_begin(),
+               DE = Context.getTranslationUnitDecl()->decls_end(); DI != DE; ++DI) {
+          if (*DI == D) {  
+            Context.getTranslationUnitDecl()->removeDecl(D);
+            break;
+          }
+        }
+        // Either way, reassign the lexical decl context to our FunctionDecl.
+        D->setLexicalDeclContext(CurContext);
+      }
+
+      // If the decl has a non-null name, make accessible in the current scope.
+      if (!D->getName().empty())
+        PushOnScopeChains(D, FnBodyScope, /*AddToContext=*/false);
+
+      // Similarly, dive into enums and fish their constants out, making them
+      // accessible in this scope.
+      if (EnumDecl *ED = dyn_cast<EnumDecl>(D)) {
+        for (EnumDecl::enumerator_iterator EI = ED->enumerator_begin(),
+               EE = ED->enumerator_end(); EI != EE; ++EI)
+          PushOnScopeChains(*EI, FnBodyScope, /*AddToContext=*/false);
+      }
+    }
+  }
+#endif
+}
+
+void Sema::ActOnFinishFunctionBody(DeclPtrTy Fun/*, StmtArg Body*/) {
+fprintf(stderr, "2:\n");
+  if (!Fun)
+    return;
+  FunctionDecl *FD = Fun.getAs<FunctionDecl>();
+
+#if 0
+  FD->setBody(Body);
+
+  if (!FD->isInvalidDecl()) {
+    DiagnoseUnusedParameters(FD->param_begin(), FD->param_end());
+    DiagnoseSizeOfParametersAndReturnValue(FD->param_begin(), FD->param_end(),
+                                           FD->getResultType(), FD);
+    
+    // Try to apply the named return value optimization. We have to check
+    // if we can do this here because lambdas keep return statements around
+    // to deduce an implicit return type.
+    if (getLangOpts().CPlusPlus && FD->getResultType()->isRecordType() &&
+        !FD->isDependentContext())
+      computeNRVO(Body, getCurFunction());
+  }
+  assert((FD == getCurFunctionDecl()/* ||
+          getCurLambda()->CallOperator == FD*/) &&
+         "Function parsing confused");
+
+  // Verify and clean out per-function state.
+  if (Body) {
+    // Verify that gotos and switch cases don't jump into scopes illegally.
+    if (getCurFunction()->NeedsScopeChecking() &&
+        !dcl->isInvalidDecl() &&
+        !hasAnyUnrecoverableErrorsInThisFunction() &&
+        !PP.isCodeCompletionEnabled())
+      DiagnoseInvalidJumps(Body);
+
+    // If any errors have occurred, clear out any temporaries that may have
+    // been leftover. This ensures that these temporaries won't be picked up for
+    // deletion in some later function.
+    if (PP.getDiagnostics().hasErrorOccurred() ||
+        PP.getDiagnostics().getSuppressAllDiagnostics()) {
+      DiscardCleanupsInEvaluationContext();
+    }
+    if (!PP.getDiagnostics().hasUncompilableErrorOccurred() &&
+        !isa<FunctionTemplateDecl>(dcl)) {
+      // Since the body is valid, issue any analysis-based warnings that are
+      // enabled.
+      ActivePolicy = &WP;
+    }
+
+    if (!IsInstantiation && FD && FD->isConstexpr() && !FD->isInvalidDecl() &&
+        (!CheckConstexprFunctionDecl(FD) ||
+         !CheckConstexprFunctionBody(FD, Body)))
+      FD->setInvalidDecl();
+
+    assert(ExprCleanupObjects.empty() && "Leftover temporaries in function");
+    assert(!ExprNeedsCleanups && "Unaccounted cleanups in function");
+    assert(MaybeODRUseExprs.empty() &&
+           "Leftover expressions for odr-use checking");
+  }
+#endif
+  
+  PopDeclContext();
+
+  //PopFunctionScopeInfo(ActivePolicy, dcl);  // FIXME
+  
+#if 0
+  // If any errors have occurred, clear out any temporaries that may have
+  // been leftover. This ensures that these temporaries won't be picked up for
+  // deletion in some later function.
+  if (getDiagnostics().hasErrorOccurred()) {
+    DiscardCleanupsInEvaluationContext();
+  }
+#endif
+}
 
 void Sema::ActOnPopScope(SourceLocation Loc, Scope *S) {
   if (S->decl_empty()) return;
@@ -7605,144 +7751,6 @@ void Sema::CheckForFunctionRedefinition(FunctionDecl *FD) {
   }
 }
 
-Decl *Sema::ActOnStartOfFunctionDef(Scope *FnBodyScope, Decl *D) {
-  // Clear the last template instantiation error context.
-  LastTemplateInstantiationErrorContext = ActiveTemplateInstantiation();
-  
-  if (!D)
-    return D;
-  FunctionDecl *FD = 0;
-
-  if (FunctionTemplateDecl *FunTmpl = dyn_cast<FunctionTemplateDecl>(D))
-    FD = FunTmpl->getTemplatedDecl();
-  else
-    FD = cast<FunctionDecl>(D);
-
-  // Enter a new function scope
-  PushFunctionScope();
-
-  // See if this is a redefinition.
-  if (!FD->isLateTemplateParsed())
-    CheckForFunctionRedefinition(FD);
-
-  // Builtin functions cannot be defined.
-  if (unsigned BuiltinID = FD->getBuiltinID()) {
-    if (!Context.BuiltinInfo.isPredefinedLibFunction(BuiltinID)) {
-      Diag(FD->getLocation(), diag::err_builtin_definition) << FD;
-      FD->setInvalidDecl();
-    }
-  }
-
-  // The return type of a function definition must be complete
-  // (C99 6.9.1p3, C++ [dcl.fct]p6).
-  QualType ResultType = FD->getResultType();
-  if (!ResultType->isDependentType() && !ResultType->isVoidType() &&
-      !FD->isInvalidDecl() &&
-      RequireCompleteType(FD->getLocation(), ResultType,
-                          diag::err_func_def_incomplete_result))
-    FD->setInvalidDecl();
-
-  // GNU warning -Wmissing-prototypes:
-  //   Warn if a global function is defined without a previous
-  //   prototype declaration. This warning is issued even if the
-  //   definition itself provides a prototype. The aim is to detect
-  //   global functions that fail to be declared in header files.
-  if (ShouldWarnAboutMissingPrototype(FD))
-    Diag(FD->getLocation(), diag::warn_missing_prototype) << FD;
-
-  if (FnBodyScope)
-    PushDeclContext(FnBodyScope, FD);
-
-  // Check the validity of our function parameters
-  CheckParmsForFunctionDef(FD->param_begin(), FD->param_end(),
-                           /*CheckParameterNames=*/true);
-
-  // Introduce our parameters into the function scope
-  for (unsigned p = 0, NumParams = FD->getNumParams(); p < NumParams; ++p) {
-    ParmVarDecl *Param = FD->getParamDecl(p);
-    Param->setOwningFunction(FD);
-
-    // If this has an identifier, add it to the scope stack.
-    if (Param->getIdentifier() && FnBodyScope) {
-      CheckShadow(FnBodyScope, Param);
-
-      PushOnScopeChains(Param, FnBodyScope);
-    }
-  }
-
-  // If we had any tags defined in the function prototype,
-  // introduce them into the function scope.
-  if (FnBodyScope) {
-    for (llvm::ArrayRef<NamedDecl*>::iterator I = FD->getDeclsInPrototypeScope().begin(),
-           E = FD->getDeclsInPrototypeScope().end(); I != E; ++I) {
-      NamedDecl *D = *I;
-
-      // Some of these decls (like enums) may have been pinned to the translation unit
-      // for lack of a real context earlier. If so, remove from the translation unit
-      // and reattach to the current context.
-      if (D->getLexicalDeclContext() == Context.getTranslationUnitDecl()) {
-        // Is the decl actually in the context?
-        for (DeclContext::decl_iterator DI = Context.getTranslationUnitDecl()->decls_begin(),
-               DE = Context.getTranslationUnitDecl()->decls_end(); DI != DE; ++DI) {
-          if (*DI == D) {  
-            Context.getTranslationUnitDecl()->removeDecl(D);
-            break;
-          }
-        }
-        // Either way, reassign the lexical decl context to our FunctionDecl.
-        D->setLexicalDeclContext(CurContext);
-      }
-
-      // If the decl has a non-null name, make accessible in the current scope.
-      if (!D->getName().empty())
-        PushOnScopeChains(D, FnBodyScope, /*AddToContext=*/false);
-
-      // Similarly, dive into enums and fish their constants out, making them
-      // accessible in this scope.
-      if (EnumDecl *ED = dyn_cast<EnumDecl>(D)) {
-        for (EnumDecl::enumerator_iterator EI = ED->enumerator_begin(),
-               EE = ED->enumerator_end(); EI != EE; ++EI)
-          PushOnScopeChains(*EI, FnBodyScope, /*AddToContext=*/false);
-      }
-    }
-  }
-
-  // Ensure that the function's exception specification is instantiated.
-  if (const FunctionProtoType *FPT = FD->getType()->getAs<FunctionProtoType>())
-    ResolveExceptionSpec(D->getLocation(), FPT);
-
-  // Checking attributes of current function definition
-  // dllimport attribute.
-  DLLImportAttr *DA = FD->getAttr<DLLImportAttr>();
-  if (DA && (!FD->getAttr<DLLExportAttr>())) {
-    // dllimport attribute cannot be directly applied to definition.
-    // Microsoft accepts dllimport for functions defined within class scope. 
-    if (!DA->isInherited() &&
-        !(LangOpts.MicrosoftExt && FD->getLexicalDeclContext()->isRecord())) {
-      Diag(FD->getLocation(),
-           diag::err_attribute_can_be_applied_only_to_symbol_declaration)
-        << "dllimport";
-      FD->setInvalidDecl();
-      return FD;
-    }
-
-    // Visual C++ appears to not think this is an issue, so only issue
-    // a warning when Microsoft extensions are disabled.
-    if (!LangOpts.MicrosoftExt) {
-      // If a symbol previously declared dllimport is later defined, the
-      // attribute is ignored in subsequent references, and a warning is
-      // emitted.
-      Diag(FD->getLocation(),
-           diag::warn_redeclaration_without_attribute_prev_attribute_ignored)
-        << FD->getName() << "dllimport";
-    }
-  }
-  // We want to attach documentation to original Decl (which might be
-  // a function template).
-  ActOnDocumentableDecl(D);
-  return FD;
-}
-
 /// \brief Given the set of return statements within a function body,
 /// compute the variables that are subject to the named return value 
 /// optimization.
@@ -7803,122 +7811,6 @@ Decl *Sema::ActOnSkippedFunctionBody(Decl *Decl) {
     MD->setHasSkippedBody();
   return ActOnFinishFunctionBody(Decl, 0);
 }
-
-Decl *Sema::ActOnFinishFunctionBody(Decl *D, Stmt *BodyArg) {
-  return ActOnFinishFunctionBody(D, BodyArg, false);
-}
-
-Decl *Sema::ActOnFinishFunctionBody(Decl *dcl, Stmt *Body,
-                                    bool IsInstantiation) {
-  FunctionDecl *FD = 0;
-  FunctionTemplateDecl *FunTmpl = dyn_cast_or_null<FunctionTemplateDecl>(dcl);
-  if (FunTmpl)
-    FD = FunTmpl->getTemplatedDecl();
-  else
-    FD = dyn_cast_or_null<FunctionDecl>(dcl);
-
-  sema::AnalysisBasedWarnings::Policy WP = AnalysisWarnings.getDefaultPolicy();
-  sema::AnalysisBasedWarnings::Policy *ActivePolicy = 0;
-
-  if (FD) {
-    FD->setBody(Body);
-
-    // If the function implicitly returns zero (like 'main') or is naked,
-    // don't complain about missing return statements.
-    if (FD->hasImplicitReturnZero() || FD->hasAttr<NakedAttr>())
-      WP.disableCheckFallThrough();
-
-    // MSVC permits the use of pure specifier (=0) on function definition,
-    // defined at class scope, warn about this non standard construct.
-    if (getLangOpts().MicrosoftExt && FD->isPure())
-      Diag(FD->getLocation(), diag::warn_pure_function_definition);
-
-    if (!FD->isInvalidDecl()) {
-      DiagnoseUnusedParameters(FD->param_begin(), FD->param_end());
-      DiagnoseSizeOfParametersAndReturnValue(FD->param_begin(), FD->param_end(),
-                                             FD->getResultType(), FD);
-      
-      // If this is a constructor, we need a vtable.
-      if (CXXConstructorDecl *Constructor = dyn_cast<CXXConstructorDecl>(FD))
-        MarkVTableUsed(FD->getLocation(), Constructor->getParent());
-      
-      // Try to apply the named return value optimization. We have to check
-      // if we can do this here because lambdas keep return statements around
-      // to deduce an implicit return type.
-      if (getLangOpts().CPlusPlus && FD->getResultType()->isRecordType() &&
-          !FD->isDependentContext())
-        computeNRVO(Body, getCurFunction());
-    }
-    
-    assert((FD == getCurFunctionDecl() || getCurLambda()->CallOperator == FD) &&
-           "Function parsing confused");
-  } else {
-    return 0;
-  }
-
-  // Verify and clean out per-function state.
-  if (Body) {
-    // C++ constructors that have function-try-blocks can't have return
-    // statements in the handlers of that block. (C++ [except.handle]p14)
-    // Verify this.
-    if (FD && isa<CXXConstructorDecl>(FD) && isa<CXXTryStmt>(Body))
-      DiagnoseReturnInConstructorExceptionHandler(cast<CXXTryStmt>(Body));
-    
-    // Verify that gotos and switch cases don't jump into scopes illegally.
-    if (getCurFunction()->NeedsScopeChecking() &&
-        !dcl->isInvalidDecl() &&
-        !hasAnyUnrecoverableErrorsInThisFunction() &&
-        !PP.isCodeCompletionEnabled())
-      DiagnoseInvalidJumps(Body);
-
-    if (CXXDestructorDecl *Destructor = dyn_cast<CXXDestructorDecl>(dcl)) {
-      if (!Destructor->getParent()->isDependentType())
-        CheckDestructor(Destructor);
-
-      MarkBaseAndMemberDestructorsReferenced(Destructor->getLocation(),
-                                             Destructor->getParent());
-    }
-    
-    // If any errors have occurred, clear out any temporaries that may have
-    // been leftover. This ensures that these temporaries won't be picked up for
-    // deletion in some later function.
-    if (PP.getDiagnostics().hasErrorOccurred() ||
-        PP.getDiagnostics().getSuppressAllDiagnostics()) {
-      DiscardCleanupsInEvaluationContext();
-    }
-    if (!PP.getDiagnostics().hasUncompilableErrorOccurred() &&
-        !isa<FunctionTemplateDecl>(dcl)) {
-      // Since the body is valid, issue any analysis-based warnings that are
-      // enabled.
-      ActivePolicy = &WP;
-    }
-
-    if (!IsInstantiation && FD && FD->isConstexpr() && !FD->isInvalidDecl() &&
-        (!CheckConstexprFunctionDecl(FD) ||
-         !CheckConstexprFunctionBody(FD, Body)))
-      FD->setInvalidDecl();
-
-    assert(ExprCleanupObjects.empty() && "Leftover temporaries in function");
-    assert(!ExprNeedsCleanups && "Unaccounted cleanups in function");
-    assert(MaybeODRUseExprs.empty() &&
-           "Leftover expressions for odr-use checking");
-  }
-  
-  if (!IsInstantiation)
-    PopDeclContext();
-
-  PopFunctionScopeInfo(ActivePolicy, dcl);
-  
-  // If any errors have occurred, clear out any temporaries that may have
-  // been leftover. This ensures that these temporaries won't be picked up for
-  // deletion in some later function.
-  if (getDiagnostics().hasErrorOccurred()) {
-    DiscardCleanupsInEvaluationContext();
-  }
-
-  return dcl;
-}
-
 
 /// When we finish delayed parsing of an attribute, we must attach it to the
 /// relevant Decl.

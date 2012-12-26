@@ -246,8 +246,21 @@ public:
   /// Registers an identifier as function name.
   ///
   /// \param II The name of the new function.
-  virtual void ActOnFunctionDecl(SourceLocation FuncLoc, SourceLocation NameLoc,
-                                 IdentifierInfo &II, Scope *S) {}
+  virtual DeclPtrTy ActOnFunctionDecl(SourceLocation FuncLoc,
+                                      SourceLocation NameLoc,
+                                      IdentifierInfo &II, Scope *S) {
+    return DeclPtrTy();
+  }
+
+  /// This is called at the start of a function definition, after the
+  /// FunctionDecl has already been created.
+  virtual void ActOnStartOfFunctionDef(DeclPtrTy Fun, Scope *FnBodyScope) { }
+
+  /// This is called when a function body has completed parsing.  Decl is
+  /// returned by ParseStartOfFunctionDef.
+  virtual void ActOnFinishFunctionBody(DeclPtrTy Decl/*, StmtArg Body*/) { }
+
+
 
   typedef uintptr_t ParsingDeclStackState;
 
@@ -618,31 +631,6 @@ public:
   /// @param D  The function declarator.
   virtual void ActOnFinishKNRParamDeclarations(Scope *S, Declarator &D,
                                                SourceLocation LocAfterDecls) {
-  }
-
-  /// ActOnStartOfFunctionDef - This is called at the start of a function
-  /// definition, instead of calling ActOnDeclarator.  The Declarator includes
-  /// information about formal arguments that are part of this function.
-  virtual DeclPtrTy ActOnStartOfFunctionDef(Scope *FnBodyScope, Declarator &D) {
-    // Default to ActOnDeclarator.
-    return ActOnStartOfFunctionDef(FnBodyScope,
-                                   ActOnDeclarator(FnBodyScope, D));
-  }
-
-  /// ActOnStartOfFunctionDef - This is called at the start of a function
-  /// definition, after the FunctionDecl has already been created.
-  virtual DeclPtrTy ActOnStartOfFunctionDef(Scope *FnBodyScope, DeclPtrTy D) {
-    return D;
-  }
-
-  virtual void ActOnStartOfObjCMethodDef(Scope *FnBodyScope, DeclPtrTy D) {
-    return;
-  }
-
-  /// ActOnFinishFunctionBody - This is called when a function body has
-  /// completed parsing.  Decl is returned by ParseStartOfFunctionDef.
-  virtual DeclPtrTy ActOnFinishFunctionBody(DeclPtrTy Decl, StmtArg Body) {
-    return Decl;
   }
 
   virtual DeclPtrTy ActOnFileScopeAsmDecl(SourceLocation Loc,
@@ -2908,8 +2896,10 @@ public:
                              IdentifierInfo &II, Scope *S) LLVM_OVERRIDE;
 
   /// Registers an identifier as function name.
-  virtual void ActOnFunctionDecl(SourceLocation FuncLoc, SourceLocation NameLoc,
-                                 IdentifierInfo &II, Scope *S) LLVM_OVERRIDE;
+  virtual DeclPtrTy ActOnFunctionDecl(SourceLocation FuncLoc,
+                                      SourceLocation NameLoc,
+                                      IdentifierInfo &II,
+                                      Scope *S) LLVM_OVERRIDE;
 
   /// ActOnPopScope - When a scope is popped, if any typedefs are now
   /// out-of-scope, they are removed from the IdentifierInfo::FETokenInfo field.

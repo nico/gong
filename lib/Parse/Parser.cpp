@@ -270,10 +270,16 @@ bool Parser::ParseFunctionDecl(SourceLocation FuncLoc) {
     Diag(Tok, diag::expected_l_paren);
   }
 
-  Actions.ActOnFunctionDecl(FuncLoc, NameLoc, *FunctionName, getCurScope());
+  Action::DeclPtrTy Fun =
+      Actions.ActOnFunctionDecl(FuncLoc, NameLoc, *FunctionName, getCurScope());
 
   if (Tok.is(tok::l_brace)) {
-    ParseBody();
+    // Enter a scope for the function body.
+    ParseScope BodyScope(this, Scope::FnScope|Scope::DeclScope);
+    
+    Actions.ActOnStartOfFunctionDef(Fun, getCurScope());
+    ParseBlockBody();
+    Actions.ActOnFinishFunctionBody(Fun); // FIXME: , FnBody.take()
   }
 
   return false;
@@ -299,6 +305,7 @@ bool Parser::ParseMethodDecl() {
   ParseSignature();
 
   if (Tok.is(tok::l_brace)) {
+    // FIXME
     ParseBody();
   }
 

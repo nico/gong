@@ -725,10 +725,13 @@ bool Parser::ParseEmptyStmt() {
 
 /// Block = "{" { Statement ";" } "}" .
 bool Parser::ParseBlock() {
-  assert(Tok.is(tok::l_brace) && "Expected '{'");
-
   // Enter a scope to hold everything within the block.
   ParseScope CompoundScope(this, Scope::DeclScope);
+  return ParseBlockBody();
+}
+
+bool Parser::ParseBlockBody() {
+  assert(Tok.is(tok::l_brace) && "Expected '{'");
 
   BalancedDelimiterTracker T(*this, tok::l_brace);
   T.consumeOpen();

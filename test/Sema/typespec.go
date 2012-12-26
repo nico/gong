@@ -15,4 +15,5 @@ type (
 func C() {}  // expected-diag{{redefinition of 'C'}}
 
 func f() {
+  //type A int  // FIXME
 }
