@@ -177,7 +177,7 @@ public:
   bool ParseTopLevelDecl(/*DeclGroupPtrTy &Result*/);
 
   bool ParseFunctionOrMethodDecl();
-  bool ParseFunctionDecl();
+  bool ParseFunctionDecl(SourceLocation FuncLoc);
   bool ParseMethodDecl();
   bool ParseBody() { return ParseBlock(); }
 

@@ -2890,7 +2890,17 @@ ImplicitParamDecl *ImplicitParamDecl::CreateDeserialized(ASTContext &C,
   void *Mem = AllocateDeserializedDecl(C, ID, sizeof(ImplicitParamDecl));
   return new (Mem) ImplicitParamDecl(0, SourceLocation(), 0, QualType());
 }
+#endif
+FunctionDecl *FunctionDecl::Create(ASTContext &C, DeclContext *DC,
+                                   SourceLocation StartLoc,
+                                   SourceLocation NameLoc,
+                                   IdentifierInfo *Name) {
+  FunctionDecl *New =
+      new (C) FunctionDecl(Function, DC, StartLoc, NameLoc, Name);
+  return New;
+}
 
+#if 0
 FunctionDecl *FunctionDecl::Create(ASTContext &C, DeclContext *DC,
                                    SourceLocation StartLoc,
                                    const DeclarationNameInfo &NameInfo,

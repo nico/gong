@@ -332,6 +332,14 @@ AST
     => This is similar to LinkageSpecDecl in clang. Make all the Decls be
     transparent DeclContexts, and have FooSpec be a child class of NamedDecl
 
+    enums:
+      ActOnTag
+      ActOnTagStartDefinition()
+      for
+        ActOnEnumConstant
+      ActOnEnumBody(all enums)
+      ActOnTagFinishDefinition()
+
     TypeDecl  ('type' is in 'loc' of decl superclass)
       SingleTypeDecl
       MultiTypeDecl

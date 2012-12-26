@@ -8,6 +8,11 @@ type B A
 type A float32  // expected-diag{{redefinition of 'A'}}
 
 type (
-  C int  // expected-note{{previous definition is here}}
+  C int  // expected-note 2 {{previous definition is here}}
   C float32  // expected-diag{{redefinition of 'C'}}
 )
+
+func C() {}  // expected-diag{{redefinition of 'C'}}
+
+func f() {
+}

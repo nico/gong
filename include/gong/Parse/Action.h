@@ -226,18 +226,19 @@ public:
 
   /// Called after 'type (' in a TypeDecl with parentheses has been parsed.
   /// ActOnTypeSpec() will be called for each TypeSpec in this TypeDecl.
-  virtual DeclPtrTy ActOnMultiTypeDeclStart(SourceLocation TypeLoc,
+  virtual DeclPtrTy ActOnStartMultiTypeDecl(SourceLocation TypeLoc,
                                             SourceLocation LParenLoc) {
     return DeclPtrTy();
   }
   /// Called after the closing ')' of a TypeDecl has been parsed.
-  virtual void ActOnMultiTypeDeclEnd(DeclPtrTy Decl, SourceLocation RParenLoc) {
+  virtual void ActOnFinishMultiTypeDecl(DeclPtrTy Decl,
+                                        SourceLocation RParenLoc) {
   }
 
   /// Called after a type spec has been parsed.
   ///
   /// \param Decl The Decl returned by either ActOnSingleTypeDecl() or
-  ///             ActOnMultiTypeDeclStart().
+  ///             ActOnStartMultiTypeDecl().
   virtual void ActOnTypeSpec(DeclPtrTy Decl, SourceLocation IILoc,
                              IdentifierInfo &II, Scope *S) {}
 
@@ -245,8 +246,8 @@ public:
   /// Registers an identifier as function name.
   ///
   /// \param II The name of the new function.
-  //FIXME: Pass in more stuff.
-  virtual void ActOnFunctionDecl(IdentifierInfo &II, Scope* S) {}
+  virtual void ActOnFunctionDecl(SourceLocation FuncLoc, SourceLocation NameLoc,
+                                 IdentifierInfo &II, Scope *S) {}
 
   typedef uintptr_t ParsingDeclStackState;
 
@@ -2907,7 +2908,8 @@ public:
                              IdentifierInfo &II, Scope *S) LLVM_OVERRIDE;
 
   /// Registers an identifier as function name.
-  virtual void ActOnFunctionDecl(IdentifierInfo &II, Scope* S) LLVM_OVERRIDE;
+  virtual void ActOnFunctionDecl(SourceLocation FuncLoc, SourceLocation NameLoc,
+                                 IdentifierInfo &II, Scope *S) LLVM_OVERRIDE;
 
   /// ActOnPopScope - When a scope is popped, if any typedefs are now
   /// out-of-scope, they are removed from the IdentifierInfo::FETokenInfo field.

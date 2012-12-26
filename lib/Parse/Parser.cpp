@@ -245,7 +245,7 @@ bool Parser::ParseFunctionOrMethodDecl() {
   SourceLocation FuncLoc = ConsumeToken();
 
   if (Tok.is(tok::identifier))
-    return ParseFunctionDecl();
+    return ParseFunctionDecl(FuncLoc);
   else if (Tok.is(tok::l_paren))
     return ParseMethodDecl();
   else {
@@ -259,11 +259,10 @@ bool Parser::ParseFunctionOrMethodDecl() {
 /// FunctionDecl = "func" FunctionName Signature [ Body ] .
 /// FunctionName = identifier .
 /// Body         = Block .
-bool Parser::ParseFunctionDecl() {
+bool Parser::ParseFunctionDecl(SourceLocation FuncLoc) {
   assert(Tok.is(tok::identifier) && "Expected identifier");
   IdentifierInfo *FunctionName = Tok.getIdentifierInfo();
-  SourceLocation FuncLoc = ConsumeToken();
-  (void)FuncLoc;  // FIXME
+  SourceLocation NameLoc = ConsumeToken();
 
   if (Tok.is(tok::l_paren)) {
     ParseSignature();
@@ -271,7 +270,7 @@ bool Parser::ParseFunctionDecl() {
     Diag(Tok, diag::expected_l_paren);
   }
 
-  Actions.ActOnFunctionDecl(*FunctionName, getCurScope());
+  Actions.ActOnFunctionDecl(FuncLoc, NameLoc, *FunctionName, getCurScope());
 
   if (Tok.is(tok::l_brace)) {
     ParseBody();
@@ -982,7 +981,7 @@ bool Parser::ParseDeclGroup(DeclGroupKind Kind, SourceLocation KWLoc) {
   //        pass them at once to ActOnMultiDecl?
   Action::DeclPtrTy DeclGroup;
   if (Kind == DGK_Type)
-    DeclGroup = Actions.ActOnMultiTypeDeclStart(KWLoc, T.getOpenLocation());
+    DeclGroup = Actions.ActOnStartMultiTypeDecl(KWLoc, T.getOpenLocation());
 
   // FIXME: Similar to importspec block parsing
   while (Tok.isNot(tok::r_paren) && Tok.isNot(tok::eof)) {
@@ -999,7 +998,7 @@ bool Parser::ParseDeclGroup(DeclGroupKind Kind, SourceLocation KWLoc) {
     }
     if (Fail) {
       T.skipToEnd();
-      // FIXME: This doesn't call ActOnMultiTypeDeclEnd(). Does it matter?
+      // FIXME: This doesn't call ActOnFinishMultiTypeDecl(). Does it matter?
       return true;
     }
 
@@ -1014,7 +1013,7 @@ bool Parser::ParseDeclGroup(DeclGroupKind Kind, SourceLocation KWLoc) {
 
   // FIXME: Do this for var and const too
   if (Kind == DGK_Type)
-    Actions.ActOnMultiTypeDeclEnd(DeclGroup, T.getCloseLocation());
+    Actions.ActOnFinishMultiTypeDecl(DeclGroup, T.getCloseLocation());
   return false;
 }
 

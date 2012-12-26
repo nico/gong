@@ -1506,6 +1506,7 @@ private:
   void setParameterIndexLarge(unsigned parameterIndex);
   unsigned getParameterIndexLarge() const;
 };
+#endif
 
 /// FunctionDecl - An instance of this class is created to represent a
 /// function declaration or definition.
@@ -1518,8 +1519,9 @@ private:
 /// contains all of the information known about the function. Other,
 /// previous declarations of the function are available via the
 /// getPreviousDecl() chain.
-class FunctionDecl : public DeclaratorDecl, public DeclContext,
-                     public Redeclarable<FunctionDecl> {
+class FunctionDecl : public NamedDecl/*DeclaratorDecl*/, public DeclContext/*,
+                     public Redeclarable<FunctionDecl>*/ {
+#if 0
 public:
   typedef gong::StorageClass StorageClass;
 
@@ -1633,14 +1635,16 @@ private:
                                         TemplateSpecializationKind TSK);
 
   void setParams(ASTContext &C, llvm::ArrayRef<ParmVarDecl *> NewParamInfo);
-
+#endif
 protected:
   FunctionDecl(Kind DK, DeclContext *DC, SourceLocation StartLoc,
-               const DeclarationNameInfo &NameInfo,
+               SourceLocation NameLoc,
+               //const DeclarationNameInfo &NameInfo,
+               IdentifierInfo *Name/*,
                QualType T, TypeSourceInfo *TInfo,
                StorageClass S, StorageClass SCAsWritten, bool isInlineSpecified,
-               bool isConstexprSpecified)
-    : DeclaratorDecl(DK, DC, NameInfo.getLoc(), NameInfo.getName(), T, TInfo,
+               bool isConstexprSpecified*/)
+    : /*DeclaratorDecl(DK, DC, NameInfo.getLoc(), NameInfo.getName(), T, TInfo,
                      StartLoc),
       DeclContext(DK),
       ParamInfo(0), Body(),
@@ -1653,8 +1657,10 @@ protected:
       IsConstexpr(isConstexprSpecified), HasSkippedBody(false),
       EndRangeLoc(NameInfo.getEndLoc()),
       TemplateOrSpecialization(),
-      DNLoc(NameInfo.getInfo()) {}
+      DNLoc(NameInfo.getInfo())*/
+      NamedDecl(DK, DC, NameLoc, Name), DeclContext(DK) {}
 
+#if 0
   typedef Redeclarable<FunctionDecl> redeclarable_base;
   virtual FunctionDecl *getNextRedeclaration() { return RedeclLink.getNext(); }
   virtual FunctionDecl *getPreviousDeclImpl() {
@@ -1663,8 +1669,13 @@ protected:
   virtual FunctionDecl *getMostRecentDeclImpl() {
     return getMostRecentDecl();
   }
-
+#endif
 public:
+  static FunctionDecl *Create(ASTContext &C, DeclContext *DC,
+                              SourceLocation StartLoc, SourceLocation NameLoc,
+                              IdentifierInfo *Name);
+
+#if 0
   typedef redeclarable_base::redecl_iterator redecl_iterator;
   using redeclarable_base::redecls_begin;
   using redeclarable_base::redecls_end;
@@ -1783,27 +1794,6 @@ public:
   bool isPure() const { return IsPure; }
   void setPure(bool P = true);
 
-  /// Whether this templated function will be late parsed.
-  bool isLateTemplateParsed() const { return IsLateTemplateParsed; }
-  void setLateTemplateParsed(bool ILT = true) { IsLateTemplateParsed = ILT; }
-
-  /// Whether this function is "trivial" in some specialized C++ senses.
-  /// Can only be true for default constructors, copy constructors,
-  /// copy assignment operators, and destructors.  Not meaningful until
-  /// the class has been fully built by Sema.
-  bool isTrivial() const { return IsTrivial; }
-  void setTrivial(bool IT) { IsTrivial = IT; }
-
-  /// Whether this function is defaulted per C++0x. Only valid for
-  /// special member functions.
-  bool isDefaulted() const { return IsDefaulted; }
-  void setDefaulted(bool D = true) { IsDefaulted = D; }
-
-  /// Whether this function is explicitly defaulted per C++0x. Only valid
-  /// for special member functions.
-  bool isExplicitlyDefaulted() const { return IsExplicitlyDefaulted; }
-  void setExplicitlyDefaulted(bool ED = true) { IsExplicitlyDefaulted = ED; }
-
   /// Whether falling off this function implicitly returns null/zero.
   /// If a more specific implicit return value is required, front-ends
   /// should synthesize the appropriate return statements.
@@ -1829,47 +1819,9 @@ public:
   bool isConstexpr() const { return IsConstexpr; }
   void setConstexpr(bool IC) { IsConstexpr = IC; }
 
-  /// \brief Whether this function has been deleted.
-  ///
-  /// A function that is "deleted" (via the C++0x "= delete" syntax)
-  /// acts like a normal function, except that it cannot actually be
-  /// called or have its address taken. Deleted functions are
-  /// typically used in C++ overload resolution to attract arguments
-  /// whose type or lvalue/rvalue-ness would permit the use of a
-  /// different overload that would behave incorrectly. For example,
-  /// one might use deleted functions to ban implicit conversion from
-  /// a floating-point number to an Integer type:
-  ///
-  /// @code
-  /// struct Integer {
-  ///   Integer(long); // construct from a long
-  ///   Integer(double) = delete; // no construction from float or double
-  ///   Integer(long double) = delete; // no construction from long double
-  /// };
-  /// @endcode
-  // If a function is deleted, its first declaration must be.
-  bool isDeleted() const { return getCanonicalDecl()->IsDeleted; }
-  bool isDeletedAsWritten() const { return IsDeleted && !IsDefaulted; }
-  void setDeletedAsWritten(bool D = true) { IsDeleted = D; }
-
   /// \brief Determines whether this function is "main", which is the
   /// entry point into an executable program.
   bool isMain() const;
-
-  /// \brief Determines whether this operator new or delete is one
-  /// of the reserved global placement operators:
-  ///    void *operator new(size_t, void *);
-  ///    void *operator new[](size_t, void *);
-  ///    void operator delete(void *, void *);
-  ///    void operator delete[](void *, void *);
-  /// These functions have special behavior under [new.delete.placement]:
-  ///    These functions are reserved, a C++ program may not define
-  ///    functions that displace the versions in the Standard C++ library.
-  ///    The provisions of [basic.stc.dynamic] do not apply to these
-  ///    reserved placement forms of operator new and operator delete.
-  ///
-  /// This function must be an allocation or deallocation function.
-  bool isReservedGlobalPlacementOperator() const;
 
   /// \brief Determines whether this function is a function with
   /// external, C linkage.
@@ -1968,119 +1920,7 @@ public:
 
   bool doesDeclarationForceExternallyVisibleDefinition() const;
 
-  /// isOverloadedOperator - Whether this function declaration
-  /// represents an C++ overloaded operator, e.g., "operator+".
-  bool isOverloadedOperator() const {
-    return getOverloadedOperator() != OO_None;
-  }
-
-  OverloadedOperatorKind getOverloadedOperator() const;
-
   const IdentifierInfo *getLiteralIdentifier() const;
-
-  /// \brief If this function is an instantiation of a member function
-  /// of a class template specialization, retrieves the function from
-  /// which it was instantiated.
-  ///
-  /// This routine will return non-NULL for (non-templated) member
-  /// functions of class templates and for instantiations of function
-  /// templates. For example, given:
-  ///
-  /// \code
-  /// template<typename T>
-  /// struct X {
-  ///   void f(T);
-  /// };
-  /// \endcode
-  ///
-  /// The declaration for X<int>::f is a (non-templated) FunctionDecl
-  /// whose parent is the class template specialization X<int>. For
-  /// this declaration, getInstantiatedFromFunction() will return
-  /// the FunctionDecl X<T>::A. When a complete definition of
-  /// X<int>::A is required, it will be instantiated from the
-  /// declaration returned by getInstantiatedFromMemberFunction().
-  FunctionDecl *getInstantiatedFromMemberFunction() const;
-
-  /// \brief What kind of templated function this is.
-  TemplatedKind getTemplatedKind() const;
-
-  /// \brief If this function is an instantiation of a member function of a
-  /// class template specialization, retrieves the member specialization
-  /// information.
-  MemberSpecializationInfo *getMemberSpecializationInfo() const;
-
-  /// \brief Specify that this record is an instantiation of the
-  /// member function FD.
-  void setInstantiationOfMemberFunction(FunctionDecl *FD,
-                                        TemplateSpecializationKind TSK) {
-    setInstantiationOfMemberFunction(getASTContext(), FD, TSK);
-  }
-
-  /// \brief Retrieves the function template that is described by this
-  /// function declaration.
-  ///
-  /// Every function template is represented as a FunctionTemplateDecl
-  /// and a FunctionDecl (or something derived from FunctionDecl). The
-  /// former contains template properties (such as the template
-  /// parameter lists) while the latter contains the actual
-  /// description of the template's
-  /// contents. FunctionTemplateDecl::getTemplatedDecl() retrieves the
-  /// FunctionDecl that describes the function template,
-  /// getDescribedFunctionTemplate() retrieves the
-  /// FunctionTemplateDecl from a FunctionDecl.
-  FunctionTemplateDecl *getDescribedFunctionTemplate() const {
-    return TemplateOrSpecialization.dyn_cast<FunctionTemplateDecl*>();
-  }
-
-  void setDescribedFunctionTemplate(FunctionTemplateDecl *Template) {
-    TemplateOrSpecialization = Template;
-  }
-
-  /// \brief Determine whether this function is a function template
-  /// specialization.
-  bool isFunctionTemplateSpecialization() const {
-    return getPrimaryTemplate() != 0;
-  }
-
-  /// \brief Retrieve the class scope template pattern that this function
-  ///  template specialization is instantiated from.
-  FunctionDecl *getClassScopeSpecializationPattern() const;
-
-  /// \brief If this function is actually a function template specialization,
-  /// retrieve information about this function template specialization.
-  /// Otherwise, returns NULL.
-  FunctionTemplateSpecializationInfo *getTemplateSpecializationInfo() const {
-    return TemplateOrSpecialization.
-             dyn_cast<FunctionTemplateSpecializationInfo*>();
-  }
-
-  /// \brief Determines whether this function is a function template
-  /// specialization or a member of a class template specialization that can
-  /// be implicitly instantiated.
-  bool isImplicitlyInstantiable() const;
-
-  /// \brief Determines if the given function was instantiated from a
-  /// function template.
-  bool isTemplateInstantiation() const;
-
-  /// \brief Retrieve the function declaration from which this function could
-  /// be instantiated, if it is an instantiation (rather than a non-template
-  /// or a specialization, for example).
-  FunctionDecl *getTemplateInstantiationPattern() const;
-
-  /// \brief Retrieve the primary template that this function template
-  /// specialization either specializes or was instantiated from.
-  ///
-  /// If this function declaration is not a function template specialization,
-  /// returns NULL.
-  FunctionTemplateDecl *getPrimaryTemplate() const;
-
-  /// \brief Retrieve the template arguments used to produce this function
-  /// template specialization from the primary template.
-  ///
-  /// If this function declaration is not a function template specialization,
-  /// returns NULL.
-  const TemplateArgumentList *getTemplateSpecializationArgs() const;
 
   /// \brief Retrieve the template argument list as written in the sources,
   /// if any.
@@ -2092,80 +1932,12 @@ public:
   const ASTTemplateArgumentListInfo*
   getTemplateSpecializationArgsAsWritten() const;
 
-  /// \brief Specify that this function declaration is actually a function
-  /// template specialization.
-  ///
-  /// \param Template the function template that this function template
-  /// specialization specializes.
-  ///
-  /// \param TemplateArgs the template arguments that produced this
-  /// function template specialization from the template.
-  ///
-  /// \param InsertPos If non-NULL, the position in the function template
-  /// specialization set where the function template specialization data will
-  /// be inserted.
-  ///
-  /// \param TSK the kind of template specialization this is.
-  ///
-  /// \param TemplateArgsAsWritten location info of template arguments.
-  ///
-  /// \param PointOfInstantiation point at which the function template
-  /// specialization was first instantiated.
-  void setFunctionTemplateSpecialization(FunctionTemplateDecl *Template,
-                                      const TemplateArgumentList *TemplateArgs,
-                                         void *InsertPos,
-                    TemplateSpecializationKind TSK = TSK_ImplicitInstantiation,
-                    const TemplateArgumentListInfo *TemplateArgsAsWritten = 0,
-                    SourceLocation PointOfInstantiation = SourceLocation()) {
-    setFunctionTemplateSpecialization(getASTContext(), Template, TemplateArgs,
-                                      InsertPos, TSK, TemplateArgsAsWritten,
-                                      PointOfInstantiation);
-  }
-
-  /// \brief Specifies that this function declaration is actually a
-  /// dependent function template specialization.
-  void setDependentTemplateSpecialization(ASTContext &Context,
-                             const UnresolvedSetImpl &Templates,
-                      const TemplateArgumentListInfo &TemplateArgs);
-
-  DependentFunctionTemplateSpecializationInfo *
-  getDependentSpecializationInfo() const {
-    return TemplateOrSpecialization.
-             dyn_cast<DependentFunctionTemplateSpecializationInfo*>();
-  }
-
-  /// \brief Determine what kind of template instantiation this function
-  /// represents.
-  TemplateSpecializationKind getTemplateSpecializationKind() const;
-
-  /// \brief Determine what kind of template instantiation this function
-  /// represents.
-  void setTemplateSpecializationKind(TemplateSpecializationKind TSK,
-                        SourceLocation PointOfInstantiation = SourceLocation());
-
-  /// \brief Retrieve the (first) point of instantiation of a function template
-  /// specialization or a member of a class template specialization.
-  ///
-  /// \returns the first point of instantiation, if this function was
-  /// instantiated from a template; otherwise, returns an invalid source
-  /// location.
-  SourceLocation getPointOfInstantiation() const;
-
-  /// \brief Determine whether this is or was instantiated from an out-of-line
-  /// definition of a member function.
-  virtual bool isOutOfLine() const;
-
   /// \brief Identify a memory copying or setting function.
   /// If the given function is a memory copy or setting function, returns
   /// the corresponding Builtin ID. If the function is not a memory function,
   /// returns 0.
   unsigned getMemoryFunctionKind() const;
 
-  // Implement isa/cast/dyncast/etc.
-  static bool classof(const Decl *D) { return classofKind(D->getKind()); }
-  static bool classofKind(Kind K) {
-    return K >= firstFunction && K <= lastFunction;
-  }
   static DeclContext *castToDeclContext(const FunctionDecl *D) {
     return static_cast<DeclContext *>(const_cast<FunctionDecl*>(D));
   }
@@ -2175,9 +1947,15 @@ public:
 
   friend class ASTDeclReader;
   friend class ASTDeclWriter;
+#endif
+  // Implement isa/cast/dyncast/etc.
+  static bool classof(const Decl *D) { return classofKind(D->getKind()); }
+  static bool classofKind(Kind K) {
+    return K >= firstFunction && K <= lastFunction;
+  }
 };
 
-
+#if 0
 /// FieldDecl - An instance of this class is created by Sema::ActOnField to
 /// represent a member of a struct/union/class.
 class FieldDecl : public DeclaratorDecl {

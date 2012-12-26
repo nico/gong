@@ -1437,14 +1437,15 @@ public:
                        bool IsLocal) LLVM_OVERRIDE;
 
   DeclPtrTy ActOnSingleTypeDecl(SourceLocation TypeLoc) LLVM_OVERRIDE;
-  DeclPtrTy ActOnMultiTypeDeclStart(SourceLocation TypeLoc,
+  DeclPtrTy ActOnStartMultiTypeDecl(SourceLocation TypeLoc,
                                     SourceLocation LParenLoc) LLVM_OVERRIDE;
-  void ActOnMultiTypeDeclEnd(DeclPtrTy Decl,
-                             SourceLocation RParenLoc) LLVM_OVERRIDE;
+  void ActOnFinishMultiTypeDecl(DeclPtrTy Decl,
+                                SourceLocation RParenLoc) LLVM_OVERRIDE;
   void ActOnTypeSpec(DeclPtrTy Decl, SourceLocation IILoc, IdentifierInfo &II,
                      Scope *S) LLVM_OVERRIDE;
 
-  void ActOnFunctionDecl(IdentifierInfo &II, Scope* S) LLVM_OVERRIDE;
+  void ActOnFunctionDecl(SourceLocation FuncLoc, SourceLocation NameLoc,
+                         IdentifierInfo &II, Scope *S) LLVM_OVERRIDE;
 
   void ActOnPopScope(SourceLocation Loc, Scope *S) LLVM_OVERRIDE;
   void ActOnTranslationUnitScope(Scope *S) LLVM_OVERRIDE;

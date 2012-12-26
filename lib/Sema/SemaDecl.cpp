@@ -1366,14 +1366,14 @@ Action::DeclPtrTy Sema::ActOnSingleTypeDecl(SourceLocation TypeLoc) {
   return DeclPtrTy::make(SingleTypeDecl::Create(Context, CurContext, TypeLoc));
 }
 
-Action::DeclPtrTy Sema::ActOnMultiTypeDeclStart(SourceLocation TypeLoc,
+Action::DeclPtrTy Sema::ActOnStartMultiTypeDecl(SourceLocation TypeLoc,
                                                 SourceLocation LParenLoc) {
   MultiTypeDecl *D = MultiTypeDecl::Create(Context, CurContext, TypeLoc);
   D->setLParenLoc(LParenLoc);
   return DeclPtrTy::make(D);
 }
 
-void Sema::ActOnMultiTypeDeclEnd(DeclPtrTy Decl, SourceLocation RParenLoc) {
+void Sema::ActOnFinishMultiTypeDecl(DeclPtrTy Decl, SourceLocation RParenLoc) {
   Decl.getAs<MultiTypeDecl>()->setRParenLoc(RParenLoc);
 }
 
@@ -1392,11 +1392,13 @@ void Sema::ActOnTypeSpec(DeclPtrTy Decl, SourceLocation IILoc,
 }
 
 /// Registers an identifier as function name.
-void Sema::ActOnFunctionDecl(IdentifierInfo &II, Scope* S) {
-  //getTable(TypeNameInfoTablePtr)->AddEntry(Action::IIT_Func, &II);
+void Sema::ActOnFunctionDecl(SourceLocation FuncLoc, SourceLocation NameLoc,
+                             IdentifierInfo &II, Scope *S) {
+  assert(S->getFlags() & Scope::DeclScope);
+  DeclContext *DC = CurContext;
 
-  // Remember that this needs to be removed when the scope is popped.
-  //S->AddDecl(DeclPtrTy::make(&II));
+  FunctionDecl *New = FunctionDecl::Create(Context, DC, FuncLoc, NameLoc, &II);
+  CheckRedefinitionAndPushOnScope(*this, DC, S, New);
 }
 
 

@@ -84,6 +84,8 @@ ABSTRACT_DECL(Named,  Decl)
 
   DECL(TypeSpec, NamedDecl)
 
+  DECL(Function, NamedDecl)
+
   ABSTRACT_DECL(Type, NamedDecl)
     DECL(Typedef, TypeDecl)
     ABSTRACT_DECL(Tag, TypeDecl)
@@ -93,7 +95,7 @@ ABSTRACT_DECL(Named,  Decl)
   ABSTRACT_DECL(Value, NamedDecl)
     DECL(EnumConstant, ValueDecl)
     ABSTRACT_DECL(Declarator, ValueDecl)
-      DECL(Function, DeclaratorDecl)
+      DECL(CFunction, DeclaratorDecl)
         DECL(CXXMethod, FunctionDecl)
           DECL(CXXConstructor, CXXMethodDecl)
           DECL(CXXDestructor, CXXMethodDecl)
