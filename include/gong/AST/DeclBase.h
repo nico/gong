@@ -293,7 +293,7 @@ protected:
       IdentifierNamespace(getIdentifierNamespaceForKind(DK)),
       HasCachedLinkage(0)*/
   {
-    //if (StatisticsEnabled) add(DK);
+    if (StatisticsEnabled) add(DK);
   }
 
   Decl(Kind DK, EmptyShell Empty)
@@ -303,7 +303,7 @@ protected:
       IdentifierNamespace(getIdentifierNamespaceForKind(DK)),
       HasCachedLinkage(0)*/
   {
-    //if (StatisticsEnabled) add(DK);
+    if (StatisticsEnabled) add(DK);
   }
 
   virtual ~Decl();
@@ -736,12 +736,14 @@ public:
   /// getBodyRBrace - Gets the right brace of the body, if a body exists.
   /// This works whether the body is a CompoundStmt or a CXXTryStmt.
   SourceLocation getBodyRBrace() const;
+#endif
 
   // global temp stats (until we have a per-module visitor)
   static void add(Kind k);
   static void EnableStatistics();
   static void PrintStats();
 
+#if 0
   /// isTemplateParameter - Determines whether this declaration is a
   /// template parameter.
   bool isTemplateParameter() const;
@@ -995,30 +997,30 @@ public:
     return cast<Decl>(this)->getASTContext();
   }
 
-  bool isClosure() const {
-    return DeclKind == Decl::Block;
-  }
+  //bool isClosure() const {
+    //return DeclKind == Decl::Block;
+  //}
 
   bool isFunctionOrMethod() const {
     switch (DeclKind) {
-    case Decl::Block:
-      return true;
+    //case Decl::Block:
+      //return true;
     default:
       return DeclKind >= Decl::firstFunction && DeclKind <= Decl::lastFunction;
     }
   }
 
   bool isFileContext() const {
-    return DeclKind == Decl::TranslationUnit || DeclKind == Decl::Namespace;
+    return DeclKind == Decl::TranslationUnit/* || DeclKind == Decl::Namespace*/;
   }
 
   bool isTranslationUnit() const {
     return DeclKind == Decl::TranslationUnit;
   }
 
-  bool isRecord() const {
-    return DeclKind >= Decl::firstRecord && DeclKind <= Decl::lastRecord;
-  }
+  //bool isRecord() const {
+    //return DeclKind >= Decl::firstRecord && DeclKind <= Decl::lastRecord;
+  //}
 
   /// isTransparentContext - Determines whether this context is a
   /// "transparent" context, meaning that the members declared in this

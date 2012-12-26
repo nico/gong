@@ -361,16 +361,16 @@ public:
 };
 
 /// Represents a TypeSpec in Go. A TypeSpec is just a name for a type.
-class TypeSpec : public NamedDecl {
+class TypeSpecDecl : public NamedDecl {
   virtual void anchor();
 
   Type *T;
 
-  TypeSpec(DeclContext *DC, SourceLocation L, IdentifierInfo *N, Type *T)
+  TypeSpecDecl(DeclContext *DC, SourceLocation L, IdentifierInfo *N, Type *T)
     : NamedDecl(Decl::TypeSpec, DC, L, N), T(T) { }
 public:
-  static TypeSpec *Create(ASTContext &C, DeclContext *DC, SourceLocation L,
-                          IdentifierInfo *II, Type *T);
+  static TypeSpecDecl *Create(ASTContext &C, DeclContext *DC, SourceLocation L,
+                              IdentifierInfo *II, Type *T);
 
   // Implement isa/cast/dyncast/etc.
   static bool classof(const Decl *D) { return classofKind(D->getKind()); }
@@ -2261,6 +2261,12 @@ public:
     return K >= firstTypedefName && K <= lastTypedefName;
   }
 };
+#endif
+
+// FIXME: Delete (currently needed to make the stats code build)
+class TypedefDecl : public NamedDecl {};
+
+#if 0
 
 /// TypedefDecl - Represents the declaration of a typedef-name via the 'typedef'
 /// type specifier.

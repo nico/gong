@@ -62,6 +62,7 @@ int main(int argc_, const char **argv_) {
   bool dumpTokens = false;
   bool verify = false;
   bool sema = false;
+  bool stats = false;
   const char* FileName = NULL;
   for (int i = 1; i < argc_; ++i)
     if (argv_[i][0] != '-' || !argv_[i][1]) {
@@ -72,6 +73,8 @@ int main(int argc_, const char **argv_) {
       verify = true;
     } else if (argv_[i] == std::string("-sema")) {
       sema = true;  // This should become opt-out once sema is useful.
+    } else if (argv_[i] == std::string("-print-stats")) {
+      stats = true;
     }
 
   llvm::SourceMgr SM;
@@ -98,10 +101,14 @@ int main(int argc_, const char **argv_) {
         DumpTokens(L);
       else {
         if (sema) {
+          if (stats)
+            Decl::EnableStatistics();
           ASTContext Context;
           Sema ParseActions(L, Context);
           Parser P(L, ParseActions);
           P.ParseSourceFile();
+          if (stats)
+            Decl::PrintStats();
         } else {
           MinimalAction ParseActions(L);
           Parser P(L, ParseActions);

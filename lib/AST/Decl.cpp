@@ -580,11 +580,12 @@ static void clearLinkageForClass(const CXXRecordDecl *record) {
 #endif
 void NamedDecl::anchor() { }
 
-void TypeSpec::anchor() { }
+void TypeSpecDecl::anchor() { }
 
-TypeSpec *TypeSpec::Create(ASTContext &C, DeclContext *DC, SourceLocation L,
-                           IdentifierInfo *II, Type *T) {
-  return new (C) TypeSpec(DC, L, II, T);
+TypeSpecDecl *TypeSpecDecl::Create(ASTContext &C, DeclContext *DC,
+                                   SourceLocation L, IdentifierInfo *II,
+                                   Type *T) {
+  return new (C) TypeSpecDecl(DC, L, II, T);
 }
 
 void GoTypeDecl::anchor() { }

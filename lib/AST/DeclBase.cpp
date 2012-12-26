@@ -18,6 +18,7 @@
 #include "gong/AST/DeclContextInternals.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/Support/ErrorHandling.h"
+#include "llvm/Support/raw_ostream.h"
 using namespace gong;
 #if 0
 
@@ -34,17 +35,18 @@ using namespace gong;
 #include "gong/AST/Type.h"
 #include "gong/Basic/TargetInfo.h"
 #include "llvm/ADT/DenseMap.h"
-#include "llvm/Support/raw_ostream.h"
 #include <algorithm>
+#endif
 
 //===----------------------------------------------------------------------===//
 //  Statistics
 //===----------------------------------------------------------------------===//
 
 #define DECL(DERIVED, BASE) static int n##DERIVED##s = 0;
-#define ABSTRACT_DECL(DECL)
-#include "gong/AST/DeclNodes.inc"
+#define ABSTRACT_DECL(DECL, BASE)
+#include "gong/AST/DeclNodes.def"
 
+#if 0
 void *Decl::AllocateDeserializedDecl(const ASTContext &Context, 
                                      unsigned ID,
                                      unsigned Size) {
@@ -93,7 +95,6 @@ const char *DeclContext::getDeclKindName() const {
   }
 }
 
-#if 0
 bool Decl::StatisticsEnabled = false;
 void Decl::EnableStatistics() {
   StatisticsEnabled = true;
@@ -104,8 +105,8 @@ void Decl::PrintStats() {
 
   int totalDecls = 0;
 #define DECL(DERIVED, BASE) totalDecls += n##DERIVED##s;
-#define ABSTRACT_DECL(DECL)
-#include "gong/AST/DeclNodes.inc"
+#define ABSTRACT_DECL(DECL, BASE)
+#include "gong/AST/DeclNodes.def"
   llvm::errs() << "  " << totalDecls << " decls total.\n";
 
   int totalBytes = 0;
@@ -117,8 +118,8 @@ void Decl::PrintStats() {
                  << n##DERIVED##s * sizeof(DERIVED##Decl)               \
                  << " bytes)\n";                                        \
   }
-#define ABSTRACT_DECL(DECL)
-#include "gong/AST/DeclNodes.inc"
+#define ABSTRACT_DECL(DECL, BASE)
+#include "gong/AST/DeclNodes.def"
 
   llvm::errs() << "Total bytes = " << totalBytes << "\n";
 }
@@ -126,11 +127,12 @@ void Decl::PrintStats() {
 void Decl::add(Kind k) {
   switch (k) {
 #define DECL(DERIVED, BASE) case DERIVED: ++n##DERIVED##s; break;
-#define ABSTRACT_DECL(DECL)
-#include "gong/AST/DeclNodes.inc"
+#define ABSTRACT_DECL(DECL, BASE)
+#include "gong/AST/DeclNodes.def"
   }
 }
 
+#if 0
 bool Decl::isFunctionOrFunctionTemplate() const {
   if (const UsingShadowDecl *UD = dyn_cast<UsingShadowDecl>(this))
     return UD->getTargetDecl()->isFunctionOrFunctionTemplate();
@@ -772,8 +774,8 @@ bool DeclContext::Encloses(const DeclContext *DC) const {
 DeclContext *DeclContext::getPrimaryContext() {
   switch (DeclKind) {
   case Decl::TranslationUnit:
-  case Decl::LinkageSpec:
-  case Decl::Block:
+  //case Decl::LinkageSpec:
+  //case Decl::Block:
   case Decl::SingleType:
   case Decl::MultiType:
     // There is only one DeclContext for these entities.

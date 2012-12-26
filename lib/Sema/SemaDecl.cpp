@@ -1388,8 +1388,8 @@ void Sema::ActOnTypeSpec(DeclPtrTy Decl, SourceLocation IILoc,
   DeclContext *DC = Decl.getAs<GoTypeDecl>();
 
   // FIXME: ownership, pass type
-  TypeSpec *New =
-      TypeSpec::Create(Context, DC, IILoc, &II, /*Type=*/ NULL);
+  TypeSpecDecl *New =
+      TypeSpecDecl::Create(Context, DC, IILoc, &II, /*Type=*/ NULL);
   CheckRedefinitionAndPushOnScope(*this, DC, S, New);
   //return New;
 }
