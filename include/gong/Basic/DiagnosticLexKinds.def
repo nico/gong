@@ -97,6 +97,8 @@ DIAG(expected_r_brace,             CLASS_ERROR, "expected '}'")
 DIAG(expected_equal,               CLASS_ERROR, "expected '='")
 DIAG(expected_equal_or_type,       CLASS_ERROR, "expected '=' or type")
 DIAG(expected_l_brace_or_l_paren,  CLASS_ERROR, "expected '{' or '('")
+DIAG(expected_topleveldecl,        CLASS_ERROR,
+    "expected 'func', 'var', 'type', or 'const'")
 DIAG(expected_type,                CLASS_ERROR, "expected type")
 DIAG(expected_element_type,        CLASS_ERROR, "expected element type")
 DIAG(expected_chan,                CLASS_ERROR, "expected 'chan'")

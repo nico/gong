@@ -74,10 +74,6 @@ void Parser::Initialize() {
 void Parser::ParseSourceFile() {
   Initialize();
 
-  //DeclGroupPtrTy Res;
-  //while (!ParseTopLevelDecl(Res))
-    /*parse them all*/;
-
   if (Tok.isNot(tok::kw_package)) {
     // FIXME: fixit
     Diag(diag::expected_package);
@@ -235,7 +231,8 @@ bool Parser::ParseTopLevelDecl(/*DeclGroupPtrTy &Result*/) {
              Tok.is(tok::kw_var)) {
     return ParseDeclaration();
   } else {
-    // FIXME: diag something
+    Diag(Tok, diag::expected_topleveldecl);
+    SkipUntil(tok::semi, /*StopAtSemi=*/false, /*DontConsume=*/true);
     return true;
   }
 }

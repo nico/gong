@@ -4,6 +4,8 @@ package p
 
 import "somepackage"
 
+if true {}  // expected-diag{{expected 'func', 'var', 'type', or 'const'}}
+
 func f() {
   // Declaration
   //FIXME: var, const
