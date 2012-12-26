@@ -2129,12 +2129,14 @@ private:
   /// \brief A set of deallocations that should be performed when the 
   /// ASTContext is destroyed.
   SmallVector<std::pair<void (*)(void*), void *>, 16> Deallocations;
+#endif
                                        
   // FIXME: This currently contains the set of StoredDeclMaps used
   // by DeclContext objects.  This probably should not be in ASTContext,
   // but we include it here so that ASTContext can quickly deallocate them.
   llvm::PointerIntPair<StoredDeclsMap*,1> LastSDM;
 
+#if 0
   /// \brief A counter used to uniquely identify "blocks".
   mutable unsigned int UniqueBlockByRefTypeID;
   

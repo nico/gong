@@ -28,10 +28,12 @@
 #endif
 
 namespace gong {
+class ASTContext;
 class DeclContext;
 class IdentifierInfo;
 class NamedDecl;
 class StoredDeclsMap;
+class TranslationUnitDecl;
 }
 
 #if 0
@@ -49,7 +51,6 @@ class LinkageSpecDecl;
 class NamespaceDecl;
 struct PrintingPolicy;
 class Stmt;
-class TranslationUnitDecl;
 class UsingDirectiveDecl;
 }
 #endif
@@ -361,16 +362,16 @@ public:
     return const_cast<Decl*>(this)->getNonClosureContext();
   }
 
-  //TranslationUnitDecl *getTranslationUnitDecl();
-  //const TranslationUnitDecl *getTranslationUnitDecl() const {
-  //  return const_cast<Decl*>(this)->getTranslationUnitDecl();
-  //}
+  TranslationUnitDecl *getTranslationUnitDecl();
+  const TranslationUnitDecl *getTranslationUnitDecl() const {
+    return const_cast<Decl*>(this)->getTranslationUnitDecl();
+  }
 
   //bool isInAnonymousNamespace() const;
 
-#if 0
   ASTContext &getASTContext() const LLVM_READONLY;
 
+#if 0
   void setAccess(AccessSpecifier AS) {
     Access = AS;
 #ifndef NDEBUG
@@ -978,8 +979,7 @@ public:
   ///                   // getLexicalParent() == translation unit
   ///
   DeclContext *getLexicalParent() {
-    //return cast<Decl>(this)->getLexicalDeclContext();
-    return getLexicalParent();  // FIXME
+    return cast<Decl>(this)->getLexicalDeclContext();
   }
   const DeclContext *getLexicalParent() const {
     return const_cast<DeclContext*>(this)->getLexicalParent();
@@ -991,9 +991,9 @@ public:
     return const_cast<DeclContext*>(this)->getLookupParent();
   }
 
-  //ASTContext &getParentASTContext() const {
-    //return cast<Decl>(this)->getASTContext();
-  //}
+  ASTContext &getParentASTContext() const {
+    return cast<Decl>(this)->getASTContext();
+  }
 
   bool isClosure() const {
     return DeclKind == Decl::Block;
@@ -1019,16 +1019,6 @@ public:
   bool isRecord() const {
     return DeclKind >= Decl::firstRecord && DeclKind <= Decl::lastRecord;
   }
-
-  bool isNamespace() const {
-    return DeclKind == Decl::Namespace;
-  }
-
-  bool isInlineNamespace() const;
-
-  /// \brief Determines whether this context is dependent on a
-  /// template parameter.
-  bool isDependentContext() const;
 
   /// isTransparentContext - Determines whether this context is a
   /// "transparent" context, meaning that the members declared in this
@@ -1496,7 +1486,7 @@ private:
   /// use of addDeclInternal().
   void makeDeclVisibleInContextInternal(NamedDecl *D);
 
-  //StoredDeclsMap *CreateStoredDeclsMap(ASTContext &C) const;
+  StoredDeclsMap *CreateStoredDeclsMap(ASTContext &C) const;
 
   void buildLookupImpl(DeclContext *DCtx);
   void makeDeclVisibleInContextWithFlags(NamedDecl *D, bool Internal,

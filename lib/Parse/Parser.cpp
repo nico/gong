@@ -275,7 +275,7 @@ bool Parser::ParseFunctionDecl(SourceLocation FuncLoc) {
 
   if (Tok.is(tok::l_brace)) {
     // Enter a scope for the function body.
-    ParseScope BodyScope(this, Scope::FnScope|Scope::DeclScope);
+    ParseScope BodyScope(this, Scope::FnScope | Scope::DeclScope);
     
     Actions.ActOnStartOfFunctionDef(Fun, getCurScope());
     ParseBlockBody();

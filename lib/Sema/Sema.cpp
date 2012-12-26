@@ -77,9 +77,9 @@ Sema::Sema(Lexer &L, /*Preprocessor &pp,*/ ASTContext &ctxt
   : /*TheTargetAttributesSema(0), ExternalSource(0), 
     isMultiplexExternalSource(false), FPFeatures(pp.getLangOpts()),
     LangOpts(pp.getLangOpts()), PP(pp),*/ Context(ctxt), /*Consumer(consumer),*/
-    Diags(L.getDiagnostics())/*, SourceMgr(PP.getSourceManager()),
-    CollectStats(false), CodeCompleter(CodeCompleter),
-    CurContext(0), OriginalLexicalContext(0),
+    Diags(L.getDiagnostics()), /*SourceMgr(PP.getSourceManager()),
+    CollectStats(false), CodeCompleter(CodeCompleter),*/
+    CurContext(0)/*, OriginalLexicalContext(0),
     PackContext(0), VisContext(0),
     IsBuildingRecoveryCallExpr(false),
     ExprNeedsCleanups(false), LateTemplateParser(0), OpaqueParser(0),

@@ -1346,12 +1346,15 @@ static void CheckRedefinitionAndPushOnScope(Sema &Self, DeclContext *DC,
   Self.LookupName(Previous, S, /* CreateBuiltins = */ true);
 
   if (!Previous.empty()) {
-    // FIXME: maybe check if this is a type redecl and do something more useful?
-    Self.Diag(New->getLocation(), diag::redefinition)
-      << &New->getDeclName();
     NamedDecl *Old = Previous.getRepresentativeDecl();
-    Self.Diag(Old->getLocation(), diag::note_previous_definition);
-    New->setInvalidDecl();
+    if (Self.IdResolver.isDeclInScope(Old, DC, S)) {
+      // FIXME: maybe check if this is a type redecl and do something more
+      // useful?
+      Self.Diag(New->getLocation(), diag::redefinition)
+        << &New->getDeclName();
+      Self.Diag(Old->getLocation(), diag::note_previous_definition);
+      New->setInvalidDecl();
+    }
   }
 
   // If this has an identifier and is not an invalid redeclaration or 
@@ -1413,7 +1416,6 @@ void Sema::ActOnStartOfFunctionDef(DeclPtrTy Fun, Scope *FnBodyScope) {
   // Enter a new function scope
   //PushFunctionScope();  // FIXME
 
-fprintf(stderr, ": %p\n", FnBodyScope);
   if (FnBodyScope)
     PushDeclContext(FnBodyScope, FD);
 
@@ -1475,7 +1477,6 @@ fprintf(stderr, ": %p\n", FnBodyScope);
 }
 
 void Sema::ActOnFinishFunctionBody(DeclPtrTy Fun/*, StmtArg Body*/) {
-fprintf(stderr, "2:\n");
   if (!Fun)
     return;
   FunctionDecl *FD = Fun.getAs<FunctionDecl>();

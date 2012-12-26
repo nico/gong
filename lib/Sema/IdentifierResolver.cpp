@@ -108,8 +108,7 @@ IdentifierResolver::~IdentifierResolver() {
 /// if 'D' is in Scope 'S', otherwise 'S' is ignored and isDeclInScope returns
 /// true if 'D' belongs to the given declaration context.
 bool IdentifierResolver::isDeclInScope(Decl *D, DeclContext *Ctx,
-                                       ASTContext &Context, Scope *S) const {
-#if 0
+                                       Scope *S) const {
   Ctx = Ctx->getRedeclContext();
 
   if (Ctx->isFunctionOrMethod() || S->isFunctionPrototypeScope()) {
@@ -125,10 +124,6 @@ bool IdentifierResolver::isDeclInScope(Decl *D, DeclContext *Ctx,
 
   DeclContext *DCtx = D->getDeclContext()->getRedeclContext();
   return Ctx->Equals(DCtx);
-#else
-  // FIXME
-  return false;
-#endif
 }
 
 /// AddDecl - Link the decl to its shadowed decl chain.
@@ -327,7 +322,6 @@ bool IdentifierResolver::tryAddTopLevelDecl(NamedDecl *D, IdentifierInfo &Name){
     Name.setFETokenInfo(NULL);
     IDI = &(*IdDeclInfos)[Name];
     
-#if 0  // FIXME
     // If the existing declaration is not visible in translation unit scope,
     // then add the new top-level declaration first.
     if (!PrevD->getDeclContext()->getRedeclContext()->isTranslationUnit()) {
@@ -337,7 +331,6 @@ bool IdentifierResolver::tryAddTopLevelDecl(NamedDecl *D, IdentifierInfo &Name){
       IDI->AddDecl(PrevD);
       IDI->AddDecl(D);
     }
-#endif
     return true;
   } 
   
@@ -361,14 +354,12 @@ bool IdentifierResolver::tryAddTopLevelDecl(NamedDecl *D, IdentifierInfo &Name){
       return true;
     }
     
-#if 0  // FIXME
     if (!(*I)->getDeclContext()->getRedeclContext()->isTranslationUnit()) {
       // We've found a declaration that is not visible from the translation
       // unit (it's in an inner scope). Insert our declaration here.
       IDI->InsertDecl(I, D);
       return true;
     }
-#endif
   }
   
   // Add the declaration to the end.
