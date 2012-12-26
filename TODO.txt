@@ -44,6 +44,8 @@ Have nice fixit for toplevel `a := b`
 
 Nice fixit to replace "while" with "for" (if no identifier with same name found)
 
+Have nice fixit for "func a(){}" at function scope (just remove name?)
+
 Handle https://groups.google.com/forum/#!topic/golang-nuts/Bv4GDkPRMxA well
 
 missing closing braces after interface, struct, blocks, selects, switchs
@@ -104,6 +106,14 @@ each clause of a switch or select acts as an implicit block
 
 Sema / AST
 ==========
+
+Inject into scopes:
+* function parameters
+* simplevardecls
+* decls in ifs, fors, switchs, selects
+* decls in case clauses
+* handle methoddecls
+
 
 - Name lookup, redecl errors, scope, decl ast
   In clang: SemaDecl.cpp, ActOnDeclarator(), PushOnScopeChains()

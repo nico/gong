@@ -453,6 +453,7 @@ bool Parser::ParseSwitchStmt() {
     Diag(Tok, diag::expected_l_brace);
     SkipUntil(tok::l_brace, /*StopAtSemi=*/false, /*DontConsume=*/true);
   }
+
   BalancedDelimiterTracker T(*this, tok::l_brace);
   T.consumeOpen();
 
@@ -463,6 +464,7 @@ bool Parser::ParseSwitchStmt() {
       SkipUntil(tok::r_brace, /*StopAtSemi=*/false);
       return true;
     }
+    ParseScope CaseScope(this, Scope::DeclScope);
     if (ParseCaseClause(IsTypeSwitch ? TypeCaseClause : ExprCaseClause)) {
       SkipUntil(tok::r_brace, /*StopAtSemi=*/false);
       return true;
@@ -544,6 +546,7 @@ bool Parser::ParseSelectStmt() {
       SkipUntil(tok::r_brace, /*StopAtSemi=*/false);
       return true;
     }
+    ParseScope CommScope(this, Scope::DeclScope);
     if (ParseCommClause()) {
       SkipUntil(tok::r_brace, /*StopAtSemi=*/false);
       return true;
