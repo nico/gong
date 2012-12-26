@@ -2142,8 +2142,8 @@ private:
   
   friend class DeclContext;
   friend class DeclarationNameTable;
-  void ReleaseDeclContextMaps();
 #endif
+  void ReleaseDeclContextMaps();
 };
 #if 0
   

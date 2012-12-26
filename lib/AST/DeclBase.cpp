@@ -1322,7 +1322,6 @@ StoredDeclsMap *DeclContext::CreateStoredDeclsMap(ASTContext &C) const {
   return M;
 }
 
-#if 0
 void ASTContext::ReleaseDeclContextMaps() {
   // It's okay to delete DependentStoredDeclsMaps via a StoredDeclsMap
   // pointer because the subclass doesn't add anything that needs to
@@ -1345,6 +1344,7 @@ void StoredDeclsMap::DestroyAll(StoredDeclsMap *Map, bool Dependent) {
   }
 }
 
+#if 0
 DependentDiagnostic *DependentDiagnostic::Create(ASTContext &C,
                                                  DeclContext *Parent,
                                            const PartialDiagnostic &PDiag) {

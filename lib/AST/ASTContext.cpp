@@ -649,11 +649,11 @@ ASTContext::ASTContext(/*LangOptions& LOpts, SourceManager &SM,
 }
 
 ASTContext::~ASTContext() {
-#if 0
   // Release the DenseMaps associated with DeclContext objects.
   // FIXME: Is this the ideal solution?
   ReleaseDeclContextMaps();
 
+#if 0
   // Call all of the deallocation functions.
   for (unsigned I = 0, N = Deallocations.size(); I != N; ++I)
     Deallocations[I].first(Deallocations[I].second);
