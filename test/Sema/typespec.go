@@ -17,4 +17,15 @@ func C() {}  // expected-diag {{redefinition of 'C'}}
 func f() {
   type A int  // expected-note {{previous definition is here}}
   type A int  // expected-diag {{redefinition of 'A'}}
+
+  {
+    type A int  // expected-note {{previous definition is here}}
+    type A int  // expected-diag {{redefinition of 'A'}}
+
+    type D int
+  }
+
+  type D int
 }
+
+type D int
