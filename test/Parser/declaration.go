@@ -11,6 +11,7 @@ const foo = 4
 const foo = []int{1, 2, 3}
 
 const foo, bar = 1, 2
+const foo, bar, = 1, 2  // expected-diag{{expected identifier}}
 
 const foo, bar int = 1, 2
 
@@ -41,6 +42,8 @@ var foo = 4
 var foo = []int{1, 2, 3}
 
 var foo, bar = 1, 2
+var foo, bar, = 1, 2  // expected-diag{{expected identifier}}
+var foo, bar, []int  // expected-diag{{expected identifier}}
 
 var foo, bar int = 1, 2
 

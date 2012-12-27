@@ -32,6 +32,7 @@ type t struct {
   bar2, baz2 *quux2 "stringlit"
 
   bar, baz []int
+  bar, baz, []int  // expected-diag{{expected identifier}}
   *anon5000 []int  // expected-diag{{expected ';'}}
 }
 type t struct {
