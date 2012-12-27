@@ -20,6 +20,7 @@
 //#include "gong/Basic/TemplateKinds.h"
 //#include "gong/Basic/TypeTraits.h"
 //#include "gong/Parse/DeclSpec.h"
+#include "gong/Parse/IdentifierList.h"
 #include "gong/Parse/Ownership.h"
 #include "llvm/Support/PrettyStackTrace.h"
 #include "llvm/ADT/PointerUnion.h"

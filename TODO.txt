@@ -140,10 +140,19 @@ Inject into scopes:
         Sema needs a stack of groups
         Where is the SourceLoc for the 'var'/'const'/'type' keywords stored?
         Groups need paren locs too
-      ActOnConstSpec(identlist, type*, sourceloc equalloc, exprlist*)
+
       ActOnTypeSpec(identifier, type)
+
+      // type* and exprlist* can both be NULL (for implicit iota and so on)
+      // if type* is not NULL, exprlist* is always non-NULL too.
+      ActOnConstSpec(identlist, type*, sourceloc equalloc, exprlist*)
+
+      // type is mandatory, exprlist is optional.
       ActOnVarSpec(identlist, type, sourceloc equalloc, exprlist*)
+
+      // exprlist is mandatory
       ActOnVarSpec(identlist, equalloc, exprlist)
+
     ActOnFunctionDecl(sourceloc funcloc, ident name, signature)
     ActOnMethodDecl(ident, star, ident, funcloc, name, signature)
 
