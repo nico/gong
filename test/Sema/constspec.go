@@ -2,12 +2,21 @@
 
 package p
 
-const cA int = 4  // expected-note {{previous definition is here}}
-const cB cA = 4
+func noInitializers() {
+  const (
+    cC int = iota  // expected-note {{previous definition is here}}
+    cC             // expected-diag {{redefinition of 'cC'}}
+  )
+}
 
-const cA float32 = 3  // expected-diag {{redefinition of 'cA'}}
+func withInitializers() {
+  const cA int = 4  // expected-note {{previous definition is here}}
+  const cB cA = 4
 
-const (
-  cC int = 5 // expected-note {{previous definition is here}}
-  cC float32 = 5  // expected-diag {{redefinition of 'cC'}}
-)
+  const cA float32 = 3  // expected-diag {{redefinition of 'cA'}}
+
+  const (
+    cC int = 5 // expected-note {{previous definition is here}}
+    cC float32 = 5  // expected-diag {{redefinition of 'cC'}}
+  )
+}

@@ -900,6 +900,10 @@ bool Parser::ParseConstSpec(Action::DeclPtrTy ConstDecl) {
   assert(Tok.is(tok::identifier) && "Expected identifier");
   IdentifierList IdentList;
   ParseIdentifierList(IdentList);
+
+  // FIXME: call this later; pass equalloc, rhs
+  Actions.ActOnConstSpec(ConstDecl, IdentList, getCurScope());
+
   if (Tok.is(tok::semi) || Tok.is(tok::r_paren))
     return false;
   if (Tok.isNot(tok::equal) && !IsType()) {
@@ -915,8 +919,6 @@ bool Parser::ParseConstSpec(Action::DeclPtrTy ConstDecl) {
     ConsumeToken();  // Eat '='.
   if (!IsExpression())
     return true;
-  // FIXME: pass equalloc, rhs
-  Actions.ActOnConstSpec(ConstDecl, IdentList, getCurScope());
   return ParseExpressionList().isInvalid();
 }
 
