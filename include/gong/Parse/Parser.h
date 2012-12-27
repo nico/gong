@@ -213,8 +213,8 @@ public:
   bool ParseTypeListTail(bool AcceptEllipsis = false,
                          bool *SawIdentifiersOnly = NULL);
 
-  bool ParseIdentifierList();
-  bool ParseIdentifierListTail(IdentifierInfo *Head);
+  bool ParseIdentifierList(IdentifierList &IdentList);
+  bool ParseIdentifierListTail(IdentifierList &IdentList);
 
   bool ParseDeclaration();
   bool ParseConstDecl();

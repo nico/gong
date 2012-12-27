@@ -20,6 +20,8 @@ data
 Parser
 =====
 
+Test identifier lists that end after a ',' (varspec especially)
+
 Multi-file modules
 
 Allow parens around receiver types,

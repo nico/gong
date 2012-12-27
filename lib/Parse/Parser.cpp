@@ -13,6 +13,7 @@
 
 #include "gong/Parse/Parser.h"
 
+#include "gong/Parse/IdentifierList.h"
 #include "gong/Parse/Scope.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/MemoryBuffer.h"
@@ -626,14 +627,15 @@ bool Parser::ParseFieldDecl() {
   else {
     // tok::identifier
     IdentifierInfo *II = Tok.getIdentifierInfo();
-    ConsumeToken();
+    SourceLocation IILoc = ConsumeToken();
 
     // If next is:
     // ',': IdentifierListTail Type
     // IsType(): Indentifier Type
     // else: AnonymousField
     if (Tok.is(tok::comma)) {
-      ParseIdentifierListTail(II);
+      IdentifierList IdentList(IILoc, II);
+      ParseIdentifierListTail(IdentList);
       if (!IsType()) {
         Diag(Tok, diag::expected_type);
         return true;
@@ -843,25 +845,26 @@ bool Parser::ParseTypeListTail(bool AcceptEllipsis, bool *SawIdentifiersOnly) {
 }
 
 /// IdentifierList = identifier { "," identifier } .
-bool Parser::ParseIdentifierList() {
+bool Parser::ParseIdentifierList(IdentifierList &IdentList) {
   assert(Tok.is(tok::identifier) && "Expected identifier");
   IdentifierInfo *Ident = Tok.getIdentifierInfo();
-  ConsumeToken();
-  return ParseIdentifierListTail(Ident);
+  SourceLocation IdentLoc = ConsumeToken();
+  IdentList.initialize(IdentLoc, Ident);
+  return ParseIdentifierListTail(IdentList);
 }
 
 /// This is called for IdentifierInfo after the initial identifier has been read
-bool Parser::ParseIdentifierListTail(IdentifierInfo *Head) {
+bool Parser::ParseIdentifierListTail(IdentifierList &IdentList) {
   while (Tok.is(tok::comma)) {
-    ConsumeToken();
+    SourceLocation CommaLoc = ConsumeToken();
 
     if (Tok.isNot(tok::identifier)) {
       Diag(Tok, diag::expected_ident);
       return true;
     }
     IdentifierInfo *Ident = Tok.getIdentifierInfo();
-    (void)Ident;  // FIXME
-    ConsumeToken();
+    SourceLocation IdentLoc = ConsumeToken();
+    IdentList.add(CommaLoc, IdentLoc, Ident);
   }
   return false;
 }
@@ -893,7 +896,8 @@ bool Parser::ParseConstDecl() {
 /// ConstSpec      = IdentifierList [ [ Type ] "=" ExpressionList ] .
 bool Parser::ParseConstSpec() {
   assert(Tok.is(tok::identifier) && "Expected identifier");
-  ParseIdentifierList();
+  IdentifierList IdentList;
+  ParseIdentifierList(IdentList);
   if (Tok.is(tok::semi) || Tok.is(tok::r_paren))
     return false;
   if (Tok.isNot(tok::equal) && !IsType()) {
@@ -957,7 +961,8 @@ bool Parser::ParseVarDecl() {
 ///               ( Type [ "=" ExpressionList ] | "=" ExpressionList ) .
 bool Parser::ParseVarSpec() {
   assert(Tok.is(tok::identifier) && "Expected identifier");
-  ParseIdentifierList();
+  IdentifierList IdentList;
+  ParseIdentifierList(IdentList);
   if (Tok.isNot(tok::equal) && !IsType()) {
     Diag(Tok, diag::expected_equal_or_type);
     SkipUntil(tok::semi, tok::r_paren,
