@@ -977,14 +977,16 @@ bool Parser::ParseVarSpec(Action::DeclPtrTy VarDecl) {
   }
   if (Tok.isNot(tok::equal))
     ParseType();
+
+  // FIXME: call this later; pass equalloc, rhs
+  Actions.ActOnVarSpec(VarDecl, IdentList, getCurScope());
+
   if (Tok.is(tok::semi) || Tok.is(tok::r_paren))
     return false;
   if (Tok.isNot(tok::equal))
     Diag(Tok, diag::expected_equal);
   else
     ConsumeToken();  // Eat '='.
-  // FIXME: pass equalloc, rhs
-  Actions.ActOnVarSpec(VarDecl, IdentList, getCurScope());
   return ParseExpressionList().isInvalid();
 }
 
