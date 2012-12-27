@@ -1436,13 +1436,20 @@ public:
                        IdentifierInfo *LocalName,
                        bool IsLocal) LLVM_OVERRIDE;
 
-  DeclPtrTy ActOnSingleTypeDecl(SourceLocation TypeLoc) LLVM_OVERRIDE;
-  DeclPtrTy ActOnStartMultiTypeDecl(SourceLocation TypeLoc,
-                                    SourceLocation LParenLoc) LLVM_OVERRIDE;
-  void ActOnFinishMultiTypeDecl(DeclPtrTy Decl,
-                                SourceLocation RParenLoc) LLVM_OVERRIDE;
+  DeclPtrTy ActOnSingleDecl(SourceLocation TypeLoc,
+                            DeclGroupKind DeclKind) LLVM_OVERRIDE;
+  DeclPtrTy ActOnStartMultiDecl(SourceLocation TypeLoc,
+                                SourceLocation LParenLoc,
+                                DeclGroupKind DeclKind) LLVM_OVERRIDE;
+  void ActOnFinishMultiDecl(DeclPtrTy Decl,
+                            SourceLocation RParenLoc) LLVM_OVERRIDE;
+
+  void ActOnConstSpec(DeclPtrTy Decl, IdentifierList &Idents,
+                      Scope *S) LLVM_OVERRIDE;
   void ActOnTypeSpec(DeclPtrTy Decl, SourceLocation IILoc, IdentifierInfo &II,
                      Scope *S) LLVM_OVERRIDE;
+  void ActOnVarSpec(DeclPtrTy Decl, IdentifierList &Idents,
+                    Scope *S) LLVM_OVERRIDE;
 
   DeclPtrTy ActOnFunctionDecl(SourceLocation FuncLoc, SourceLocation NameLoc,
                               IdentifierInfo &II, Scope *S) LLVM_OVERRIDE;

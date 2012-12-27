@@ -15,6 +15,29 @@ type (
 // FIXME: 'A' should be in the scope of the struct below.
 // type A struct { next *A }
 
+
+var vA int = 4  // expected-note {{previous definition is here}}
+var vB v = 4A
+
+var vA float32 = 4  // expected-diag {{redefinition of 'vA'}}
+
+var (
+  vC int = 4  // expected-note {{previous definition is here}}
+  vC float32 = 4  // expected-diag {{redefinition of 'vC'}}
+)
+
+
+const cA int = 4  // expected-note {{previous definition is here}}
+const cB cA = 4
+
+const cA float32 = 3  // expected-diag {{redefinition of 'cA'}}
+
+const (
+  cC int = 5 // expected-note {{previous definition is here}}
+  cC float32 = 5  // expected-diag {{redefinition of 'cC'}}
+)
+
+
 func C() {}  // expected-diag {{redefinition of 'C'}}
 
 func f() {

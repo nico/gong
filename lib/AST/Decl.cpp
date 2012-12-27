@@ -588,20 +588,22 @@ TypeSpecDecl *TypeSpecDecl::Create(ASTContext &C, DeclContext *DC,
   return new (C) TypeSpecDecl(DC, L, II, T);
 }
 
-void GoTypeDecl::anchor() { }
+void DeclarationDecl::anchor() { }
 
-void SingleTypeDecl::anchor() { }
+void SingleDeclarationDecl::anchor() { }
 
-SingleTypeDecl *SingleTypeDecl::Create(ASTContext &C, DeclContext *DC,
-                                       SourceLocation TypeLoc) {
-  return new (C) SingleTypeDecl(DC, TypeLoc);
+SingleDeclarationDecl *SingleDeclarationDecl::Create(
+    ASTContext &C, DeclContext *DC, SourceLocation TypeLoc,
+    DeclGroupKind DeclKind) {
+  return new (C) SingleDeclarationDecl(DC, TypeLoc, DeclKind);
 }
 
-void MultiTypeDecl::anchor() { }
+void MultiDeclarationDecl::anchor() { }
 
-MultiTypeDecl *MultiTypeDecl::Create(ASTContext &C, DeclContext *DC,
-                                     SourceLocation TypeLoc) {
-  return new (C) MultiTypeDecl(DC, TypeLoc);
+MultiDeclarationDecl *MultiDeclarationDecl::Create(
+    ASTContext &C, DeclContext *DC, SourceLocation TypeLoc,
+    DeclGroupKind DeclKind) {
+  return new (C) MultiDeclarationDecl(DC, TypeLoc, DeclKind);
 }
 
 #if 0

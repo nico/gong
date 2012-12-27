@@ -884,8 +884,10 @@ bool Parser::ParseDeclaration() {
 bool Parser::ParseConstDecl() {
   assert(Tok.is(tok::kw_const) && "Expected 'const'");
   SourceLocation ConstLoc = ConsumeToken();
-  if (Tok.is(tok::identifier))
-    return ParseConstSpec();
+  if (Tok.is(tok::identifier)) {
+    Action::DeclPtrTy ConstDecl = Actions.ActOnSingleDecl(ConstLoc, DGK_Const);
+    return ParseConstSpec(ConstDecl);
+  }
   if (Tok.is(tok::l_paren))
     return ParseDeclGroup(DGK_Const, ConstLoc);
   Diag(Tok, diag::expected_ident_or_l_paren);
@@ -894,7 +896,7 @@ bool Parser::ParseConstDecl() {
 }
 
 /// ConstSpec      = IdentifierList [ [ Type ] "=" ExpressionList ] .
-bool Parser::ParseConstSpec() {
+bool Parser::ParseConstSpec(Action::DeclPtrTy ConstDecl) {
   assert(Tok.is(tok::identifier) && "Expected identifier");
   IdentifierList IdentList;
   ParseIdentifierList(IdentList);
@@ -913,6 +915,8 @@ bool Parser::ParseConstSpec() {
     ConsumeToken();  // Eat '='.
   if (!IsExpression())
     return true;
+  // FIXME: pass equalloc, rhs
+  Actions.ActOnConstSpec(ConstDecl, IdentList, getCurScope());
   return ParseExpressionList().isInvalid();
 }
 
@@ -921,7 +925,7 @@ bool Parser::ParseTypeDecl() {
   assert(Tok.is(tok::kw_type) && "Expected 'type'");
   SourceLocation TypeLoc = ConsumeToken();
   if (Tok.is(tok::identifier)) {
-    Action::DeclPtrTy TypeDecl = Actions.ActOnSingleTypeDecl(TypeLoc);
+    Action::DeclPtrTy TypeDecl = Actions.ActOnSingleDecl(TypeLoc, DGK_Type);
     return ParseTypeSpec(TypeDecl);
   }
   if (Tok.is(tok::l_paren))
@@ -948,8 +952,10 @@ bool Parser::ParseTypeSpec(Action::DeclPtrTy TypeDecl) {
 bool Parser::ParseVarDecl() {
   assert(Tok.is(tok::kw_var) && "Expected 'var'");
   SourceLocation VarLoc = ConsumeToken();
-  if (Tok.is(tok::identifier))
-    return ParseVarSpec();
+  if (Tok.is(tok::identifier)) {
+    Action::DeclPtrTy VarDecl = Actions.ActOnSingleDecl(VarLoc, DGK_Var);
+    return ParseVarSpec(VarDecl);
+  }
   if (Tok.is(tok::l_paren))
     return ParseDeclGroup(DGK_Var, VarLoc);
   Diag(Tok, diag::expected_ident_or_l_paren);
@@ -959,7 +965,7 @@ bool Parser::ParseVarDecl() {
 
 /// VarSpec     = IdentifierList
 ///               ( Type [ "=" ExpressionList ] | "=" ExpressionList ) .
-bool Parser::ParseVarSpec() {
+bool Parser::ParseVarSpec(Action::DeclPtrTy VarDecl) {
   assert(Tok.is(tok::identifier) && "Expected identifier");
   IdentifierList IdentList;
   ParseIdentifierList(IdentList);
@@ -977,6 +983,8 @@ bool Parser::ParseVarSpec() {
     Diag(Tok, diag::expected_equal);
   else
     ConsumeToken();  // Eat '='.
+  // FIXME: pass equalloc, rhs
+  Actions.ActOnVarSpec(VarDecl, IdentList, getCurScope());
   return ParseExpressionList().isInvalid();
 }
 
@@ -985,12 +993,10 @@ bool Parser::ParseDeclGroup(DeclGroupKind Kind, SourceLocation KWLoc) {
   BalancedDelimiterTracker T(*this, tok::l_paren);
   T.consumeOpen();
 
-  // FIXME: Do this for var and const too
   // FIXME: Alternatively, this could collect all the Specs in a vector and
   //        pass them at once to ActOnMultiDecl?
-  Action::DeclPtrTy DeclGroup;
-  if (Kind == DGK_Type)
-    DeclGroup = Actions.ActOnStartMultiTypeDecl(KWLoc, T.getOpenLocation());
+  Action::DeclPtrTy DeclGroup =
+      Actions.ActOnStartMultiDecl(KWLoc, T.getOpenLocation(), Kind);
 
   // FIXME: Similar to importspec block parsing
   while (Tok.isNot(tok::r_paren) && Tok.isNot(tok::eof)) {
@@ -1001,13 +1007,13 @@ bool Parser::ParseDeclGroup(DeclGroupKind Kind, SourceLocation KWLoc) {
     }
     bool Fail;
     switch (Kind) {
-    case DGK_Const: Fail = ParseConstSpec(); break;
+    case DGK_Const: Fail = ParseConstSpec(DeclGroup); break;
     case DGK_Type:  Fail = ParseTypeSpec(DeclGroup); break;
-    case DGK_Var:   Fail = ParseVarSpec(); break;
+    case DGK_Var:   Fail = ParseVarSpec(DeclGroup); break;
     }
     if (Fail) {
       T.skipToEnd();
-      // FIXME: This doesn't call ActOnFinishMultiTypeDecl(). Does it matter?
+      // FIXME: This doesn't call ActOnFinishMulti(). Does it matter?
       return true;
     }
 
@@ -1022,7 +1028,7 @@ bool Parser::ParseDeclGroup(DeclGroupKind Kind, SourceLocation KWLoc) {
 
   // FIXME: Do this for var and const too
   if (Kind == DGK_Type)
-    Actions.ActOnFinishMultiTypeDecl(DeclGroup, T.getCloseLocation());
+    Actions.ActOnFinishMultiDecl(DeclGroup, T.getCloseLocation());
   return false;
 }
 

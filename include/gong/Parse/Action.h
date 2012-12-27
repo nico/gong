@@ -16,7 +16,7 @@
 
 #include "gong/Basic/IdentifierTable.h"
 #include "gong/Basic/SourceLocation.h"
-//#include "gong/Basic/Specifiers.h"
+#include "gong/Basic/Specifiers.h"
 //#include "gong/Basic/TemplateKinds.h"
 //#include "gong/Basic/TypeTraits.h"
 //#include "gong/Parse/DeclSpec.h"
@@ -221,27 +221,44 @@ public:
 
   /// Called after the 'type' in a TypeDecl without parentheses has been
   /// parsed.  ActOnTypeSpec() will be called once after.
-  virtual DeclPtrTy ActOnSingleTypeDecl(SourceLocation TypeLoc) {
+  virtual DeclPtrTy ActOnSingleDecl(SourceLocation TypeLoc,
+                                    DeclGroupKind DeclKind) {
     return DeclPtrTy();
   }
 
   /// Called after 'type (' in a TypeDecl with parentheses has been parsed.
   /// ActOnTypeSpec() will be called for each TypeSpec in this TypeDecl.
-  virtual DeclPtrTy ActOnStartMultiTypeDecl(SourceLocation TypeLoc,
-                                            SourceLocation LParenLoc) {
+  virtual DeclPtrTy ActOnStartMultiDecl(SourceLocation TypeLoc,
+                                        SourceLocation LParenLoc,
+                                        DeclGroupKind DeclKind) {
     return DeclPtrTy();
   }
   /// Called after the closing ')' of a TypeDecl has been parsed.
-  virtual void ActOnFinishMultiTypeDecl(DeclPtrTy Decl,
-                                        SourceLocation RParenLoc) {
+  virtual void ActOnFinishMultiDecl(DeclPtrTy Decl,
+                                    SourceLocation RParenLoc) {
   }
+
+  /// Called after a const spec has been parsed.
+  ///
+  /// \param Decl The Decl returned by either ActOnSingleTypeDecl() or
+  ///             ActOnStartMultiDecl().
+  // FIXME: Pass rhs
+  virtual void ActOnConstSpec(DeclPtrTy Decl, IdentifierList &Idents,
+                              Scope *S) {}
 
   /// Called after a type spec has been parsed.
   ///
   /// \param Decl The Decl returned by either ActOnSingleTypeDecl() or
-  ///             ActOnStartMultiTypeDecl().
+  ///             ActOnStartMultiDecl().
   virtual void ActOnTypeSpec(DeclPtrTy Decl, SourceLocation IILoc,
                              IdentifierInfo &II, Scope *S) {}
+
+  /// Called after a var spec has been parsed.
+  ///
+  /// \param Decl The Decl returned by either ActOnSingleTypeDecl() or
+  ///             ActOnStartMultiDecl().
+  // FIXME: Pass rhs
+  virtual void ActOnVarSpec(DeclPtrTy Decl, IdentifierList &Idents, Scope *S) {}
 
 
   /// Registers an identifier as function name.

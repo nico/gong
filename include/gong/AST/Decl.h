@@ -14,6 +14,7 @@
 #ifndef LLVM_GONG_AST_DECL_H
 #define LLVM_GONG_AST_DECL_H
 
+#include "gong/Basic/Specifiers.h"
 #include "gong/AST/DeclBase.h"
 #include "gong/AST/Type.h"
 #if 0
@@ -377,47 +378,54 @@ public:
   static bool classofKind(Kind K) { return K == Decl::TypeSpec; }
 };
 
-/// Represents a TypeDecl in Go.  This is an abstract class.
-class GoTypeDecl : public Decl, public DeclContext {
+/// Represents a Declaration in Go.  This is an abstract class.
+class DeclarationDecl : public Decl, public DeclContext {
   virtual void anchor();
 
+  DeclGroupKind DeclKind;
+
 protected:
-  GoTypeDecl(Kind DK, DeclContext *DC, SourceLocation L)
-    : Decl(DK, DC, L), DeclContext(DK) { }
+  DeclarationDecl(Kind DK, DeclContext *DC, SourceLocation L, DeclGroupKind DGK)
+    : Decl(DK, DC, L), DeclContext(DK), DeclKind(DGK) { }
 
 public:
+  /// Returns which kind of declaration this has.
+  DeclGroupKind getDeclKind() { return DeclKind; }
+
   static bool classof(const Decl *D) { return classofKind(D->getKind()); }
   static bool classofKind(Kind K) {
-    return K >= firstGoType && K <= lastGoType;
+    return K >= firstDeclaration && K <= lastDeclaration;
   }
 };
 
-/// Represents a TypeDecl with a single TypeSpec, for example "type foo int".
-class SingleTypeDecl : public GoTypeDecl {
+/// Represents Declaration with a single Spec, for example "type foo int".
+class SingleDeclarationDecl : public DeclarationDecl {
   virtual void anchor();
 
-  SingleTypeDecl(DeclContext *DC, SourceLocation TypeLoc)
-    : GoTypeDecl(SingleType, DC, TypeLoc) {}
+  SingleDeclarationDecl(DeclContext *DC, SourceLocation KWLoc,
+                        DeclGroupKind DeclKind)
+    : DeclarationDecl(SingleDeclaration, DC, KWLoc, DeclKind) {}
 public:
-  static SingleTypeDecl *Create(ASTContext &C, DeclContext *DC,
-                                SourceLocation TypeLoc);
+  static SingleDeclarationDecl *Create(ASTContext &C, DeclContext *DC,
+                                SourceLocation KWLoc, DeclGroupKind DeclKind);
 
   // Implement isa/cast/dyncast/etc.
   static bool classof(const Decl *D) { return classofKind(D->getKind()); }
-  static bool classofKind(Kind K) { return K == SingleType; }
+  static bool classofKind(Kind K) { return K == SingleDeclaration; }
 };
 
-/// Represents a TypeDecl with a parentheses, for example
+/// Represents a Declaration with a parentheses, for example
 /// "type (foo int; bar int)".
-class MultiTypeDecl : public GoTypeDecl {
+class MultiDeclarationDecl : public DeclarationDecl {
   virtual void anchor();
   SourceLocation LParenLoc, RParenLoc;
 
-  MultiTypeDecl(DeclContext *DC, SourceLocation TypeLoc)
-    : GoTypeDecl(MultiType, DC, TypeLoc) {}
+  MultiDeclarationDecl(DeclContext *DC, SourceLocation KWLoc,
+                       DeclGroupKind DeclKind)
+    : DeclarationDecl(MultiDeclaration, DC, KWLoc, DeclKind) {}
 public:
-  static MultiTypeDecl *Create(ASTContext &C, DeclContext *DC,
-                               SourceLocation TypeLoc);
+  static MultiDeclarationDecl *Create(ASTContext &C, DeclContext *DC,
+                               SourceLocation KWLoc, DeclGroupKind DeclKind);
 
   /// \brief Get the location of the left parenthesis '('.
   SourceLocation getLParenLoc() const { return LParenLoc; }
@@ -429,7 +437,7 @@ public:
 
   // Implement isa/cast/dyncast/etc.
   static bool classof(const Decl *D) { return classofKind(D->getKind()); }
-  static bool classofKind(Kind K) { return K == MultiType; }
+  static bool classofKind(Kind K) { return K == MultiDeclaration; }
 };
 
 #if 0

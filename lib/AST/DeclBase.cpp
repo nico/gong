@@ -742,7 +742,7 @@ DeclContext *DeclContext::getLookupParent() {
 bool DeclContext::isTransparentContext() const {
   /*if (DeclKind == Decl::Enum)
     return !cast<EnumDecl>(this)->isScoped();
-  else*/ if (isa<GoTypeDecl>(this)) //DeclKind == Decl::LinkageSpec)
+  else*/ if (isa<DeclarationDecl>(this)) //DeclKind == Decl::LinkageSpec)
     return true;
 
   return false;
@@ -776,8 +776,8 @@ DeclContext *DeclContext::getPrimaryContext() {
   case Decl::TranslationUnit:
   //case Decl::LinkageSpec:
   //case Decl::Block:
-  case Decl::SingleType:
-  case Decl::MultiType:
+  case Decl::SingleDeclaration:
+  case Decl::MultiDeclaration:
     // There is only one DeclContext for these entities.
     return this;
 

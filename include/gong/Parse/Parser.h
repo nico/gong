@@ -218,12 +218,11 @@ public:
 
   bool ParseDeclaration();
   bool ParseConstDecl();
-  bool ParseConstSpec();
+  bool ParseConstSpec(Action::DeclPtrTy ConstDecl);
   bool ParseTypeDecl();
   bool ParseTypeSpec(Action::DeclPtrTy TypeDecl);
   bool ParseVarDecl();
-  bool ParseVarSpec();
-  enum DeclGroupKind { DGK_Const, DGK_Type, DGK_Var };
+  bool ParseVarSpec(Action::DeclPtrTy VarDecl);
   bool ParseDeclGroup(DeclGroupKind Kind, SourceLocation KWLoc);
 
   bool IsType();

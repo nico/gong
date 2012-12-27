@@ -14,6 +14,7 @@
 #include "gong/Sema/Sema.h"
 
 #include "gong/AST/Decl.h"
+#include "gong/Parse/IdentifierList.h"
 #include "gong/Parse/Scope.h"
 #include "gong/Sema/Lookup.h"
 using namespace gong;
@@ -1365,19 +1366,37 @@ static void CheckRedefinitionAndPushOnScope(Sema &Self, DeclContext *DC,
     Self.PushOnScopeChains(New, S);
 }
 
-Action::DeclPtrTy Sema::ActOnSingleTypeDecl(SourceLocation TypeLoc) {
-  return DeclPtrTy::make(SingleTypeDecl::Create(Context, CurContext, TypeLoc));
+Action::DeclPtrTy Sema::ActOnSingleDecl(SourceLocation TypeLoc,
+                                        DeclGroupKind DeclKind) {
+  return DeclPtrTy::make(
+      SingleDeclarationDecl::Create(Context, CurContext, TypeLoc, DeclKind));
 }
 
-Action::DeclPtrTy Sema::ActOnStartMultiTypeDecl(SourceLocation TypeLoc,
-                                                SourceLocation LParenLoc) {
-  MultiTypeDecl *D = MultiTypeDecl::Create(Context, CurContext, TypeLoc);
+Action::DeclPtrTy Sema::ActOnStartMultiDecl(
+    SourceLocation TypeLoc, SourceLocation LParenLoc, DeclGroupKind DeclKind) {
+  MultiDeclarationDecl *D =
+      MultiDeclarationDecl::Create(Context, CurContext, TypeLoc, DeclKind);
   D->setLParenLoc(LParenLoc);
   return DeclPtrTy::make(D);
 }
 
-void Sema::ActOnFinishMultiTypeDecl(DeclPtrTy Decl, SourceLocation RParenLoc) {
-  Decl.getAs<MultiTypeDecl>()->setRParenLoc(RParenLoc);
+void Sema::ActOnFinishMultiDecl(DeclPtrTy Decl, SourceLocation RParenLoc) {
+  Decl.getAs<MultiDeclarationDecl>()->setRParenLoc(RParenLoc);
+}
+
+/// Registers identifiers as const names.
+void Sema::ActOnConstSpec(DeclPtrTy Decl, IdentifierList &IdentList, Scope *S) {
+  assert(S->getFlags() & Scope::DeclScope);
+  DeclContext *DC = Decl.getAs<DeclarationDecl>();
+
+  ArrayRef<IdentifierInfo*> Idents = IdentList.getIdents();
+  ArrayRef<SourceLocation> IdentLocs = IdentList.getIdentLocs();
+  for (unsigned i = 0; i < Idents.size(); ++i) {
+    // FIXME: Have dedicated AST nodes for this.
+    TypeSpecDecl *New = TypeSpecDecl::Create(Context, DC, IdentLocs[i],
+                                             Idents[i], /*Type=*/ NULL);
+    CheckRedefinitionAndPushOnScope(*this, DC, S, New);
+  }
 }
 
 /// Registers an identifier as type name.
@@ -1385,13 +1404,20 @@ void Sema::ActOnTypeSpec(DeclPtrTy Decl, SourceLocation IILoc,
                          IdentifierInfo &II, Scope *S) {
   assert(S->getFlags() & Scope::DeclScope);  // FIXME: Is this always true?
                                              //        If so, remove DeclScope.
-  DeclContext *DC = Decl.getAs<GoTypeDecl>();
+  DeclContext *DC = Decl.getAs<DeclarationDecl>();
 
   // FIXME: ownership, pass type
   TypeSpecDecl *New =
       TypeSpecDecl::Create(Context, DC, IILoc, &II, /*Type=*/ NULL);
   CheckRedefinitionAndPushOnScope(*this, DC, S, New);
   //return New;
+}
+
+/// Registers identifiers as var names.
+void Sema::ActOnVarSpec(DeclPtrTy Decl, IdentifierList &Idents, Scope *S) {
+  assert(S->getFlags() & Scope::DeclScope);
+  // FIXME: Do something real.
+  ActOnConstSpec(Decl, Idents, S);
 }
 
 /// Registers an identifier as function name.
