@@ -285,7 +285,8 @@ constants / constant expressions:
 
 AST
 
-  File / TranslationUnit / ?
+  Module
+    File  <- for "package foo"
 
   ImportSpec  <- Decl?
     SingleImportSpec
@@ -351,6 +352,8 @@ AST
   TypeSpecDecl
   VarSpecDecl  : identlist, exprlist, equalloc
     VarDecl: VarSpecDecl ptr, index
+
+  FIXME: look at clang's DeclGroupRef again
 
     ConstDecl
       SingleConstSpec
