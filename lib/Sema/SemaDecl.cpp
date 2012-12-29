@@ -1414,10 +1414,20 @@ void Sema::ActOnTypeSpec(DeclPtrTy Decl, SourceLocation IILoc,
 }
 
 /// Registers identifiers as var names.
-void Sema::ActOnVarSpec(DeclPtrTy Decl, IdentifierList &Idents, Scope *S) {
+void Sema::ActOnVarSpec(DeclPtrTy Decl, IdentifierList &IdentList, Scope *S) {
   assert(S->getFlags() & Scope::DeclScope);
-  // FIXME: Do something real.
-  ActOnConstSpec(Decl, Idents, S);
+  DeclContext *DC = Decl.getAs<DeclarationDecl>();
+
+  ArrayRef<IdentifierInfo*> Idents = IdentList.getIdents();
+  ArrayRef<SourceLocation> IdentLocs = IdentList.getIdentLocs();
+
+  VarSpecDecl *VarSpec = VarSpecDecl::Create(Context, DC, IdentLocs[0]);
+  VarSpec->setIdents(Idents, IdentLocs);
+
+  for (unsigned i = 0; i < Idents.size(); ++i) {
+    VarDecl *New = VarDecl::Create(Context, VarSpec, i);
+    CheckRedefinitionAndPushOnScope(*this, VarSpec, S, New);
+  }
 }
 
 /// Registers an identifier as function name.

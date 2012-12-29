@@ -79,10 +79,14 @@ ABSTRACT_DECL(Declaration, Decl)
   DECL(SingleDeclaration, DeclarationDecl)
   DECL(MultiDeclaration, DeclarationDecl)
 
+DECL(VarSpec, Decl)
+
 ABSTRACT_DECL(Named,  Decl)
   //DECL(Namespace, NamedDecl)
 
   DECL(TypeSpec, NamedDecl)
+
+  DECL(Var, NamedDecl)
 
   DECL(Function, NamedDecl)
 
@@ -114,6 +118,7 @@ ABSTRACT_DECL(Named,  Decl)
 
 // Declaration contexts. DECL_CONTEXT_BASE indicates that it has subclasses.
 DECL_CONTEXT(TranslationUnit)
+DECL_CONTEXT(VarSpec)
 DECL_CONTEXT_BASE(Declaration)
 //DECL_CONTEXT(Namespace)
 //DECL_CONTEXT(LinkageSpec)

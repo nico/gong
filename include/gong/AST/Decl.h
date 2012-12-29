@@ -17,13 +17,13 @@
 #include "gong/Basic/Specifiers.h"
 #include "gong/AST/DeclBase.h"
 #include "gong/AST/Type.h"
+#include "llvm/ADT/ArrayRef.h"
 #if 0
 #include "gong/AST/APValue.h"
 #include "gong/AST/DeclarationName.h"
 #include "gong/AST/ExternalASTSource.h"
 #include "gong/AST/Redeclarable.h"
 #include "gong/Basic/Linkage.h"
-#include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/Optional.h"
 #include "llvm/Support/Compiler.h"
 #endif
@@ -376,6 +376,65 @@ public:
   // Implement isa/cast/dyncast/etc.
   static bool classof(const Decl *D) { return classofKind(D->getKind()); }
   static bool classofKind(Kind K) { return K == Decl::TypeSpec; }
+};
+
+/// Represents a VarSpec in Go. A VarSpec is a collection of identifiers and
+/// an optional list of initializer expressions.
+class VarSpecDecl : public Decl, public DeclContext {
+  virtual void anchor();
+
+  /// new[]'d array of pointers to IdentifierInfos for the names in this spec.
+  IdentifierInfo **Idents;
+
+  /// new[]'d array of the locations of Idents.
+  SourceLocation *IdentLocs;
+
+  /// Number of variables declared by this VarSpec.
+  unsigned NumIdents;
+
+  VarSpecDecl(DeclContext *DC, SourceLocation L)
+    : Decl(Decl::VarSpec, DC, L), DeclContext(Decl::VarSpec), NumIdents(0) { }
+
+  void setIdents(ASTContext &C, llvm::ArrayRef<IdentifierInfo *> IdentInfo,
+                 llvm::ArrayRef<SourceLocation> IdentLocs);
+public:
+  static VarSpecDecl *Create(ASTContext &C, DeclContext *DC, SourceLocation L);
+
+  const IdentifierInfo *getIdent(unsigned i) const {
+    assert(i < NumIdents && "Illegal ident #");
+    return Idents[i];
+  }
+  IdentifierInfo *getIdent(unsigned i) {
+    assert(i < NumIdents && "Illegal ident #");
+    return Idents[i];
+  }
+  SourceLocation getIdentLoc(unsigned i) {
+    assert(i < NumIdents && "Illegal ident #");
+    return IdentLocs[i];
+  }
+  void setIdents(llvm::ArrayRef<IdentifierInfo *> IdentInfo,
+                 llvm::ArrayRef<SourceLocation> IdentLocs) {
+    setIdents(getASTContext(), IdentInfo, IdentLocs);
+  }
+
+  // Implement isa/cast/dyncast/etc.
+  static bool classof(const Decl *D) { return classofKind(D->getKind()); }
+  static bool classofKind(Kind K) { return K == Decl::VarSpec; }
+};
+
+// Represents a variable declaration in Go.
+class VarDecl : public NamedDecl {
+  virtual void anchor();
+
+  VarDecl(VarSpecDecl *Parent, unsigned Index)
+    : NamedDecl(Decl::Var, Parent, Parent->getIdentLoc(Index),
+                Parent->getIdent(Index)) {}
+public:
+  static VarDecl *Create(ASTContext &C, VarSpecDecl *Parent, unsigned Index);
+
+  // Implement isa/cast/dyncast/etc.
+  static bool classof(const Decl *D) { return classofKind(D->getKind()); }
+  static bool classofKind(Kind K) { return K == Decl::Var; }
 };
 
 /// Represents a Declaration in Go.  This is an abstract class.

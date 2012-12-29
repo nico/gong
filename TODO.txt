@@ -341,8 +341,17 @@ AST
     TypeClauseExpr?
     RangeExpr?
 
- TopLevelDecl
+   Module
+    File
+     TopLevelDecl
    Declaration
+    SingleDeclaration
+    MultiDeclaration
+
+  TypeSpecDecl
+  VarSpecDecl  : identlist, exprlist, equalloc
+    VarDecl: VarSpecDecl ptr, index
+
     ConstDecl
       SingleConstSpec
       MultiConstSpec
