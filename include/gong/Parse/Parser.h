@@ -339,16 +339,17 @@ public:
     /// passed as permitted option.
     SSK_TypeSwitchGuard
   };
-  bool ParseSimpleStmt(SimpleStmtKind *OutKind = NULL,
-                       SimpleStmtExts Ext = SSE_None);
-  bool ParseSimpleStmtTail(IdentifierInfo *II, SimpleStmtKind *OutKind = NULL,
-                           SimpleStmtExts Ext = SSE_None);
-  bool ParseSimpleStmtTailAfterExpression(ExprResult &LHS,
-                                          SourceLocation StartLoc,
-                                          TypeSwitchGuardParam *TSGOpt,
-                                          SimpleStmtKind *OutKind,
-                                          SimpleStmtExts Ext,
-                                          bool SawIdentifiersOnly);
+  OwningStmtResult ParseSimpleStmt(SimpleStmtKind *OutKind = NULL,
+                                   SimpleStmtExts Ext = SSE_None);
+  OwningStmtResult ParseSimpleStmtTail(IdentifierInfo *II,
+                                       SimpleStmtKind *OutKind = NULL,
+                                       SimpleStmtExts Ext = SSE_None);
+  OwningStmtResult ParseSimpleStmtTailAfterExpression(ExprResult &LHS,
+                                                      SourceLocation StartLoc,
+                                                   TypeSwitchGuardParam *TSGOpt,
+                                                      SimpleStmtKind *OutKind,
+                                                      SimpleStmtExts Ext,
+                                                      bool SawIdentifiersOnly);
 
   bool ParseShortVarDeclTail(TypeSwitchGuardParam *TSGOpt = NULL);
   bool ParseAssignmentTail(tok::TokenKind Op);

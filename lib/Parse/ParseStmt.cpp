@@ -52,7 +52,7 @@ bool Parser::ParseStatement() {
     SourceLocation IILoc = ConsumeToken();
     if (Tok.is(tok::colon))
       return ParseLabeledStmtTail(IILoc, II).isInvalid();
-    return ParseSimpleStmtTail(II);
+    return ParseSimpleStmtTail(II).isInvalid();
   }
 
   // non-identifier ExpressionStmts
@@ -73,7 +73,7 @@ bool Parser::ParseStatement() {
   case tok::rune_literal:
   case tok::star:
   case tok::string_literal:
-    return ParseSimpleStmt();
+    return ParseSimpleStmt().isInvalid();
   
   default:
     Diag(Tok, diag::expected_stmt) << L.getSpelling(Tok);
@@ -84,9 +84,10 @@ bool Parser::ParseStatement() {
 
 /// SimpleStmt = EmptyStmt | ExpressionStmt | SendStmt | IncDecStmt |
 ///              Assignment | ShortVarDecl .
-bool Parser::ParseSimpleStmt(SimpleStmtKind *OutKind, SimpleStmtExts Ext) {
+Action::OwningStmtResult Parser::ParseSimpleStmt(SimpleStmtKind *OutKind,
+                                                 SimpleStmtExts Ext) {
   if (Tok.is(tok::semi))
-    return ParseEmptyStmt().isInvalid();
+    return ParseEmptyStmt();
 
   // Could be: ExpressionStmt, SendStmt, IncDecStmt, Assignment. They all start
   // with an Expression.
@@ -156,8 +157,9 @@ public:
 }  // namespace
 
 /// Called after the leading IdentifierInfo of a simple statement has been read.
-bool Parser::ParseSimpleStmtTail(IdentifierInfo *II, SimpleStmtKind *OutKind,
-                                 SimpleStmtExts Ext) {
+Action::OwningStmtResult
+Parser::ParseSimpleStmtTail(IdentifierInfo *II, SimpleStmtKind *OutKind,
+                            SimpleStmtExts Ext) {
   TypeSwitchGuardParam Opt, *POpt = Ext == SSE_TypeSwitchGuard ? &Opt : NULL;
   SourceLocation StartLoc = PrevTokLocation;
   bool SawIdentifiersOnly = true;
@@ -167,7 +169,7 @@ bool Parser::ParseSimpleStmtTail(IdentifierInfo *II, SimpleStmtKind *OutKind,
 }
 
 /// Called after the leading Expression of a simple statement has been read.
-bool
+Action::OwningStmtResult
 Parser::ParseSimpleStmtTailAfterExpression(ExprResult &LHS,
                                            SourceLocation StartLoc,
                                            TypeSwitchGuardParam *Opt,
@@ -193,7 +195,7 @@ Parser::ParseSimpleStmtTailAfterExpression(ExprResult &LHS,
       Diag(Tok, diag::expected_assign_op);
       SkipUntil(tok::semi, tok::l_brace,
                 /*StopAtSemi=*/false, /*DontConsume=*/true);
-      return true;
+      return StmtError();
       // FIXME: For bonus points, only suggest ':=' if at least one identifier
       //        is new.
     }
@@ -202,14 +204,16 @@ Parser::ParseSimpleStmtTailAfterExpression(ExprResult &LHS,
     SourceLocation OpLocation = ConsumeToken();
 
     if (Tok.is(tok::kw_range))
-      return ParseRangeClauseTail(Op, OutKind, Ext);
+      return ParseRangeClauseTail(Op, OutKind, Ext) ? StmtError()
+             : Actions.StmtEmpty();  // FIXME
 
     if (Op == tok::colonequal) {
       if (!SawIdentifiersOnly) {
         // FIXME: fixit
         Diag(Tok, diag::expected_equal);
       }
-      return ParseShortVarDeclTail();
+      return ParseShortVarDeclTail() ? StmtError()
+             : Actions.StmtEmpty();  // FIXME
     }
 
     // "In assignment operations, both the left- and right-hand expression
@@ -220,25 +224,29 @@ Parser::ParseSimpleStmtTailAfterExpression(ExprResult &LHS,
       Diag(OpLocation, diag::expected_equal);
       SkipUntil(tok::semi, tok::l_brace,
                 /*StopAtSemi=*/false, /*DontConsume=*/true);
-      return true;
+      return StmtError();
     }
-    return ParseAssignmentTail(tok::equal);
+    return ParseAssignmentTail(tok::equal) ? StmtError()
+           : Actions.StmtEmpty();  // FIXME
   }
 
   if (IsAssignmentOp(Tok.getKind())) {
     tok::TokenKind Op = Tok.getKind();
     ConsumeToken();
     if (Tok.is(tok::kw_range))
-      return ParseRangeClauseTail(tok::colonequal, OutKind, Ext);
+      return ParseRangeClauseTail(tok::colonequal, OutKind, Ext) ? StmtError()
+             : Actions.StmtEmpty();  // FIXME
     // FIXME: if Op is '=' and the expression a TypeSwitchGuard, provide fixit
     // to turn '=' into ':='.
-    return ParseAssignmentTail(Op);
+    return ParseAssignmentTail(Op) ? StmtError() :
+                                     Actions.StmtEmpty();  // FIXME
   }
 
   if (Tok.is(tok::colonequal)) {
     ConsumeToken();
     if (Tok.is(tok::kw_range))
-      return ParseRangeClauseTail(tok::colonequal, OutKind, Ext);
+      return ParseRangeClauseTail(tok::colonequal, OutKind, Ext) ? StmtError()
+             : Actions.StmtEmpty();  // FIXME
     if (!SawIdentifiersOnly) {
       // FIXME: fixit to change ':=' to '=', but
       // only if Result != Parser::TypeSwitchGuardParam::Parsed 
@@ -246,21 +254,22 @@ Parser::ParseSimpleStmtTailAfterExpression(ExprResult &LHS,
     }
     bool Result = ParseShortVarDeclTail(Opt);
     OptRAII.disarm();
-    return Result;
+    return Result ? StmtError() : Actions.StmtEmpty();  // FIXME
   }
 
   if (Tok.is(tok::plusplus) || Tok.is(tok::minusminus))
-    return ParseIncDecStmtTail(LHS);
+    return ParseIncDecStmtTail(LHS) ? StmtError()
+           : Actions.StmtEmpty();  // FIXME
 
   if (Tok.is(tok::lessminus))
-    return ParseSendStmtTail(LHS);
+    return ParseSendStmtTail(LHS) ? StmtError() : Actions.StmtEmpty();  // FIXME
 
   if (OutKind)
     *OutKind = SSK_Expression;
   // Note: This can overwrite *OutKind.
   OptRAII.disarm();
 
-  return LHS.isInvalid();
+  return LHS.isInvalid() ? StmtError() : Actions.StmtEmpty();  // FIXME
 }
 
 /// This is called after the ':=' has been read.
@@ -393,8 +402,8 @@ Parser::OwningStmtResult Parser::ParseIfStmt() {
 
   SourceLocation StmtLoc = Tok.getLocation();
   SimpleStmtKind Kind = SSK_Normal;
-  OwningStmtResult InitStmt(Actions);  // FIXME: set this
-  if (ParseSimpleStmt(&Kind))
+  OwningStmtResult InitStmt(ParseSimpleStmt(&Kind));
+  if (InitStmt.isInvalid())
     return StmtError();
 
   OwningExprResult CondExp(Actions);  // FIXME: set this
@@ -461,7 +470,7 @@ Action::OwningStmtResult Parser::ParseSwitchStmt() {
     // the case once TypeSwitchStmts work, refactor.
     SourceLocation StmtLoc = Tok.getLocation();
     SimpleStmtKind Kind = SSK_Normal;
-    if (ParseSimpleStmt(&Kind, SSE_TypeSwitchGuard)) {
+    if (ParseSimpleStmt(&Kind, SSE_TypeSwitchGuard).isInvalid()) {
       SkipUntil(tok::l_brace, /*StopAtSemi=*/false, /*DontConsume=*/true);
     }
 
@@ -689,7 +698,7 @@ Action::OwningStmtResult Parser::ParseForStmt() {
   SourceLocation StmtLoc = Tok.getLocation();
   SimpleStmtKind Kind = SSK_Normal;
   if (Tok.isNot(tok::semi))
-    if (ParseSimpleStmt(&Kind, SSE_RangeClause))
+    if (ParseSimpleStmt(&Kind, SSE_RangeClause).isInvalid())
       return StmtError();
 
   if (Kind == SSK_RangeClause) {
