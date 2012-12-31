@@ -382,7 +382,7 @@ public:
   bool ParseCaseClause(CaseClauseType Type);
   bool ParseSwitchCase(CaseClauseType Type);
   OwningStmtResult ParseSelectStmt();
-  bool ParseCommClause();
+  OwningStmtResult ParseCommClause();
   bool ParseCommCase();
   OwningStmtResult ParseForStmt();
   bool ParseRangeClauseTail(tok::TokenKind Op, SimpleStmtKind *OutKind,

@@ -592,7 +592,7 @@ bool Parser::ParseSwitchCase(CaseClauseType Type) {
 /// SelectStmt = "select" "{" { CommClause } "}" .
 Action::OwningStmtResult Parser::ParseSelectStmt() {
   assert(Tok.is(tok::kw_select) && "expected 'select'");
-  ConsumeToken();
+  SourceLocation SelectLoc = ConsumeToken();
 
   // FIXME: This is somewhat similar to ParseInterfaceType
   if (Tok.isNot(tok::l_brace)) {
@@ -604,6 +604,7 @@ Action::OwningStmtResult Parser::ParseSelectStmt() {
   BalancedDelimiterTracker T(*this, tok::l_brace);
   T.consumeOpen();
 
+  StmtVector Stmts(Actions);
   // FIXME: might be better to run this loop only while (IsCommClause)?
   while (Tok.isNot(tok::r_brace) && Tok.isNot(tok::eof)) {
     if (Tok.isNot(tok::kw_case) && Tok.isNot(tok::kw_default)) {
@@ -612,31 +613,42 @@ Action::OwningStmtResult Parser::ParseSelectStmt() {
       return StmtError();
     }
     ParseScope CommScope(this, Scope::DeclScope);
-    if (ParseCommClause()) {
+
+    OwningStmtResult Stmt(ParseCommClause());
+    if (Stmt.isInvalid()) {
       SkipUntil(tok::r_brace, /*StopAtSemi=*/false);
       return StmtError();
     }
+    if (Stmt.isUsable())
+      Stmts.push_back(Stmt.release());
   }
   T.consumeClose();
-  return Actions.StmtEmpty();  // FIXME
+  return Actions.ActOnSelectStmt(SelectLoc, T.getOpenLocation(),
+                                 T.getCloseLocation(), move_arg(Stmts));
 }
 
 /// CommClause = CommCase ":" { Statement ";" } .
-bool Parser::ParseCommClause() {
+Action::OwningStmtResult Parser::ParseCommClause() {
+  tok::TokenKind Kind = Tok.getKind();
+  SourceLocation KWLoc = Tok.getLocation();
   ParseCommCase();
 
+  SourceLocation ColonLoc;
   if (Tok.isNot(tok::colon)) {
     // FIXME: just add fixit (at least for default and simple CommCases).
     Diag(Tok, diag::expected_colon);
   } else {
-    ConsumeToken();
+    ColonLoc = ConsumeToken();
   }
 
   // CommClauses are always in SelectStmts, where they can only be followed by
-  // other CommClauses, or the end of the SelectStmt.
+  // other CommClauses or the end of the SelectStmt.
+  StmtVector Stmts(Actions);
   while (Tok.isNot(tok::kw_case) && Tok.isNot(tok::kw_default) &&
          Tok.isNot(tok::r_brace) && Tok.isNot(tok::eof)) {
-    ParseStatement();
+    OwningStmtResult Stmt(ParseStatement());
+    if (Stmt.isUsable())
+      Stmts.push_back(Stmt.release());
 
     // A semicolon may be omitted before a closing ')' or '}'.
     if (Tok.is(tok::r_brace))
@@ -650,7 +662,13 @@ bool Parser::ParseCommClause() {
       ConsumeToken();
     }
   }
-  return false;
+
+  if (Kind == tok::kw_default)
+    return Actions.ActOnDefaultCommClause(KWLoc, ColonLoc,
+                                          move_arg(Stmts));
+  assert(Kind == tok::kw_case);
+  OwningStmtResult CaseStmt(Actions);  // FIXME: fill in
+  return Actions.ActOnCommClause(KWLoc, CaseStmt, ColonLoc, move_arg(Stmts));
 }
 
 /// CommCase   = "case" ( SendStmt | RecvStmt ) | "default" .

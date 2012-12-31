@@ -37,6 +37,11 @@ diag only once on
 Only one diag when ending a file without a closing ) (imports) / } (blocks)
 
 Actions interface
+  Ensmarten ShortVarDecl parsing to pass IdentifierList
+  Create ExprList
+  Ensmarten expr parser to hand out right stuff for ForStmt action methods
+  ExprResult -> OwningExprResult
+  Actions for Exprs
 
 measureTokenLength
 
@@ -424,6 +429,7 @@ Document ownership model.
   move()
   move_arg()
     ExprVector -> MultiExprArg
+    StmtVector -> MultiStmtArg
   release()
 
 ExprArg vs FullExprArg (the latter is "complete" -- in go, I guess that means

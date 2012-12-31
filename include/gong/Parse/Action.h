@@ -468,8 +468,8 @@ public:
 
   // FIXME: actions for:
   // switchstmt
-  // selectstmt
-  // forstmt
+  // CommClause for cases
+  // forstmt remnants
 
   /// \brief Parsed an "if" statement.
   ///
@@ -492,6 +492,50 @@ public:
                                        StmtArg ThenVal,
                                        SourceLocation ElseLoc,
                                        StmtArg ElseVal) {
+    return StmtEmpty();
+  }
+
+  /// \brief Parsed a CommClause with a "case".
+  ///
+  /// \param CaseLoc the location of the "case" keyword.
+  ///
+  /// \param CaseStmt the statement following "case".
+  ///
+  /// \param ColonLoc the location of the colon ending the "case".
+  ///
+  /// \param Elts the statements following the "case".
+  virtual OwningStmtResult ActOnCommClause(SourceLocation CaseLoc,
+                                           StmtArg CaseStmt, SourceLocation
+                                           ColonLoc, MultiStmtArg Elts) {
+    return StmtEmpty();
+  }
+
+  /// \brief Parsed a CommClause with a "default".
+  ///
+  /// \param DefaultLoc the location of the "default" keyword.
+  ///
+  /// \param ColonLoc the location of the colon following the "default".
+  ///
+  /// \param Elts the statements following the "default".
+  virtual OwningStmtResult ActOnDefaultCommClause(SourceLocation DefaultLoc,
+                                                  SourceLocation ColonLoc,
+                                                  MultiStmtArg Elts) {
+    return StmtEmpty();
+  }
+
+  /// \brief Parsed a "select" statement.
+  ///
+  /// \param SelectLoc the location of the "select" keyword.
+  ///
+  /// \param \L the location of the opening '{'.
+  ///
+  /// \param \R the location of the closing '}'.
+  ///
+  /// \param Elts the statements in the block.  They will all be statements
+  /// produced by ActOnCommClause() or ActOnDefaultCommClause().
+  virtual OwningStmtResult ActOnSelectStmt(SourceLocation SelectLoc,
+                                           SourceLocation L, SourceLocation R,
+                                           MultiStmtArg Elts) {
     return StmtEmpty();
   }
 
