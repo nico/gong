@@ -45,7 +45,7 @@ bool Parser::ParseStatement() {
   case tok::kw_defer:       return ParseDeferStmt();
 
   // SimpleStmts
-  case tok::semi:           return ParseEmptyStmt();
+  case tok::semi:           return !ParseEmptyStmt().isInvalid();
 
   case tok::identifier: {
     IdentifierInfo *II = Tok.getIdentifierInfo();
@@ -86,7 +86,7 @@ bool Parser::ParseStatement() {
 ///              Assignment | ShortVarDecl .
 bool Parser::ParseSimpleStmt(SimpleStmtKind *OutKind, SimpleStmtExts Ext) {
   if (Tok.is(tok::semi))
-    return ParseEmptyStmt();
+    return ParseEmptyStmt().isInvalid();
 
   // Could be: ExpressionStmt, SendStmt, IncDecStmt, Assignment. They all start
   // with an Expression.
@@ -736,8 +736,9 @@ bool Parser::ParseDeferStmt() {
 }
 
 /// EmptyStmt = .
-bool Parser::ParseEmptyStmt() {
-  return false;
+Action::OwningStmtResult Parser::ParseEmptyStmt() {
+  assert(Tok.is(tok::semi) && "Expected ';'");
+  return Actions.ActOnEmptyStmt(Tok.getLocation());
 }
 
 /// Block = "{" { Statement ";" } "}" .
@@ -759,7 +760,7 @@ Action::OwningStmtResult Parser::ParseBlockBody() {
   //        semicolon insertion after last statement
   // See Parser::ParseCompoundStatementBody() in clang.
   while (Tok.isNot(tok::r_brace) && Tok.isNot(tok::eof)) {
-    ParseStatement();
+    ParseStatement();  // FIXME: Add to Stmts
     // A semicolon may be omitted before a closing ')' or '}'.
     if (Tok.is(tok::r_brace))
       break;

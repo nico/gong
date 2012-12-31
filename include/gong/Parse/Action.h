@@ -323,6 +323,10 @@ public:
     return StmtEmpty();
   }
 
+  virtual OwningStmtResult ActOnEmptyStmt(SourceLocation SemiLoc) {
+    return StmtEmpty();
+  }
+
   //===--------------------------------------------------------------------===//
   // Expression Parsing Callbacks.
   //===--------------------------------------------------------------------===//
