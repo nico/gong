@@ -309,7 +309,7 @@ public:
 
 
   // Statements
-  bool ParseStatement();
+  OwningStmtResult ParseStatement();
 
   /// This can be passed to ParseSimpleStmt() to tell it to accept additional
   /// constructs.

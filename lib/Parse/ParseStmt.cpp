@@ -26,33 +26,33 @@ using namespace gong;
 ///   GoStmt | ReturnStmt | BreakStmt | ContinueStmt | GotoStmt |
 ///   FallthroughStmt | Block | IfStmt | SwitchStmt | SelectStmt | ForStmt |
 ///   DeferStmt .
-bool Parser::ParseStatement() {
+Action::OwningStmtResult Parser::ParseStatement() {
   switch (Tok.getKind()) {
   case tok::kw_const:
   case tok::kw_type:
-  case tok::kw_var:         return ParseDeclarationStmt().isInvalid();
-  case tok::kw_go:          return ParseGoStmt().isInvalid();
-  case tok::kw_return:      return ParseReturnStmt().isInvalid();
-  case tok::kw_break:       return ParseBreakStmt().isInvalid();
-  case tok::kw_continue:    return ParseContinueStmt().isInvalid();
-  case tok::kw_goto:        return ParseGotoStmt().isInvalid();
-  case tok::kw_fallthrough: return ParseFallthroughStmt().isInvalid();
-  case tok::l_brace:        return ParseBlock().isInvalid();
-  case tok::kw_if:          return ParseIfStmt().isInvalid();
-  case tok::kw_switch:      return ParseSwitchStmt().isInvalid();
-  case tok::kw_select:      return ParseSelectStmt().isInvalid();
-  case tok::kw_for:         return ParseForStmt().isInvalid();
-  case tok::kw_defer:       return ParseDeferStmt().isInvalid();
+  case tok::kw_var:         return ParseDeclarationStmt();
+  case tok::kw_go:          return ParseGoStmt();
+  case tok::kw_return:      return ParseReturnStmt();
+  case tok::kw_break:       return ParseBreakStmt();
+  case tok::kw_continue:    return ParseContinueStmt();
+  case tok::kw_goto:        return ParseGotoStmt();
+  case tok::kw_fallthrough: return ParseFallthroughStmt();
+  case tok::l_brace:        return ParseBlock();
+  case tok::kw_if:          return ParseIfStmt();
+  case tok::kw_switch:      return ParseSwitchStmt();
+  case tok::kw_select:      return ParseSelectStmt();
+  case tok::kw_for:         return ParseForStmt();
+  case tok::kw_defer:       return ParseDeferStmt();
 
   // SimpleStmts
-  case tok::semi:           return ParseEmptyStmt().isInvalid();
+  case tok::semi:           return ParseEmptyStmt();
 
   case tok::identifier: {
     IdentifierInfo *II = Tok.getIdentifierInfo();
     SourceLocation IILoc = ConsumeToken();
     if (Tok.is(tok::colon))
-      return ParseLabeledStmtTail(IILoc, II).isInvalid();
-    return ParseSimpleStmtTail(II).isInvalid();
+      return ParseLabeledStmtTail(IILoc, II);
+    return ParseSimpleStmtTail(II);
   }
 
   // non-identifier ExpressionStmts
@@ -73,12 +73,12 @@ bool Parser::ParseStatement() {
   case tok::rune_literal:
   case tok::star:
   case tok::string_literal:
-    return ParseSimpleStmt().isInvalid();
+    return ParseSimpleStmt();
   
   default:
     Diag(Tok, diag::expected_stmt) << L.getSpelling(Tok);
     SkipUntil(tok::semi, /*StopAtSemi=*/false, /*DontConsume=*/true);
-    return true;
+    return StmtError();
   }
 }
 
@@ -315,7 +315,7 @@ Action::OwningStmtResult Parser::ParseLabeledStmtTail(SourceLocation IILoc,
   SourceLocation ColonLoc = ConsumeToken();
   // FIXME: Build AST
   (void)ColonLoc;
-  return ParseStatement() ? StmtError() : Actions.StmtEmpty();  // FIXME
+  return ParseStatement();
 }
 
 /// An adapter function to parse a Declaration in a statement context.
