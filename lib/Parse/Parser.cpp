@@ -557,7 +557,7 @@ bool Parser::ParseArrayOrSliceType() {
 
 /// Tok points at ArrayLength when this is called.
 bool Parser::ParseArrayType(BalancedDelimiterTracker &T) {
-  ExprResult Expr = ParseExpression();
+  OwningExprResult Expr = ParseExpression();
   (void)Expr;  // FIXME
   if (T.consumeClose()) {
     SkipUntil(tok::semi, /*StopAtSemi=*/false, /*DontConsume=*/true);

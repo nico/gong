@@ -53,27 +53,27 @@ static prec::Level getBinOpPrecedence(tok::TokenKind Kind) {
 /// rel_op     = "==" | "!=" | "<" | "<=" | ">" | ">=" .
 /// add_op     = "+" | "-" | "|" | "^" .
 /// mul_op     = "*" | "/" | "%" | "<<" | ">>" | "&" | "&^" .
-Parser::ExprResult
+Parser::OwningExprResult
 Parser::ParseExpression(TypeSwitchGuardParam *TSGOpt, TypeParam *TOpt,
                         bool *SawIdentifierOnly) {
-  ExprResult LHS = ParseUnaryExpr(TSGOpt, TOpt, SawIdentifierOnly);
-  return ParseRHSOfBinaryExpression(LHS, prec::Lowest, TSGOpt,
+  OwningExprResult LHS = ParseUnaryExpr(TSGOpt, TOpt, SawIdentifierOnly);
+  return ParseRHSOfBinaryExpression(move(LHS), prec::Lowest, TSGOpt,
                                     SawIdentifierOnly);
 }
 
 /// This is called for expressions that start with an identifier, after the
 /// initial identifier has been read.
-Parser::ExprResult
+Parser::OwningExprResult
 Parser::ParseExpressionTail(IdentifierInfo *II, TypeSwitchGuardParam *TSGOpt,
                             bool *SawIdentifierOnly) {
-  ExprResult LHS = ParsePrimaryExprTail(II, SawIdentifierOnly);
-  LHS = ParsePrimaryExprSuffix(LHS, TSGOpt, SawIdentifierOnly);
-  return ParseRHSOfBinaryExpression(LHS, prec::Lowest, TSGOpt,
+  OwningExprResult LHS = ParsePrimaryExprTail(II, SawIdentifierOnly);
+  LHS = ParsePrimaryExprSuffix(move(LHS), TSGOpt, SawIdentifierOnly);
+  return ParseRHSOfBinaryExpression(move(LHS), prec::Lowest, TSGOpt,
                                     SawIdentifierOnly);
 }
 
-Parser::ExprResult
-Parser::ParseRHSOfBinaryExpression(ExprResult LHS, prec::Level MinPrec,
+Parser::OwningExprResult
+Parser::ParseRHSOfBinaryExpression(OwningExprResult LHS, prec::Level MinPrec,
                                    TypeSwitchGuardParam *TSGOpt,
                                    bool *SawIdentifierOnly) {
   prec::Level NextTokPrec = getBinOpPrecedence(Tok.getKind());
@@ -96,7 +96,7 @@ Parser::ParseRHSOfBinaryExpression(ExprResult LHS, prec::Level MinPrec,
     ConsumeToken();
 
     // Parse another leaf here for the RHS of the operator.
-    ExprResult RHS = ParseUnaryExpr();
+    OwningExprResult RHS = ParseUnaryExpr();
 
     if (RHS.isInvalid())
       LHS = ExprError();
@@ -114,7 +114,7 @@ Parser::ParseRHSOfBinaryExpression(ExprResult LHS, prec::Level MinPrec,
       // compile A+B+C+D as A+(B+(C+D)), where each paren is a level of
       // recursion here.  The function takes ownership of the RHS.
       RHS = ParseRHSOfBinaryExpression(
-          RHS, static_cast<prec::Level>(ThisPrec + 1), NULL, NULL);
+          move(RHS), static_cast<prec::Level>(ThisPrec + 1), NULL, NULL);
 
       if (RHS.isInvalid())
         LHS = ExprError();
@@ -148,7 +148,7 @@ bool Parser::IsUnaryOp() {
 
 /// UnaryExpr  = PrimaryExpr | unary_op UnaryExpr .
 /// unary_op   = "+" | "-" | "!" | "^" | "*" | "&" | "<-" .
-Action::ExprResult
+Action::OwningExprResult
 Parser::ParseUnaryExpr(TypeSwitchGuardParam *TSGOpt, TypeParam *TOpt,
                        bool *SawIdentifierOnly) {
   // FIXME: * and <- if TOpt is set.
@@ -173,10 +173,10 @@ Parser::ParseUnaryExpr(TypeSwitchGuardParam *TSGOpt, TypeParam *TOpt,
 /// Operand    = Literal | OperandName | MethodExpr | "(" Expression ")" .
 /// Literal    = BasicLit | CompositeLit | FunctionLit .
 /// OperandName = identifier | QualifiedIdent.
-Action::ExprResult
+Action::OwningExprResult
 Parser::ParsePrimaryExpr(TypeSwitchGuardParam *TSGOpt, TypeParam *TOpt,
                          bool *SawIdentifierOnly) {
-  ExprResult Res;
+  OwningExprResult Res(Actions);
 
   if (SawIdentifierOnly && Tok.isNot(tok::identifier))
     *SawIdentifierOnly = false;
@@ -240,12 +240,12 @@ Parser::ParsePrimaryExpr(TypeSwitchGuardParam *TSGOpt, TypeParam *TOpt,
     break;
   }
   }
-  return ParsePrimaryExprSuffix(Res, TSGOpt, SawIdentifierOnly);
+  return ParsePrimaryExprSuffix(move(Res), TSGOpt, SawIdentifierOnly);
 }
 
 /// This is called if the first token in a PrimaryExpression was an identifier,
 /// after that identifier has been read.
-Action::ExprResult
+Action::OwningExprResult
 Parser::ParsePrimaryExprTail(IdentifierInfo *II, bool *SawIdentifierOnly) {
   // FIXME: Requiring this classification from the Action interface in the limit
   // means that MinimalAction needs to do module loading, which is probably
@@ -324,9 +324,9 @@ Parser::ParsePrimaryExprTail(IdentifierInfo *II, bool *SawIdentifierOnly) {
       // No builtin returns an interface type, so they can't be followed by
       // '.(type)'.
       // FIXME This is not true if the builtin is shadowed.
-      ExprResult LHS = ParseExpression(NULL, &TypeOpt);
+      OwningExprResult LHS = ParseExpression(NULL, &TypeOpt);
       ExprVector Exprs(Actions);
-      ParseExpressionListTail(LHS, NULL, Exprs);
+      ParseExpressionListTail(move(LHS), NULL, Exprs);
       if (Tok.is(tok::ellipsis))
         ConsumeToken();
       if (Tok.is(tok::comma))
@@ -346,11 +346,11 @@ Parser::ParsePrimaryExprTail(IdentifierInfo *II, bool *SawIdentifierOnly) {
     // suffix-parsing in ParsePrimaryExprSuffix().
     break;
   }
-  return false;
+  return Actions.ExprEmpty();  // FIXME
 }
 
 /// Conversion = Type "(" Expression ")" .
-Action::ExprResult
+Action::OwningExprResult
 Parser::ParseConversion(TypeParam *TOpt) {
   ParseType();
   if (Tok.is(tok::l_paren)) {
@@ -368,7 +368,7 @@ Parser::ParseConversion(TypeParam *TOpt) {
 }
 
 /// This is called after the Type in a Conversion has been read.
-Action::ExprResult
+Action::OwningExprResult
 Parser::ParseConversionTail() {
   assert(Tok.is(tok::l_paren) && "expected '('");
   BalancedDelimiterTracker T(*this, tok::l_paren);
@@ -376,11 +376,12 @@ Parser::ParseConversionTail() {
   ParseExpression();
   if (T.consumeClose())
     return ExprError();
-  return false;
+  return Actions.ExprEmpty();  // FIXME
 }
 
-Action::ExprResult
-Parser::ParsePrimaryExprSuffix(ExprResult &LHS, TypeSwitchGuardParam *TSGOpt,
+Action::OwningExprResult
+Parser::ParsePrimaryExprSuffix(OwningExprResult LHS,
+                               TypeSwitchGuardParam *TSGOpt,
                                bool *SawIdentifierOnly) {
   while (1) {
     switch (Tok.getKind()) {
@@ -391,7 +392,8 @@ Parser::ParsePrimaryExprSuffix(ExprResult &LHS, TypeSwitchGuardParam *TSGOpt,
         *SawIdentifierOnly = false;
       if (TSGOpt)
         TSGOpt->Reset(*this);
-      LHS = ParseSelectorOrTypeAssertionOrTypeSwitchGuardSuffix(LHS, TSGOpt);
+      LHS = ParseSelectorOrTypeAssertionOrTypeSwitchGuardSuffix(move(LHS),
+                                                                TSGOpt);
       break;
     }
     case tok::l_square: {  // Index or Slice
@@ -399,7 +401,7 @@ Parser::ParsePrimaryExprSuffix(ExprResult &LHS, TypeSwitchGuardParam *TSGOpt,
         *SawIdentifierOnly = false;
       if (TSGOpt)
         TSGOpt->Reset(*this);
-      LHS = ParseIndexOrSliceSuffix(LHS);
+      LHS = ParseIndexOrSliceSuffix(move(LHS));
       break;
     }
     case tok::l_paren: {  // Call
@@ -407,7 +409,7 @@ Parser::ParsePrimaryExprSuffix(ExprResult &LHS, TypeSwitchGuardParam *TSGOpt,
         *SawIdentifierOnly = false;
       if (TSGOpt)
         TSGOpt->Reset(*this);
-      LHS = ParseCallSuffix(LHS);
+      LHS = ParseCallSuffix(move(LHS));
       break;
     }
     }
@@ -416,9 +418,9 @@ Parser::ParsePrimaryExprSuffix(ExprResult &LHS, TypeSwitchGuardParam *TSGOpt,
 
 /// Selector       = "." identifier .
 /// TypeAssertion  = "." "(" Type ")" .
-Action::ExprResult
+Action::OwningExprResult
 Parser::ParseSelectorOrTypeAssertionOrTypeSwitchGuardSuffix(
-    ExprResult &LHS, TypeSwitchGuardParam *TSGOpt) {
+    OwningExprResult LHS, TypeSwitchGuardParam *TSGOpt) {
   assert(Tok.is(tok::period) && "expected '.'");
   ConsumeToken();
 
@@ -463,8 +465,8 @@ Parser::ParseSelectorOrTypeAssertionOrTypeSwitchGuardSuffix(
 
 /// Index          = "[" Expression "]" .
 /// Slice          = "[" [ Expression ] ":" [ Expression ] "]" .
-Action::ExprResult
-Parser::ParseIndexOrSliceSuffix(ExprResult &LHS) {
+Action::OwningExprResult
+Parser::ParseIndexOrSliceSuffix(OwningExprResult LHS) {
   assert(Tok.is(tok::l_square) && "expected '['");
   BalancedDelimiterTracker T(*this, tok::l_square);
   T.consumeOpen();
@@ -492,8 +494,8 @@ Parser::ParseIndexOrSliceSuffix(ExprResult &LHS) {
 
 /// Call           = "(" [ ArgumentList [ "," ] ] ")" .
 /// ArgumentList   = ExpressionList [ "..." ] .
-Action::ExprResult
-Parser::ParseCallSuffix(ExprResult &LHS) {
+Action::OwningExprResult
+Parser::ParseCallSuffix(OwningExprResult LHS) {
   assert(Tok.is(tok::l_paren) && "expected '('");
   BalancedDelimiterTracker T(*this, tok::l_paren);
   T.consumeOpen();
@@ -511,18 +513,18 @@ Parser::ParseCallSuffix(ExprResult &LHS) {
 }
 
 /// BasicLit   = int_lit | float_lit | imaginary_lit | char_lit | string_lit .
-Action::ExprResult
+Action::OwningExprResult
 Parser::ParseBasicLit() {
   assert((Tok.is(tok::numeric_literal) || Tok.is(tok::rune_literal) ||
         Tok.is(tok::string_literal)) && "Unexpected basic literal start");
   ConsumeAnyToken();
-  return false;
+  return Actions.ExprEmpty();  // FIXME
 }
 
 /// CompositeLit  = LiteralType LiteralValue .
 /// LiteralType   = StructType | ArrayType | "[" "..." "]" ElementType |
 ///                 SliceType | MapType | TypeName .
-Action::ExprResult
+Action::OwningExprResult
 Parser::ParseCompositeLitOrConversion(TypeParam *TOpt) {
   // FIXME: TypeName lits (Tok.is(tok::identifier)
   assert((Tok.is(tok::kw_struct) || Tok.is(tok::l_square) ||
@@ -564,18 +566,18 @@ Parser::ParseCompositeLitOrConversion(TypeParam *TOpt) {
     return ParseLiteralValue();
   if (!WasEllipsisArray && TOpt) {
     TOpt->Kind = TypeParam::EK_Type;
-    return false;
+    return Actions.ExprEmpty();  // FIXME
   }
 
   // FIXME: ...after 'literal type'
   Diag(Tok, WasEllipsisArray ? diag::expected_l_brace :
                                diag::expected_l_brace_or_l_paren);
   SkipUntil(tok::semi, /*StopAtSemi=*/false, /*DontConsume=*/true);
-  return true;
+  return ExprError();
 }
 
 /// LiteralValue  = "{" [ ElementList [ "," ] ] "}" .
-Action::ExprResult
+Action::OwningExprResult
 Parser::ParseLiteralValue() {
   assert(Tok.is(tok::l_brace) && "expected '{'");
   BalancedDelimiterTracker T(*this, tok::l_brace);
@@ -587,18 +589,20 @@ Parser::ParseLiteralValue() {
       ConsumeToken();
   }
 
-  return T.consumeClose();
+  if (T.consumeClose())
+    return ExprError();
+  return Actions.ExprEmpty();  // FIXME
 }
 
 /// ElementList   = Element { "," Element } .
-Action::ExprResult
+Action::OwningExprResult
 Parser::ParseElementList() {
   ParseElement();
   while (Tok.is(tok::comma)) {
     ConsumeToken();
     ParseElement();
   }
-  return true;
+  return Actions.ExprEmpty();  // FIXME
 }
 
 /// Element       = [ Key ":" ] Value .
@@ -606,7 +610,7 @@ Parser::ParseElementList() {
 /// FieldName     = identifier .
 /// ElementIndex  = Expression .
 /// Value         = Expression | LiteralValue .
-Action::ExprResult
+Action::OwningExprResult
 Parser::ParseElement() {
   IdentifierInfo *FieldName = NULL;
   if (Tok.is(tok::identifier)) {
@@ -636,11 +640,11 @@ Parser::ParseElement() {
     if (Tok.is(tok::l_brace))
       ParseLiteralValue();
   }
-  return false;
+  return Actions.ExprEmpty();  // FIXME
 }
 
 /// FunctionLit = FunctionType Body .
-Action::ExprResult
+Action::OwningExprResult
 Parser::ParseFunctionLitOrConversion(TypeParam *TOpt) {
   assert(Tok.is(tok::kw_func) && "expected 'func'");
   if (ParseFunctionType())
@@ -648,7 +652,7 @@ Parser::ParseFunctionLitOrConversion(TypeParam *TOpt) {
 
   if (Tok.is(tok::l_brace)) {
     // FunctionLit
-    return ParseBody();
+    return ParseBody() ? ExprError() : Actions.ExprEmpty();  // FIXME
   } else if (Tok.is(tok::l_paren)) {
     // Conversion
     return ParseConversionTail();
@@ -666,20 +670,19 @@ Parser::ParseFunctionLitOrConversion(TypeParam *TOpt) {
 /// ReceiverType  = TypeName | "(" "*" TypeName ")" .
 
 /// ExpressionList = Expression { "," Expression } .
-Action::ExprResult
+Action::OwningExprResult
 Parser::ParseExpressionList(ExprListTy &Exprs, TypeSwitchGuardParam *TSGOpt) {
-  ExprResult LHS = ParseExpression(TSGOpt);
+  OwningExprResult LHS = ParseExpression(TSGOpt);
   if (Tok.is(tok::comma) && TSGOpt)
     TSGOpt->Reset(*this);
-  return ParseExpressionListTail(LHS, NULL, Exprs);
+  return ParseExpressionListTail(move(LHS), NULL, Exprs);
 }
 
 /// This is called after the initial Expression in ExpressionList has been read.
-Action::ExprResult
-Parser::ParseExpressionListTail(ExprResult &LHS, bool *SawIdentifiersOnly,
+Action::OwningExprResult
+Parser::ParseExpressionListTail(OwningExprResult LHS, bool *SawIdentifiersOnly,
                                 ExprListTy &Exprs) {
-  OwningExprResult OwnLHS(Actions, LHS);
-  Exprs.push_back(OwnLHS.release());  // FIXME
+  Exprs.push_back(LHS.release());
 
   while (Tok.is(tok::comma)) {
     ConsumeToken();
@@ -697,5 +700,5 @@ Parser::ParseExpressionListTail(ExprResult &LHS, bool *SawIdentifiersOnly,
     ConsumeToken();
     ParseExpressionTail(II, NULL, SawIdentifiersOnly);
   }
-  return LHS;
+  return Actions.ExprEmpty();  // FIXME?
 }

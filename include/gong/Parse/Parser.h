@@ -146,9 +146,7 @@ public:
     return OwningStmtResult(Actions, res);
   }
 
-  // FIXME: Use OwningExprResult once all ParseExpr() methods return that.
-  //OwningExprResult ExprError() { return OwningExprResult(Actions, true); }
-  ExprResult ExprError() { return ExprResult(true); }
+  OwningExprResult ExprError() { return OwningExprResult(Actions, true); }
   OwningStmtResult StmtError() { return OwningStmtResult(Actions, true); }
 
   //OwningExprResult ExprError(const DiagnosticBuilder &) { return ExprError(); }
@@ -268,42 +266,40 @@ public:
     }
   };
 
-  //FIXME: These should likely be OwningExprResult
   //FIXME: Also, now that this accepts types, ExprResult doesn't make much sense
-  ExprResult ParseExpression(TypeSwitchGuardParam *TSGOpt = NULL,
-                             TypeParam *TOpt = NULL,
-                             bool *SawIdentifierOnly = NULL);
-  ExprResult ParseExpressionTail(IdentifierInfo *II,
-                                 TypeSwitchGuardParam *TSGOpt = NULL,
-                                 bool *SawIdentifierOnly = NULL);
-  ExprResult ParseRHSOfBinaryExpression(ExprResult LHS,
-                                        prec::Level MinPrec,
-                                        TypeSwitchGuardParam *TSGOpt,
-                                        bool *SawIdentifierOnly);
+  OwningExprResult ParseExpression(TypeSwitchGuardParam *TSGOpt = NULL,
+                                   TypeParam * TOpt = NULL,
+                                   bool * SawIdentifierOnly = NULL);
+  OwningExprResult ParseExpressionTail(IdentifierInfo *II,
+                                       TypeSwitchGuardParam *TSGOpt = NULL,
+                                       bool * SawIdentifierOnly = NULL);
+  OwningExprResult ParseRHSOfBinaryExpression(OwningExprResult LHS,
+                                              prec::Level MinPrec,
+                                              TypeSwitchGuardParam *TSGOpt,
+                                              bool *SawIdentifierOnly);
   bool IsUnaryOp();
-  ExprResult ParseUnaryExpr(TypeSwitchGuardParam *TSGOpt = NULL,
-                            TypeParam *TOpt = NULL,
-                            bool *SawIdentifierOnly = NULL);
-  ExprResult ParsePrimaryExpr(TypeSwitchGuardParam *TSGOpt,
-                              TypeParam *TOpt,
-                              bool *SawIdentifierOnly);
-  ExprResult ParsePrimaryExprTail(IdentifierInfo *II,
+  OwningExprResult ParseUnaryExpr(TypeSwitchGuardParam *TSGOpt = NULL,
+                                  TypeParam * TOpt = NULL,
+                                  bool * SawIdentifierOnly = NULL);
+  OwningExprResult ParsePrimaryExpr(TypeSwitchGuardParam *TSGOpt,
+                                    TypeParam *TOpt, bool *SawIdentifierOnly);
+  OwningExprResult ParsePrimaryExprTail(IdentifierInfo *II,
                                   bool *SawIdentifierOnly);
-  ExprResult ParseConversion(TypeParam *TOpt);
-  ExprResult ParseConversionTail();
-  ExprResult ParsePrimaryExprSuffix(ExprResult &LHS,
-                                    TypeSwitchGuardParam *TSGOpt,
-                                    bool *SawIdentifierOnly);
-  ExprResult ParseSelectorOrTypeAssertionOrTypeSwitchGuardSuffix(
-      ExprResult &LHS, TypeSwitchGuardParam *TSGOpt);
-  ExprResult ParseIndexOrSliceSuffix(ExprResult &LHS);
-  ExprResult ParseCallSuffix(ExprResult &LHS);
-  ExprResult ParseBasicLit();
-  ExprResult ParseCompositeLitOrConversion(TypeParam *TOpt);
-  ExprResult ParseLiteralValue();
-  ExprResult ParseElementList();
-  ExprResult ParseElement();
-  ExprResult ParseFunctionLitOrConversion(TypeParam *TOpt);
+  OwningExprResult ParseConversion(TypeParam *TOpt);
+  OwningExprResult ParseConversionTail();
+  OwningExprResult ParsePrimaryExprSuffix(OwningExprResult LHS,
+                                          TypeSwitchGuardParam *TSGOpt,
+                                          bool *SawIdentifierOnly);
+  OwningExprResult ParseSelectorOrTypeAssertionOrTypeSwitchGuardSuffix(
+      OwningExprResult LHS, TypeSwitchGuardParam *TSGOpt);
+  OwningExprResult ParseIndexOrSliceSuffix(OwningExprResult LHS);
+  OwningExprResult ParseCallSuffix(OwningExprResult LHS);
+  OwningExprResult ParseBasicLit();
+  OwningExprResult ParseCompositeLitOrConversion(TypeParam *TOpt);
+  OwningExprResult ParseLiteralValue();
+  OwningExprResult ParseElementList();
+  OwningExprResult ParseElement();
+  OwningExprResult ParseFunctionLitOrConversion(TypeParam *TOpt);
 
   // FIXME: create ExprList class
   typedef Action::ExprTy ExprTy;
@@ -311,11 +307,12 @@ public:
   typedef llvm::SmallVector<ExprTy*, ExprListSize> ExprListTy;
   typedef llvm::SmallVector<SourceLocation, ExprListSize> CommaLocsTy;
 
-  // FIXME: These two should likely not return ExprResult.
-  ExprResult ParseExpressionList(ExprListTy &Exprs,
-                                 TypeSwitchGuardParam *TSGOpt = NULL);
-  ExprResult ParseExpressionListTail(ExprResult &LHS, bool *SawIdentifierOnly,
-                                     ExprListTy &Exprs);
+  // FIXME: These two should likely not return OwningExprResult.
+  OwningExprResult ParseExpressionList(ExprListTy &Exprs,
+                                       TypeSwitchGuardParam *TSGOpt = NULL);
+  OwningExprResult ParseExpressionListTail(OwningExprResult LHS,
+                                           bool *SawIdentifierOnly,
+                                           ExprListTy &Exprs);
 
 
   // Statements
@@ -354,7 +351,7 @@ public:
   OwningStmtResult ParseSimpleStmtTail(IdentifierInfo *II,
                                        SimpleStmtKind *OutKind = NULL,
                                        SimpleStmtExts Ext = SSE_None);
-  OwningStmtResult ParseSimpleStmtTailAfterExpression(ExprResult &LHS,
+  OwningStmtResult ParseSimpleStmtTailAfterExpression(OwningExprResult LHS,
                                                       SourceLocation StartLoc,
                                                    TypeSwitchGuardParam *TSGOpt,
                                                       SimpleStmtKind *OutKind,
@@ -365,8 +362,8 @@ public:
                                          TypeSwitchGuardParam *TSGOpt = NULL);
   OwningStmtResult ParseAssignmentTail(SourceLocation OpLoc, tok::TokenKind Op,
                                        ExprVector &LHSs);
-  OwningStmtResult ParseIncDecStmtTail(ExprResult &LHS);
-  OwningStmtResult ParseSendStmtTail(ExprResult &LHS);
+  OwningStmtResult ParseIncDecStmtTail(OwningExprResult LHS);
+  OwningStmtResult ParseSendStmtTail(OwningExprResult LHS);
   OwningStmtResult ParseLabeledStmtTail(SourceLocation IILoc,
                                         IdentifierInfo *II);
   OwningStmtResult ParseDeclarationStmt();
