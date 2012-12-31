@@ -261,7 +261,7 @@ Parser::ParseSimpleStmtTailAfterExpression(ExprResult &LHS,
     return ParseIncDecStmtTail(LHS);
 
   if (Tok.is(tok::lessminus))
-    return ParseSendStmtTail(LHS) ? StmtError() : Actions.StmtEmpty();  // FIXME
+    return ParseSendStmtTail(LHS);
 
   if (OutKind)
     *OutKind = SSK_Expression;
@@ -301,10 +301,12 @@ Action::OwningStmtResult Parser::ParseIncDecStmtTail(ExprResult &LHS) {
 /// This is called after the channel has been read.
 /// SendStmt = Channel "<-" Expression .
 /// Channel  = Expression .
-bool Parser::ParseSendStmtTail(ExprResult &LHS) {
+Action::OwningStmtResult Parser::ParseSendStmtTail(ExprResult &LHS) {
   assert(Tok.is(tok::lessminus) && "expected '<-'");
-  ConsumeToken();
-  return ParseExpression().isInvalid();
+  SourceLocation OpLoc = ConsumeToken();
+  OwningExprResult LHSExp(Actions, LHS),
+      RHSExp(Actions, ParseExpression());  // FIXME
+  return Actions.ActOnSendStmt(LHSExp, OpLoc, RHSExp);
 }
 
 /// This is called after the label identifier has been read.
@@ -655,7 +657,7 @@ bool Parser::ParseCommCase() {
 
   ExprResult LHS = ParseExpression();
   if (Tok.is(tok::lessminus))
-    return ParseSendStmtTail(LHS);
+    return ParseSendStmtTail(LHS).isInvalid();
 
   // This is a RecvStmt.
   bool FoundAssignOp = false;

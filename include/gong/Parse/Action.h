@@ -320,6 +320,18 @@ public:
     return StmtEmpty();
   }
 
+  /// \brief Parsed a SendStmt such as "a <- b".
+  ///
+  /// \param LHS the left-hand side of the send statement.
+  ///
+  /// \param OpLoc the location of the "<-" operator.
+  ///
+  /// \param RHS the right-hand side of the send statement.
+  virtual OwningStmtResult ActOnSendStmt(ExprArg LHS,
+                                         SourceLocation OpLoc,
+                                         ExprArg RHS) {
+    return StmtEmpty();
+  }
   /// \brief Parsed an IncDecStmt, for example "a++" or "a[i]--".
   ///
   /// \param Base the expression in front of the inc or dec operator.
@@ -409,7 +421,6 @@ public:
   // FIXME: actions for:
   // declarationstmt
   // expressionstmt
-  // sendstmt
   // assignment
   // shortvardecl
   // switchstmt
