@@ -327,8 +327,7 @@ Action::OwningStmtResult Parser::ParseLabeledStmtTail(SourceLocation IILoc,
 
 /// An adapter function to parse a Declaration in a statement context.
 Action::OwningStmtResult Parser::ParseDeclarationStmt() {
-  // FIXME: Build AST.
-  return ParseDeclaration() ? StmtError() : Actions.StmtEmpty();
+  return Actions.ActOnDeclStmt(ParseDeclaration());
 }
 
 /// GoStmt = "go" Expression .

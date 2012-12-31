@@ -287,15 +287,10 @@ public:
   // Statement Parsing Callbacks.
   //===--------------------------------------------------------------------===//
 
-  /// \brief Parsed a block.
+  /// \brief Parsed a declaration in a statement context.
   ///
-  /// \param \L the location of the opening '{'.
-  ///
-  /// \param \R the location of the closing '}'.
-  ///
-  /// \param Elts the statements in the block.
-  virtual OwningStmtResult ActOnBlockStmt(SourceLocation L, SourceLocation R,
-                                          MultiStmtArg Elts) {
+  /// \param Decl the declaration.
+  virtual OwningStmtResult ActOnDeclStmt(DeclPtrTy Decl) {
     return StmtEmpty();
   }
 
@@ -418,8 +413,19 @@ public:
     return StmtEmpty();
   }
 
+  /// \brief Parsed a block.
+  ///
+  /// \param \L the location of the opening '{'.
+  ///
+  /// \param \R the location of the closing '}'.
+  ///
+  /// \param Elts the statements in the block.
+  virtual OwningStmtResult ActOnBlockStmt(SourceLocation L, SourceLocation R,
+                                          MultiStmtArg Elts) {
+    return StmtEmpty();
+  }
+
   // FIXME: actions for:
-  // declarationstmt
   // expressionstmt
   // assignment
   // shortvardecl
@@ -1046,11 +1052,6 @@ public:
   virtual OwningStmtResult ActOnCompoundStmt(SourceLocation L, SourceLocation R,
                                              MultiStmtArg Elts,
                                              bool isStmtExpr) {
-    return StmtEmpty();
-  }
-  virtual OwningStmtResult ActOnDeclStmt(DeclGroupPtrTy Decl,
-                                         SourceLocation StartLoc,
-                                         SourceLocation EndLoc) {
     return StmtEmpty();
   }
 

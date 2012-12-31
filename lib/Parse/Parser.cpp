@@ -230,7 +230,7 @@ bool Parser::ParseTopLevelDecl(/*DeclGroupPtrTy &Result*/) {
     return ParseFunctionOrMethodDecl();
   } else if (Tok.is(tok::kw_const) || Tok.is(tok::kw_type) ||
              Tok.is(tok::kw_var)) {
-    return ParseDeclaration();
+    return ParseDeclaration() == Action::DeclPtrTy();
   } else {
     Diag(Tok, diag::expected_topleveldecl);
     SkipUntil(tok::semi, /*StopAtSemi=*/false, /*DontConsume=*/true);
@@ -869,7 +869,7 @@ bool Parser::ParseIdentifierListTail(IdentifierList &IdentList) {
   return false;
 }
 
-bool Parser::ParseDeclaration() {
+Action::DeclPtrTy Parser::ParseDeclaration() {
   assert((Tok.is(tok::kw_const) || Tok.is(tok::kw_type) ||
           Tok.is(tok::kw_var)) && "Expected 'const', 'type', or 'var'");
   switch (Tok.getKind()) {
@@ -881,18 +881,20 @@ bool Parser::ParseDeclaration() {
 }
 
 /// ConstDecl      = "const" ( ConstSpec | "(" { ConstSpec ";" } ")" ) .
-bool Parser::ParseConstDecl() {
+Action::DeclPtrTy Parser::ParseConstDecl() {
   assert(Tok.is(tok::kw_const) && "Expected 'const'");
   SourceLocation ConstLoc = ConsumeToken();
   if (Tok.is(tok::identifier)) {
     Action::DeclPtrTy ConstDecl = Actions.ActOnSingleDecl(ConstLoc, DGK_Const);
-    return ParseConstSpec(ConstDecl);
+    if (ParseConstSpec(ConstDecl))
+      return Action::DeclPtrTy();
+    return ConstDecl;
   }
   if (Tok.is(tok::l_paren))
     return ParseDeclGroup(DGK_Const, ConstLoc);
   Diag(Tok, diag::expected_ident_or_l_paren);
   SkipUntil(tok::semi, /*StopAtSemi=*/false, /*DontConsume=*/true);
-  return true;
+  return Action::DeclPtrTy();
 }
 
 /// ConstSpec      = IdentifierList [ [ Type ] "=" ExpressionList ] .
@@ -923,18 +925,20 @@ bool Parser::ParseConstSpec(Action::DeclPtrTy ConstDecl) {
 }
 
 /// TypeDecl     = "type" ( TypeSpec | "(" { TypeSpec ";" } ")" ) .
-bool Parser::ParseTypeDecl() {
+Action::DeclPtrTy Parser::ParseTypeDecl() {
   assert(Tok.is(tok::kw_type) && "Expected 'type'");
   SourceLocation TypeLoc = ConsumeToken();
   if (Tok.is(tok::identifier)) {
     Action::DeclPtrTy TypeDecl = Actions.ActOnSingleDecl(TypeLoc, DGK_Type);
-    return ParseTypeSpec(TypeDecl);
+    if (ParseTypeSpec(TypeDecl))
+      return Action::DeclPtrTy();
+    return TypeDecl;
   }
   if (Tok.is(tok::l_paren))
     return ParseDeclGroup(DGK_Type, TypeLoc);
   Diag(Tok, diag::expected_ident_or_l_paren);
   SkipUntil(tok::semi, /*StopAtSemi=*/false, /*DontConsume=*/true);
-  return true;
+  return Action::DeclPtrTy();
 }
 
 /// TypeSpec     = identifier Type .
@@ -951,18 +955,20 @@ bool Parser::ParseTypeSpec(Action::DeclPtrTy TypeDecl) {
 }
 
 /// VarDecl     = "var" ( VarSpec | "(" { VarSpec ";" } ")" ) .
-bool Parser::ParseVarDecl() {
+Action::DeclPtrTy Parser::ParseVarDecl() {
   assert(Tok.is(tok::kw_var) && "Expected 'var'");
   SourceLocation VarLoc = ConsumeToken();
   if (Tok.is(tok::identifier)) {
     Action::DeclPtrTy VarDecl = Actions.ActOnSingleDecl(VarLoc, DGK_Var);
-    return ParseVarSpec(VarDecl);
+    if (ParseVarSpec(VarDecl))
+      return Action::DeclPtrTy();
+    return VarDecl;
   }
   if (Tok.is(tok::l_paren))
     return ParseDeclGroup(DGK_Var, VarLoc);
   Diag(Tok, diag::expected_ident_or_l_paren);
   SkipUntil(tok::semi, /*StopAtSemi=*/false, /*DontConsume=*/true);
-  return true;
+  return Action::DeclPtrTy();
 }
 
 /// VarSpec     = IdentifierList
@@ -992,7 +998,8 @@ bool Parser::ParseVarSpec(Action::DeclPtrTy VarDecl) {
   return ParseExpressionList().isInvalid();
 }
 
-bool Parser::ParseDeclGroup(DeclGroupKind Kind, SourceLocation KWLoc) {
+Action::DeclPtrTy Parser::ParseDeclGroup(DeclGroupKind Kind,
+                                         SourceLocation KWLoc) {
   assert(Tok.is(tok::l_paren) && "Expected '('");
   BalancedDelimiterTracker T(*this, tok::l_paren);
   T.consumeOpen();
@@ -1007,7 +1014,7 @@ bool Parser::ParseDeclGroup(DeclGroupKind Kind, SourceLocation KWLoc) {
     if (Tok.isNot(tok::identifier)) {
       Diag(Tok, diag::expected_ident);
       T.skipToEnd();
-      return true;
+      return Action::DeclPtrTy();
     }
     bool Fail;
     switch (Kind) {
@@ -1018,7 +1025,7 @@ bool Parser::ParseDeclGroup(DeclGroupKind Kind, SourceLocation KWLoc) {
     if (Fail) {
       T.skipToEnd();
       // FIXME: This doesn't call ActOnFinishMulti(). Does it matter?
-      return true;
+      return Action::DeclPtrTy();
     }
 
     if (Tok.isNot(tok::semi) && Tok.isNot(tok::r_paren)) {
@@ -1033,7 +1040,7 @@ bool Parser::ParseDeclGroup(DeclGroupKind Kind, SourceLocation KWLoc) {
   // FIXME: Do this for var and const too
   if (Kind == DGK_Type)
     Actions.ActOnFinishMultiDecl(DeclGroup, T.getCloseLocation());
-  return false;
+  return DeclGroup;
 }
 
 bool Parser::IsType() {

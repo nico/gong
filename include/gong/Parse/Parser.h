@@ -218,14 +218,14 @@ public:
   bool ParseIdentifierList(IdentifierList &IdentList);
   bool ParseIdentifierListTail(IdentifierList &IdentList);
 
-  bool ParseDeclaration();
-  bool ParseConstDecl();
+  Action::DeclPtrTy ParseDeclaration();
+  Action::DeclPtrTy ParseConstDecl();
   bool ParseConstSpec(Action::DeclPtrTy ConstDecl);
-  bool ParseTypeDecl();
+  Action::DeclPtrTy ParseTypeDecl();
   bool ParseTypeSpec(Action::DeclPtrTy TypeDecl);
-  bool ParseVarDecl();
+  Action::DeclPtrTy ParseVarDecl();
   bool ParseVarSpec(Action::DeclPtrTy VarDecl);
-  bool ParseDeclGroup(DeclGroupKind Kind, SourceLocation KWLoc);
+  Action::DeclPtrTy ParseDeclGroup(DeclGroupKind Kind, SourceLocation KWLoc);
 
   bool IsType();
   bool IsExpression();
