@@ -495,6 +495,72 @@ public:
     return StmtEmpty();
   }
 
+  /// \brief Parsed a simple "for" statement, such as "for c() {}" or "for {}".
+  ///
+  /// \param ForLoc the location of the "for" keyword.
+  ///
+  /// \param Condition the optional condition expression.
+  ///
+  /// \param Body the look body.
+  virtual OwningStmtResult ActOnSimpleForStmt(SourceLocation ForLoc,
+                                              ExprArg Condition, StmtArg Body) {
+    return StmtEmpty();
+  }
+
+  /// \brief Parsed a "for" statement, such as "for i := 0; i < n; i++ {}".
+  ///
+  /// \param ForLoc the location of the "for" keyword.
+  ///
+  /// \param InitStmt the optional init stmt.
+  ///
+  /// \param FirstSemiLoc the location of the first ';'
+  ///
+  /// \param Condition the optional condition expression.
+  ///
+  /// \param SecondSemiLoc the location of the second ';'
+  ///
+  /// \param PostStmt the optional update stmt.
+  ///
+  /// \param Body the look body.
+  virtual OwningStmtResult ActOnForStmt(SourceLocation ForLoc, StmtArg InitStmt,
+                                        SourceLocation FirstSemiLoc,
+                                        ExprArg Condition,
+                                        SourceLocation SecondSemiLoc,
+                                        StmtArg PostStmt, StmtArg Body) {
+    return StmtEmpty();
+  }
+
+  /// \brief Parsed a "for" range statement, such as "for _, v := range m {}".
+  ///
+  /// \param ForLoc the location of the "for" keyword.
+  ///
+  /// \param LHSExpr the expression on the lhs of the assignment operator.
+  ///
+  /// \param CommaLoc the optional comma after the first lhs expression.
+  ///
+  /// \param OptLHSExpr the optional second expresson on the lhs of the
+  /// assignment operator.
+  ///
+  /// \param OpLoc the location of the assigment operator.
+  ///
+  /// \param OpKind the kind of assignment operator, '=' or ':='.
+  ///
+  /// \param RangeLoc the location of the 'range' keyword.
+  ///
+  /// \param RangeExpr the expression on the rhs of the assignment operator.
+  ///
+  /// \param Body the look body.
+  virtual OwningStmtResult ActOnRangeForStmt(SourceLocation ForLoc,
+                                             ExprArg LHSExpr,
+                                             SourceLocation CommaLoc,
+                                             ExprArg OptLHSExpr,
+                                             SourceLocation OpLoc,
+                                             tok::TokenKind OpKind,
+                                             SourceLocation RangeLoc,
+                                             ExprArg RangeExpr, StmtArg Body) {
+    return StmtEmpty();
+  }
+  
   /// \brief Parsed a "defer" statement.
   ///
   /// \param DeferLoc the location of the "defer" keyword.
@@ -1096,10 +1162,6 @@ public:
   virtual void ActOnForEachDeclStmt(DeclGroupPtrTy Decl) {
   }
 
-  virtual OwningStmtResult ActOnExprStmt(FullExprArg Expr) {
-    return OwningStmtResult(*this, Expr->release());
-  }
-
   /// ActOnCaseStmt - Note that this handles the GNU 'case 1 ... 4' extension,
   /// which can specify an RHS value.  The sub-statement of the case is
   /// specified in a separate action.
@@ -1161,35 +1223,6 @@ public:
     return StmtEmpty();
   }
 
-  /// \brief Parsed a "for" statement.
-  ///
-  /// \param ForLoc the location of the "for" keyword.
-  ///
-  /// \param LParenLoc the location of the left parentheses.
-  ///
-  /// \param First the statement used to initialize the for loop.
-  ///
-  /// \param Second the condition to be checked during each iteration, if
-  /// that condition was parsed as an expression.
-  ///
-  /// \param SecondArg the condition variable to be checked during each 
-  /// iterator, if that condition was parsed as a variable declaration.
-  ///
-  /// \param Third the expression that will be evaluated to "increment" any
-  /// values prior to the next iteration.
-  ///
-  /// \param RParenLoc the location of the right parentheses.
-  ///
-  /// \param Body the body of the "body" loop.
-  virtual OwningStmtResult ActOnForStmt(SourceLocation ForLoc,
-                                        SourceLocation LParenLoc,
-                                        StmtArg First, FullExprArg Second,
-                                        DeclPtrTy SecondVar, FullExprArg Third, 
-                                        SourceLocation RParenLoc,
-                                        StmtArg Body) {
-    return StmtEmpty();
-  }
-  
   virtual OwningStmtResult ActOnObjCForCollectionStmt(SourceLocation ForColLoc,
                                        SourceLocation LParenLoc,
                                        StmtArg First, ExprArg Second,

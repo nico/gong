@@ -707,26 +707,36 @@ bool Parser::ParseCommCase() {
 /// PostStmt = SimpleStmt .
 Action::OwningStmtResult Parser::ParseForStmt() {
   assert(Tok.is(tok::kw_for) && "expected 'for'");
-  ConsumeToken();
+  SourceLocation ForLoc = ConsumeToken();
 
   CompositeTypeNameLitNeedsParensRAIIObject RequireParens(*this);
 
   if (Tok.is(tok::l_brace)) {
     RequireParens.reset();
-    return ParseBlock();  // FIXME: ActOnForStmt()
+    OwningExprResult Expr(Actions);
+    return Actions.ActOnSimpleForStmt(ForLoc, Expr, ParseBlock());
   }
+
+  OwningStmtResult Init(Actions);
+  OwningExprResult Expr(Actions);  // FIXME: fill in
 
   SourceLocation StmtLoc = Tok.getLocation();
   SimpleStmtKind Kind = SSK_Normal;
-  if (Tok.isNot(tok::semi))
-    if (ParseSimpleStmt(&Kind, SSE_RangeClause).isInvalid())
+  if (Tok.isNot(tok::semi)) {
+    // FIXME: this could return an expression too.
+    Init = ParseSimpleStmt(&Kind, SSE_RangeClause);
+    if (Init.isInvalid())
       return StmtError();
+  }
+
+  OwningStmtResult Post(Actions);
+  SourceLocation FirstSemiLoc, SecondSemiLoc, RangeLoc;
 
   if (Kind == SSK_RangeClause) {
     // Range clause, nothing more to do.
   } else if (Tok.is(tok::semi)) {
     // ForClause case
-    ConsumeToken();  // Consume 1st ';'.
+    FirstSemiLoc = ConsumeToken();  // Consume 1st ';'.
     if (Tok.isNot(tok::semi))
       ParseExpression();
     if (Tok.isNot(tok::semi)) {
@@ -734,7 +744,7 @@ Action::OwningStmtResult Parser::ParseForStmt() {
       // FIXME: recover?
       return StmtError();
     }
-    ConsumeToken();  // Consume 2nd ';'.
+    SecondSemiLoc = ConsumeToken();  // Consume 2nd ';'.
     if (Tok.isNot(tok::l_brace)) {
       ParseSimpleStmt();
     }
@@ -744,7 +754,6 @@ Action::OwningStmtResult Parser::ParseForStmt() {
     // FIXME: recover?
   } else {
     // Single expression
-    // (FIXME: or range expr, once that's done)
   }
 
   if (Tok.isNot(tok::l_brace)) {
@@ -752,7 +761,22 @@ Action::OwningStmtResult Parser::ParseForStmt() {
     return StmtError();
   }
   RequireParens.reset();
-  return ParseBlock();  // FIXME: ActOnForStmt()
+  OwningStmtResult Body(ParseBlock());
+
+  // FIXME: error handling?
+ 
+  if (Kind == SSK_Expression)
+    return Actions.ActOnSimpleForStmt(ForLoc, Expr, Body);
+  if (Kind == SSK_RangeClause) {
+    // FIXME
+    OwningExprResult OptLHSExpr(Actions);
+    OwningExprResult RHSExpr(Actions);
+    return Actions.ActOnRangeForStmt(ForLoc, Expr, SourceLocation(), OptLHSExpr,
+                                     SourceLocation(), tok::equal, RangeLoc,
+                                     RHSExpr, Body);
+  }
+  return Actions.ActOnForStmt(ForLoc, Init, FirstSemiLoc, Expr, SecondSemiLoc,
+                              Post, Body);
 }
 
 /// This is called when Tok points at "range".
