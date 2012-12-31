@@ -32,7 +32,7 @@ bool Parser::ParseStatement() {
   case tok::kw_type:
   case tok::kw_var:         return ParseDeclaration();
   case tok::kw_go:          return ParseGoStmt().isInvalid();
-  case tok::kw_return:      return ParseReturnStmt();
+  case tok::kw_return:      return ParseReturnStmt().isInvalid();
   case tok::kw_break:       return ParseBreakStmt();
   case tok::kw_continue:    return ParseContinueStmt();
   case tok::kw_goto:        return ParseGotoStmt();
@@ -315,13 +315,14 @@ Action::OwningStmtResult Parser::ParseGoStmt() {
 }
 
 /// ReturnStmt = "return" [ ExpressionList ] .
-bool Parser::ParseReturnStmt() {
+Action::OwningStmtResult Parser::ParseReturnStmt() {
   assert(Tok.is(tok::kw_return) && "expected 'return'");
-  ConsumeToken();
+  SourceLocation ReturnLoc = ConsumeToken();
 
+  ExprVector Exprs(Actions);  // FIXME: fill in
   if (Tok.isNot(tok::semi))
     ParseExpressionList();
-  return false;
+  return Actions.ActOnReturnStmt(ReturnLoc, move_arg(Exprs));
 }
 
 /// BreakStmt = "break" [ Label ] .

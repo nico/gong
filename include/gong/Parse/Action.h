@@ -308,6 +308,17 @@ public:
     return StmtEmpty();
   }
 
+  /// \brief Parsed a "return" statement.
+  ///
+  /// \param ReturnLoc the location of the "return" keyword.
+  ///
+  /// \param Exp the optional return expression.
+  //FIXME: comma locs. Have an ExprList, similar to IdentList?
+  virtual OwningStmtResult ActOnReturnStmt(SourceLocation ReturnLoc,
+                                           MultiExprArg RetValExps) {
+    return StmtEmpty();
+  }
+
   /// \brief Parsed an "if" statement.
   ///
   /// Example: "if b := f(); b {} else {}"
@@ -1066,10 +1077,6 @@ public:
   }
   virtual OwningStmtResult ActOnBreakStmt(SourceLocation GotoLoc,
                                           Scope *CurScope) {
-    return StmtEmpty();
-  }
-  virtual OwningStmtResult ActOnReturnStmt(SourceLocation ReturnLoc,
-                                           ExprArg RetValExp) {
     return StmtEmpty();
   }
   virtual OwningStmtResult ActOnAsmStmt(SourceLocation AsmLoc,
