@@ -351,6 +351,26 @@ public:
     return StmtEmpty();
   }
 
+  /// \brief Parsed a "goto" statement.
+  ///
+  /// \param GotoLoc the location of the "goto" keyword.
+  ///
+  /// \param LabelLoc the location of the goto label.
+  ///
+  /// \param Label the goto label.
+  virtual OwningStmtResult ActOnGotoStmt(SourceLocation GotoLoc,
+                                         SourceLocation LabelLoc,
+                                         IdentifierInfo *Label) {
+    return StmtEmpty();
+  }
+
+  /// \brief Parsed a "fallthrough" statement.
+  ///
+  /// \param GotoLoc the location of the "fallthrough" keyword.
+  virtual OwningStmtResult ActOnFallthroughStmt(SourceLocation FallthroughLoc) {
+    return StmtEmpty();
+  }
+
   /// \brief Parsed an "if" statement.
   ///
   /// Example: "if b := f(); b {} else {}"
@@ -1091,11 +1111,6 @@ public:
                                        SourceLocation LParenLoc,
                                        StmtArg First, ExprArg Second,
                                        SourceLocation RParenLoc, StmtArg Body) {
-    return StmtEmpty();
-  }
-  virtual OwningStmtResult ActOnGotoStmt(SourceLocation GotoLoc,
-                                         SourceLocation LabelLoc,
-                                         IdentifierInfo *LabelII) {
     return StmtEmpty();
   }
   virtual OwningStmtResult ActOnIndirectGotoStmt(SourceLocation GotoLoc,

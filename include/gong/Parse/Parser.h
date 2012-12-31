@@ -359,8 +359,8 @@ public:
   OwningStmtResult ParseReturnStmt();
   OwningStmtResult ParseBreakStmt();
   OwningStmtResult ParseContinueStmt();
-  bool ParseGotoStmt();
-  bool ParseFallthroughStmt();
+  OwningStmtResult ParseGotoStmt();
+  OwningStmtResult ParseFallthroughStmt();
   OwningStmtResult ParseIfStmt();
   bool ParseSwitchStmt();
   enum CaseClauseType { ExprCaseClause, TypeCaseClause };

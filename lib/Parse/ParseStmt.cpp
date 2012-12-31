@@ -35,8 +35,8 @@ bool Parser::ParseStatement() {
   case tok::kw_return:      return ParseReturnStmt().isInvalid();
   case tok::kw_break:       return ParseBreakStmt().isInvalid();
   case tok::kw_continue:    return ParseContinueStmt().isInvalid();
-  case tok::kw_goto:        return ParseGotoStmt();
-  case tok::kw_fallthrough: return ParseFallthroughStmt();
+  case tok::kw_goto:        return ParseGotoStmt().isInvalid();
+  case tok::kw_fallthrough: return ParseFallthroughStmt().isInvalid();
   case tok::l_brace:        return ParseBlock().isInvalid();
   case tok::kw_if:          return ParseIfStmt().isInvalid();
   case tok::kw_switch:      return ParseSwitchStmt();
@@ -333,8 +333,8 @@ Action::OwningStmtResult Parser::ParseBreakStmt() {
   SourceLocation IILoc;
   IdentifierInfo *II = NULL;
   if (Tok.is(tok::identifier)) {
-    IILoc = ConsumeToken();
     II = Tok.getIdentifierInfo();
+    IILoc = ConsumeToken();
   }
   return Actions.ActOnBreakStmt(BreakLoc, IILoc, II, getCurScope());
 }
@@ -347,30 +347,31 @@ Action::OwningStmtResult Parser::ParseContinueStmt() {
   SourceLocation IILoc;
   IdentifierInfo *II = NULL;
   if (Tok.is(tok::identifier)) {
-    IILoc = ConsumeToken();
     II = Tok.getIdentifierInfo();
+    IILoc = ConsumeToken();
   }
   return Actions.ActOnContinueStmt(ContinueLoc, IILoc, II, getCurScope());
 }
 
 /// GotoStmt = "goto" Label .
-bool Parser::ParseGotoStmt() {
+Action::OwningStmtResult Parser::ParseGotoStmt() {
   assert(Tok.is(tok::kw_goto) && "expected 'goto'");
-  ConsumeToken();
-  if (Tok.is(tok::identifier)) {
-    ConsumeToken();
-    return false;
+  SourceLocation GotoLoc = ConsumeToken();
+  if (Tok.isNot(tok::identifier)) {
+    Diag(Tok, diag::expected_ident);
+    SkipUntil(tok::semi, /*StopAtSemi=*/false, /*DontConsume=*/true);
+    return StmtError();
   }
-  Diag(Tok, diag::expected_ident);
-  SkipUntil(tok::semi, /*StopAtSemi=*/false, /*DontConsume=*/true);
-  return true;
+  IdentifierInfo *II = Tok.getIdentifierInfo();
+  SourceLocation IILoc = ConsumeToken();
+  return Actions.ActOnGotoStmt(GotoLoc, IILoc, II);
 }
 
 /// FallthroughStmt = "fallthrough" .
-bool Parser::ParseFallthroughStmt() {
+Action::OwningStmtResult Parser::ParseFallthroughStmt() {
   assert(Tok.is(tok::kw_fallthrough) && "expected 'fallthrough'");
-  ConsumeToken();
-  return false;
+  SourceLocation FallthroughLoc = ConsumeToken();
+  return Actions.ActOnFallthroughStmt(FallthroughLoc);
 }
 
 /// IfStmt = "if" [ SimpleStmt ";" ] Expression Block
