@@ -481,7 +481,7 @@ Parser::ParseIndexOrSliceSuffix(OwningExprResult LHS) {
   T.consumeOpen();
 
   if (Tok.is(tok::r_square)) {
-    Diag(Tok, diag::expected_expr);
+    Diag(Tok, diag::expected_expr_or_colon);
     T.consumeClose();
     return ExprError();
   }

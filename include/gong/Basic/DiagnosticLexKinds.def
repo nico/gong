@@ -107,6 +107,7 @@ DIAG(expected_period_or_ident_or_string, CLASS_ERROR,
 DIAG(expected_l_paren_after_builtin, CLASS_ERROR,
     "expected '(', builtins can only be used in calls")
 DIAG(expected_expr,                CLASS_ERROR, "expected expression")
+DIAG(expected_expr_or_colon,       CLASS_ERROR, "expected expression or ':'")
 DIAG(expected_expr_or_typeswitchguard, CLASS_ERROR,
     "expected expression or type switch guard")
 DIAG(expected_colonequal_or_equal, CLASS_ERROR, "expected ':=' or '='")

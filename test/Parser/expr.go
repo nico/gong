@@ -182,11 +182,16 @@ func f() {
   "asdf"[  // expected-note {{to match this '['}}
   4  // expected-diag {{expected ']'}}
 
+  "asdf"[]  // expected-diag {{expected expression or ':'}}
+
   // PrimaryExpr Slice
   "asdf"[:]
   "asdf"[4:]
   "asdf"[:4]
   "asdf"[3:4]
+
+  "asdf"[:  // expected-note {{to match this '['}}
+  4  // expected-diag {{expected ']'}}
 
   // PrimaryExpr TypeAssertion
   foo.(int)
