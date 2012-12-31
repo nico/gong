@@ -323,6 +323,17 @@ public:
     return StmtEmpty();
   }
 
+  /// \brief Parsed a a 'defer' statement.
+  ///
+  /// \param DeferLoc the location of the "defer" keyword.
+  ///
+  /// \param Exp the deferred expression.
+  virtual OwningStmtResult ActOnDeferStmt(SourceLocation DeferLoc,
+                                          ExprArg Exp) {
+    return StmtEmpty();
+  }
+
+  /// \brief Parsed an empty statement.
   virtual OwningStmtResult ActOnEmptyStmt(SourceLocation SemiLoc) {
     return StmtEmpty();
   }

@@ -42,7 +42,7 @@ bool Parser::ParseStatement() {
   case tok::kw_switch:      return ParseSwitchStmt();
   case tok::kw_select:      return ParseSelectStmt();
   case tok::kw_for:         return ParseForStmt();
-  case tok::kw_defer:       return ParseDeferStmt();
+  case tok::kw_defer:       return ParseDeferStmt().isInvalid();
 
   // SimpleStmts
   case tok::semi:           return !ParseEmptyStmt().isInvalid();
@@ -729,10 +729,11 @@ bool Parser::ParseRangeClauseTail(tok::TokenKind Op, SimpleStmtKind *OutKind,
 }
 
 /// DeferStmt = "defer" Expression .
-bool Parser::ParseDeferStmt() {
+Action::OwningStmtResult Parser::ParseDeferStmt() {
   assert(Tok.is(tok::kw_defer) && "expected 'defer'");
-  ConsumeToken();
-  return ParseExpression().isInvalid();
+  SourceLocation DeferLoc = ConsumeToken();
+  OwningExprResult Exp(Actions, ParseExpression());  // FIXME
+  return Actions.ActOnDeferStmt(DeferLoc, move(Exp));
 }
 
 /// EmptyStmt = .

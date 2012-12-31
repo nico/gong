@@ -372,7 +372,7 @@ public:
   bool ParseForStmt();
   bool ParseRangeClauseTail(tok::TokenKind Op, SimpleStmtKind *OutKind,
                             SimpleStmtExts Exts);
-  bool ParseDeferStmt();
+  OwningStmtResult ParseDeferStmt();
   OwningStmtResult ParseEmptyStmt();
   OwningStmtResult ParseBlock();
   OwningStmtResult ParseBlockBody();
