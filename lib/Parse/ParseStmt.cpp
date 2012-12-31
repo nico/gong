@@ -313,9 +313,13 @@ Action::OwningStmtResult Parser::ParseLabeledStmtTail(SourceLocation IILoc,
                                                       IdentifierInfo *II) {
   assert(Tok.is(tok::colon) && "expected ':'");
   SourceLocation ColonLoc = ConsumeToken();
-  // FIXME: Build AST
-  (void)ColonLoc;
-  return ParseStatement();
+  OwningStmtResult SubStmt(ParseStatement());
+
+  // Broken substmt shouldn't prevent the label from being added to the AST.
+  if (SubStmt.isInvalid())
+    SubStmt = Actions.ActOnEmptyStmt(ColonLoc);  // FIXME: Test!
+
+  return Actions.ActOnLabeledStmt(IILoc, II, ColonLoc, move(SubStmt));
 }
 
 /// An adapter function to parse a Declaration in a statement context.

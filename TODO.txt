@@ -412,6 +412,19 @@ Type identity:
 Actions
 =======
 
+Document ownership model.
+  OwningExpr/StmtResult: Will be deleted by parser by calling
+      Action::DeleteExpr/Stmt() (FIXME: Why no OwningDeclResult?)
+  Expr/StmtResult: weak form thereof
+
+  Expr/StmtArg: "as arguments" (FIXME: huh?)
+
+  MultiExpr/StmtArg: Collection of Expr/StmtArgs
+
+  move()
+  move_arg()
+  release()
+
 types/exprs in ()
 (*TypeName) in MethodExprs
 *foo() vs (*foo)()

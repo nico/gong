@@ -299,6 +299,22 @@ public:
     return StmtEmpty();
   }
 
+  /// \brief Parsed a labeled statement.
+  ///
+  /// \param IILoc the location of the label.
+  ///
+  /// \param II the label.
+  ///
+  /// \param ColonLoc the location of the colon following the label.
+  ///
+  /// \param SubStmt the statement following the label.
+  virtual OwningStmtResult ActOnLabeledStmt(SourceLocation IILoc,
+                                            IdentifierInfo *II,
+                                            SourceLocation ColonLoc,
+                                            StmtArg SubStmt) {
+    return StmtEmpty();
+  }
+
   /// \brief Parsed a "go" statement.
   ///
   /// \param GoLoc the location of the "go" keyword.
@@ -370,6 +386,17 @@ public:
   virtual OwningStmtResult ActOnFallthroughStmt(SourceLocation FallthroughLoc) {
     return StmtEmpty();
   }
+
+  // FIXME: actions for:
+  // declarationstmt
+  // expressionstmt
+  // sendstmt
+  // incdec
+  // assignment
+  // shortvardecl
+  // switchstmt
+  // selectstmt
+  // forstmt
 
   /// \brief Parsed an "if" statement.
   ///
@@ -1026,13 +1053,6 @@ public:
   virtual OwningStmtResult ActOnDefaultStmt(SourceLocation DefaultLoc,
                                             SourceLocation ColonLoc,
                                             StmtArg SubStmt, Scope *CurScope){
-    return StmtEmpty();
-  }
-
-  virtual OwningStmtResult ActOnLabelStmt(SourceLocation IdentLoc,
-                                          IdentifierInfo *II,
-                                          SourceLocation ColonLoc,
-                                          StmtArg SubStmt) {
     return StmtEmpty();
   }
 
