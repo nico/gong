@@ -1066,7 +1066,7 @@ bool Parser::IsType() {
 bool Parser::IsExpression() {
   // An expression can start with a type (for a conversion), so every
   // type prefix is also an expression prefix.
-  return IsType() || IsUnaryOp() || Tok.is(tok::numeric_literal) ||
+  return IsType() || IsUnaryOp(Tok.getKind()) || Tok.is(tok::numeric_literal) ||
          Tok.is(tok::rune_literal) || Tok.is(tok::string_literal);
 }
 

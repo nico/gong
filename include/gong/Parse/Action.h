@@ -239,7 +239,7 @@ public:
   ///
   /// \param Decl The Decl returned by either ActOnSingleTypeDecl() or
   ///             ActOnStartMultiDecl().
-  // FIXME: Pass rhs
+  // FIXME: Pass rhs, type once types are figured out
   virtual void ActOnConstSpec(DeclPtrTy Decl, IdentifierList &Idents,
                               Scope *S) {}
 
@@ -254,7 +254,7 @@ public:
   ///
   /// \param Decl The Decl returned by either ActOnSingleTypeDecl() or
   ///             ActOnStartMultiDecl().
-  // FIXME: Pass rhs
+  // FIXME: Pass rhs, type once types are figured out
   virtual void ActOnVarSpec(DeclPtrTy Decl, IdentifierList &Idents, Scope *S) {}
 
 
@@ -365,6 +365,7 @@ public:
                                          ExprArg RHS) {
     return StmtEmpty();
   }
+
   /// \brief Parsed an IncDecStmt, for example "a++" or "a[i]--".
   ///
   /// \param Base the expression in front of the inc or dec operator.
@@ -616,8 +617,32 @@ public:
   // Expression Parsing Callbacks.
   //===--------------------------------------------------------------------===//
 
+  // FIXME: actions for:
+  // binary ops
+  // basic literals
+  // composite literals
+  // function literals
+  // operand names
+  // method exprs
+  // paren exprs
+  // selectors
+  // index
+  // slice
+  // typeassertion
+  // calls, conversions
+  //   builtin calls
 
-
+  /// \brief Parsed an unary operator.
+  ///
+  /// \param OpLoc the location of the unary operator.
+  ///
+  /// \param Op the operator kind, one of +, -, !, ^, *, &, <-
+  ///
+  /// \param Input the operand of the unary operator.
+  virtual OwningExprResult ActOnUnaryOp(SourceLocation OpLoc, tok::TokenKind Op,
+                                        ExprArg Input) {
+    return ExprEmpty();
+  }
 
 
 
@@ -1277,17 +1302,6 @@ public:
                                          MultiExprArg Args,
                                          SourceLocation *CommaLocs,
                                          SourceLocation RParenLoc) {
-    return ExprEmpty();
-  }
-
-  // Unary Operators.  'Tok' is the token for the operator.
-  virtual OwningExprResult ActOnUnaryOp(Scope *S, SourceLocation OpLoc,
-                                        tok::TokenKind Op, ExprArg Input) {
-    return ExprEmpty();
-  }
-  virtual OwningExprResult
-    ActOnSizeOfAlignOfExpr(SourceLocation OpLoc, bool isSizeof, bool isType,
-                           void *TyOrEx, const SourceRange &ArgRange) {
     return ExprEmpty();
   }
 

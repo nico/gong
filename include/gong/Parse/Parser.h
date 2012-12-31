@@ -277,7 +277,7 @@ public:
                                               prec::Level MinPrec,
                                               TypeSwitchGuardParam *TSGOpt,
                                               bool *SawIdentifierOnly);
-  bool IsUnaryOp();
+  bool IsUnaryOp(tok::TokenKind Kind);
   OwningExprResult ParseUnaryExpr(TypeSwitchGuardParam *TSGOpt = NULL,
                                   TypeParam * TOpt = NULL,
                                   bool * SawIdentifierOnly = NULL);

@@ -131,8 +131,8 @@ Parser::ParseRHSOfBinaryExpression(OwningExprResult LHS, prec::Level MinPrec,
   }
 }
 
-bool Parser::IsUnaryOp() {
-  switch (Tok.getKind()) {
+bool Parser::IsUnaryOp(tok::TokenKind Kind) {
+  switch (Kind) {
   default:
     return false;
   case tok::plus:
@@ -151,12 +151,18 @@ bool Parser::IsUnaryOp() {
 Action::OwningExprResult
 Parser::ParseUnaryExpr(TypeSwitchGuardParam *TSGOpt, TypeParam *TOpt,
                        bool *SawIdentifierOnly) {
+  tok::TokenKind OpKind = Tok.getKind();
+  
   // FIXME: * and <- if TOpt is set.
-  if (IsUnaryOp()) {
+  if (IsUnaryOp(OpKind)) {
     if (SawIdentifierOnly)
       *SawIdentifierOnly = false;
-    ConsumeToken();  // FIXME: use
-    return ParseUnaryExpr(NULL, TOpt, NULL);
+    SourceLocation OpLoc = ConsumeToken();
+
+    OwningExprResult Res = ParseUnaryExpr(NULL, TOpt, NULL);
+    if (!Res.isInvalid())
+      Res = Actions.ActOnUnaryOp(OpLoc, OpKind, move(Res));
+    return Res;
   }
   return ParsePrimaryExpr(TSGOpt, TOpt, SawIdentifierOnly);
 }
