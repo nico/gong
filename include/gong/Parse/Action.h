@@ -315,6 +315,13 @@ public:
     return StmtEmpty();
   }
 
+  /// \brief Parsed an expression in a statement context.
+  ///
+  /// \param Expr the expression.
+  virtual OwningStmtResult ActOnExprStmt(ExprArg Expr) {
+    return StmtEmpty();
+  }
+
   /// \brief Parsed a SendStmt such as "a <- b".
   ///
   /// \param LHS the left-hand side of the send statement.
@@ -426,7 +433,6 @@ public:
   }
 
   // FIXME: actions for:
-  // expressionstmt
   // assignment
   // shortvardecl
   // switchstmt

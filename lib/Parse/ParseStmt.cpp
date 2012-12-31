@@ -268,7 +268,8 @@ Parser::ParseSimpleStmtTailAfterExpression(ExprResult &LHS,
   // Note: This can overwrite *OutKind.
   OptRAII.disarm();
 
-  return LHS.isInvalid() ? StmtError() : Actions.StmtEmpty();  // FIXME
+  OwningExprResult OwnLHS(Actions, LHS);  // FIXME
+  return Actions.ActOnExprStmt(move(OwnLHS));
 }
 
 /// This is called after the ':=' has been read.
