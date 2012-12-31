@@ -137,22 +137,24 @@ public:
   //typedef llvm::MutableArrayRef<Stmt*> MultiStmtArg;
   //typedef Sema::FullExprArg FullExprArg;
 
-  /// Adorns a ExprResult with Actions to make it an ExprResult
-  ExprResult Owned(ExprResult res) {
-    return ExprResult(res);
+  /// Adorns a ExprResult with Actions to make it an OwningExprResult
+  OwningExprResult Owned(ExprResult res) {
+    return OwningExprResult(Actions, res);
   }
-  /// Adorns a StmtResult with Actions to make it an StmtResult
-  StmtResult Owned(StmtResult res) {
-    return StmtResult(res);
+  /// Adorns a StmtResult with Actions to make it an OwningStmtResult
+  OwningStmtResult Owned(StmtResult res) {
+    return OwningStmtResult(Actions, res);
   }
 
+  // FIXME: Use OwningExprResult once all ParseExpr() methods return that.
+  //OwningExprResult ExprError() { return OwningExprResult(Actions, true); }
   ExprResult ExprError() { return ExprResult(true); }
-  StmtResult StmtError() { return StmtResult(true); }
+  OwningStmtResult StmtError() { return OwningStmtResult(Actions, true); }
 
-  ExprResult ExprError(const DiagnosticBuilder &) { return ExprError(); }
-  StmtResult StmtError(const DiagnosticBuilder &) { return StmtError(); }
+  //OwningExprResult ExprError(const DiagnosticBuilder &) { return ExprError(); }
+  //OwningStmtResult StmtError(const DiagnosticBuilder &) { return StmtError(); }
 
-  ExprResult ExprEmpty() { return ExprResult(false); }
+  OwningExprResult ExprEmpty() { return OwningExprResult(Actions, false); }
 
   // Parsing methods.
 
@@ -359,7 +361,7 @@ public:
   bool ParseContinueStmt();
   bool ParseGotoStmt();
   bool ParseFallthroughStmt();
-  bool ParseIfStmt();
+  OwningStmtResult ParseIfStmt();
   bool ParseSwitchStmt();
   enum CaseClauseType { ExprCaseClause, TypeCaseClause };
   bool ParseCaseClause(CaseClauseType Type);

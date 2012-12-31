@@ -38,7 +38,7 @@ bool Parser::ParseStatement() {
   case tok::kw_goto:        return ParseGotoStmt();
   case tok::kw_fallthrough: return ParseFallthroughStmt();
   case tok::l_brace:        return ParseBlock();
-  case tok::kw_if:          return ParseIfStmt();
+  case tok::kw_if:          return ParseIfStmt().isInvalid();
   case tok::kw_switch:      return ParseSwitchStmt();
   case tok::kw_select:      return ParseSelectStmt();
   case tok::kw_for:         return ParseForStmt();
@@ -363,43 +363,58 @@ bool Parser::ParseFallthroughStmt() {
 
 /// IfStmt = "if" [ SimpleStmt ";" ] Expression Block
 ///          [ "else" ( IfStmt | Block ) ] .
-bool Parser::ParseIfStmt() {
+Parser::OwningStmtResult Parser::ParseIfStmt() {
   assert(Tok.is(tok::kw_if) && "expected 'if'");
-  ConsumeToken();
+  SourceLocation IfLoc = ConsumeToken();
 
   CompositeTypeNameLitNeedsParensRAIIObject RequireParens(*this);
 
   SourceLocation StmtLoc = Tok.getLocation();
   SimpleStmtKind Kind = SSK_Normal;
+  OwningStmtResult InitStmt(Actions);  // FIXME: set this
   if (ParseSimpleStmt(&Kind))
-    return true;
+    return StmtError();
 
+  OwningExprResult CondExp(Actions);  // FIXME: set this
   if (Tok.is(tok::semi)) {
     ConsumeToken();
     ParseExpression();
   } else if (Kind != SSK_Expression) {
     Diag(StmtLoc, diag::expected_expr);
-    return true;
+    return StmtError();
   }
 
   RequireParens.reset();
 
+  // Read the 'then' stmt.
+  OwningStmtResult ThenStmt(Actions);  // FIXME: set this
   if (Tok.isNot(tok::l_brace)) {
     Diag(Tok, diag::expected_l_brace);
-    return true;
+    return StmtError();
   }
   bool Failed = ParseBlock();
 
-  if (Tok.isNot(tok::kw_else))
-    return Failed;
+  // If it has an else, parse it.
+  SourceLocation ElseLoc;
+  OwningStmtResult ElseStmt(Actions);
 
-  ConsumeToken();
-  if (Tok.is(tok::kw_if))
-    return ParseIfStmt();
-  if (Tok.is(tok::l_brace))
-    return ParseBlock();
-  Diag(Tok, diag::expected_if_or_l_brace);
-  return true;
+  if (Tok.is(tok::kw_else)) {
+    ElseLoc = ConsumeToken();
+    if (Tok.is(tok::kw_if))
+      ElseStmt = ParseIfStmt();
+    else if (Tok.is(tok::l_brace))
+      ElseStmt = ParseBlock() ? StmtError() : Actions.StmtEmpty();  // FIXME
+    else {
+      Diag(Tok, diag::expected_if_or_l_brace);
+      ElseStmt = StmtError();
+    }
+  }
+
+  // FIXME: clang has much nicer recovery code here (set invalid branches to
+  // empty statements if the other branch and the condition are valid, etc)
+
+  return Actions.ActOnIfStmt(IfLoc, InitStmt, CondExp, ThenStmt, ElseLoc,
+                             ElseStmt);
 }
 
 /// SwitchStmt = ExprSwitchStmt | TypeSwitchStmt .

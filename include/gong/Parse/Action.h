@@ -287,8 +287,39 @@ public:
   // Statement Parsing Callbacks.
   //===--------------------------------------------------------------------===//
 
+  /// \brief Parsed a block.
+  ///
+  /// \param \L the location of the opening '{'.
+  ///
+  /// \param \R the location of the closing '}'.
+  ///
+  /// \param Elts the statements in the block.
   virtual OwningStmtResult ActOnBlockStmt(SourceLocation L, SourceLocation R,
                                           MultiStmtArg Elts) {
+    return StmtEmpty();
+  }
+
+  /// \brief Parsed an "if" statement.
+  ///
+  /// Example: "if b := f(); b {} else {}"
+  ///
+  /// \param IfLoc the location of the "if" keyword.
+  ///
+  /// \param InitStmt the optional initial SimpleStmt.
+  ///
+  /// \param CondVal the if condition.
+  ///
+  /// \param ThenVal the "then" statement.
+  ///
+  /// \param ElseLoc the location of the "else" keyword.
+  ///
+  /// \param ElseVal the optional "else" statement.
+  virtual OwningStmtResult ActOnIfStmt(SourceLocation IfLoc,
+                                       StmtArg InitStmt,
+                                       ExprArg CondVal, 
+                                       StmtArg ThenVal,
+                                       SourceLocation ElseLoc,
+                                       StmtArg ElseVal) {
     return StmtEmpty();
   }
 
@@ -915,30 +946,6 @@ public:
                                           IdentifierInfo *II,
                                           SourceLocation ColonLoc,
                                           StmtArg SubStmt) {
-    return StmtEmpty();
-  }
-
-  /// \brief Parsed an "if" statement.
-  ///
-  /// \param IfLoc the location of the "if" keyword.
-  ///
-  /// \param CondVal if the "if" condition was parsed as an expression, 
-  /// the expression itself.
-  ///
-  /// \param CondVar if the "if" condition was parsed as a condition variable,
-  /// the condition variable itself.
-  ///
-  /// \param ThenVal the "then" statement.
-  ///
-  /// \param ElseLoc the location of the "else" keyword.
-  ///
-  /// \param ElseVal the "else" statement.
-  virtual OwningStmtResult ActOnIfStmt(SourceLocation IfLoc,
-                                       FullExprArg CondVal, 
-                                       DeclPtrTy CondVar,
-                                       StmtArg ThenVal,
-                                       SourceLocation ElseLoc,
-                                       StmtArg ElseVal) {
     return StmtEmpty();
   }
 
