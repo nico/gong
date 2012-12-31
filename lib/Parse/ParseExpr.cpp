@@ -224,6 +224,10 @@ Parser::ParsePrimaryExpr(TypeSwitchGuardParam *TSGOpt, TypeParam *TOpt,
     //assert(false);
     Res = ParseExpression(TSGOpt, &TypeOpt);
     T.consumeClose();
+
+    if (!Res.isInvalid())
+      Res = Actions.ActOnParenExpr(T.getOpenLocation(), move(Res),
+                                   T.getCloseLocation());
     
     // If ParseExpression() parsed a type and this is not a context that accepts
     // types, check that the type is followed by a '(' to produce a Conversion

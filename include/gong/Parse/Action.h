@@ -658,6 +658,26 @@ public:
     return ExprEmpty();
   }
 
+  /// \brief Parsed a parenthesized expression.
+  ///
+  /// This can also be called for parenthesized types, for example when parsing
+  /// "a = (int)(4)".
+  ///
+  /// Currently, this is also called for MethodExpr starts, such as "(*f)" which
+  /// may be followed by ".g(f)". FIXME: Decide if that's desired, or if the
+  /// parser should use lookahead to give more detailed callbacks for
+  /// MethodExprs.
+  ///
+  /// \param L location of the '('.
+  ///
+  /// \param Expr the expression in parentheses.
+  ///
+  /// \param R the location of the ')'.
+  virtual OwningExprResult ActOnParenExpr(SourceLocation L, ExprArg Expr,
+                                          SourceLocation R) {
+    return move(Expr);  // Default impl returns operand.
+  }
+
 
 
 
@@ -1244,11 +1264,6 @@ public:
   virtual OwningExprResult ActOnStringLiteral(const Token *Toks,
                                               unsigned NumToks) {
     return ExprEmpty();
-  }
-
-  virtual OwningExprResult ActOnParenExpr(SourceLocation L, SourceLocation R,
-                                          ExprArg Val) {
-    return move(Val);  // Default impl returns operand.
   }
 
   virtual OwningExprResult ActOnParenOrParenListExpr(SourceLocation L,
