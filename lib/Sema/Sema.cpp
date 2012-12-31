@@ -172,6 +172,14 @@ Sema::~Sema() {
   //  delete ExternalSource;
 }
 
+void Sema::DeleteExpr(ExprTy *E) {
+  //if (E) static_cast<Expr*>(E)->Destroy(Context);
+}
+void Sema::DeleteStmt(StmtTy *S) {
+  // FIXME: Figure out ownership.
+  //if (S) static_cast<Stmt*>(S)->Destroy(Context);
+}
+
 #if 0
 
 /// makeUnavailableInSystemHeader - There is an error in the current

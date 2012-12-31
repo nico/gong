@@ -32,7 +32,7 @@
 // Normal Statements.
 STMT(NullStmt        , Stmt)
 FIRST_STMT(NullStmt)
-STMT(CompoundStmt    , Stmt)
+STMT(BlockStmt       , Stmt)
 STMT(CaseStmt        , SwitchCase)
 STMT(DefaultStmt     , SwitchCase)
 STMT(LabelStmt       , Stmt)

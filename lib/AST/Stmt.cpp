@@ -13,8 +13,10 @@
 
 #include "gong/AST/Stmt.h"
 
-#if 0
 #include "gong/AST/ASTContext.h"
+using namespace gong;
+
+#if 0
 #include "gong/AST/ASTDiagnostic.h"
 #include "gong/AST/ExprCXX.h"
 #include "gong/AST/ExprObjC.h"
@@ -25,7 +27,6 @@
 #include "gong/Lex/Token.h"
 #include "llvm/ADT/StringExtras.h"
 #include "llvm/Support/raw_ostream.h"
-using namespace gong;
 
 static struct StmtClassNameTable {
   const char *Name;
@@ -48,6 +49,7 @@ static StmtClassNameTable &getStmtInfoTableEntry(Stmt::StmtClass E) {
 
   return StmtClassInfo[E];
 }
+#endif
 
 void *Stmt::operator new(size_t bytes, ASTContext& C,
                          unsigned alignment) throw() {
@@ -59,6 +61,7 @@ void *Stmt::operator new(size_t bytes, ASTContext* C,
   return ::operator new(bytes, *C, alignment);
 }
 
+#if 0
 const char *Stmt::getStmtClassName() const {
   return getStmtInfoTableEntry((StmtClass) StmtBits.sClass).Name;
 }
@@ -252,7 +255,25 @@ SourceLocation Stmt::getLocEnd() const {
   }
   llvm_unreachable("unknown statement kind");
 }
+#endif
 
+BlockStmt::BlockStmt(ASTContext &C, ArrayRef<Stmt *> Stmts,
+                     SourceLocation LB, SourceLocation RB)
+  : Stmt(BlockStmtClass), LBracLoc(LB), RBracLoc(RB) {
+  BlockStmtBits.NumStmts = Stmts.size();
+  assert(BlockStmtBits.NumStmts == Stmts.size() &&
+         "NumStmts doesn't fit in bits of BlockStmtBits.NumStmts!");
+
+  if (Stmts.size() == 0) {
+    Body = 0;
+    return;
+  }
+
+  Body = new (C) Stmt*[Stmts.size()];
+  std::copy(Stmts.begin(), Stmts.end(), Body);
+}
+
+#if 0
 CompoundStmt::CompoundStmt(ASTContext &C, Stmt **StmtStart, unsigned NumStmts,
                            SourceLocation LB, SourceLocation RB)
   : Stmt(CompoundStmtClass), LBracLoc(LB), RBracLoc(RB) {

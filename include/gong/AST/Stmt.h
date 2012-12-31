@@ -14,24 +14,28 @@
 #ifndef LLVM_GONG_AST_STMT_H
 #define LLVM_GONG_AST_STMT_H
 
+#include "gong/Basic/SourceLocation.h"
+#include "llvm/Support/ErrorHandling.h"
+
 #if 0
 
 #include "gong/AST/DeclGroup.h"
 #include "gong/AST/StmtIterator.h"
 #include "gong/Basic/IdentifierTable.h"
 #include "gong/Basic/LLVM.h"
-#include "gong/Basic/SourceLocation.h"
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/Support/Compiler.h"
-#include "llvm/Support/ErrorHandling.h"
 #include <string>
 
 namespace llvm {
   class FoldingSetNodeID;
 }
+#endif
 
 namespace gong {
-  class ASTContext;
+class ASTContext;
+
+#if 0
   class Attr;
   class Decl;
   class Expr;
@@ -92,24 +96,25 @@ namespace gong {
     bool operator>(const ConstExprIterator& R) const { return I > R.I; }
     bool operator>=(const ConstExprIterator& R) const { return I >= R.I; }
   };
+#endif
 
 //===----------------------------------------------------------------------===//
 // AST classes for statements.
 //===----------------------------------------------------------------------===//
 
-/// Stmt - This represents one statement.
+/// This represents one statement.
 ///
 class Stmt {
 public:
   enum StmtClass {
     NoStmtClass = 0,
 #define STMT(CLASS, PARENT) CLASS##Class,
-#define STMT_RANGE(BASE, FIRST, LAST) \
-        first##BASE##Constant=FIRST##Class, last##BASE##Constant=LAST##Class,
-#define LAST_STMT_RANGE(BASE, FIRST, LAST) \
-        first##BASE##Constant=FIRST##Class, last##BASE##Constant=LAST##Class
-#define ABSTRACT_STMT(STMT)
-#include "gong/AST/StmtNodes.inc"
+#define FIRST_STMT(CLASS) firstStmtConstant = CLASS##Class,
+#define LAST_STMT(CLASS) lastStmtConstant = CLASS##Class,
+#define FIRST_EXPR(CLASS) firstExprConstant = CLASS##Class,
+#define LAST_EXPR(CLASS) lastExprConstant = CLASS##Class
+#define ABSTRACT_EXPR(CLASS, PARENT)
+#include "gong/AST/StmtNodes.def"
   };
 
   // Make vanilla 'new' and 'delete' illegal for Stmts.
@@ -129,13 +134,14 @@ protected:
   };
   enum { NumStmtBits = 8 };
 
-  class CompoundStmtBitfields {
-    friend class CompoundStmt;
+  class BlockStmtBitfields {
+    friend class BlockStmt;
     unsigned : NumStmtBits;
 
     unsigned NumStmts : 32 - NumStmtBits;
   };
 
+#if 0
   class ExprBitfields {
     friend class Expr;
     friend class DeclRefExpr; // computeDependence
@@ -278,13 +284,15 @@ protected:
     /// \brief The number of arguments to this type trait.
     unsigned NumArgs : 32 - 8 - 1 - NumExprBits;
   };
+#endif
   
   union {
     // FIXME: this is wasteful on 64-bit platforms.
     void *Aligner;
 
     StmtBitfields StmtBits;
-    CompoundStmtBitfields CompoundStmtBits;
+    BlockStmtBitfields BlockStmtBits;
+#if 0
     ExprBitfields ExprBits;
     CharacterLiteralBitfields CharacterLiteralBits;
     FloatingLiteralBitfields FloatingLiteralBits;
@@ -297,6 +305,7 @@ protected:
     ObjCIndirectCopyRestoreExprBitfields ObjCIndirectCopyRestoreExprBits;
     InitListExprBitfields InitListExprBits;
     TypeTraitExprBitfields TypeTraitExprBits;
+#endif
   };
 
   friend class ASTStmtReader;
@@ -334,13 +343,13 @@ protected:
   /// \brief Construct an empty statement.
   explicit Stmt(StmtClass SC, EmptyShell) {
     StmtBits.sClass = SC;
-    if (StatisticsEnabled) Stmt::addStmtClass(SC);
+    //if (StatisticsEnabled) Stmt::addStmtClass(SC);
   }
 
 public:
   Stmt(StmtClass SC) {
     StmtBits.sClass = SC;
-    if (StatisticsEnabled) Stmt::addStmtClass(SC);
+    //if (StatisticsEnabled) Stmt::addStmtClass(SC);
   }
 
   StmtClass getStmtClass() const {
@@ -348,6 +357,7 @@ public:
   }
   const char *getStmtClassName() const;
 
+#if 0
   /// SourceLocation tokens are not useful in isolation - they are low level
   /// value objects created/interpreted by SourceManager. We assume AST
   /// clients will have a pointer to the respective SourceManager.
@@ -428,10 +438,12 @@ public:
   /// written in the source.
   void Profile(llvm::FoldingSetNodeID &ID, const ASTContext &Context,
                bool Canonical) const;
+#endif
 };
 
+#if 0
 /// DeclStmt - Adaptor class for mixing declarations with statements and
-/// expressions. For example, CompoundStmt mixes statements, expressions
+/// expressions. For example, BlockStmt mixes statements, expressions
 /// and declarations (variables, types). Another example is ForStmt, where
 /// the first statement can be an expression or a declaration.
 ///
@@ -532,32 +544,32 @@ public:
   friend class ASTStmtReader;
   friend class ASTStmtWriter;
 };
+#endif
 
-/// CompoundStmt - This represents a group of statements like { stmt stmt }.
-///
-class CompoundStmt : public Stmt {
+/// This represents a block of statements like { stmt stmt }.
+class BlockStmt : public Stmt {
   Stmt** Body;
   SourceLocation LBracLoc, RBracLoc;
 public:
-  CompoundStmt(ASTContext &C, Stmt **StmtStart, unsigned NumStmts,
-               SourceLocation LB, SourceLocation RB);
+  BlockStmt(ASTContext &C, ArrayRef<Stmt*> StmtStart,
+            SourceLocation LB, SourceLocation RB);
 
   // \brief Build an empty compound statment with a location.
-  explicit CompoundStmt(SourceLocation Loc)
-    : Stmt(CompoundStmtClass), Body(0), LBracLoc(Loc), RBracLoc(Loc) {
-    CompoundStmtBits.NumStmts = 0;
+  explicit BlockStmt(SourceLocation Loc)
+    : Stmt(BlockStmtClass), Body(0), LBracLoc(Loc), RBracLoc(Loc) {
+    BlockStmtBits.NumStmts = 0;
   }
 
   // \brief Build an empty compound statement.
-  explicit CompoundStmt(EmptyShell Empty)
-    : Stmt(CompoundStmtClass, Empty), Body(0) {
-    CompoundStmtBits.NumStmts = 0;
+  explicit BlockStmt(EmptyShell Empty)
+    : Stmt(BlockStmtClass, Empty), Body(0) {
+    BlockStmtBits.NumStmts = 0;
   }
 
   void setStmts(ASTContext &C, Stmt **Stmts, unsigned NumStmts);
 
-  bool body_empty() const { return CompoundStmtBits.NumStmts == 0; }
-  unsigned size() const { return CompoundStmtBits.NumStmts; }
+  bool body_empty() const { return BlockStmtBits.NumStmts == 0; }
+  unsigned size() const { return BlockStmtBits.NumStmts; }
 
   typedef Stmt** body_iterator;
   body_iterator body_begin() { return Body; }
@@ -602,19 +614,20 @@ public:
   void setRBracLoc(SourceLocation L) { RBracLoc = L; }
 
   static bool classof(const Stmt *T) {
-    return T->getStmtClass() == CompoundStmtClass;
+    return T->getStmtClass() == BlockStmtClass;
   }
 
   // Iterators
-  child_range children() {
-    return child_range(&Body[0], &Body[0]+CompoundStmtBits.NumStmts);
-  }
+  //child_range children() {
+  //  return child_range(&Body[0], &Body[0]+BlockStmtBits.NumStmts);
+  //}
 
-  const_child_range children() const {
-    return child_range(&Body[0], &Body[0]+CompoundStmtBits.NumStmts);
-  }
+  //const_child_range children() const {
+  //  return child_range(&Body[0], &Body[0]+BlockStmtBits.NumStmts);
+  //}
 };
 
+#if 0
 // SwitchCase is the base class for CaseStmt and DefaultStmt,
 class SwitchCase : public Stmt {
 protected:
@@ -1764,8 +1777,8 @@ public:
     return reinterpret_cast<Expr*>(Children[FILTER_EXPR]);
   }
 
-  CompoundStmt *getBlock() const {
-    return llvm::cast<CompoundStmt>(Children[BLOCK]);
+  BlockStmt *getBlock() const {
+    return llvm::cast<BlockStmt>(Children[BLOCK]);
   }
 
   child_range children() {
@@ -1800,7 +1813,7 @@ public:
   SourceLocation getFinallyLoc() const { return Loc; }
   SourceLocation getEndLoc() const { return Block->getLocEnd(); }
 
-  CompoundStmt *getBlock() const { return llvm::cast<CompoundStmt>(Block); }
+  BlockStmt *getBlock() const { return llvm::cast<BlockStmt>(Block); }
 
   child_range children() {
     return child_range(&Block,&Block+1);
@@ -1843,8 +1856,8 @@ public:
 
   bool getIsCXXTry() const { return IsCXXTry; }
 
-  CompoundStmt* getTryBlock() const {
-    return llvm::cast<CompoundStmt>(Children[TRY]);
+  BlockStmt* getTryBlock() const {
+    return llvm::cast<BlockStmt>(Children[TRY]);
   }
 
   Stmt *getHandler() const { return Children[HANDLER]; }
@@ -1862,8 +1875,8 @@ public:
   }
 };
 
-}  // end namespace gong
-
 #endif
+
+}  // end namespace gong
 
 #endif

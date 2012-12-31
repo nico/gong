@@ -738,6 +738,9 @@ bool Parser::ParseBlockBody() {
 
   BalancedDelimiterTracker T(*this, tok::l_brace);
   T.consumeOpen();
+
+  StmtVector Stmts(Actions);
+
   // FIXME: scoping, better recovery, check IsStatment() first,
   //        semicolon insertion after last statement
   // See Parser::ParseCompoundStatementBody() in clang.
@@ -748,5 +751,13 @@ bool Parser::ParseBlockBody() {
       break;
     ExpectAndConsumeSemi(diag::expected_semi);
   }
-  return T.consumeClose();
+
+  SourceLocation CloseLoc = Tok.getLocation();
+  if (!T.consumeClose())
+    // Recover by creating a compound statement with what we parsed so far,
+    // instead of dropping everything and returning StmtError();
+    CloseLoc = T.getCloseLocation();
+
+  Actions.ActOnBlockStmt(T.getOpenLocation(), CloseLoc, move_arg(Stmts));
+  return false;  // FIXME
 }

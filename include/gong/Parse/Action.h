@@ -279,6 +279,39 @@ public:
   virtual void ActOnFinishFunctionBody(DeclPtrTy Decl/*, StmtArg Body*/) { }
 
 
+  //===--------------------------------------------------------------------===//
+  // Type Parsing Callbacks.
+  //===--------------------------------------------------------------------===//
+
+  //===--------------------------------------------------------------------===//
+  // Statement Parsing Callbacks.
+  //===--------------------------------------------------------------------===//
+
+  virtual OwningStmtResult ActOnBlockStmt(SourceLocation L, SourceLocation R,
+                                          MultiStmtArg Elts) {
+    return StmtEmpty();
+  }
+
+  //===--------------------------------------------------------------------===//
+  // Expression Parsing Callbacks.
+  //===--------------------------------------------------------------------===//
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
   typedef uintptr_t ParsingDeclStackState;
 
@@ -1388,23 +1421,23 @@ public:
 
   /// ActOnBlockStart - This callback is invoked when a block literal is
   /// started.  The result pointer is passed into the block finalizers.
-  virtual void ActOnBlockStart(SourceLocation CaretLoc, Scope *CurScope) {}
+  //virtual void ActOnBlockStart(SourceLocation CaretLoc, Scope *CurScope) {}
 
   /// ActOnBlockArguments - This callback allows processing of block arguments.
   /// If there are no arguments, this is still invoked.
-  virtual void ActOnBlockArguments(Declarator &ParamInfo, Scope *CurScope) {}
+  //virtual void ActOnBlockArguments(Declarator &ParamInfo, Scope *CurScope) {}
 
   /// ActOnBlockError - If there is an error parsing a block, this callback
   /// is invoked to pop the information about the block from the action impl.
-  virtual void ActOnBlockError(SourceLocation CaretLoc, Scope *CurScope) {}
+  //virtual void ActOnBlockError(SourceLocation CaretLoc, Scope *CurScope) {}
 
   /// ActOnBlockStmtExpr - This is called when the body of a block statement
   /// literal was successfully completed.  ^(int x){...}
-  virtual OwningExprResult ActOnBlockStmtExpr(SourceLocation CaretLoc,
-                                              StmtArg Body,
-                                              Scope *CurScope) {
-    return ExprEmpty();
-  }
+  //virtual OwningExprResult ActOnBlockStmtExpr(SourceLocation CaretLoc,
+                                              //StmtArg Body,
+                                              //Scope *CurScope) {
+    //return ExprEmpty();
+  //}
 
   //===------------------------- C++ Declarations -------------------------===//
 

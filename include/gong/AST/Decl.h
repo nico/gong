@@ -30,11 +30,11 @@
 
 namespace gong {
 class ASTContext;
+class BlockStmt;
 class IdentifierInfo;
 #if 0
 struct ASTTemplateArgumentListInfo;
 class CXXTemporary;
-class CompoundStmt;
 class DependentFunctionTemplateSpecializationInfo;
 class Expr;
 class FunctionTemplateDecl;
@@ -1814,21 +1814,14 @@ public:
     const FunctionDecl* Definition;
     return isDefined(Definition);
   }
+#endif
 
-  /// getBody - Retrieve the body (definition) of the function. The
-  /// function body might be in any of the (re-)declarations of this
-  /// function. The variant that accepts a FunctionDecl pointer will
-  /// set that function declaration to the actual declaration
-  /// containing the body (if there is one).
+  /// Retrieve the body (definition) of the function, if there is one.
   /// NOTE: For checking if there is a body, use hasBody() instead, to avoid
   /// unnecessary AST de-serialization of the body.
-  Stmt *getBody(const FunctionDecl *&Definition) const;
+  BlockStmt *getBody() const;
 
-  virtual Stmt *getBody() const {
-    const FunctionDecl* Definition;
-    return getBody(Definition);
-  }
-
+#if 0
   /// isThisDeclarationADefinition - Returns whether this specific
   /// declaration of the function is also a definition. This does not
   /// determine whether the function has been defined (e.g., in a

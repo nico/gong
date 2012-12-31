@@ -15,6 +15,7 @@
 #ifndef LLVM_GONG_SEMA_SEMA_H
 #define LLVM_GONG_SEMA_SEMA_H
 
+#include "gong/AST/Stmt.h"
 #include "gong/Basic/Diagnostic.h"
 #include "gong/Sema/IdentifierResolver.h"
 #include "gong/Parse/Action.h"
@@ -139,7 +140,6 @@ class LookupResult;
   class PseudoObjectExpr;
   class QualType;
   class StandardConversionSequence;
-  class Stmt;
   class StringLiteral;
   class SwitchStmt;
   class TargetAttributesSema;
@@ -846,6 +846,24 @@ public:
   DiagnosticBuilder Diag(SourceLocation Loc, unsigned DiagID) {
     return Diags.Report(Loc, DiagID);
   }
+
+  void DeleteExpr(ExprTy *E) LLVM_OVERRIDE;
+  void DeleteStmt(StmtTy *S) LLVM_OVERRIDE;
+
+  //OwningExprResult Owned(Expr* E) {
+    //assert(!E || E->isRetained());
+    //return OwningExprResult(*this, E);
+  //}
+  //OwningExprResult Owned(ExprResult R) {
+    //if (R.isInvalid())
+      //return ExprError();
+    //assert(!R.get() || ((Expr*) R.get())->isRetained());
+    //return OwningExprResult(*this, R.get());
+  //}
+  OwningStmtResult Owned(Stmt* S) {
+    //assert(!S || S->isRetained());
+    return OwningStmtResult(*this, S);
+  }
 #if 0
 
   /// \brief Emit a partial diagnostic.
@@ -859,10 +877,6 @@ public:
   /// \brief Get a string to suggest for zero-initialization of a type.
   std::string getFixItZeroInitializerForType(QualType T) const;
   std::string getFixItZeroLiteralForType(QualType T) const;
-
-  ExprResult Owned(Expr* E) { return E; }
-  ExprResult Owned(ExprResult R) { return R; }
-  StmtResult Owned(Stmt* S) { return S; }
 
   void ActOnEndOfTranslationUnit();
 
@@ -1430,7 +1444,8 @@ public:
                                           const Preprocessor &PP);
 
 #endif
-  /// Scope actions.
+  //===--------------------------------------------------------------------===//
+  // Symbol table / Decl tracking callbacks: SemaDecl.cpp.
 
   void ActOnImportSpec(SourceLocation PathLoc, StringRef ImportPath,
                        IdentifierInfo *LocalName,
@@ -1457,8 +1472,14 @@ public:
   void ActOnStartOfFunctionDef(DeclPtrTy Fun, Scope *FnBodyScope) LLVM_OVERRIDE;
   void ActOnFinishFunctionBody(DeclPtrTy Decl/*, StmtArg Body*/) LLVM_OVERRIDE;
 
+  /// Scope actions.
   void ActOnPopScope(SourceLocation Loc, Scope *S) LLVM_OVERRIDE;
   void ActOnTranslationUnitScope(Scope *S) LLVM_OVERRIDE;
+
+  //===--------------------------------------------------------------------===//
+  // Statement Parsing Callbacks: SemaStmt.cpp.
+  OwningStmtResult ActOnBlockStmt(SourceLocation L, SourceLocation R,
+                                  MultiStmtArg Elts) LLVM_OVERRIDE;
 #if 0
 
   Decl *ParsedFreeStandingDeclSpec(Scope *S, AccessSpecifier AS,
