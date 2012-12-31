@@ -77,7 +77,6 @@ Parser::ParseRHSOfBinaryExpression(OwningExprResult LHS, prec::Level MinPrec,
                                    TypeSwitchGuardParam *TSGOpt,
                                    bool *SawIdentifierOnly) {
   prec::Level NextTokPrec = getBinOpPrecedence(Tok.getKind());
-  SourceLocation ColonLoc;
 
   while (1) {
     // If this token has a lower precedence than we are allowed to parse (e.g.
@@ -92,7 +91,7 @@ Parser::ParseRHSOfBinaryExpression(OwningExprResult LHS, prec::Level MinPrec,
       TSGOpt->Reset(*this);
 
     // Consume the operator, saving the operator token for error reporting.
-    //Token OpToken = Tok;  // FIXME
+    Token OpToken = Tok;
     ConsumeToken();
 
     // Parse another leaf here for the RHS of the operator.
@@ -125,8 +124,8 @@ Parser::ParseRHSOfBinaryExpression(OwningExprResult LHS, prec::Level MinPrec,
 
     if (!LHS.isInvalid()) {
       // Combine the LHS and RHS into the LHS (e.g. build AST).
-      //LHS = Actions.ActOnBinOp(getCurScope(), OpToken.getLocation(),
-                               //OpToken.getKind(), LHS.take(), RHS.take());
+      LHS = Actions.ActOnBinaryOp(move(LHS), OpToken.getLocation(),
+                                  OpToken.getKind(), move(RHS));
     }
   }
 }

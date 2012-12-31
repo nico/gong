@@ -618,7 +618,6 @@ public:
   //===--------------------------------------------------------------------===//
 
   // FIXME: actions for:
-  // binary ops
   // basic literals
   // composite literals
   // function literals
@@ -644,6 +643,20 @@ public:
     return ExprEmpty();
   }
 
+  /// \brief Parsed a binary operator.
+  ///
+  /// \param LHS the left-hand side of the operator.
+  ///
+  /// \param OpLoc the location of the binary operator.
+  ///
+  /// \param Op the operator kind, one of ||, &&, ==, !=, <, <=, >, >=, +, -, |,
+  //  ^, *, /, %, <<, >>, &, &^.
+  ///
+  /// \param RHS the right-hand side of the binary operator.
+  virtual OwningExprResult ActOnBinaryOp(ExprArg LHS, SourceLocation OpLoc,
+                                         tok::TokenKind Op, ExprArg RHS) {
+    return ExprEmpty();
+  }
 
 
 
@@ -1344,12 +1357,6 @@ public:
 
   virtual bool TypeIsVectorType(TypeTy *Ty) {
     return false;
-  }
-
-  virtual OwningExprResult ActOnBinOp(Scope *S, SourceLocation TokLoc,
-                                      tok::TokenKind Kind,
-                                      ExprArg LHS, ExprArg RHS) {
-    return ExprEmpty();
   }
 
   /// ActOnConditionalOp - Parse a ?: operation.  Note that 'LHS' may be null
