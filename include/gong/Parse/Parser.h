@@ -304,8 +304,18 @@ public:
   ExprResult ParseElementList();
   ExprResult ParseElement();
   ExprResult ParseFunctionLitOrConversion(TypeParam *TOpt);
-  ExprResult ParseExpressionList(TypeSwitchGuardParam *TSGOpt = NULL);
-  ExprResult ParseExpressionListTail(ExprResult &LHS, bool *SawIdentifierOnly);
+
+  // FIXME: create ExprList class
+  typedef Action::ExprTy ExprTy;
+  static const unsigned ExprListSize = 12;
+  typedef llvm::SmallVector<ExprTy*, ExprListSize> ExprListTy;
+  typedef llvm::SmallVector<SourceLocation, ExprListSize> CommaLocsTy;
+
+  // FIXME: These two should likely not return ExprResult.
+  ExprResult ParseExpressionList(ExprListTy &Exprs,
+                                 TypeSwitchGuardParam *TSGOpt = NULL);
+  ExprResult ParseExpressionListTail(ExprResult &LHS, bool *SawIdentifierOnly,
+                                     ExprListTy &Exprs);
 
 
   // Statements
@@ -352,7 +362,8 @@ public:
                                                       bool SawIdentifiersOnly);
 
   bool ParseShortVarDeclTail(TypeSwitchGuardParam *TSGOpt = NULL);
-  bool ParseAssignmentTail(tok::TokenKind Op);
+  OwningStmtResult ParseAssignmentTail(SourceLocation OpLoc, tok::TokenKind Op,
+                                       ExprVector &LHSs);
   OwningStmtResult ParseIncDecStmtTail(ExprResult &LHS);
   OwningStmtResult ParseSendStmtTail(ExprResult &LHS);
   OwningStmtResult ParseLabeledStmtTail(SourceLocation IILoc,

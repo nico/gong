@@ -181,10 +181,11 @@ Parser::ParseSimpleStmtTailAfterExpression(ExprResult &LHS,
   // TypeSwitchGuards when destructed unless it's explicitly disarm()ed.
   TypeSwitchGuardParamRAII OptRAII(this, Opt, OutKind);
 
-  bool SawComma = Tok.is(tok::comma);
-  ParseExpressionListTail(LHS, &SawIdentifiersOnly);
 
-  if (SawComma) {
+  if (Tok.is(tok::comma)) {
+    ExprVector Exprs(Actions);
+    ParseExpressionListTail(LHS, &SawIdentifiersOnly, Exprs);
+
     // If it's followed by ':=', this is a ShortVarDecl or a RangeClause (the
     // only statements starting with an identifier list).
     // If it's followed by '=', this is an Assignment or a RangeClause (the
@@ -201,7 +202,7 @@ Parser::ParseSimpleStmtTailAfterExpression(ExprResult &LHS,
     }
 
     tok::TokenKind Op = Tok.getKind();
-    SourceLocation OpLocation = ConsumeToken();
+    SourceLocation OpLoc = ConsumeToken();
 
     if (Tok.is(tok::kw_range))
       return ParseRangeClauseTail(Op, OutKind, Ext) ? StmtError()
@@ -221,25 +222,26 @@ Parser::ParseSimpleStmtTailAfterExpression(ExprResult &LHS,
     // So expect a '=' for an assignment -- assignment operations (+= etc)
     // aren't permitted after an expression list.
     if (Op != tok::equal) {
-      Diag(OpLocation, diag::expected_equal);
+      Diag(OpLoc, diag::expected_equal);
       SkipUntil(tok::semi, tok::l_brace,
                 /*StopAtSemi=*/false, /*DontConsume=*/true);
       return StmtError();
     }
-    return ParseAssignmentTail(tok::equal) ? StmtError()
-           : Actions.StmtEmpty();  // FIXME
+    return ParseAssignmentTail(OpLoc, tok::equal, Exprs);
   }
 
   if (IsAssignmentOp(Tok.getKind())) {
     tok::TokenKind Op = Tok.getKind();
-    ConsumeToken();
+    SourceLocation OpLoc = ConsumeToken();
     if (Tok.is(tok::kw_range))
       return ParseRangeClauseTail(tok::colonequal, OutKind, Ext) ? StmtError()
              : Actions.StmtEmpty();  // FIXME
     // FIXME: if Op is '=' and the expression a TypeSwitchGuard, provide fixit
     // to turn '=' into ':='.
-    return ParseAssignmentTail(Op) ? StmtError() :
-                                     Actions.StmtEmpty();  // FIXME
+    ExprVector LHSs(Actions);
+    OwningExprResult OwnLHS(Actions, LHS);  // FIXME
+    LHSs.push_back(OwnLHS.release());
+    return ParseAssignmentTail(OpLoc, Op, LHSs);
   }
 
   if (Tok.is(tok::colonequal)) {
@@ -275,7 +277,8 @@ Parser::ParseSimpleStmtTailAfterExpression(ExprResult &LHS,
 /// This is called after the ':=' has been read.
 /// ShortVarDecl = IdentifierList ":=" ExpressionList .
 bool Parser::ParseShortVarDeclTail(TypeSwitchGuardParam *Opt) {
-  return ParseExpressionList(Opt).isInvalid();
+  ExprVector RHSs(Actions);  // FIXME: use
+  return ParseExpressionList(RHSs, Opt).isInvalid();
 }
 
 /// This is called after the assign_op has been read.
@@ -283,9 +286,13 @@ bool Parser::ParseShortVarDeclTail(TypeSwitchGuardParam *Opt) {
 /// 
 /// assign_op = [ add_op | mul_op ] "=" .
 /// The op= construct is a single token.
-bool Parser::ParseAssignmentTail(tok::TokenKind Op) {
+Action::OwningStmtResult Parser::ParseAssignmentTail(SourceLocation OpLoc,
+                                                     tok::TokenKind Op,
+                                                     ExprVector &LHSs) {
   assert(IsAssignmentOp(Op) && "expected assignment op");
-  return ParseExpressionList().isInvalid();
+  ExprVector RHSs(Actions);
+  ParseExpressionList(RHSs);
+  return Actions.ActOnAssignmentStmt(move_arg(LHSs), OpLoc, Op, move_arg(RHSs));
 }
 
 /// This is called after the lhs expression has been read.
@@ -344,9 +351,9 @@ Action::OwningStmtResult Parser::ParseReturnStmt() {
   assert(Tok.is(tok::kw_return) && "expected 'return'");
   SourceLocation ReturnLoc = ConsumeToken();
 
-  ExprVector Exprs(Actions);  // FIXME: fill in
+  ExprVector Exprs(Actions);
   if (Tok.isNot(tok::semi))
-    ParseExpressionList();
+    ParseExpressionList(Exprs);
   return Actions.ActOnReturnStmt(ReturnLoc, move_arg(Exprs));
 }
 
@@ -570,8 +577,9 @@ bool Parser::ParseSwitchCase(CaseClauseType Type) {
     return false;
   }
   ConsumeToken();
+  ExprVector Exprs(Actions);  // FIXME: use
   switch (Type) {
-  case ExprCaseClause: return ParseExpressionList().isInvalid();
+  case ExprCaseClause: return ParseExpressionList(Exprs).isInvalid();
   case TypeCaseClause: return ParseTypeList();
   }
 }
@@ -662,7 +670,8 @@ bool Parser::ParseCommCase() {
   // This is a RecvStmt.
   bool FoundAssignOp = false;
   if (Tok.is(tok::comma)) {
-    LHS = ParseExpressionListTail(LHS, NULL);
+    ExprVector Exprs(Actions);
+    LHS = ParseExpressionListTail(LHS, NULL, Exprs);
 
     if (Tok.isNot(tok::equal) && Tok.isNot(tok::colonequal)) {
       Diag(Tok, diag::expected_colonequal_or_equal);

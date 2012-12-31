@@ -322,6 +322,24 @@ public:
     return StmtEmpty();
   }
 
+  /// \brief Parsed an Assignment, such as "a, b = c, d".
+  ///
+  /// \param LHSs the left-hand sides of the assignment.
+  ///
+  /// \param OpLoc the location of the assignment operator.
+  ///
+  /// \param OpKind the kind of operator, one of +=, -=, |=, ^=, *=, /=, %=,
+  //  <<=, >>=, &=, &^=, =.
+  ///
+  /// \param RHSs the right-hand sides of the assignment.
+  //FIXME: comma locs. Have an ExprList, similar to IdentList?
+  virtual OwningStmtResult ActOnAssignmentStmt(MultiExprArg LHSs,
+                                               SourceLocation OpLoc,
+                                               tok::TokenKind OpKind,
+                                               MultiExprArg RHSs) {
+    return StmtEmpty();
+  }
+
   /// \brief Parsed a SendStmt such as "a <- b".
   ///
   /// \param LHS the left-hand side of the send statement.
@@ -433,7 +451,6 @@ public:
   }
 
   // FIXME: actions for:
-  // assignment
   // shortvardecl
   // switchstmt
   // selectstmt

@@ -921,7 +921,8 @@ bool Parser::ParseConstSpec(Action::DeclPtrTy ConstDecl) {
     ConsumeToken();  // Eat '='.
   if (!IsExpression())
     return true;
-  return ParseExpressionList().isInvalid();
+  ExprVector Exprs(Actions);  // FIXME: use
+  return ParseExpressionList(Exprs).isInvalid();
 }
 
 /// TypeDecl     = "type" ( TypeSpec | "(" { TypeSpec ";" } ")" ) .
@@ -995,7 +996,8 @@ bool Parser::ParseVarSpec(Action::DeclPtrTy VarDecl) {
     Diag(Tok, diag::expected_equal);
   else
     ConsumeToken();  // Eat '='.
-  return ParseExpressionList().isInvalid();
+  ExprVector Exprs(Actions);  // FIXME: use
+  return ParseExpressionList(Exprs).isInvalid();
 }
 
 Action::DeclPtrTy Parser::ParseDeclGroup(DeclGroupKind Kind,

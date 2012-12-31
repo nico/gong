@@ -423,6 +423,7 @@ Document ownership model.
 
   move()
   move_arg()
+    ExprVector -> MultiExprArg
   release()
 
 types/exprs in ()

@@ -325,7 +325,8 @@ Parser::ParsePrimaryExprTail(IdentifierInfo *II, bool *SawIdentifierOnly) {
       // '.(type)'.
       // FIXME This is not true if the builtin is shadowed.
       ExprResult LHS = ParseExpression(NULL, &TypeOpt);
-      ParseExpressionListTail(LHS, NULL);
+      ExprVector Exprs(Actions);
+      ParseExpressionListTail(LHS, NULL, Exprs);
       if (Tok.is(tok::ellipsis))
         ConsumeToken();
       if (Tok.is(tok::comma))
@@ -497,7 +498,8 @@ Parser::ParseCallSuffix(ExprResult &LHS) {
   BalancedDelimiterTracker T(*this, tok::l_paren);
   T.consumeOpen();
   if (Tok.isNot(tok::r_paren)) {
-    ParseExpressionList();
+    ExprVector Args(Actions);
+    ParseExpressionList(Args);
     if (Tok.is(tok::ellipsis))
       ConsumeToken();
     if (Tok.is(tok::comma))
@@ -665,16 +667,20 @@ Parser::ParseFunctionLitOrConversion(TypeParam *TOpt) {
 
 /// ExpressionList = Expression { "," Expression } .
 Action::ExprResult
-Parser::ParseExpressionList(TypeSwitchGuardParam *TSGOpt) {
+Parser::ParseExpressionList(ExprListTy &Exprs, TypeSwitchGuardParam *TSGOpt) {
   ExprResult LHS = ParseExpression(TSGOpt);
   if (Tok.is(tok::comma) && TSGOpt)
     TSGOpt->Reset(*this);
-  return ParseExpressionListTail(LHS, NULL);
+  return ParseExpressionListTail(LHS, NULL, Exprs);
 }
 
 /// This is called after the initial Expression in ExpressionList has been read.
 Action::ExprResult
-Parser::ParseExpressionListTail(ExprResult &LHS, bool *SawIdentifiersOnly) {
+Parser::ParseExpressionListTail(ExprResult &LHS, bool *SawIdentifiersOnly,
+                                ExprListTy &Exprs) {
+  OwningExprResult OwnLHS(Actions, LHS);
+  Exprs.push_back(OwnLHS.release());  // FIXME
+
   while (Tok.is(tok::comma)) {
     ConsumeToken();
 
