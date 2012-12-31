@@ -354,7 +354,9 @@ public:
   bool ParseAssignmentTail(tok::TokenKind Op);
   bool ParseIncDecStmtTail(ExprResult &LHS);
   bool ParseSendStmtTail(ExprResult &LHS);
-  bool ParseLabeledStmtTail(IdentifierInfo *II);
+  OwningStmtResult ParseLabeledStmtTail(SourceLocation IILoc,
+                                        IdentifierInfo *II);
+  OwningStmtResult ParseDeclarationStmt();
   OwningStmtResult ParseGoStmt();
   OwningStmtResult ParseReturnStmt();
   OwningStmtResult ParseBreakStmt();

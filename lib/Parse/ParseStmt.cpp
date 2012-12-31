@@ -30,7 +30,7 @@ bool Parser::ParseStatement() {
   switch (Tok.getKind()) {
   case tok::kw_const:
   case tok::kw_type:
-  case tok::kw_var:         return ParseDeclaration();
+  case tok::kw_var:         return ParseDeclarationStmt().isInvalid();
   case tok::kw_go:          return ParseGoStmt().isInvalid();
   case tok::kw_return:      return ParseReturnStmt().isInvalid();
   case tok::kw_break:       return ParseBreakStmt().isInvalid();
@@ -49,9 +49,9 @@ bool Parser::ParseStatement() {
 
   case tok::identifier: {
     IdentifierInfo *II = Tok.getIdentifierInfo();
-    ConsumeToken();
+    SourceLocation IILoc = ConsumeToken();
     if (Tok.is(tok::colon))
-      return ParseLabeledStmtTail(II);
+      return ParseLabeledStmtTail(IILoc, II).isInvalid();
     return ParseSimpleStmtTail(II);
   }
 
@@ -300,10 +300,19 @@ bool Parser::ParseSendStmtTail(ExprResult &LHS) {
 /// This is called after the label identifier has been read.
 /// LabeledStmt = Label ":" Statement .
 /// Label       = identifier .
-bool Parser::ParseLabeledStmtTail(IdentifierInfo *II) {
+Action::OwningStmtResult Parser::ParseLabeledStmtTail(SourceLocation IILoc,
+                                                      IdentifierInfo *II) {
   assert(Tok.is(tok::colon) && "expected ':'");
-  ConsumeToken();
-  return ParseStatement();
+  SourceLocation ColonLoc = ConsumeToken();
+  // FIXME: Build AST
+  (void)ColonLoc;
+  return ParseStatement() ? StmtError() : Actions.StmtEmpty();  // FIXME
+}
+
+/// An adapter function to parse a Declaration in a statement context.
+Action::OwningStmtResult Parser::ParseDeclarationStmt() {
+  // FIXME: Build AST.
+  return ParseDeclaration() ? StmtError() : Actions.StmtEmpty();
 }
 
 /// GoStmt = "go" Expression .
