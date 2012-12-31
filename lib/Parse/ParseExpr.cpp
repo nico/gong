@@ -486,19 +486,38 @@ Parser::ParseIndexOrSliceSuffix(OwningExprResult LHS) {
     return ExprError();
   }
 
-  if (Tok.isNot(tok::colon))
-    ParseExpression();
+  OwningExprResult FirstExpr(Actions);
+  if (Tok.isNot(tok::colon)) {
+    FirstExpr = ParseExpression();
 
-  if (Tok.is(tok::colon)) {
-    ConsumeToken();
-    if (Tok.isNot(tok::r_square))
-      ParseExpression();
+    if (Tok.is(tok::r_square)) {
+      // It's an Index expression.
+      T.consumeClose();
+      if (LHS.isInvalid() || FirstExpr.isInvalid())
+        return ExprError();
+      return Actions.ActOnIndexExpr(LHS, T.getOpenLocation(), FirstExpr,
+                                    T.getCloseLocation());
+    }
+    if (Tok.isNot(tok::colon)) {
+      Diag(Tok, diag::expected_r_square_or_colon);
+      return ExprError();
+    }
   }
 
-  // FIXME: This prints "expected ']'", but a ':' is sometimes ok too
-  // (after "[1" for example).
-  T.consumeClose();
-  return LHS;
+  // It's a Slice expression, and the current token is ':'.
+  assert(Tok.is(tok::colon));
+  SourceLocation ColonLoc = ConsumeToken();
+
+  OwningExprResult SecondExpr(Actions);
+  if (Tok.isNot(tok::r_square))
+    SecondExpr = ParseExpression();
+
+  if (T.consumeClose() || LHS.isInvalid() || FirstExpr.isInvalid() ||
+      SecondExpr.isInvalid())
+    return ExprError();
+
+  return Actions.ActOnSliceExpr(LHS, T.getOpenLocation(), FirstExpr, ColonLoc,
+                                SecondExpr, T.getCloseLocation());
 }
 
 /// Call           = "(" [ ArgumentList [ "," ] ] ")" .

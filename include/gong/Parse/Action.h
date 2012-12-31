@@ -678,7 +678,40 @@ public:
     return move(Expr);  // Default impl returns operand.
   }
 
+  /// \brief Parse an index suffix expression, such as "a[foo]".
+  ///
+  /// \param Base the expression that's being indexed.
+  ///
+  /// \param L the location of the opening '['.
+  ///
+  /// \param Idx the expression in brackets.
+  ///
+  /// \param R the location of the closing ']'.
+  virtual OwningExprResult ActOnIndexExpr(ExprArg Base, SourceLocation L,
+                                          ExprArg Idx, SourceLocation R) {
+    return ExprEmpty();
+  }
 
+  /// \brief Parse a slice suffix expression, such as "a[4:5]" or "b[:]".
+  ///
+  /// \param Base the expression that's being sliced.
+  ///
+  /// \param L the location of the opening '['.
+  ///
+  /// \param FirstExpr the optional expression before the ':'.
+  ///
+  /// \param ColonLoc the location of the ':'.
+  ///
+  /// \param SecondExpr the optional expression after the ':'.
+  ///
+  /// \param R the location of the closing ']'.
+  virtual OwningExprResult ActOnSliceExpr(ExprArg Base, SourceLocation L,
+                                          ExprArg FirstExpr,
+                                          SourceLocation ColonLoc,
+                                          ExprArg SecondExpr,
+                                          SourceLocation R) {
+    return ExprEmpty();
+  }
 
 
 
@@ -1274,17 +1307,6 @@ public:
   }
 
   // Postfix Expressions.
-  virtual OwningExprResult ActOnPostfixUnaryOp(Scope *S, SourceLocation OpLoc,
-                                               tok::TokenKind Kind,
-                                               ExprArg Input) {
-    return ExprEmpty();
-  }
-  virtual OwningExprResult ActOnArraySubscriptExpr(Scope *S, ExprArg Base,
-                                                   SourceLocation LLoc,
-                                                   ExprArg Idx,
-                                                   SourceLocation RLoc) {
-    return ExprEmpty();
-  }
 
   /// \brief Parsed a member access expresion (C99 6.5.2.3, C++ [expr.ref])
   /// of the form \c x.m or \c p->m.
