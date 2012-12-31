@@ -319,6 +319,38 @@ public:
     return StmtEmpty();
   }
 
+  /// \brief Parsed a "break" statement.
+  ///
+  /// \param BreakLoc the location of the "break" keyword.
+  ///
+  /// \param LabelLoc the location of the optional break label.
+  ///
+  /// \param Label the optional break label.
+  ///
+  /// \param CurScope the current scope.
+  virtual OwningStmtResult ActOnBreakStmt(SourceLocation BreakLoc,
+                                          SourceLocation LabelLoc,
+                                          IdentifierInfo *Label,
+                                          Scope *CurScope) {
+    return StmtEmpty();
+  }
+
+  /// \brief Parsed a "continue" statement.
+  ///
+  /// \param ContinueLoc the location of the "continue" keyword.
+  ///
+  /// \param LabelLoc the location of the optional continue label.
+  ///
+  /// \param Label the optional continue label.
+  ///
+  /// \param CurScope the current scope.
+  virtual OwningStmtResult ActOnContinueStmt(SourceLocation ContinueLoc,
+                                             SourceLocation LabelLoc,
+                                             IdentifierInfo *Label,
+                                             Scope *CurScope) {
+    return StmtEmpty();
+  }
+
   /// \brief Parsed an "if" statement.
   ///
   /// Example: "if b := f(); b {} else {}"
@@ -1069,14 +1101,6 @@ public:
   virtual OwningStmtResult ActOnIndirectGotoStmt(SourceLocation GotoLoc,
                                                  SourceLocation StarLoc,
                                                  ExprArg DestExp) {
-    return StmtEmpty();
-  }
-  virtual OwningStmtResult ActOnContinueStmt(SourceLocation ContinueLoc,
-                                             Scope *CurScope) {
-    return StmtEmpty();
-  }
-  virtual OwningStmtResult ActOnBreakStmt(SourceLocation GotoLoc,
-                                          Scope *CurScope) {
     return StmtEmpty();
   }
   virtual OwningStmtResult ActOnAsmStmt(SourceLocation AsmLoc,

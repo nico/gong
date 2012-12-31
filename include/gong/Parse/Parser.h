@@ -357,8 +357,8 @@ public:
   bool ParseLabeledStmtTail(IdentifierInfo *II);
   OwningStmtResult ParseGoStmt();
   OwningStmtResult ParseReturnStmt();
-  bool ParseBreakStmt();
-  bool ParseContinueStmt();
+  OwningStmtResult ParseBreakStmt();
+  OwningStmtResult ParseContinueStmt();
   bool ParseGotoStmt();
   bool ParseFallthroughStmt();
   OwningStmtResult ParseIfStmt();

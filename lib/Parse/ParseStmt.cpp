@@ -33,8 +33,8 @@ bool Parser::ParseStatement() {
   case tok::kw_var:         return ParseDeclaration();
   case tok::kw_go:          return ParseGoStmt().isInvalid();
   case tok::kw_return:      return ParseReturnStmt().isInvalid();
-  case tok::kw_break:       return ParseBreakStmt();
-  case tok::kw_continue:    return ParseContinueStmt();
+  case tok::kw_break:       return ParseBreakStmt().isInvalid();
+  case tok::kw_continue:    return ParseContinueStmt().isInvalid();
   case tok::kw_goto:        return ParseGotoStmt();
   case tok::kw_fallthrough: return ParseFallthroughStmt();
   case tok::l_brace:        return ParseBlock().isInvalid();
@@ -326,21 +326,31 @@ Action::OwningStmtResult Parser::ParseReturnStmt() {
 }
 
 /// BreakStmt = "break" [ Label ] .
-bool Parser::ParseBreakStmt() {
+Action::OwningStmtResult Parser::ParseBreakStmt() {
   assert(Tok.is(tok::kw_break) && "expected 'break'");
-  ConsumeToken();
-  if (Tok.is(tok::identifier))
-    ConsumeToken();
-  return false;
+  SourceLocation BreakLoc = ConsumeToken();
+
+  SourceLocation IILoc;
+  IdentifierInfo *II = NULL;
+  if (Tok.is(tok::identifier)) {
+    IILoc = ConsumeToken();
+    II = Tok.getIdentifierInfo();
+  }
+  return Actions.ActOnBreakStmt(BreakLoc, IILoc, II, getCurScope());
 }
 
 /// ContinueStmt = "continue" [ Label ] .
-bool Parser::ParseContinueStmt() {
+Action::OwningStmtResult Parser::ParseContinueStmt() {
   assert(Tok.is(tok::kw_continue) && "expected 'continue'");
-  ConsumeToken();
-  if (Tok.is(tok::identifier))
-    ConsumeToken();
-  return true;
+  SourceLocation ContinueLoc = ConsumeToken();
+
+  SourceLocation IILoc;
+  IdentifierInfo *II = NULL;
+  if (Tok.is(tok::identifier)) {
+    IILoc = ConsumeToken();
+    II = Tok.getIdentifierInfo();
+  }
+  return Actions.ActOnContinueStmt(ContinueLoc, IILoc, II, getCurScope());
 }
 
 /// GotoStmt = "goto" Label .
