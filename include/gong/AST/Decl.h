@@ -1613,7 +1613,10 @@ private:
   llvm::ArrayRef<NamedDecl*> DeclsInPrototypeScope;
 
   LazyDeclStmtPtr Body;
+#endif
+  BlockStmt *Body;
 
+#if 0
   // FIXME: This can be packed into the bitfields in Decl.
   // NOTE: VC++ treats enums as signed, avoid using the StorageClass enum
   unsigned SClass : 2;
@@ -1711,10 +1714,11 @@ protected:
                QualType T, TypeSourceInfo *TInfo,
                StorageClass S, StorageClass SCAsWritten, bool isInlineSpecified,
                bool isConstexprSpecified*/)
-    : /*DeclaratorDecl(DK, DC, NameInfo.getLoc(), NameInfo.getName(), T, TInfo,
+    : NamedDecl(DK, DC, NameLoc, Name), DeclContext(DK),
+    /*DeclaratorDecl(DK, DC, NameInfo.getLoc(), NameInfo.getName(), T, TInfo,
                      StartLoc),
       DeclContext(DK),
-      ParamInfo(0), Body(),
+      ParamInfo(0),*/ Body()/*,
       SClass(S), SClassAsWritten(SCAsWritten),
       IsInline(isInlineSpecified), IsInlineSpecified(isInlineSpecified),
       IsVirtualAsWritten(false), IsPure(false), HasInheritedPrototype(false),
@@ -1725,7 +1729,7 @@ protected:
       EndRangeLoc(NameInfo.getEndLoc()),
       TemplateOrSpecialization(),
       DNLoc(NameInfo.getInfo())*/
-      NamedDecl(DK, DC, NameLoc, Name), DeclContext(DK) {}
+      {}
 
 #if 0
   typedef Redeclarable<FunctionDecl> redeclarable_base;
@@ -1838,8 +1842,11 @@ public:
   bool doesThisDeclarationHaveABody() const {
     return Body || IsLateTemplateParsed;
   }
+#endif
 
-  void setBody(Stmt *B);
+  void setBody(BlockStmt *B) { Body = B; }
+
+#if 0
   void setLazyBody(uint64_t Offset) { Body = Offset; }
 
   /// Whether this function is variadic.

@@ -1512,14 +1512,16 @@ void Sema::ActOnStartOfFunctionDef(DeclPtrTy Fun, Scope *FnBodyScope) {
 #endif
 }
 
-void Sema::ActOnFinishFunctionBody(DeclPtrTy Fun, StmtArg Body) {
+void Sema::ActOnFinishFunctionBody(DeclPtrTy Fun, StmtArg BodyArg) {
+  BlockStmt *Body = cast<BlockStmt>(static_cast<Stmt*>(BodyArg.release()));
+
   if (!Fun)
     return;
   FunctionDecl *FD = Fun.getAs<FunctionDecl>();
 
-#if 0
   FD->setBody(Body);
 
+#if 0
   if (!FD->isInvalidDecl()) {
     DiagnoseUnusedParameters(FD->param_begin(), FD->param_end());
     DiagnoseSizeOfParametersAndReturnValue(FD->param_begin(), FD->param_end(),
