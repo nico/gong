@@ -213,8 +213,7 @@ Parser::ParseSimpleStmtTailAfterExpression(ExprResult &LHS,
         // FIXME: fixit
         Diag(Tok, diag::expected_equal);
       }
-      return ParseShortVarDeclTail() ? StmtError()
-             : Actions.StmtEmpty();  // FIXME
+      return ParseShortVarDeclTail(Exprs, OpLoc);
     }
 
     // "In assignment operations, both the left- and right-hand expression
@@ -245,7 +244,7 @@ Parser::ParseSimpleStmtTailAfterExpression(ExprResult &LHS,
   }
 
   if (Tok.is(tok::colonequal)) {
-    ConsumeToken();
+    SourceLocation OpLoc = ConsumeToken();
     if (Tok.is(tok::kw_range))
       return ParseRangeClauseTail(tok::colonequal, OutKind, Ext) ? StmtError()
              : Actions.StmtEmpty();  // FIXME
@@ -254,9 +253,12 @@ Parser::ParseSimpleStmtTailAfterExpression(ExprResult &LHS,
       // only if Result != Parser::TypeSwitchGuardParam::Parsed 
       Diag(StartLoc, diag::invalid_expr_left_of_colonequal);
     }
-    bool Result = ParseShortVarDeclTail(Opt);
+    ExprVector LHSs(Actions);
+    OwningExprResult OwnLHS(Actions, LHS);  // FIXME
+    LHSs.push_back(OwnLHS.release());
+    OwningStmtResult Result(ParseShortVarDeclTail(LHSs, OpLoc, Opt));
     OptRAII.disarm();
-    return Result ? StmtError() : Actions.StmtEmpty();  // FIXME
+    return Result;
   }
 
   if (Tok.is(tok::plusplus) || Tok.is(tok::minusminus))
@@ -276,9 +278,12 @@ Parser::ParseSimpleStmtTailAfterExpression(ExprResult &LHS,
 
 /// This is called after the ':=' has been read.
 /// ShortVarDecl = IdentifierList ":=" ExpressionList .
-bool Parser::ParseShortVarDeclTail(TypeSwitchGuardParam *Opt) {
-  ExprVector RHSs(Actions);  // FIXME: use
-  return ParseExpressionList(RHSs, Opt).isInvalid();
+Action::OwningStmtResult
+Parser::ParseShortVarDeclTail(ExprVector &LHSs, SourceLocation OpLoc,
+                              TypeSwitchGuardParam *Opt) {
+  ExprVector RHSs(Actions);
+  ParseExpressionList(RHSs, Opt);
+  return Actions.ActOnShortVarDeclStmt(move_arg(LHSs), OpLoc, move_arg(RHSs));
 }
 
 /// This is called after the assign_op has been read.

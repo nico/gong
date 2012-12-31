@@ -361,7 +361,8 @@ public:
                                                       SimpleStmtExts Ext,
                                                       bool SawIdentifiersOnly);
 
-  bool ParseShortVarDeclTail(TypeSwitchGuardParam *TSGOpt = NULL);
+  OwningStmtResult ParseShortVarDeclTail(ExprVector &LHSs, SourceLocation OpLoc,
+                                         TypeSwitchGuardParam *TSGOpt = NULL);
   OwningStmtResult ParseAssignmentTail(SourceLocation OpLoc, tok::TokenKind Op,
                                        ExprVector &LHSs);
   OwningStmtResult ParseIncDecStmtTail(ExprResult &LHS);

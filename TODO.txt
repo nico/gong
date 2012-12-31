@@ -426,6 +426,10 @@ Document ownership model.
     ExprVector -> MultiExprArg
   release()
 
+ExprArg vs FullExprArg (the latter is "complete" -- in go, I guess that means
+resolved variables. "a, b := c, d" shouldn't complain about a, b being unknown.)
+  => but could just make parser smarter, than this is probably not needed
+
 types/exprs in ()
 (*TypeName) in MethodExprs
 *foo() vs (*foo)()

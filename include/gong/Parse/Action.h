@@ -322,7 +322,7 @@ public:
     return StmtEmpty();
   }
 
-  /// \brief Parsed an Assignment, such as "a, b = c, d".
+  /// \brief Parsed an Assignment, such as "a, b[i] = c(), d[j]".
   ///
   /// \param LHSs the left-hand sides of the assignment.
   ///
@@ -337,6 +337,22 @@ public:
                                                SourceLocation OpLoc,
                                                tok::TokenKind OpKind,
                                                MultiExprArg RHSs) {
+    return StmtEmpty();
+  }
+
+  /// \brief Parsed an ShortVarDecl, such as "a, b := c(), d[j]".
+  ///
+  /// \param LHSs the left-hand sides of the assignment.  All expressions in
+  /// this list will be simple identifiers.
+  /// FIXME: ensmarten parser so that it can pass an IdentifierList.
+  ///
+  /// \param OpLoc the location of the ':=' operator.
+  ///
+  /// \param RHSs the right-hand sides of the assignment.
+  //FIXME: comma locs. Have an ExprList, similar to IdentList?
+  virtual OwningStmtResult ActOnShortVarDeclStmt(MultiExprArg LHSs,
+                                                 SourceLocation OpLoc,
+                                                 MultiExprArg RHSs) {
     return StmtEmpty();
   }
 
@@ -451,7 +467,6 @@ public:
   }
 
   // FIXME: actions for:
-  // shortvardecl
   // switchstmt
   // selectstmt
   // forstmt
