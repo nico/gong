@@ -1512,7 +1512,7 @@ void Sema::ActOnStartOfFunctionDef(DeclPtrTy Fun, Scope *FnBodyScope) {
 #endif
 }
 
-void Sema::ActOnFinishFunctionBody(DeclPtrTy Fun/*, StmtArg Body*/) {
+void Sema::ActOnFinishFunctionBody(DeclPtrTy Fun, StmtArg Body) {
   if (!Fun)
     return;
   FunctionDecl *FD = Fun.getAs<FunctionDecl>();

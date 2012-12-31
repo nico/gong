@@ -181,7 +181,7 @@ public:
   bool ParseFunctionOrMethodDecl();
   bool ParseFunctionDecl(SourceLocation FuncLoc);
   bool ParseMethodDecl();
-  bool ParseBody() { return ParseBlock(); }
+  bool ParseBody() { return ParseBlock().isInvalid(); }
 
   /// Parses a function or method signature.
   bool ParseSignature();
@@ -374,8 +374,8 @@ public:
                             SimpleStmtExts Exts);
   bool ParseDeferStmt();
   bool ParseEmptyStmt();
-  bool ParseBlock();
-  bool ParseBlockBody();
+  OwningStmtResult ParseBlock();
+  OwningStmtResult ParseBlockBody();
 
   /// ConsumeToken - Consume the current 'peek token' and lex the next one.
   /// This does not work with all kinds of tokens: strings and specific other

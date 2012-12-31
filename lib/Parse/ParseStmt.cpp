@@ -37,7 +37,7 @@ bool Parser::ParseStatement() {
   case tok::kw_continue:    return ParseContinueStmt();
   case tok::kw_goto:        return ParseGotoStmt();
   case tok::kw_fallthrough: return ParseFallthroughStmt();
-  case tok::l_brace:        return ParseBlock();
+  case tok::l_brace:        return ParseBlock().isInvalid();
   case tok::kw_if:          return ParseIfStmt().isInvalid();
   case tok::kw_switch:      return ParseSwitchStmt();
   case tok::kw_select:      return ParseSelectStmt();
@@ -387,12 +387,11 @@ Parser::OwningStmtResult Parser::ParseIfStmt() {
   RequireParens.reset();
 
   // Read the 'then' stmt.
-  OwningStmtResult ThenStmt(Actions);  // FIXME: set this
   if (Tok.isNot(tok::l_brace)) {
     Diag(Tok, diag::expected_l_brace);
     return StmtError();
   }
-  bool Failed = ParseBlock();
+  OwningStmtResult ThenStmt(ParseBlock());
 
   // If it has an else, parse it.
   SourceLocation ElseLoc;
@@ -403,7 +402,7 @@ Parser::OwningStmtResult Parser::ParseIfStmt() {
     if (Tok.is(tok::kw_if))
       ElseStmt = ParseIfStmt();
     else if (Tok.is(tok::l_brace))
-      ElseStmt = ParseBlock() ? StmtError() : Actions.StmtEmpty();  // FIXME
+      ElseStmt = ParseBlock();
     else {
       Diag(Tok, diag::expected_if_or_l_brace);
       ElseStmt = StmtError();
@@ -662,7 +661,7 @@ bool Parser::ParseForStmt() {
 
   if (Tok.is(tok::l_brace)) {
     RequireParens.reset();
-    return ParseBlock();
+    return ParseBlock().isInvalid();  // FIXME
   }
 
   SourceLocation StmtLoc = Tok.getLocation();
@@ -701,7 +700,7 @@ bool Parser::ParseForStmt() {
     return true;
   }
   RequireParens.reset();
-  return ParseBlock();
+  return ParseBlock().isInvalid();  // FIXME
 }
 
 /// This is called when Tok points at "range".
@@ -742,13 +741,13 @@ bool Parser::ParseEmptyStmt() {
 }
 
 /// Block = "{" { Statement ";" } "}" .
-bool Parser::ParseBlock() {
+Action::OwningStmtResult Parser::ParseBlock() {
   // Enter a scope to hold everything within the block.
   ParseScope CompoundScope(this, Scope::DeclScope);
   return ParseBlockBody();
 }
 
-bool Parser::ParseBlockBody() {
+Action::OwningStmtResult Parser::ParseBlockBody() {
   assert(Tok.is(tok::l_brace) && "Expected '{'");
 
   BalancedDelimiterTracker T(*this, tok::l_brace);
@@ -773,6 +772,5 @@ bool Parser::ParseBlockBody() {
     // instead of dropping everything and returning StmtError();
     CloseLoc = T.getCloseLocation();
 
-  Actions.ActOnBlockStmt(T.getOpenLocation(), CloseLoc, move_arg(Stmts));
-  return false;  // FIXME
+  return Actions.ActOnBlockStmt(T.getOpenLocation(), CloseLoc, move_arg(Stmts));
 }

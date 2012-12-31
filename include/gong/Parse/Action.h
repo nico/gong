@@ -276,7 +276,7 @@ public:
 
   /// This is called when a function body has completed parsing.  Decl is
   /// returned by ParseStartOfFunctionDef.
-  virtual void ActOnFinishFunctionBody(DeclPtrTy Decl/*, StmtArg Body*/) { }
+  virtual void ActOnFinishFunctionBody(DeclPtrTy Decl, StmtArg Body) { }
 
 
   //===--------------------------------------------------------------------===//

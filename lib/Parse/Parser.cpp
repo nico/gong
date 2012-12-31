@@ -276,8 +276,8 @@ bool Parser::ParseFunctionDecl(SourceLocation FuncLoc) {
     ParseScope BodyScope(this, Scope::FnScope | Scope::DeclScope);
     
     Actions.ActOnStartOfFunctionDef(Fun, getCurScope());
-    ParseBlockBody();
-    Actions.ActOnFinishFunctionBody(Fun); // FIXME: , FnBody.take()
+    OwningStmtResult FnBody(ParseBlockBody());
+    Actions.ActOnFinishFunctionBody(Fun, move(FnBody));
   }
 
   return false;

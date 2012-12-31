@@ -1470,7 +1470,7 @@ public:
                               IdentifierInfo &II, Scope *S) LLVM_OVERRIDE;
 
   void ActOnStartOfFunctionDef(DeclPtrTy Fun, Scope *FnBodyScope) LLVM_OVERRIDE;
-  void ActOnFinishFunctionBody(DeclPtrTy Decl/*, StmtArg Body*/) LLVM_OVERRIDE;
+  void ActOnFinishFunctionBody(DeclPtrTy Decl, StmtArg Body) LLVM_OVERRIDE;
 
   /// Scope actions.
   void ActOnPopScope(SourceLocation Loc, Scope *S) LLVM_OVERRIDE;
