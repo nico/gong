@@ -792,7 +792,9 @@ Action::OwningStmtResult Parser::ParseBlockBody() {
   //        semicolon insertion after last statement
   // See Parser::ParseCompoundStatementBody() in clang.
   while (Tok.isNot(tok::r_brace) && Tok.isNot(tok::eof)) {
-    ParseStatement();  // FIXME: Add to Stmts
+    OwningStmtResult R(ParseStatement());
+    if (R.isUsable())
+      Stmts.push_back(R.release());
     // A semicolon may be omitted before a closing ')' or '}'.
     if (Tok.is(tok::r_brace))
       break;
