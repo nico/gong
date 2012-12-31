@@ -362,14 +362,14 @@ public:
   OwningStmtResult ParseGotoStmt();
   OwningStmtResult ParseFallthroughStmt();
   OwningStmtResult ParseIfStmt();
-  bool ParseSwitchStmt();
+  OwningStmtResult ParseSwitchStmt();
   enum CaseClauseType { ExprCaseClause, TypeCaseClause };
   bool ParseCaseClause(CaseClauseType Type);
   bool ParseSwitchCase(CaseClauseType Type);
-  bool ParseSelectStmt();
+  OwningStmtResult ParseSelectStmt();
   bool ParseCommClause();
   bool ParseCommCase();
-  bool ParseForStmt();
+  OwningStmtResult ParseForStmt();
   bool ParseRangeClauseTail(tok::TokenKind Op, SimpleStmtKind *OutKind,
                             SimpleStmtExts Exts);
   OwningStmtResult ParseDeferStmt();

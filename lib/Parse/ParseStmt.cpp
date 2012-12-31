@@ -39,13 +39,13 @@ bool Parser::ParseStatement() {
   case tok::kw_fallthrough: return ParseFallthroughStmt().isInvalid();
   case tok::l_brace:        return ParseBlock().isInvalid();
   case tok::kw_if:          return ParseIfStmt().isInvalid();
-  case tok::kw_switch:      return ParseSwitchStmt();
-  case tok::kw_select:      return ParseSelectStmt();
-  case tok::kw_for:         return ParseForStmt();
+  case tok::kw_switch:      return ParseSwitchStmt().isInvalid();
+  case tok::kw_select:      return ParseSelectStmt().isInvalid();
+  case tok::kw_for:         return ParseForStmt().isInvalid();
   case tok::kw_defer:       return ParseDeferStmt().isInvalid();
 
   // SimpleStmts
-  case tok::semi:           return !ParseEmptyStmt().isInvalid();
+  case tok::semi:           return ParseEmptyStmt().isInvalid();
 
   case tok::identifier: {
     IdentifierInfo *II = Tok.getIdentifierInfo();
@@ -437,7 +437,7 @@ Parser::OwningStmtResult Parser::ParseIfStmt() {
 /// TypeSwitchStmt  = "switch" [ SimpleStmt ";" ] TypeSwitchGuard
 ///                   "{" { TypeCaseClause } "}" .
 /// TypeSwitchGuard = [ identifier ":=" ] PrimaryExpr "." "(" "type" ")" .
-bool Parser::ParseSwitchStmt() {
+Action::OwningStmtResult Parser::ParseSwitchStmt() {
   assert(Tok.is(tok::kw_switch) && "expected 'switch'");
   ConsumeToken();
 
@@ -489,16 +489,16 @@ bool Parser::ParseSwitchStmt() {
     if (Tok.isNot(tok::kw_case) && Tok.isNot(tok::kw_default)) {
       Diag(Tok, diag::expected_case_or_default);
       SkipUntil(tok::r_brace, /*StopAtSemi=*/false);
-      return true;
+      return StmtError();
     }
     ParseScope CaseScope(this, Scope::DeclScope);
     if (ParseCaseClause(IsTypeSwitch ? TypeCaseClause : ExprCaseClause)) {
       SkipUntil(tok::r_brace, /*StopAtSemi=*/false);
-      return true;
+      return StmtError();
     }
   }
   T.consumeClose();
-  return false;
+  return Actions.StmtEmpty();  // FIXME
 }
 
 /// ExprCaseClause = ExprSwitchCase ":" { Statement ";" } .
@@ -552,7 +552,7 @@ bool Parser::ParseSwitchCase(CaseClauseType Type) {
 }
 
 /// SelectStmt = "select" "{" { CommClause } "}" .
-bool Parser::ParseSelectStmt() {
+Action::OwningStmtResult Parser::ParseSelectStmt() {
   assert(Tok.is(tok::kw_select) && "expected 'select'");
   ConsumeToken();
 
@@ -561,7 +561,7 @@ bool Parser::ParseSelectStmt() {
     // FIXME: ...after 'select'
     Diag(Tok, diag::expected_l_brace);
     // FIXME: recover?
-    return true;
+    return StmtError();
   }
   BalancedDelimiterTracker T(*this, tok::l_brace);
   T.consumeOpen();
@@ -571,16 +571,16 @@ bool Parser::ParseSelectStmt() {
     if (Tok.isNot(tok::kw_case) && Tok.isNot(tok::kw_default)) {
       Diag(Tok, diag::expected_case_or_default);
       SkipUntil(tok::r_brace, /*StopAtSemi=*/false);
-      return true;
+      return StmtError();
     }
     ParseScope CommScope(this, Scope::DeclScope);
     if (ParseCommClause()) {
       SkipUntil(tok::r_brace, /*StopAtSemi=*/false);
-      return true;
+      return StmtError();
     }
   }
   T.consumeClose();
-  return false;
+  return Actions.StmtEmpty();  // FIXME
 }
 
 /// CommClause = CommCase ":" { Statement ";" } .
@@ -666,7 +666,7 @@ bool Parser::ParseCommCase() {
 /// ForClause = [ InitStmt ] ";" [ Condition ] ";" [ PostStmt ] .
 /// InitStmt = SimpleStmt .
 /// PostStmt = SimpleStmt .
-bool Parser::ParseForStmt() {
+Action::OwningStmtResult Parser::ParseForStmt() {
   assert(Tok.is(tok::kw_for) && "expected 'for'");
   ConsumeToken();
 
@@ -674,14 +674,14 @@ bool Parser::ParseForStmt() {
 
   if (Tok.is(tok::l_brace)) {
     RequireParens.reset();
-    return ParseBlock().isInvalid();  // FIXME
+    return ParseBlock();  // FIXME: ActOnForStmt()
   }
 
   SourceLocation StmtLoc = Tok.getLocation();
   SimpleStmtKind Kind = SSK_Normal;
   if (Tok.isNot(tok::semi))
     if (ParseSimpleStmt(&Kind, SSE_RangeClause))
-      return true;
+      return StmtError();
 
   if (Kind == SSK_RangeClause) {
     // Range clause, nothing more to do.
@@ -693,7 +693,7 @@ bool Parser::ParseForStmt() {
     if (Tok.isNot(tok::semi)) {
       Diag(Tok, diag::expected_semi);
       // FIXME: recover?
-      return true;
+      return StmtError();
     }
     ConsumeToken();  // Consume 2nd ';'.
     if (Tok.isNot(tok::l_brace)) {
@@ -710,10 +710,10 @@ bool Parser::ParseForStmt() {
 
   if (Tok.isNot(tok::l_brace)) {
     Diag(Tok, diag::expected_l_brace);
-    return true;
+    return StmtError();
   }
   RequireParens.reset();
-  return ParseBlock().isInvalid();  // FIXME
+  return ParseBlock();  // FIXME: ActOnForStmt()
 }
 
 /// This is called when Tok points at "range".
