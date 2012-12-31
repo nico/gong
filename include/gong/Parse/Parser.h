@@ -353,7 +353,7 @@ public:
 
   bool ParseShortVarDeclTail(TypeSwitchGuardParam *TSGOpt = NULL);
   bool ParseAssignmentTail(tok::TokenKind Op);
-  bool ParseIncDecStmtTail(ExprResult &LHS);
+  OwningStmtResult ParseIncDecStmtTail(ExprResult &LHS);
   bool ParseSendStmtTail(ExprResult &LHS);
   OwningStmtResult ParseLabeledStmtTail(SourceLocation IILoc,
                                         IdentifierInfo *II);

@@ -315,6 +315,25 @@ public:
     return StmtEmpty();
   }
 
+  /// \brief Parsed an empty statement.
+  virtual OwningStmtResult ActOnEmptyStmt(SourceLocation SemiLoc) {
+    return StmtEmpty();
+  }
+
+  /// \brief Parsed an IncDecStmt, for example "a++" or "a[i]--".
+  ///
+  /// \param Base the expression in front of the inc or dec operator.
+  ///
+  /// \param OpLoc the location of the "++" or "--" operator.
+  ///
+  /// \param OpKind the kind of operator, either tok::plusplus ("++") or
+  /// tok::minusminus ("--").
+  virtual OwningStmtResult ActOnIncDecStmt(ExprArg Base,
+                                           SourceLocation OpLoc,
+                                           tok::TokenKind OpKind) {
+    return StmtEmpty();
+  }
+
   /// \brief Parsed a "go" statement.
   ///
   /// \param GoLoc the location of the "go" keyword.
@@ -391,7 +410,6 @@ public:
   // declarationstmt
   // expressionstmt
   // sendstmt
-  // incdec
   // assignment
   // shortvardecl
   // switchstmt
@@ -429,11 +447,6 @@ public:
   /// \param Exp the deferred expression.
   virtual OwningStmtResult ActOnDeferStmt(SourceLocation DeferLoc,
                                           ExprArg Exp) {
-    return StmtEmpty();
-  }
-
-  /// \brief Parsed an empty statement.
-  virtual OwningStmtResult ActOnEmptyStmt(SourceLocation SemiLoc) {
     return StmtEmpty();
   }
 

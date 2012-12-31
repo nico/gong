@@ -258,8 +258,7 @@ Parser::ParseSimpleStmtTailAfterExpression(ExprResult &LHS,
   }
 
   if (Tok.is(tok::plusplus) || Tok.is(tok::minusminus))
-    return ParseIncDecStmtTail(LHS) ? StmtError()
-           : Actions.StmtEmpty();  // FIXME
+    return ParseIncDecStmtTail(LHS);
 
   if (Tok.is(tok::lessminus))
     return ParseSendStmtTail(LHS) ? StmtError() : Actions.StmtEmpty();  // FIXME
@@ -290,11 +289,13 @@ bool Parser::ParseAssignmentTail(tok::TokenKind Op) {
 
 /// This is called after the lhs expression has been read.
 /// IncDecStmt = Expression ( "++" | "--" ) .
-bool Parser::ParseIncDecStmtTail(ExprResult &LHS) {
+Action::OwningStmtResult Parser::ParseIncDecStmtTail(ExprResult &LHS) {
   assert((Tok.is(tok::plusplus) || Tok.is(tok::minusminus)) &&
          "expected '++' or '--'");
-  ConsumeToken();
-  return LHS.isInvalid();
+  tok::TokenKind OpKind = Tok.getKind();
+  SourceLocation OpLoc = ConsumeToken();
+  OwningExprResult Exp(Actions, LHS);  // FIXME
+  return Actions.ActOnIncDecStmt(move(Exp), OpLoc, OpKind);
 }
 
 /// This is called after the channel has been read.
