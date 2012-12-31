@@ -355,7 +355,7 @@ public:
   bool ParseIncDecStmtTail(ExprResult &LHS);
   bool ParseSendStmtTail(ExprResult &LHS);
   bool ParseLabeledStmtTail(IdentifierInfo *II);
-  bool ParseGoStmt();
+  OwningStmtResult ParseGoStmt();
   bool ParseReturnStmt();
   bool ParseBreakStmt();
   bool ParseContinueStmt();

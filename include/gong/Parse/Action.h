@@ -299,6 +299,15 @@ public:
     return StmtEmpty();
   }
 
+  /// \brief Parsed a "go" statement.
+  ///
+  /// \param GoLoc the location of the "go" keyword.
+  ///
+  /// \param Exp the go expression.
+  virtual OwningStmtResult ActOnGoStmt(SourceLocation GoLoc, ExprArg Exp) {
+    return StmtEmpty();
+  }
+
   /// \brief Parsed an "if" statement.
   ///
   /// Example: "if b := f(); b {} else {}"
@@ -323,7 +332,7 @@ public:
     return StmtEmpty();
   }
 
-  /// \brief Parsed a a 'defer' statement.
+  /// \brief Parsed a "defer" statement.
   ///
   /// \param DeferLoc the location of the "defer" keyword.
   ///

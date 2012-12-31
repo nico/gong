@@ -31,7 +31,7 @@ bool Parser::ParseStatement() {
   case tok::kw_const:
   case tok::kw_type:
   case tok::kw_var:         return ParseDeclaration();
-  case tok::kw_go:          return ParseGoStmt();
+  case tok::kw_go:          return ParseGoStmt().isInvalid();
   case tok::kw_return:      return ParseReturnStmt();
   case tok::kw_break:       return ParseBreakStmt();
   case tok::kw_continue:    return ParseContinueStmt();
@@ -307,10 +307,11 @@ bool Parser::ParseLabeledStmtTail(IdentifierInfo *II) {
 }
 
 /// GoStmt = "go" Expression .
-bool Parser::ParseGoStmt() {
+Action::OwningStmtResult Parser::ParseGoStmt() {
   assert(Tok.is(tok::kw_go) && "expected 'go'");
-  ConsumeToken();
-  return ParseExpression().isInvalid();
+  SourceLocation GoLoc = ConsumeToken();
+  OwningExprResult Exp(Actions, ParseExpression());  // FIXME
+  return Actions.ActOnGoStmt(GoLoc, move(Exp));
 }
 
 /// ReturnStmt = "return" [ ExpressionList ] .
