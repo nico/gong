@@ -616,7 +616,6 @@ public:
   // function literals
   // operand names
   // method exprs
-  // selectors
   // typeassertion
   //   builtin calls
 
@@ -686,6 +685,21 @@ public:
   virtual OwningExprResult ActOnParenExpr(SourceLocation L, ExprArg Expr,
                                           SourceLocation R) {
     return move(Expr);  // Default impl returns operand.
+  }
+
+  /// \brief Parse a selector suffix expression, such as "a.foo".
+  ///
+  /// \param Base the expression that the selector is attached to.
+  ///
+  /// \param OpLoc the location of the '.'.
+  ///
+  /// \param IILoc the location of the selector identifier.
+  ///
+  /// \param II the selector identifier.
+  virtual OwningExprResult ActOnSelectorExpr(ExprArg Base, SourceLocation OpLoc,
+                                             SourceLocation IILoc,
+                                             IdentifierInfo *II) {
+    return ExprEmpty();
   }
 
   /// \brief Parse an index suffix expression, such as "a[foo]".

@@ -431,24 +431,24 @@ Action::OwningExprResult
 Parser::ParseSelectorOrTypeAssertionOrTypeSwitchGuardSuffix(
     OwningExprResult LHS, TypeSwitchGuardParam *TSGOpt) {
   assert(Tok.is(tok::period) && "expected '.'");
-  ConsumeToken();
-
-  bool AllowTypeKeyword = TSGOpt != NULL;
-
-  SourceLocation PrevLoc = PrevTokLocation;
+  SourceLocation PeriodLoc = ConsumeToken();
 
   // Selector
   if (Tok.is(tok::identifier)) {
-    ConsumeToken();
-    return LHS;
+    IdentifierInfo *II = Tok.getIdentifierInfo();
+    SourceLocation IILoc = ConsumeToken();
+    return Actions.ActOnSelectorExpr(move(LHS), PeriodLoc, IILoc, II);
   }
 
-  // TypeAssertion
+  // TypeAssertion or TypeSwitchGuard
   if(Tok.is(tok::l_paren)) {
+    SourceLocation PrevLoc = PrevTokLocation;
+
     BalancedDelimiterTracker T(*this, tok::l_paren);
     T.consumeOpen();
 
     if (Tok.is(tok::kw_type)) {
+      bool AllowTypeKeyword = TSGOpt != NULL;
       if (!AllowTypeKeyword)
         Diag(PrevLoc, diag::unexpected_kw_type);
       else if (TSGOpt)

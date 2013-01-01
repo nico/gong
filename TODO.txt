@@ -103,6 +103,10 @@ nice diag with fixit (insert ',') for
 
 nice diag with fixit (insert "()") for |if a == type{} { ... }|
 
+less horrible diag for "fmt.Println.("
+
+audit and test QualifiedIdent handling once classifyIdentifier() is gone
+
 Add scopes:
 function parameters
 each if, for, and switch is in its own implicit block
