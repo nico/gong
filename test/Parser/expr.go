@@ -215,6 +215,6 @@ func f() {
 
   // You'd think that this is a call of a conversion of a function literal.
   // However, the |(func...| goes down the Result route, which is possibly ok?
-  // See https://code.google.com/p/go/issues/detail?id=4470
+  // See https://code.google.com/p/go/issues/detail?id=4478
   //func()(func(){})()
 }
