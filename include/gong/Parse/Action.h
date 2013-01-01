@@ -623,10 +623,7 @@ public:
   // function literals
   // operand names
   // method exprs
-  // paren exprs
   // selectors
-  // index
-  // slice
   // typeassertion
   // calls, conversions
   //   builtin calls
@@ -1110,12 +1107,6 @@ public:
     return StmtEmpty();
   }
 
-  virtual OwningStmtResult ActOnObjCForCollectionStmt(SourceLocation ForColLoc,
-                                       SourceLocation LParenLoc,
-                                       StmtArg First, ExprArg Second,
-                                       SourceLocation RParenLoc, StmtArg Body) {
-    return StmtEmpty();
-  }
   virtual OwningStmtResult ActOnIndirectGotoStmt(SourceLocation GotoLoc,
                                                  SourceLocation StarLoc,
                                                  ExprArg DestExp) {
@@ -1133,63 +1124,6 @@ public:
                                         MultiExprArg Clobbers,
                                         SourceLocation RParenLoc,
                                         bool MSAsm = false) {
-    return StmtEmpty();
-  }
-
-  // Objective-c statements
-  
-  /// \brief Parsed an Objective-C @catch statement.
-  ///
-  /// \param AtLoc The location of the '@' starting the '@catch'.
-  ///
-  /// \param RParen The location of the right parentheses ')' after the
-  /// exception variable.
-  ///
-  /// \param Parm The variable that will catch the exception. Will be NULL if 
-  /// this is a @catch(...) block.
-  ///
-  /// \param Body The body of the @catch block.
-  virtual OwningStmtResult ActOnObjCAtCatchStmt(SourceLocation AtLoc,
-                                                SourceLocation RParen,
-                                                DeclPtrTy Parm, StmtArg Body) {
-    return StmtEmpty();
-  }
-
-  /// \brief Parsed an Objective-C @finally statement.
-  ///
-  /// \param AtLoc The location of the '@' starting the '@finally'.
-  ///
-  /// \param Body The body of the @finally block.
-  virtual OwningStmtResult ActOnObjCAtFinallyStmt(SourceLocation AtLoc,
-                                                  StmtArg Body) {
-    return StmtEmpty();
-  }
-
-  /// \brief Parsed an Objective-C @try-@catch-@finally statement.
-  ///
-  /// \param AtLoc The location of the '@' starting '@try'.
-  ///
-  /// \param Try The body of the '@try' statement.
-  ///
-  /// \param CatchStmts The @catch statements.
-  ///
-  /// \param Finally The @finally statement.
-  virtual OwningStmtResult ActOnObjCAtTryStmt(SourceLocation AtLoc,
-                                              StmtArg Try, 
-                                              MultiStmtArg CatchStmts,
-                                              StmtArg Finally) {
-    return StmtEmpty();
-  }
-
-  virtual OwningStmtResult ActOnObjCAtThrowStmt(SourceLocation AtLoc,
-                                                ExprArg Throw,
-                                                Scope *CurScope) {
-    return StmtEmpty();
-  }
-
-  virtual OwningStmtResult ActOnObjCAtSynchronizedStmt(SourceLocation AtLoc,
-                                                       ExprArg SynchExpr,
-                                                       StmtArg SynchBody) {
     return StmtEmpty();
   }
 
@@ -1328,9 +1262,6 @@ public:
   /// this will always store an identifier; in C++, we may also have operator
   /// names, conversion function names, destructors, and template names.
   ///
-  /// \param ObjCImpDecl the Objective-C implementation declaration.
-  /// FIXME: Do we really need this?
-  ///
   /// \param HasTrailingLParen whether this member name is immediately followed
   /// by a left parentheses ('(').
   virtual OwningExprResult ActOnMemberAccessExpr(Scope *S, ExprArg Base,
@@ -1338,7 +1269,6 @@ public:
                                                  tok::TokenKind OpKind,
                                                  CXXScopeSpec &SS,
                                                  UnqualifiedId &Member,
-                                                 DeclPtrTy ObjCImpDecl,
                                                  bool HasTrailingLParen) {
     return ExprEmpty();
   }
@@ -1637,15 +1567,6 @@ public:
     CCC_Namespace,
     /// \brief Code completion occurs within a class, struct, or union.
     CCC_Class,
-    /// \brief Code completion occurs within an Objective-C interface, protocol,
-    /// or category.
-    CCC_ObjCInterface,
-    /// \brief Code completion occurs within an Objective-C implementation or
-    /// category implementation
-    CCC_ObjCImplementation,
-    /// \brief Code completion occurs within the list of instance variables
-    /// in an Objective-C interface, protocol, category, or implementation.
-    CCC_ObjCInstanceVariableList,
     /// \brief Code completion occurs following one or more template
     /// headers.
     CCC_Template,
