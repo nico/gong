@@ -102,8 +102,8 @@ Action::OwningStmtResult Parser::ParseSimpleStmt(SimpleStmtKind *OutKind,
   // array / slice / map literals.
   SourceLocation StartLoc = Tok.getLocation();
   TypeSwitchGuardParam Opt, *POpt = Ext == SSE_TypeSwitchGuard ? &Opt : NULL;
-  bool SawIdentifiersOnly = true;
-  OwningExprResult LHS = ParseExpression(POpt, NULL, &SawIdentifiersOnly);
+  bool SawIdentifiersOnly = false;  // Tok above wasn't an identifier.
+  OwningExprResult LHS = ParseExpression(POpt, NULL);
   return ParseSimpleStmtTailAfterExpression(move(LHS), StartLoc, POpt, OutKind,
                                             Ext, SawIdentifiersOnly);
 }
@@ -162,8 +162,8 @@ Parser::ParseSimpleStmtTail(IdentifierInfo *II, SimpleStmtKind *OutKind,
                             SimpleStmtExts Ext) {
   TypeSwitchGuardParam Opt, *POpt = Ext == SSE_TypeSwitchGuard ? &Opt : NULL;
   SourceLocation StartLoc = PrevTokLocation;
-  bool SawIdentifiersOnly = true;
-  OwningExprResult LHS = ParseExpressionTail(II, POpt, &SawIdentifiersOnly);
+  bool SawIdentifiersOnly = IsPossiblyIdentifierList();
+  OwningExprResult LHS = ParseExpressionTail(II, POpt);
   return ParseSimpleStmtTailAfterExpression(move(LHS), StartLoc, POpt, OutKind,
                                             Ext, SawIdentifiersOnly);
 }

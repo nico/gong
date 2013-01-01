@@ -54,28 +54,23 @@ static prec::Level getBinOpPrecedence(tok::TokenKind Kind) {
 /// add_op     = "+" | "-" | "|" | "^" .
 /// mul_op     = "*" | "/" | "%" | "<<" | ">>" | "&" | "&^" .
 Parser::OwningExprResult
-Parser::ParseExpression(TypeSwitchGuardParam *TSGOpt, TypeParam *TOpt,
-                        bool *SawIdentifierOnly) {
-  OwningExprResult LHS = ParseUnaryExpr(TSGOpt, TOpt, SawIdentifierOnly);
-  return ParseRHSOfBinaryExpression(move(LHS), prec::Lowest, TSGOpt,
-                                    SawIdentifierOnly);
+Parser::ParseExpression(TypeSwitchGuardParam *TSGOpt, TypeParam *TOpt) {
+  OwningExprResult LHS = ParseUnaryExpr(TSGOpt, TOpt);
+  return ParseRHSOfBinaryExpression(move(LHS), prec::Lowest, TSGOpt);
 }
 
 /// This is called for expressions that start with an identifier, after the
 /// initial identifier has been read.
 Parser::OwningExprResult
-Parser::ParseExpressionTail(IdentifierInfo *II, TypeSwitchGuardParam *TSGOpt,
-                            bool *SawIdentifierOnly) {
-  OwningExprResult LHS = ParsePrimaryExprTail(II, SawIdentifierOnly);
-  LHS = ParsePrimaryExprSuffix(move(LHS), TSGOpt, SawIdentifierOnly);
-  return ParseRHSOfBinaryExpression(move(LHS), prec::Lowest, TSGOpt,
-                                    SawIdentifierOnly);
+Parser::ParseExpressionTail(IdentifierInfo *II, TypeSwitchGuardParam *TSGOpt) {
+  OwningExprResult LHS = ParsePrimaryExprTail(II);
+  LHS = ParsePrimaryExprSuffix(move(LHS), TSGOpt);
+  return ParseRHSOfBinaryExpression(move(LHS), prec::Lowest, TSGOpt);
 }
 
 Parser::OwningExprResult
 Parser::ParseRHSOfBinaryExpression(OwningExprResult LHS, prec::Level MinPrec,
-                                   TypeSwitchGuardParam *TSGOpt,
-                                   bool *SawIdentifierOnly) {
+                                   TypeSwitchGuardParam *TSGOpt) {
   prec::Level NextTokPrec = getBinOpPrecedence(Tok.getKind());
 
   while (1) {
@@ -85,8 +80,6 @@ Parser::ParseRHSOfBinaryExpression(OwningExprResult LHS, prec::Level MinPrec,
     if (NextTokPrec < MinPrec)
       return LHS;
 
-    if (SawIdentifierOnly)
-      *SawIdentifierOnly = false;
     if (TSGOpt)
       TSGOpt->Reset(*this);
 
@@ -113,7 +106,7 @@ Parser::ParseRHSOfBinaryExpression(OwningExprResult LHS, prec::Level MinPrec,
       // compile A+B+C+D as A+(B+(C+D)), where each paren is a level of
       // recursion here.  The function takes ownership of the RHS.
       RHS = ParseRHSOfBinaryExpression(
-          move(RHS), static_cast<prec::Level>(ThisPrec + 1), NULL, NULL);
+          move(RHS), static_cast<prec::Level>(ThisPrec + 1), NULL);
 
       if (RHS.isInvalid())
         LHS = ExprError();
@@ -148,22 +141,19 @@ bool Parser::IsUnaryOp(tok::TokenKind Kind) {
 /// UnaryExpr  = PrimaryExpr | unary_op UnaryExpr .
 /// unary_op   = "+" | "-" | "!" | "^" | "*" | "&" | "<-" .
 Action::OwningExprResult
-Parser::ParseUnaryExpr(TypeSwitchGuardParam *TSGOpt, TypeParam *TOpt,
-                       bool *SawIdentifierOnly) {
+Parser::ParseUnaryExpr(TypeSwitchGuardParam *TSGOpt, TypeParam *TOpt) {
   tok::TokenKind OpKind = Tok.getKind();
   
   // FIXME: * and <- if TOpt is set.
   if (IsUnaryOp(OpKind)) {
-    if (SawIdentifierOnly)
-      *SawIdentifierOnly = false;
     SourceLocation OpLoc = ConsumeToken();
 
-    OwningExprResult Res = ParseUnaryExpr(NULL, TOpt, NULL);
+    OwningExprResult Res = ParseUnaryExpr(NULL, TOpt);
     if (!Res.isInvalid())
       Res = Actions.ActOnUnaryOp(OpLoc, OpKind, move(Res));
     return Res;
   }
-  return ParsePrimaryExpr(TSGOpt, TOpt, SawIdentifierOnly);
+  return ParsePrimaryExpr(TSGOpt, TOpt);
 }
 
 /// PrimaryExpr =
@@ -179,12 +169,8 @@ Parser::ParseUnaryExpr(TypeSwitchGuardParam *TSGOpt, TypeParam *TOpt,
 /// Literal    = BasicLit | CompositeLit | FunctionLit .
 /// OperandName = identifier | QualifiedIdent.
 Action::OwningExprResult
-Parser::ParsePrimaryExpr(TypeSwitchGuardParam *TSGOpt, TypeParam *TOpt,
-                         bool *SawIdentifierOnly) {
+Parser::ParsePrimaryExpr(TypeSwitchGuardParam *TSGOpt, TypeParam *TOpt) {
   OwningExprResult Res(Actions);
-
-  if (SawIdentifierOnly && Tok.isNot(tok::identifier))
-    *SawIdentifierOnly = false;
 
   switch (Tok.getKind()) {
   default: return ExprError();
@@ -204,7 +190,7 @@ Parser::ParsePrimaryExpr(TypeSwitchGuardParam *TSGOpt, TypeParam *TOpt,
   case tok::identifier: {
     IdentifierInfo *II = Tok.getIdentifierInfo();
     ConsumeToken();
-    Res = ParsePrimaryExprTail(II, SawIdentifierOnly);
+    Res = ParsePrimaryExprTail(II);
     break;
   }
   case tok::kw_chan:
@@ -249,13 +235,13 @@ Parser::ParsePrimaryExpr(TypeSwitchGuardParam *TSGOpt, TypeParam *TOpt,
     break;
   }
   }
-  return ParsePrimaryExprSuffix(move(Res), TSGOpt, SawIdentifierOnly);
+  return ParsePrimaryExprSuffix(move(Res), TSGOpt);
 }
 
 /// This is called if the first token in a PrimaryExpression was an identifier,
 /// after that identifier has been read.
 Action::OwningExprResult
-Parser::ParsePrimaryExprTail(IdentifierInfo *II, bool *SawIdentifierOnly) {
+Parser::ParsePrimaryExprTail(IdentifierInfo *II) {
   // FIXME: Requiring this classification from the Action interface in the limit
   // means that MinimalAction needs to do module loading, which is probably
   // undesirable for most non-Sema clients.  Consider doing something like
@@ -271,11 +257,8 @@ Parser::ParsePrimaryExprTail(IdentifierInfo *II, bool *SawIdentifierOnly) {
   // It's possible that II isn't known to be a type, for example if the
   // type declaration happens later at file scope, or is in a different file of
   // the same package.
-  if (Tok.is(tok::l_brace) && !CompositeTypeNameLitNeedsParens) {
-    if (SawIdentifierOnly)
-      *SawIdentifierOnly = false;
+  if (Tok.is(tok::l_brace) && !CompositeTypeNameLitNeedsParens)
     return ParseLiteralValue();
-  }
 
   Action::IdentifierInfoType IIT =
       Actions.classifyIdentifier(*II, getCurScope());
@@ -292,8 +275,6 @@ Parser::ParsePrimaryExprTail(IdentifierInfo *II, bool *SawIdentifierOnly) {
       ExpectAndConsume(tok::identifier, diag::expected_ident);
     }
     if (Tok.is(tok::l_brace) && !CompositeTypeNameLitNeedsParens) {
-      if (SawIdentifierOnly)
-        *SawIdentifierOnly = false;
       return ParseLiteralValue();
     }
     break;
@@ -324,8 +305,6 @@ Parser::ParsePrimaryExprTail(IdentifierInfo *II, bool *SawIdentifierOnly) {
       //return true;
       break;
     }
-    if (SawIdentifierOnly)
-      *SawIdentifierOnly = false;
     BalancedDelimiterTracker T(*this, tok::l_paren);
     T.consumeOpen();
     if (Tok.isNot(tok::r_paren)) {
@@ -390,15 +369,12 @@ Parser::ParseConversionTail() {
 
 Action::OwningExprResult
 Parser::ParsePrimaryExprSuffix(OwningExprResult LHS,
-                               TypeSwitchGuardParam *TSGOpt,
-                               bool *SawIdentifierOnly) {
+                               TypeSwitchGuardParam *TSGOpt) {
   while (1) {
     switch (Tok.getKind()) {
     default:  // Not a postfix-expression suffix.
       return LHS;
     case tok::period: {  // Selector or TypeAssertion
-      if (SawIdentifierOnly)
-        *SawIdentifierOnly = false;
       if (TSGOpt)
         TSGOpt->Reset(*this);
       LHS = ParseSelectorOrTypeAssertionOrTypeSwitchGuardSuffix(move(LHS),
@@ -406,16 +382,12 @@ Parser::ParsePrimaryExprSuffix(OwningExprResult LHS,
       break;
     }
     case tok::l_square: {  // Index or Slice
-      if (SawIdentifierOnly)
-        *SawIdentifierOnly = false;
       if (TSGOpt)
         TSGOpt->Reset(*this);
       LHS = ParseIndexOrSliceSuffix(move(LHS));
       break;
     }
     case tok::l_paren: {  // Call
-      if (SawIdentifierOnly)
-        *SawIdentifierOnly = false;
       if (TSGOpt)
         TSGOpt->Reset(*this);
       LHS = ParseCallSuffix(move(LHS));
@@ -738,7 +710,11 @@ Parser::ParseExpressionListTail(OwningExprResult LHS, bool *SawIdentifiersOnly,
 
     IdentifierInfo *II = Tok.getIdentifierInfo();
     ConsumeToken();
-    ParseExpressionTail(II, NULL, SawIdentifiersOnly);
+
+    if (SawIdentifiersOnly && !IsPossiblyIdentifierList())
+      *SawIdentifiersOnly = false;
+
+    ParseExpressionTail(II, NULL);
   }
   return false;
 }

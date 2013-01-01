@@ -213,6 +213,16 @@ public:
   bool ParseTypeListTail(bool AcceptEllipsis = false,
                          bool *SawIdentifiersOnly = NULL);
 
+  // This is called after an identifier has been read. It returns if the next
+  // token could follow an identifier list in an IdentifierList production.
+  bool IsPossiblyIdentifierList() {
+    // The only place where IdentifierLists can be confused with
+    // ExpressionLists is at the start of a ShortVarDecl.  At this point, a
+    // single identifier has been parsed.  If the next token is not a ',' or
+    // ':=', then it is certain that the identifier was meant to be the start
+    // of an expression.
+    return Tok.is(tok::comma) || Tok.is(tok::colonequal);
+  }
   bool ParseIdentifierList(IdentifierList &IdentList);
   bool ParseIdentifierListTail(IdentifierList &IdentList);
 
@@ -268,28 +278,22 @@ public:
 
   //FIXME: Also, now that this accepts types, ExprResult doesn't make much sense
   OwningExprResult ParseExpression(TypeSwitchGuardParam *TSGOpt = NULL,
-                                   TypeParam *TOpt = NULL,
-                                   bool *SawIdentifierOnly = NULL);
+                                   TypeParam *TOpt = NULL);
   OwningExprResult ParseExpressionTail(IdentifierInfo *II,
-                                       TypeSwitchGuardParam *TSGOpt = NULL,
-                                       bool *SawIdentifierOnly = NULL);
+                                       TypeSwitchGuardParam *TSGOpt = NULL);
   OwningExprResult ParseRHSOfBinaryExpression(OwningExprResult LHS,
                                               prec::Level MinPrec,
-                                              TypeSwitchGuardParam *TSGOpt,
-                                              bool *SawIdentifierOnly);
+                                              TypeSwitchGuardParam *TSGOpt);
   bool IsUnaryOp(tok::TokenKind Kind);
   OwningExprResult ParseUnaryExpr(TypeSwitchGuardParam *TSGOpt = NULL,
-                                  TypeParam *TOpt = NULL,
-                                  bool *SawIdentifierOnly = NULL);
+                                  TypeParam *TOpt = NULL);
   OwningExprResult ParsePrimaryExpr(TypeSwitchGuardParam *TSGOpt,
-                                    TypeParam *TOpt, bool *SawIdentifierOnly);
-  OwningExprResult ParsePrimaryExprTail(IdentifierInfo *II,
-                                  bool *SawIdentifierOnly);
+                                    TypeParam *TOpt);
+  OwningExprResult ParsePrimaryExprTail(IdentifierInfo *II);
   OwningExprResult ParseConversion(TypeParam *TOpt);
   OwningExprResult ParseConversionTail();
   OwningExprResult ParsePrimaryExprSuffix(OwningExprResult LHS,
-                                          TypeSwitchGuardParam *TSGOpt,
-                                          bool *SawIdentifierOnly);
+                                          TypeSwitchGuardParam *TSGOpt);
   OwningExprResult ParseSelectorOrTypeAssertionOrTypeSwitchGuardSuffix(
       OwningExprResult LHS, TypeSwitchGuardParam *TSGOpt);
   OwningExprResult ParseIndexOrSliceSuffix(OwningExprResult LHS);
