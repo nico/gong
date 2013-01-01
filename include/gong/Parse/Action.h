@@ -36,7 +36,6 @@ namespace gong {
   class Scope;
   class Action;
   class Selector;
-  class Designation;
   // Lex.
   class Lexer;
   class Token;
@@ -1294,25 +1293,6 @@ public:
   virtual OwningExprResult ActOnInitList(SourceLocation LParenLoc,
                                          MultiExprArg InitList,
                                          SourceLocation RParenLoc) {
-    return ExprEmpty();
-  }
-  /// @brief Parsed a C99 designated initializer.
-  ///
-  /// @param Desig Contains the designation with one or more designators.
-  ///
-  /// @param Loc The location of the '=' or ':' prior to the
-  /// initialization expression.
-  ///
-  /// @param GNUSyntax If true, then this designated initializer used
-  /// the deprecated GNU syntax @c fieldname:foo or @c [expr]foo rather
-  /// than the C99 syntax @c .fieldname=foo or @c [expr]=foo.
-  ///
-  /// @param Init The value that the entity (or entities) described by
-  /// the designation will be initialized with.
-  virtual OwningExprResult ActOnDesignatedInitializer(Designation &Desig,
-                                                      SourceLocation Loc,
-                                                      bool GNUSyntax,
-                                                      OwningExprResult Init) {
     return ExprEmpty();
   }
 
