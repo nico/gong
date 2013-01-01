@@ -17,9 +17,6 @@
 #include "gong/Basic/IdentifierTable.h"
 #include "gong/Basic/SourceLocation.h"
 #include "gong/Basic/Specifiers.h"
-//#include "gong/Basic/TemplateKinds.h"
-//#include "gong/Basic/TypeTraits.h"
-//#include "gong/Parse/DeclSpec.h"
 #include "gong/Parse/Ownership.h"
 #include "llvm/Support/PrettyStackTrace.h"
 #include "llvm/ADT/PointerUnion.h"
@@ -35,7 +32,6 @@ namespace gong {
   class IdentifierList;
   class Scope;
   class Action;
-  class Selector;
   // Lex.
   class Lexer;
   class Token;
@@ -108,7 +104,6 @@ public:
   /// Multiple expressions or statements as arguments.
   typedef ASTMultiPtr<&ActionBase::DeleteExpr> MultiExprArg;
   typedef ASTMultiPtr<&ActionBase::DeleteStmt> MultiStmtArg;
-  typedef ASTMultiPtr<&ActionBase::DeleteTemplateParams> MultiTemplateParamsArg;
 
   class FullExprArg {
   public:
@@ -165,7 +160,7 @@ public:
 
   /// getDeclName - Return a pretty name for the specified decl if possible, or
   /// an empty string if not.  This is used for pretty crash reporting.
-  virtual std::string getDeclName(DeclPtrTy D) { return ""; }
+  //virtual std::string getDeclName(DeclPtrTy D) { return ""; }
 
   //===--------------------------------------------------------------------===//
   // Import Decl handling.
@@ -889,14 +884,6 @@ public:
     return;
   }
 
-  /// SetDeclDeleted - This action is called immediately after ActOnDeclarator
-  /// if =delete is parsed. C++0x [dcl.fct.def]p10
-  /// Note that this can be called even for variable declarations. It's the
-  /// action's job to reject it.
-  virtual void SetDeclDeleted(DeclPtrTy Dcl, SourceLocation DelLoc) {
-    return;
-  }
-
   /// ActOnUninitializedDecl - This action is called immediately after
   /// ActOnDeclarator (when an initializer is *not* present).
   /// If TypeContainsUndeducedAuto is true, then the type of the declarator
@@ -929,14 +916,6 @@ public:
   /// ActOnTranslationUnitScope - This callback is called once, immediately
   /// after creating the translation unit scope (in Parser::Initialize).
   virtual void ActOnTranslationUnitScope(Scope *S) {}
-
-  /// ParsedFreeStandingDeclSpec - This method is invoked when a declspec with
-  /// no declarator (e.g. "struct foo;") is parsed.
-  virtual DeclPtrTy ParsedFreeStandingDeclSpec(Scope *S,
-                                               //AccessSpecifier Access,
-                                               DeclSpec &DS) {
-    return DeclPtrTy();
-  }
 
   /// ActOnEndOfTranslationUnit - This is called at the very end of the
   /// translation unit when EOF is reached and all but the top-level scope is
@@ -989,12 +968,6 @@ public:
   /// current access specifier (AS_public, AS_private, AS_protected).
   /// Otherwise, it will be AS_none.
   ///
-  /// \param TemplateParameterLists the set of C++ template parameter lists
-  /// that apply to this tag, if the tag is a declaration or definition (see
-  /// the \p TK parameter). The action module is responsible for determining,
-  /// based on the template parameter lists and the scope specifier, whether
-  /// the declared tag is a class template or not.
-  ///
   /// \param OwnedDecl the callee should set this flag true when the returned
   /// declaration is "owned" by this reference. Ownership is handled entirely
   /// by the action module.
@@ -1004,33 +977,8 @@ public:
                              SourceLocation KWLoc, CXXScopeSpec &SS,
                              IdentifierInfo *Name, SourceLocation NameLoc,
                              AttributeList *Attr, //AccessSpecifier AS,
-                             MultiTemplateParamsArg TemplateParameterLists,
                              bool &OwnedDecl, bool &IsDependent) {
     return DeclPtrTy();
-  }
-
-  /// Acts on a reference to a dependent tag name.  This arises in
-  /// cases like:
-  ///
-  ///    template <class T> class A;
-  ///    template <class T> class B {
-  ///      friend class A<T>::M;  // here
-  ///    };
-  ///
-  /// \param TagSpec an instance of DeclSpec::TST corresponding to the
-  /// tag specifier.
-  ///
-  /// \param TUK the tag use kind (either TUK_Friend or TUK_Reference)
-  ///
-  /// \param SS the scope specifier (always defined)
-  virtual TypeResult ActOnDependentTag(Scope *S,
-                                       unsigned TagSpec,
-                                       TagUseKind TUK,
-                                       const CXXScopeSpec &SS,
-                                       IdentifierInfo *Name,
-                                       SourceLocation KWLoc,
-                                       SourceLocation NameLoc) {
-    return TypeResult();
   }
 
   virtual void ActOnFields(Scope* S, SourceLocation RecLoc, DeclPtrTy TagDecl,
@@ -1077,16 +1025,6 @@ public:
   // Statement Parsing Callbacks.
   //===--------------------------------------------------------------------===//
 
-  virtual OwningStmtResult ActOnNullStmt(SourceLocation SemiLoc) {
-    return StmtEmpty();
-  }
-
-  virtual OwningStmtResult ActOnCompoundStmt(SourceLocation L, SourceLocation R,
-                                             MultiStmtArg Elts,
-                                             bool isStmtExpr) {
-    return StmtEmpty();
-  }
-
   virtual void ActOnForEachDeclStmt(DeclGroupPtrTy Decl) {
   }
 
@@ -1129,62 +1067,10 @@ public:
     return StmtEmpty();
   }
 
-  /// \brief Parsed a "while" statement.
-  ///
-  /// \param Cond if the "while" condition was parsed as an expression, 
-  /// the expression itself.
-  ///
-  /// \param CondVar if the "while" condition was parsed as a condition 
-  /// variable, the condition variable itself.
-  ///
-  /// \param Body the body of the "while" loop.
-  virtual OwningStmtResult ActOnWhileStmt(SourceLocation WhileLoc,
-                                          FullExprArg Cond, DeclPtrTy CondVar,
-                                          StmtArg Body) {
-    return StmtEmpty();
-  }
-  virtual OwningStmtResult ActOnDoStmt(SourceLocation DoLoc, StmtArg Body,
-                                       SourceLocation WhileLoc,
-                                       SourceLocation CondLParen,
-                                       ExprArg Cond,
-                                       SourceLocation CondRParen) {
-    return StmtEmpty();
-  }
-
-  virtual OwningStmtResult ActOnIndirectGotoStmt(SourceLocation GotoLoc,
-                                                 SourceLocation StarLoc,
-                                                 ExprArg DestExp) {
-    return StmtEmpty();
-  }
-  virtual OwningStmtResult ActOnAsmStmt(SourceLocation AsmLoc,
-                                        bool IsSimple,
-                                        bool IsVolatile,
-                                        unsigned NumOutputs,
-                                        unsigned NumInputs,
-                                        IdentifierInfo **Names,
-                                        MultiExprArg Constraints,
-                                        MultiExprArg Exprs,
-                                        ExprArg AsmString,
-                                        MultiExprArg Clobbers,
-                                        SourceLocation RParenLoc,
-                                        bool MSAsm = false) {
-    return StmtEmpty();
-  }
-
   // C++ Statements
-  virtual DeclPtrTy ActOnExceptionDeclarator(Scope *S, Declarator &D) {
-    return DeclPtrTy();
-  }
-
   virtual OwningStmtResult ActOnCXXCatchBlock(SourceLocation CatchLoc,
                                               DeclPtrTy ExceptionDecl,
                                               StmtArg HandlerBlock) {
-    return StmtEmpty();
-  }
-
-  virtual OwningStmtResult ActOnCXXTryBlock(SourceLocation TryLoc,
-                                            StmtArg TryBlock,
-                                            MultiStmtArg Handlers) {
     return StmtEmpty();
   }
 
@@ -1259,18 +1145,6 @@ public:
     return ExprEmpty();
   }
   
-  virtual OwningExprResult ActOnPredefinedExpr(SourceLocation Loc,
-                                               tok::TokenKind Kind) {
-    return ExprEmpty();
-  }
-
-  virtual OwningExprResult ActOnParenOrParenListExpr(SourceLocation L,
-                                              SourceLocation R,
-                                              MultiExprArg Val,
-                                              TypeTy *TypeOfCast=0) {
-    return ExprEmpty();
-  }
-
   // Postfix Expressions.
 
   /// \brief Parsed a member access expresion (C99 6.5.2.3, C++ [expr.ref])
@@ -1326,96 +1200,6 @@ public:
     return false;
   }
 
-  /// ActOnConditionalOp - Parse a ?: operation.  Note that 'LHS' may be null
-  /// in the case of a the GNU conditional expr extension.
-  virtual OwningExprResult ActOnConditionalOp(SourceLocation QuestionLoc,
-                                              SourceLocation ColonLoc,
-                                              ExprArg Cond, ExprArg LHS,
-                                              ExprArg RHS) {
-    return ExprEmpty();
-  }
-
-  //===---------------------- GNU Extension Expressions -------------------===//
-
-  virtual OwningExprResult ActOnAddrLabel(SourceLocation OpLoc,
-                                          SourceLocation LabLoc,
-                                          IdentifierInfo *LabelII) { // "&&foo"
-    return ExprEmpty();
-  }
-
-  virtual OwningExprResult ActOnStmtExpr(SourceLocation LPLoc, StmtArg SubStmt,
-                                         SourceLocation RPLoc) { // "({..})"
-    return ExprEmpty();
-  }
-
-  // __builtin_offsetof(type, identifier(.identifier|[expr])*)
-  struct OffsetOfComponent {
-    SourceLocation LocStart, LocEnd;
-    bool isBrackets;  // true if [expr], false if .ident
-    union {
-      IdentifierInfo *IdentInfo;
-      ExprTy *E;
-    } U;
-  };
-
-  virtual OwningExprResult ActOnBuiltinOffsetOf(Scope *S,
-                                                SourceLocation BuiltinLoc,
-                                                SourceLocation TypeLoc,
-                                                TypeTy *Arg1,
-                                                OffsetOfComponent *CompPtr,
-                                                unsigned NumComponents,
-                                                SourceLocation RParenLoc) {
-    return ExprEmpty();
-  }
-
-  // __builtin_types_compatible_p(type1, type2)
-  virtual OwningExprResult ActOnTypesCompatibleExpr(SourceLocation BuiltinLoc,
-                                                    TypeTy *arg1, TypeTy *arg2,
-                                                    SourceLocation RPLoc) {
-    return ExprEmpty();
-  }
-  // __builtin_choose_expr(constExpr, expr1, expr2)
-  virtual OwningExprResult ActOnChooseExpr(SourceLocation BuiltinLoc,
-                                           ExprArg cond, ExprArg expr1,
-                                           ExprArg expr2, SourceLocation RPLoc){
-    return ExprEmpty();
-  }
-
-  // __builtin_va_arg(expr, type)
-  virtual OwningExprResult ActOnVAArg(SourceLocation BuiltinLoc,
-                                      ExprArg expr, TypeTy *type,
-                                      SourceLocation RPLoc) {
-    return ExprEmpty();
-  }
-
-  /// ActOnGNUNullExpr - Parsed the GNU __null expression, the token
-  /// for which is at position TokenLoc.
-  virtual OwningExprResult ActOnGNUNullExpr(SourceLocation TokenLoc) {
-    return ExprEmpty();
-  }
-
-  //===------------------------- "Block" Extension ------------------------===//
-
-  /// ActOnBlockStart - This callback is invoked when a block literal is
-  /// started.  The result pointer is passed into the block finalizers.
-  //virtual void ActOnBlockStart(SourceLocation CaretLoc, Scope *CurScope) {}
-
-  /// ActOnBlockArguments - This callback allows processing of block arguments.
-  /// If there are no arguments, this is still invoked.
-  //virtual void ActOnBlockArguments(Declarator &ParamInfo, Scope *CurScope) {}
-
-  /// ActOnBlockError - If there is an error parsing a block, this callback
-  /// is invoked to pop the information about the block from the action impl.
-  //virtual void ActOnBlockError(SourceLocation CaretLoc, Scope *CurScope) {}
-
-  /// ActOnBlockStmtExpr - This is called when the body of a block statement
-  /// literal was successfully completed.  ^(int x){...}
-  //virtual OwningExprResult ActOnBlockStmtExpr(SourceLocation CaretLoc,
-                                              //StmtArg Body,
-                                              //Scope *CurScope) {
-    //return ExprEmpty();
-  //}
-
   //===------------------------- C++ Declarations -------------------------===//
 
   /// ActOnStartNamespaceDef - This is called at the start of a namespace
@@ -1431,27 +1215,6 @@ public:
   /// exited. Decl is returned by ActOnStartNamespaceDef.
   virtual void ActOnFinishNamespaceDef(DeclPtrTy Dcl, SourceLocation RBrace) {
     return;
-  }
-
-  ///// ActOnUsingDirective - This is called when using-directive is parsed.
-  //virtual DeclPtrTy ActOnUsingDirective(Scope *CurScope,
-  //                                      SourceLocation UsingLoc,
-  //                                      SourceLocation NamespcLoc,
-  //                                      CXXScopeSpec &SS,
-  //                                      SourceLocation IdentLoc,
-  //                                      IdentifierInfo *NamespcName,
-  //                                      AttributeList *AttrList);
-
-  /// ActOnNamespaceAliasDef - This is called when a namespace alias definition
-  /// is parsed.
-  virtual DeclPtrTy ActOnNamespaceAliasDef(Scope *CurScope,
-                                           SourceLocation NamespaceLoc,
-                                           SourceLocation AliasLoc,
-                                           IdentifierInfo *Alias,
-                                           CXXScopeSpec &SS,
-                                           SourceLocation IdentLoc,
-                                           IdentifierInfo *Ident) {
-    return DeclPtrTy();
   }
 
   /// ActOnParamDefaultArgument - Parse default argument for function parameter
@@ -1529,15 +1292,6 @@ public:
   }
 
   //===---------------------------- C++ Classes ---------------------------===//
-  /// ActOnBaseSpecifier - Parsed a base specifier
-  virtual BaseResult ActOnBaseSpecifier(DeclPtrTy classdecl,
-                                        SourceRange SpecifierRange,
-                                        bool Virtual, //AccessSpecifier Access,
-                                        TypeTy *basetype,
-                                        SourceLocation BaseLoc) {
-    return BaseResult();
-  }
-
   /// ActOnFinishCXXMemberSpecification - Invoked after all member declarators
   /// are parsed but *before* parsing of inline method definitions.
   virtual void ActOnFinishCXXMemberSpecification(Scope* S, SourceLocation RLoc,
@@ -1555,9 +1309,7 @@ public:
   /// after the "." or "->" of a member access expression.
   /// 
   /// \todo Code completion for designated field initializers
-  /// \todo Code completion for call arguments after a function template-id
   /// \todo Code completion within a call expression, object construction, etc.
-  /// \todo Code completion within a template argument list.
   /// \todo Code completion for attributes.
   //@{
   
@@ -1567,12 +1319,6 @@ public:
     CCC_Namespace,
     /// \brief Code completion occurs within a class, struct, or union.
     CCC_Class,
-    /// \brief Code completion occurs following one or more template
-    /// headers.
-    CCC_Template,
-    /// \brief Code completion occurs following one or more template
-    /// headers within a class.
-    CCC_MemberTemplate,
     /// \brief Code completion occurs within an expression.
     CCC_Expression,
     /// \brief Code completion occurs within a statement, which may
