@@ -186,10 +186,10 @@ Parser::ParseSimpleStmtTailAfterExpression(OwningExprResult LHS,
     ExprVector Exprs(Actions);
     ParseExpressionListTail(move(LHS), &SawIdentifiersOnly, Exprs);
 
-    // If it's followed by ':=', this is a ShortVarDecl or a RangeClause (the
-    // only statements starting with an identifier list).
+    // If it's followed by ':=', this is a ShortVarDecl (the
+    // only statement starting with an identifier list) or a RangeClause.
     // If it's followed by '=', this is an Assignment or a RangeClause (the
-    // only statement starting with an expression list).
+    // only statements starting with an expression list).
     // TypeSwitchGuards can have only a single identifier, so they don't matter
     // here.
     if (!IsAssignmentOp(Tok.getKind()) && Tok.isNot(tok::colonequal)) {
