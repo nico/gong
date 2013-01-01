@@ -200,7 +200,7 @@ public:
   bool ParseStructType();
   bool ParseFieldDecl();
   bool ParseAnonymousField();
-  bool ParseAnonymousFieldTail(IdentifierInfo* II);
+  bool ParseAnonymousFieldTail(IdentifierInfo *II);
   bool ParsePointerType();
   bool ParseFunctionType();
   bool ParseInterfaceType();
@@ -268,19 +268,19 @@ public:
 
   //FIXME: Also, now that this accepts types, ExprResult doesn't make much sense
   OwningExprResult ParseExpression(TypeSwitchGuardParam *TSGOpt = NULL,
-                                   TypeParam * TOpt = NULL,
-                                   bool * SawIdentifierOnly = NULL);
+                                   TypeParam *TOpt = NULL,
+                                   bool *SawIdentifierOnly = NULL);
   OwningExprResult ParseExpressionTail(IdentifierInfo *II,
                                        TypeSwitchGuardParam *TSGOpt = NULL,
-                                       bool * SawIdentifierOnly = NULL);
+                                       bool *SawIdentifierOnly = NULL);
   OwningExprResult ParseRHSOfBinaryExpression(OwningExprResult LHS,
                                               prec::Level MinPrec,
                                               TypeSwitchGuardParam *TSGOpt,
                                               bool *SawIdentifierOnly);
   bool IsUnaryOp(tok::TokenKind Kind);
   OwningExprResult ParseUnaryExpr(TypeSwitchGuardParam *TSGOpt = NULL,
-                                  TypeParam * TOpt = NULL,
-                                  bool * SawIdentifierOnly = NULL);
+                                  TypeParam *TOpt = NULL,
+                                  bool *SawIdentifierOnly = NULL);
   OwningExprResult ParsePrimaryExpr(TypeSwitchGuardParam *TSGOpt,
                                     TypeParam *TOpt, bool *SawIdentifierOnly);
   OwningExprResult ParsePrimaryExprTail(IdentifierInfo *II,
@@ -305,7 +305,7 @@ public:
   typedef Action::ExprTy ExprTy;
   static const unsigned ExprListSize = 12;
   typedef llvm::SmallVector<ExprTy*, ExprListSize> ExprListTy;
-  typedef llvm::SmallVector<SourceLocation, ExprListSize> CommaLocsTy;
+  //typedef llvm::SmallVector<SourceLocation, ExprListSize> CommaLocsTy;
 
   bool ParseExpressionList(ExprListTy &Exprs,
                            TypeSwitchGuardParam *TSGOpt = NULL);
