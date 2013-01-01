@@ -580,7 +580,7 @@ bool Parser::ParseSwitchCase(CaseClauseType Type) {
   ConsumeToken();
   ExprVector Exprs(Actions);  // FIXME: use
   switch (Type) {
-  case ExprCaseClause: return ParseExpressionList(Exprs).isInvalid();
+  case ExprCaseClause: return ParseExpressionList(Exprs);
   case TypeCaseClause: return ParseTypeList();
   }
 }
@@ -691,7 +691,7 @@ bool Parser::ParseCommCase() {
   if (Tok.is(tok::comma)) {
     ExprVector Exprs(Actions);
     // FIXME: RecvStmt allows just one optional further Expr, no full exprlist.
-    LHS = ParseExpressionListTail(move(LHS), NULL, Exprs);
+    ParseExpressionListTail(move(LHS), NULL, Exprs);
 
     if (Tok.isNot(tok::equal) && Tok.isNot(tok::colonequal)) {
       Diag(Tok, diag::expected_colonequal_or_equal);

@@ -922,7 +922,7 @@ bool Parser::ParseConstSpec(Action::DeclPtrTy ConstDecl) {
   if (!IsExpression())
     return true;
   ExprVector Exprs(Actions);  // FIXME: use
-  return ParseExpressionList(Exprs).isInvalid();
+  return ParseExpressionList(Exprs);
 }
 
 /// TypeDecl     = "type" ( TypeSpec | "(" { TypeSpec ";" } ")" ) .
@@ -997,7 +997,7 @@ bool Parser::ParseVarSpec(Action::DeclPtrTy VarDecl) {
   else
     ConsumeToken();  // Eat '='.
   ExprVector Exprs(Actions);  // FIXME: use
-  return ParseExpressionList(Exprs).isInvalid();
+  return ParseExpressionList(Exprs);
 }
 
 Action::DeclPtrTy Parser::ParseDeclGroup(DeclGroupKind Kind,

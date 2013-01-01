@@ -710,7 +710,7 @@ Parser::ParseFunctionLitOrConversion(TypeParam *TOpt) {
 /// ReceiverType  = TypeName | "(" "*" TypeName ")" .
 
 /// ExpressionList = Expression { "," Expression } .
-Action::OwningExprResult
+bool
 Parser::ParseExpressionList(ExprListTy &Exprs, TypeSwitchGuardParam *TSGOpt) {
   OwningExprResult LHS = ParseExpression(TSGOpt);
   if (Tok.is(tok::comma) && TSGOpt)
@@ -719,7 +719,7 @@ Parser::ParseExpressionList(ExprListTy &Exprs, TypeSwitchGuardParam *TSGOpt) {
 }
 
 /// This is called after the initial Expression in ExpressionList has been read.
-Action::OwningExprResult
+bool
 Parser::ParseExpressionListTail(OwningExprResult LHS, bool *SawIdentifiersOnly,
                                 ExprListTy &Exprs) {
   Exprs.push_back(LHS.release());
@@ -740,5 +740,5 @@ Parser::ParseExpressionListTail(OwningExprResult LHS, bool *SawIdentifiersOnly,
     ConsumeToken();
     ParseExpressionTail(II, NULL, SawIdentifiersOnly);
   }
-  return Actions.ExprEmpty();  // FIXME?
+  return false;
 }

@@ -307,12 +307,10 @@ public:
   typedef llvm::SmallVector<ExprTy*, ExprListSize> ExprListTy;
   typedef llvm::SmallVector<SourceLocation, ExprListSize> CommaLocsTy;
 
-  // FIXME: These two should likely not return OwningExprResult.
-  OwningExprResult ParseExpressionList(ExprListTy &Exprs,
-                                       TypeSwitchGuardParam *TSGOpt = NULL);
-  OwningExprResult ParseExpressionListTail(OwningExprResult LHS,
-                                           bool *SawIdentifierOnly,
-                                           ExprListTy &Exprs);
+  bool ParseExpressionList(ExprListTy &Exprs,
+                           TypeSwitchGuardParam *TSGOpt = NULL);
+  bool ParseExpressionListTail(OwningExprResult LHS, bool *SawIdentifierOnly,
+                               ExprListTy &Exprs);
 
 
   // Statements
