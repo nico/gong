@@ -551,8 +551,14 @@ Action::OwningExprResult
 Parser::ParseBasicLit() {
   assert((Tok.is(tok::numeric_literal) || Tok.is(tok::rune_literal) ||
         Tok.is(tok::string_literal)) && "Unexpected basic literal start");
+  Token Literal = Tok;
   ConsumeAnyToken();
-  return Actions.ExprEmpty();  // FIXME
+  switch (Literal.getKind()) {
+  default: llvm_unreachable("unexpected token kind");
+  case tok::numeric_literal: return Actions.ActOnNumericLiteral(Literal);
+  case tok::rune_literal:    return Actions.ActOnRuneLiteral(Literal);
+  case tok::string_literal:  return Actions.ActOnStringLiteral(Literal);
+  }
 }
 
 /// CompositeLit  = LiteralType LiteralValue .

@@ -617,7 +617,6 @@ public:
   //===--------------------------------------------------------------------===//
 
   // FIXME: actions for:
-  // basic literals
   // composite literals
   // function literals
   // operand names
@@ -650,6 +649,27 @@ public:
   /// \param RHS the right-hand side of the binary operator.
   virtual OwningExprResult ActOnBinaryOp(ExprArg LHS, SourceLocation OpLoc,
                                          tok::TokenKind Op, ExprArg RHS) {
+    return ExprEmpty();
+  }
+
+  /// \brief Parsed a numeric literal, such as "13", "2.5", "-5i".
+  ///
+  /// \param Tok the token containing the numeric literal.
+  virtual OwningExprResult ActOnNumericLiteral(const Token &Tok) {
+    return ExprEmpty();
+  }
+
+  /// \brief Parsed a rune literal, such as "'a'", "'\007'", "'\xa0'", "'\n'".
+  ///
+  /// \param Tok the token containing the rune literal.
+  virtual OwningExprResult ActOnRuneLiteral(const Token &Tok) {
+    return ExprEmpty();
+  }
+
+  /// \brief Parsed a string literal, such as '"foo"', '`bar`'.
+  ///
+  /// \param Tok the token containing the string literal.
+  virtual OwningExprResult ActOnStringLiteral(const Token &Tok) {
     return ExprEmpty();
   }
 
@@ -1241,19 +1261,6 @@ public:
   
   virtual OwningExprResult ActOnPredefinedExpr(SourceLocation Loc,
                                                tok::TokenKind Kind) {
-    return ExprEmpty();
-  }
-  virtual OwningExprResult ActOnCharacterConstant(const Token &) {
-    return ExprEmpty();
-  }
-  virtual OwningExprResult ActOnNumericConstant(const Token &) {
-    return ExprEmpty();
-  }
-
-  /// ActOnStringLiteral - The specified tokens were lexed as pasted string
-  /// fragments (e.g. "foo" "bar" L"baz").
-  virtual OwningExprResult ActOnStringLiteral(const Token *Toks,
-                                              unsigned NumToks) {
     return ExprEmpty();
   }
 
