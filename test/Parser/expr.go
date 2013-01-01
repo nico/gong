@@ -152,12 +152,22 @@ func f() {
   chan int(4)
   chan int()  // FIXME: should-diag {{expected expression in conversion}}
   chan int(3, 4)  // expected-diag{{expected ')'}} expected-note {{to match this '('}}
-  func(int)int(4)
   []int(4)
   [4]int(4)
   [...]int(4)  // expected-diag {{expected '{'}}
   struct{foo int}(4)
   map[string]int(4)
+  // FIXME: this should diag, see
+  // https://code.google.com/p/go/issues/detail?id=4605 :
+  func(int)int(4)
+  // This is a conversion (and a call) and ok:
+  (func())(func(){})()
+  // This goes down the Result parsing path and is _not_ a conversion and it
+  // should diag. (FIXME: The diag could be a lot more helpful and suggest
+  // adding parens around "func()".
+  // See https://code.google.com/p/go/issues/detail?id=4478 and
+  // https://code.google.com/p/go/issues/detail?id=4109
+  func()(func(){})()  // expected-diag {{expected ')'}} expected-note {{to match this '('}}
 
   // PrimaryExpr, BuiltinCall
   make([]int, 6)
@@ -211,10 +221,4 @@ func f() {
   foo(4 + 5)
   foo(4 + 5, 6 - 7)
   func(int)int{}()
-
-
-  // You'd think that this is a call of a conversion of a function literal.
-  // However, the |(func...| goes down the Result route, which is possibly ok?
-  // See https://code.google.com/p/go/issues/detail?id=4478
-  //func()(func(){})()
 }
