@@ -527,18 +527,23 @@ Parser::ParseCallSuffix(OwningExprResult LHS) {
   assert(Tok.is(tok::l_paren) && "expected '('");
   BalancedDelimiterTracker T(*this, tok::l_paren);
   T.consumeOpen();
+
+  ExprVector Args(Actions);
+  SourceLocation EllipsisLoc;
+  SourceLocation TrailingCommaLoc;
   if (Tok.isNot(tok::r_paren)) {
-    ExprVector Args(Actions);
     ParseExpressionList(Args);
     // FIXME: fixit for "4..." that that's parsed as float, not as [4, ellipsis]
     if (Tok.is(tok::ellipsis))
-      ConsumeToken();
+      EllipsisLoc = ConsumeToken();
     if (Tok.is(tok::comma))
-      ConsumeToken();
+      TrailingCommaLoc = ConsumeToken();
   }
   if (T.consumeClose())
     return ExprError();
-  return LHS;
+  return Actions.ActOnCallExpr(move(LHS), T.getOpenLocation(), move_arg(Args),
+                               EllipsisLoc, TrailingCommaLoc,
+                               T.getCloseLocation());
 }
 
 /// BasicLit   = int_lit | float_lit | imaginary_lit | char_lit | string_lit .

@@ -624,7 +624,6 @@ public:
   // method exprs
   // selectors
   // typeassertion
-  // calls, conversions
   //   builtin calls
 
   /// \brief Parsed an unary operator.
@@ -676,7 +675,7 @@ public:
 
   /// \brief Parse an index suffix expression, such as "a[foo]".
   ///
-  /// \param Base the expression that's being indexed.
+  /// \param Base the expression that is being indexed.
   ///
   /// \param L the location of the opening '['.
   ///
@@ -690,7 +689,7 @@ public:
 
   /// \brief Parse a slice suffix expression, such as "a[4:5]" or "b[:]".
   ///
-  /// \param Base the expression that's being sliced.
+  /// \param Base the expression that is being sliced.
   ///
   /// \param L the location of the opening '['.
   ///
@@ -709,6 +708,32 @@ public:
     return ExprEmpty();
   }
 
+  /// \brief Parsed a call suffix expression, such as "f(4, 5...,)".
+  ///
+  /// Note that this is also called for conversion expressions, such as
+  /// "int(4.4)". FIXME: Rename to ActOnCallOrConversionExpr()?
+  /// FIXME: Decide if this hsould also be called for BuiltinCalls (probably).
+  ///
+  /// \param Base the expression that is being called.
+  ///
+  /// \param L the location of the opening '('.
+  ///
+  /// \param Args the call arguments
+  ///
+  /// \param EllipsisLoc location of the optional trailing '...'.
+  ///
+  /// \param TrailingCommaLoc location of the optional trailing ','.
+  ///
+  /// \param R the location of the closing ')'.
+  //FIXME: comma locs. Have an ExprList, similar to IdentList?
+  virtual OwningExprResult ActOnCallExpr(ExprArg Base,
+                                         SourceLocation L,
+                                         MultiExprArg Args,
+                                         SourceLocation EllipsisLoc,
+                                         SourceLocation TrailingCommaLoc,
+                                         SourceLocation R) {
+    return ExprEmpty();
+  }
 
 
 
@@ -1272,18 +1297,6 @@ public:
     return ExprEmpty();
   }
                                                  
-  /// ActOnCallExpr - Handle a call to Fn with the specified array of arguments.
-  /// This provides the location of the left/right parens and a list of comma
-  /// locations.  There are guaranteed to be one fewer commas than arguments,
-  /// unless there are zero arguments.
-  virtual OwningExprResult ActOnCallExpr(Scope *S, ExprArg Fn,
-                                         SourceLocation LParenLoc,
-                                         MultiExprArg Args,
-                                         SourceLocation *CommaLocs,
-                                         SourceLocation RParenLoc) {
-    return ExprEmpty();
-  }
-
   virtual OwningExprResult ActOnCompoundLiteral(SourceLocation LParen,
                                                 TypeTy *Ty,
                                                 SourceLocation RParen,
