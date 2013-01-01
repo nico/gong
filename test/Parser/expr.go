@@ -202,8 +202,10 @@ func f() {
   foo(,)  // FIXME: should-diag
   foo(4,)
   foo(...)  // FIXME: should-diag
-  foo(4...)
-  foo(4...,)
+  foo(4...)  // Note: This is a floating point number.
+  foo('a'...)
+  foo(4...,)  // Note: This is a floating point number.
+  foo('a'...,)
   foo(4,...)  // FIXME: should-diag
   //foo(...,4)  // FIXME: should-diag
   foo(4 + 5)

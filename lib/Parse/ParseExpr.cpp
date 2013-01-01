@@ -530,6 +530,7 @@ Parser::ParseCallSuffix(OwningExprResult LHS) {
   if (Tok.isNot(tok::r_paren)) {
     ExprVector Args(Actions);
     ParseExpressionList(Args);
+    // FIXME: fixit for "4..." that that's parsed as float, not as [4, ellipsis]
     if (Tok.is(tok::ellipsis))
       ConsumeToken();
     if (Tok.is(tok::comma))
