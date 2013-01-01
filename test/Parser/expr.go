@@ -207,7 +207,7 @@ func f() {
   foo(4...,)  // Note: This is a floating point number.
   foo('a'...,)
   foo(4,...)  // FIXME: should-diag
-  //foo(...,4)  // FIXME: should-diag
+  foo(...,4) // expected-diag {{expected ')'}} expected-note {{to match this '('}}
   foo(4 + 5)
   foo(4 + 5, 6 - 7)
   func(int)int{}()
