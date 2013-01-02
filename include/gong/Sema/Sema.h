@@ -1466,6 +1466,10 @@ public:
   void ActOnVarSpec(DeclPtrTy Decl, IdentifierList &Idents,
                     Scope *S) LLVM_OVERRIDE;
 
+  OwningStmtResult ActOnShortVarDeclStmt(IdentifierList &Idents,
+                                         SourceLocation OpLoc,
+                                         MultiExprArg RHSs) LLVM_OVERRIDE;
+
   DeclPtrTy ActOnFunctionDecl(SourceLocation FuncLoc, SourceLocation NameLoc,
                               IdentifierInfo &II, Scope *S) LLVM_OVERRIDE;
 

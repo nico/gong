@@ -1420,6 +1420,7 @@ void Sema::ActOnVarSpec(DeclPtrTy Decl, IdentifierList &IdentList, Scope *S) {
 
   ArrayRef<IdentifierInfo*> Idents = IdentList.getIdents();
   ArrayRef<SourceLocation> IdentLocs = IdentList.getIdentLocs();
+  assert(Idents.size() >= 1);
 
   VarSpecDecl *VarSpec = VarSpecDecl::Create(Context, DC, IdentLocs[0]);
   VarSpec->setIdents(Idents, IdentLocs);
@@ -1428,6 +1429,27 @@ void Sema::ActOnVarSpec(DeclPtrTy Decl, IdentifierList &IdentList, Scope *S) {
     VarDecl *New = VarDecl::Create(Context, VarSpec, i);
     CheckRedefinitionAndPushOnScope(*this, VarSpec, S, New);
   }
+}
+
+Action::OwningStmtResult
+Sema::ActOnShortVarDeclStmt(IdentifierList &IdentList,
+                            SourceLocation OpLoc,
+                            MultiExprArg RHSs) {
+  // FIXME: Own AST type, check number of initializers, fixit to change
+  // := to = if no variables are new.
+  ArrayRef<IdentifierInfo*> Idents = IdentList.getIdents();
+  ArrayRef<SourceLocation> IdentLocs = IdentList.getIdentLocs();
+  assert(Idents.size() >= 1);
+
+  // FIXME: ownership
+  VarSpecDecl *VarSpec = VarSpecDecl::Create(Context, CurContext, IdentLocs[0]);
+  VarSpec->setIdents(Idents, IdentLocs);
+
+  for (unsigned i = 0; i < Idents.size(); ++i) {
+    VarDecl *New = VarDecl::Create(Context, VarSpec, i);
+    CheckRedefinitionAndPushOnScope(*this, VarSpec, getCurScope(), New);
+  }
+  return StmtEmpty();  // FIXME
 }
 
 /// Registers an identifier as function name.
