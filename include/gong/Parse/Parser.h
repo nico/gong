@@ -17,6 +17,7 @@
 //#include "gong/Basic/Specifiers.h"
 #include "gong/Lex/Lexer.h"
 #include "gong/Parse/Action.h"
+#include "gong/Parse/IdentifierList.h"
 //#include "llvm/ADT/OwningPtr.h"
 //#include "llvm/ADT/SmallVector.h"
 //#include "llvm/Support/Compiler.h"
@@ -313,8 +314,80 @@ public:
 
   bool ParseExpressionList(ExprListTy &Exprs,
                            TypeSwitchGuardParam *TSGOpt = NULL);
-  bool ParseExpressionListTail(OwningExprResult LHS, bool *SawIdentifierOnly,
-                               ExprListTy &Exprs);
+
+  // A ShortVarDecl starts with an IdentifierList.  Other SimpleStmts start
+  // with for example ExpressionLists or expressions starting with a single
+  // identifier.  Hence, ParseExpressionListTail() needs to communicate if it
+  // has parsed an IdentifierList or an ExpressionList, and if it's an
+  // IdentifierList it may need to be converted to an ExpressionList.
+  // This class stores either an IdentifierList or an ExpressionList and
+  // provides a function to convert an IdentifierList to an ExpressionList if
+  // needed.
+  class IdentOrExprList {
+  public:
+    // The kind of value this instance stores.
+    enum ResultKind { RK_Expr, RK_Ident };
+  private:
+    Action &Actions;
+    IdentifierList Idents;  // Only valid if Kind == RK_Ident
+    ExprVector Exprs;  // Only valid if Kind == RK_Expr
+    ResultKind ResKind;
+
+    // Converts an IdentifierList IdentOrExprList to an ExpressionList.
+    void ToExprs() {
+      if (ResKind == RK_Expr)
+        return;
+      ResKind = RK_Expr;
+      ArrayRef<IdentifierInfo*> IdentsRef = Idents.getIdents();
+      //ArrayRef<SourceLocation> IILocs = Idents.getIdentLocs();
+      for (unsigned i = 0; i < IdentsRef.size(); ++i) {
+        OwningExprResult R(Actions); //FIXME: Actions.ActOnIdentifier(IILoc, II)
+        Exprs.push_back(R.release());
+      }
+    }
+
+  public:
+    // Constructs an IdentOrExprList that contains an expression.
+    IdentOrExprList(Action &Actions, OwningExprResult Head)
+      : Actions(Actions), Exprs(Actions), ResKind(RK_Expr) {
+      Exprs.push_back(Head.release());
+    }
+
+    // Constructs an IdentOrExprList that contains an identifier.
+    IdentOrExprList(Action &Actions, SourceLocation IILoc, IdentifierInfo *II)
+      : Actions(Actions), Exprs(Actions), ResKind(RK_Ident) {
+      Idents.initialize(IILoc, II);
+    }
+
+    void AddExpr(OwningExprResult Expr) {
+      if (ResKind != RK_Expr)
+        ToExprs();
+      Exprs.push_back(Expr.release());
+    }
+
+    void AddIdent(SourceLocation CommaLoc, SourceLocation IILoc,
+                  IdentifierInfo *II) {
+      if (ResKind == RK_Ident)
+        Idents.add(CommaLoc, IILoc, II);
+      else {
+        OwningExprResult R(Actions); //FIXME: Actions.ActOnIdentifier(IILoc, II)
+        Exprs.push_back(R.release());
+      }
+    }
+
+    ResultKind Kind() {
+      return ResKind;
+    }
+    ExprVector &Expressions() {
+      ToExprs();
+      return Exprs;
+    }
+    IdentifierList &Identifiers() {
+      assert(ResKind == RK_Ident);
+      return Idents;
+    }
+  };
+  bool ParseExpressionListTail(IdentOrExprList &Exprs);
 
 
   // Statements
@@ -353,14 +426,14 @@ public:
   OwningStmtResult ParseSimpleStmtTail(IdentifierInfo *II,
                                        SimpleStmtKind *OutKind = NULL,
                                        SimpleStmtExts Ext = SSE_None);
-  OwningStmtResult ParseSimpleStmtTailAfterExpression(OwningExprResult LHS,
+  OwningStmtResult ParseSimpleStmtTailAfterExpression(IdentOrExprList &LHS,
                                                       SourceLocation StartLoc,
                                                    TypeSwitchGuardParam *TSGOpt,
                                                       SimpleStmtKind *OutKind,
-                                                      SimpleStmtExts Ext,
-                                                      bool SawIdentifiersOnly);
+                                                      SimpleStmtExts Ext);
 
-  OwningStmtResult ParseShortVarDeclTail(ExprVector &LHSs, SourceLocation OpLoc,
+  OwningStmtResult ParseShortVarDeclTail(IdentifierList &LHSs,
+                                         SourceLocation OpLoc,
                                          TypeSwitchGuardParam *TSGOpt = NULL);
   OwningStmtResult ParseAssignmentTail(SourceLocation OpLoc, tok::TokenKind Op,
                                        ExprVector &LHSs);

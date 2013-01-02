@@ -333,15 +333,12 @@ public:
 
   /// \brief Parsed an ShortVarDecl, such as "a, b := c(), d[j]".
   ///
-  /// \param LHSs the left-hand sides of the assignment.  All expressions in
-  /// this list will be simple identifiers.
-  /// FIXME: ensmarten parser so that it can pass an IdentifierList.
+  /// \param LHSs the left-hand sides of the assignment.
   ///
   /// \param OpLoc the location of the ':=' operator.
   ///
   /// \param RHSs the right-hand sides of the assignment.
-  //FIXME: comma locs. Have an ExprList, similar to IdentList?
-  virtual OwningStmtResult ActOnShortVarDeclStmt(MultiExprArg LHSs,
+  virtual OwningStmtResult ActOnShortVarDeclStmt(IdentifierList &Idents,
                                                  SourceLocation OpLoc,
                                                  MultiExprArg RHSs) {
     return StmtEmpty();

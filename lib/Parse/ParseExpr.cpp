@@ -313,8 +313,8 @@ Parser::ParsePrimaryExprTail(IdentifierInfo *II) {
       // '.(type)'.
       // FIXME This is not true if the builtin is shadowed.
       OwningExprResult LHS = ParseExpression(NULL, &TypeOpt);
-      ExprVector Exprs(Actions);
-      ParseExpressionListTail(move(LHS), NULL, Exprs);
+      IdentOrExprList Exprs(Actions, move(LHS));
+      ParseExpressionListTail(Exprs);
       if (Tok.is(tok::ellipsis))
         ConsumeToken();
       if (Tok.is(tok::comma))
@@ -687,34 +687,35 @@ Parser::ParseExpressionList(ExprListTy &Exprs, TypeSwitchGuardParam *TSGOpt) {
   OwningExprResult LHS = ParseExpression(TSGOpt);
   if (Tok.is(tok::comma) && TSGOpt)
     TSGOpt->Reset(*this);
-  return ParseExpressionListTail(move(LHS), NULL, Exprs);
+  IdentOrExprList R(Actions, move(LHS));
+  bool Failed = ParseExpressionListTail(R);
+  Exprs = R.Expressions();
+  return Failed;
 }
 
 /// This is called after the initial Expression in ExpressionList has been read.
 bool
-Parser::ParseExpressionListTail(OwningExprResult LHS, bool *SawIdentifiersOnly,
-                                ExprListTy &Exprs) {
-  Exprs.push_back(LHS.release());
-
+Parser::ParseExpressionListTail(IdentOrExprList &Exprs) {
   while (Tok.is(tok::comma)) {
-    ConsumeToken();
+    SourceLocation CommaLoc = ConsumeToken();
 
     // FIXME: Diag if Tok doesn't start an expression.
 
     if (Tok.isNot(tok::identifier)) {
-      if (SawIdentifiersOnly)
-        *SawIdentifiersOnly = false;
-      ParseExpression();
+      OwningExprResult R(ParseExpression());
+      Exprs.AddExpr(move(R));
       continue;
     }
 
     IdentifierInfo *II = Tok.getIdentifierInfo();
-    ConsumeToken();
+    SourceLocation IILoc = ConsumeToken();
 
-    if (SawIdentifiersOnly && !IsPossiblyIdentifierList())
-      *SawIdentifiersOnly = false;
-
-    ParseExpressionTail(II, NULL);
+    if (IsPossiblyIdentifierList()) {
+      Exprs.AddIdent(CommaLoc, IILoc, II);
+    } else {
+      OwningExprResult R(ParseExpressionTail(II, NULL));
+      Exprs.AddExpr(move(R));
+    }
   }
   return false;
 }

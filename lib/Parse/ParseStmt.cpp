@@ -102,10 +102,9 @@ Action::OwningStmtResult Parser::ParseSimpleStmt(SimpleStmtKind *OutKind,
   // array / slice / map literals.
   SourceLocation StartLoc = Tok.getLocation();
   TypeSwitchGuardParam Opt, *POpt = Ext == SSE_TypeSwitchGuard ? &Opt : NULL;
-  bool SawIdentifiersOnly = false;  // Tok above wasn't an identifier.
-  OwningExprResult LHS = ParseExpression(POpt, NULL);
-  return ParseSimpleStmtTailAfterExpression(move(LHS), StartLoc, POpt, OutKind,
-                                            Ext, SawIdentifiersOnly);
+  OwningExprResult LHSExpr = ParseExpression(POpt, NULL);
+  IdentOrExprList LHS(Actions, LHSExpr);
+  return ParseSimpleStmtTailAfterExpression(LHS, StartLoc, POpt, OutKind, Ext);
 }
 
 namespace {
@@ -162,20 +161,22 @@ Parser::ParseSimpleStmtTail(IdentifierInfo *II, SimpleStmtKind *OutKind,
                             SimpleStmtExts Ext) {
   TypeSwitchGuardParam Opt, *POpt = Ext == SSE_TypeSwitchGuard ? &Opt : NULL;
   SourceLocation StartLoc = PrevTokLocation;
-  bool SawIdentifiersOnly = IsPossiblyIdentifierList();
-  OwningExprResult LHS = ParseExpressionTail(II, POpt);
-  return ParseSimpleStmtTailAfterExpression(move(LHS), StartLoc, POpt, OutKind,
-                                            Ext, SawIdentifiersOnly);
+  if (IsPossiblyIdentifierList()) {
+    IdentOrExprList LHS(Actions, StartLoc, II);
+    return ParseSimpleStmtTailAfterExpression(LHS, StartLoc, POpt, OutKind,
+                                              Ext);
+  }
+  IdentOrExprList LHS(Actions, ParseExpressionTail(II, POpt));
+  return ParseSimpleStmtTailAfterExpression(LHS, StartLoc, POpt, OutKind, Ext);
 }
 
 /// Called after the leading Expression of a simple statement has been read.
 Action::OwningStmtResult
-Parser::ParseSimpleStmtTailAfterExpression(OwningExprResult LHS,
+Parser::ParseSimpleStmtTailAfterExpression(IdentOrExprList &LHS,
                                            SourceLocation StartLoc,
                                            TypeSwitchGuardParam *Opt,
                                            SimpleStmtKind *OutKind,
-                                           SimpleStmtExts Ext,
-                                           bool SawIdentifiersOnly) {
+                                           SimpleStmtExts Ext) {
   // In a switch statement, ParseSimpleStmtTail() has to accept TypeSwitchGuards
   // which technically aren't SimpleStmts.  OptRAII will diag on all
   // TypeSwitchGuards when destructed unless it's explicitly disarm()ed.
@@ -183,8 +184,7 @@ Parser::ParseSimpleStmtTailAfterExpression(OwningExprResult LHS,
 
 
   if (Tok.is(tok::comma)) {
-    ExprVector Exprs(Actions);
-    ParseExpressionListTail(move(LHS), &SawIdentifiersOnly, Exprs);
+    ParseExpressionListTail(LHS);
 
     // If it's followed by ':=', this is a ShortVarDecl (the
     // only statement starting with an identifier list) or a RangeClause.
@@ -210,11 +210,9 @@ Parser::ParseSimpleStmtTailAfterExpression(OwningExprResult LHS,
              : Actions.StmtEmpty();  // FIXME
 
     if (Op == tok::colonequal) {
-      if (!SawIdentifiersOnly) {
-        // FIXME: fixit
-        Diag(Tok, diag::expected_equal);
-      }
-      return ParseShortVarDeclTail(Exprs, OpLoc);
+      if (LHS.Kind() == IdentOrExprList::RK_Ident)
+        return ParseShortVarDeclTail(LHS.Identifiers(), OpLoc);
+      // FIXME: fixit
     }
 
     // "In assignment operations, both the left- and right-hand expression
@@ -227,7 +225,7 @@ Parser::ParseSimpleStmtTailAfterExpression(OwningExprResult LHS,
                 /*StopAtSemi=*/false, /*DontConsume=*/true);
       return StmtError();
     }
-    return ParseAssignmentTail(OpLoc, tok::equal, Exprs);
+    return ParseAssignmentTail(OpLoc, tok::equal, LHS.Expressions());
   }
 
   if (IsAssignmentOp(Tok.getKind())) {
@@ -238,8 +236,7 @@ Parser::ParseSimpleStmtTailAfterExpression(OwningExprResult LHS,
              : Actions.StmtEmpty();  // FIXME
     // FIXME: if Op is '=' and the expression a TypeSwitchGuard, provide fixit
     // to turn '=' into ':='.
-    ExprVector LHSs(Actions);
-    LHSs.push_back(LHS.release());
+    ExprVector &LHSs = LHS.Expressions();
     return ParseAssignmentTail(OpLoc, Op, LHSs);
   }
 
@@ -248,40 +245,49 @@ Parser::ParseSimpleStmtTailAfterExpression(OwningExprResult LHS,
     if (Tok.is(tok::kw_range))
       return ParseRangeClauseTail(tok::colonequal, OutKind, Ext) ? StmtError()
              : Actions.StmtEmpty();  // FIXME
-    if (!SawIdentifiersOnly) {
+    if (LHS.Kind() != IdentOrExprList::RK_Ident) {
       // FIXME: fixit to change ':=' to '=', but
       // only if Result != Parser::TypeSwitchGuardParam::Parsed 
       Diag(StartLoc, diag::invalid_expr_left_of_colonequal);
+
+      // FIXME: Recover better?
+      SkipUntil(tok::semi, tok::l_brace,
+                /*StopAtSemi=*/false, /*DontConsume=*/true);
+      OptRAII.disarm();
+      return StmtError();
     }
-    ExprVector LHSs(Actions);
-    LHSs.push_back(LHS.release());
-    OwningStmtResult Result(ParseShortVarDeclTail(LHSs, OpLoc, Opt));
+    OwningStmtResult Result(ParseShortVarDeclTail(LHS.Identifiers(),
+                                                  OpLoc, Opt));
     OptRAII.disarm();
     return Result;
   }
 
+  // At this point, the statement starts with a single expression.
+  assert(LHS.Expressions().size() == 1);
+  OwningExprResult LHSExpr(Actions, *LHS.Expressions().take());
+
   if (Tok.is(tok::plusplus) || Tok.is(tok::minusminus))
-    return ParseIncDecStmtTail(move(LHS));
+    return ParseIncDecStmtTail(move(LHSExpr));
 
   if (Tok.is(tok::lessminus))
-    return ParseSendStmtTail(move(LHS));
+    return ParseSendStmtTail(move(LHSExpr));
 
   if (OutKind)
     *OutKind = SSK_Expression;
   // Note: This can overwrite *OutKind.
   OptRAII.disarm();
 
-  return Actions.ActOnExprStmt(move(LHS));
+  return Actions.ActOnExprStmt(move(LHSExpr));
 }
 
 /// This is called after the ':=' has been read.
 /// ShortVarDecl = IdentifierList ":=" ExpressionList .
 Action::OwningStmtResult
-Parser::ParseShortVarDeclTail(ExprVector &LHSs, SourceLocation OpLoc,
+Parser::ParseShortVarDeclTail(IdentifierList &LHSs, SourceLocation OpLoc,
                               TypeSwitchGuardParam *Opt) {
   ExprVector RHSs(Actions);
   ParseExpressionList(RHSs, Opt);
-  return Actions.ActOnShortVarDeclStmt(move_arg(LHSs), OpLoc, move_arg(RHSs));
+  return Actions.ActOnShortVarDeclStmt(LHSs, OpLoc, move_arg(RHSs));
 }
 
 /// This is called after the assign_op has been read.
@@ -689,9 +695,9 @@ bool Parser::ParseCommCase() {
   // This is a RecvStmt.
   bool FoundAssignOp = false;
   if (Tok.is(tok::comma)) {
-    ExprVector Exprs(Actions);
+    IdentOrExprList Exprs(Actions, move(LHS));
     // FIXME: RecvStmt allows just one optional further Expr, no full exprlist.
-    ParseExpressionListTail(move(LHS), NULL, Exprs);
+    ParseExpressionListTail(Exprs);
 
     if (Tok.isNot(tok::equal) && Tok.isNot(tok::colonequal)) {
       Diag(Tok, diag::expected_colonequal_or_equal);

@@ -136,7 +136,7 @@ func f() {
 
   //   TypeSwitchStmts
   switch a.(type) {}
-  switch a.(type) := a.(type) {}  // expected-diag{{unexpected expression before ':='}} expected-diag{{unexpected '.(type)'}}
+  switch a.(type) := a.(type) {}  // expected-diag{{unexpected expression before ':='}}
   switch a := a.(type) {}
   switch a.(type)++ {}  // expected-diag{{unexpected '.(type)'}} expected-diag{{expected expression or type switch guard}}
   switch a.(type) + 4 {}  // expected-diag{{unexpected '.(type)'}}
