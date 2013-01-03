@@ -1435,11 +1435,27 @@ Action::OwningStmtResult
 Sema::ActOnShortVarDeclStmt(IdentifierList &IdentList,
                             SourceLocation OpLoc,
                             MultiExprArg RHSs) {
-  // FIXME: Own AST type, check number of initializers, fixit to change
-  // := to = if no variables are new.
+  // FIXME: Own AST type, fixit to change := to = if no variables are new.
   ArrayRef<IdentifierInfo*> Idents = IdentList.getIdents();
   ArrayRef<SourceLocation> IdentLocs = IdentList.getIdentLocs();
   assert(Idents.size() >= 1);
+
+  // If too few expressions are available, diag and recover by initializing with
+  // 0.
+  // FIXME: tuple assignments
+  if (RHSs.size() < Idents.size()) {
+    Diag(OpLoc, diag::too_few_initializers) << (unsigned)Idents.size()
+                                            << RHSs.size();
+    // FIXME: add a few zero expressions to RHSs.
+  }
+
+  // If too many expressions are available, diag and drop them.
+  // FIXME: tuple assignments
+  if (RHSs.size() > Idents.size()) {
+    Diag(OpLoc, diag::too_many_initializers) << (unsigned)Idents.size()
+                                             << RHSs.size();
+    // FIXME: Remove superfluous expressions.
+  }
 
   // FIXME: ownership
   VarSpecDecl *VarSpec = VarSpecDecl::Create(Context, CurContext, IdentLocs[0]);

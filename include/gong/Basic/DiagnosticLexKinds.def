@@ -134,3 +134,7 @@ DIAG(expected_idents_only_before_ellipsis, CLASS_ERROR,
 DIAG(unimplemented_package_import, CLASS_ERROR, "sema cannot handle import yet")
 DIAG(redefinition,              CLASS_ERROR, "redefinition of %0")
 DIAG(note_previous_definition,  CLASS_NOTE, "previous definition is here")
+DIAG(too_few_initializers,      CLASS_ERROR,
+    "too few initializers, expected %0, have %1")
+DIAG(too_many_initializers,     CLASS_ERROR,
+    "too many initializers, expected %0, have %1")
