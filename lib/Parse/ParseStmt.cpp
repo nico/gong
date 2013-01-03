@@ -419,6 +419,10 @@ Parser::OwningStmtResult Parser::ParseIfStmt() {
   assert(Tok.is(tok::kw_if) && "expected 'if'");
   SourceLocation IfLoc = ConsumeToken();
 
+  // http://tip.golang.org/ref/spec#Blocks
+  // "Each if ... statement is considered to be in its own implicit block."
+  ParseScope IfScope(this, Scope::DeclScope);
+
   CompositeTypeNameLitNeedsParensRAIIObject RequireParens(*this);
 
   SourceLocation StmtLoc = Tok.getLocation();
@@ -479,6 +483,10 @@ Parser::OwningStmtResult Parser::ParseIfStmt() {
 Action::OwningStmtResult Parser::ParseSwitchStmt() {
   assert(Tok.is(tok::kw_switch) && "expected 'switch'");
   ConsumeToken();
+
+  // http://tip.golang.org/ref/spec#Blocks
+  // "Each ... switch statement is considered to be in its own implicit block."
+  ParseScope SwitchScope(this, Scope::DeclScope);
 
   CompositeTypeNameLitNeedsParensRAIIObject RequireParens(*this);
 
@@ -729,6 +737,10 @@ bool Parser::ParseCommCase() {
 Action::OwningStmtResult Parser::ParseForStmt() {
   assert(Tok.is(tok::kw_for) && "expected 'for'");
   SourceLocation ForLoc = ConsumeToken();
+
+  // http://tip.golang.org/ref/spec#Blocks
+  // "Each for ... statement is considered to be in its own implicit block."
+  ParseScope ForScope(this, Scope::DeclScope);
 
   CompositeTypeNameLitNeedsParensRAIIObject RequireParens(*this);
 
