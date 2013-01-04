@@ -664,6 +664,17 @@ public:
     return ExprEmpty();
   }
 
+  /// \brief Parsed an operand name, such as 'foo'.
+  ///
+  /// Note that in expression contexts, this is also called for type names and
+  /// the first part of a QualifiedIdent (i.e. package names), as the parser
+  /// cannot tell different kinds of names apart.
+  virtual OwningExprResult ActOnOperandName(SourceLocation IILoc,
+                                            IdentifierInfo *II,
+                                            Scope *CurScope) {
+    return ExprEmpty();
+  }
+
   /// \brief Parsed a parenthesized expression.
   ///
   /// This can also be called for parenthesized types, for example when parsing
@@ -685,6 +696,8 @@ public:
   }
 
   /// \brief Parse a selector suffix expression, such as "a.foo".
+  ///
+  /// Note that this is also called for the '.' in QualifiedIdents.
   ///
   /// \param Base the expression that the selector is attached to.
   ///

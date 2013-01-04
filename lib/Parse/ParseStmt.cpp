@@ -52,7 +52,7 @@ Action::OwningStmtResult Parser::ParseStatement() {
     SourceLocation IILoc = ConsumeToken();
     if (Tok.is(tok::colon))
       return ParseLabeledStmtTail(IILoc, II);
-    return ParseSimpleStmtTail(II);
+    return ParseSimpleStmtTail(IILoc, II);
   }
 
   // non-identifier ExpressionStmts
@@ -93,8 +93,8 @@ Action::OwningStmtResult Parser::ParseSimpleStmt(SimpleStmtKind *OutKind,
   // with an Expression.
   if (Tok.is(tok::identifier)) {
     IdentifierInfo *II = Tok.getIdentifierInfo();
-    ConsumeToken();
-    return ParseSimpleStmtTail(II, OutKind, Ext);
+    SourceLocation IILoc = ConsumeToken();
+    return ParseSimpleStmtTail(IILoc, II, OutKind, Ext);
   }
   // Here: Statements starting with an unary operator, Conversions to
   // type literals that don't start with an operator (array, slice, map,
@@ -103,7 +103,7 @@ Action::OwningStmtResult Parser::ParseSimpleStmt(SimpleStmtKind *OutKind,
   SourceLocation StartLoc = Tok.getLocation();
   TypeSwitchGuardParam Opt, *POpt = Ext == SSE_TypeSwitchGuard ? &Opt : NULL;
   OwningExprResult LHSExpr = ParseExpression(POpt, NULL);
-  IdentOrExprList LHS(Actions, LHSExpr);
+  IdentOrExprList LHS(Actions, getCurScope(), LHSExpr);
   return ParseSimpleStmtTailAfterExpression(LHS, StartLoc, POpt, OutKind, Ext);
 }
 
@@ -157,16 +157,17 @@ public:
 
 /// Called after the leading IdentifierInfo of a simple statement has been read.
 Action::OwningStmtResult
-Parser::ParseSimpleStmtTail(IdentifierInfo *II, SimpleStmtKind *OutKind,
-                            SimpleStmtExts Ext) {
+Parser::ParseSimpleStmtTail(SourceLocation IILoc, IdentifierInfo *II,
+                            SimpleStmtKind *OutKind, SimpleStmtExts Ext) {
   TypeSwitchGuardParam Opt, *POpt = Ext == SSE_TypeSwitchGuard ? &Opt : NULL;
   SourceLocation StartLoc = PrevTokLocation;
   if (IsPossiblyIdentifierList()) {
-    IdentOrExprList LHS(Actions, StartLoc, II);
+    IdentOrExprList LHS(Actions, getCurScope(), StartLoc, II);
     return ParseSimpleStmtTailAfterExpression(LHS, StartLoc, POpt, OutKind,
                                               Ext);
   }
-  IdentOrExprList LHS(Actions, ParseExpressionTail(II, POpt));
+  IdentOrExprList LHS(Actions, getCurScope(),
+                      ParseExpressionTail(IILoc, II, POpt));
   return ParseSimpleStmtTailAfterExpression(LHS, StartLoc, POpt, OutKind, Ext);
 }
 
@@ -703,7 +704,7 @@ bool Parser::ParseCommCase() {
   // This is a RecvStmt.
   bool FoundAssignOp = false;
   if (Tok.is(tok::comma)) {
-    IdentOrExprList Exprs(Actions, move(LHS));
+    IdentOrExprList Exprs(Actions, getCurScope(), move(LHS));
     // FIXME: RecvStmt allows just one optional further Expr, no full exprlist.
     ParseExpressionListTail(Exprs);
 

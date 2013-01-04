@@ -280,7 +280,7 @@ public:
   //FIXME: Also, now that this accepts types, ExprResult doesn't make much sense
   OwningExprResult ParseExpression(TypeSwitchGuardParam *TSGOpt = NULL,
                                    TypeParam *TOpt = NULL);
-  OwningExprResult ParseExpressionTail(IdentifierInfo *II,
+  OwningExprResult ParseExpressionTail(SourceLocation IILoc, IdentifierInfo *II,
                                        TypeSwitchGuardParam *TSGOpt = NULL);
   OwningExprResult ParseRHSOfBinaryExpression(OwningExprResult LHS,
                                               prec::Level MinPrec,
@@ -290,7 +290,8 @@ public:
                                   TypeParam *TOpt = NULL);
   OwningExprResult ParsePrimaryExpr(TypeSwitchGuardParam *TSGOpt,
                                     TypeParam *TOpt);
-  OwningExprResult ParsePrimaryExprTail(IdentifierInfo *II);
+  OwningExprResult ParsePrimaryExprTail(SourceLocation IILoc,
+                                        IdentifierInfo *II);
   OwningExprResult ParseConversion(TypeParam *TOpt);
   OwningExprResult ParseConversionTail();
   OwningExprResult ParsePrimaryExprSuffix(OwningExprResult LHS,
@@ -329,6 +330,7 @@ public:
     enum ResultKind { RK_Expr, RK_Ident };
   private:
     Action &Actions;
+    Scope *S;
     IdentifierList Idents;  // Only valid if Kind == RK_Ident
     ExprVector Exprs;  // Only valid if Kind == RK_Expr
     ResultKind ResKind;
@@ -339,23 +341,25 @@ public:
         return;
       ResKind = RK_Expr;
       ArrayRef<IdentifierInfo*> IdentsRef = Idents.getIdents();
-      //ArrayRef<SourceLocation> IILocs = Idents.getIdentLocs();
+      ArrayRef<SourceLocation> IILocs = Idents.getIdentLocs();
       for (unsigned i = 0; i < IdentsRef.size(); ++i) {
-        OwningExprResult R(Actions); //FIXME: Actions.ActOnIdentifier(IILoc, II)
+        OwningExprResult R(
+            Actions.ActOnOperandName(IILocs[i], IdentsRef[i], S));
         Exprs.push_back(R.release());
       }
     }
 
   public:
     // Constructs an IdentOrExprList that contains an expression.
-    IdentOrExprList(Action &Actions, OwningExprResult Head)
-      : Actions(Actions), Exprs(Actions), ResKind(RK_Expr) {
+    IdentOrExprList(Action &Actions, Scope *S, OwningExprResult Head)
+      : Actions(Actions), S(S), Exprs(Actions), ResKind(RK_Expr) {
       Exprs.push_back(Head.release());
     }
 
     // Constructs an IdentOrExprList that contains an identifier.
-    IdentOrExprList(Action &Actions, SourceLocation IILoc, IdentifierInfo *II)
-      : Actions(Actions), Exprs(Actions), ResKind(RK_Ident) {
+    IdentOrExprList(Action &Actions, Scope *S,
+                    SourceLocation IILoc, IdentifierInfo *II)
+      : Actions(Actions), S(S), Exprs(Actions), ResKind(RK_Ident) {
       Idents.initialize(IILoc, II);
     }
 
@@ -370,7 +374,7 @@ public:
       if (ResKind == RK_Ident)
         Idents.add(CommaLoc, IILoc, II);
       else {
-        OwningExprResult R(Actions); //FIXME: Actions.ActOnIdentifier(IILoc, II)
+        OwningExprResult R(Actions.ActOnOperandName(IILoc, II, S));
         Exprs.push_back(R.release());
       }
     }
@@ -423,7 +427,7 @@ public:
   };
   OwningStmtResult ParseSimpleStmt(SimpleStmtKind *OutKind = NULL,
                                    SimpleStmtExts Ext = SSE_None);
-  OwningStmtResult ParseSimpleStmtTail(IdentifierInfo *II,
+  OwningStmtResult ParseSimpleStmtTail(SourceLocation IILoc, IdentifierInfo *II,
                                        SimpleStmtKind *OutKind = NULL,
                                        SimpleStmtExts Ext = SSE_None);
   OwningStmtResult ParseSimpleStmtTailAfterExpression(IdentOrExprList &LHS,

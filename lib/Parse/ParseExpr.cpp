@@ -62,8 +62,9 @@ Parser::ParseExpression(TypeSwitchGuardParam *TSGOpt, TypeParam *TOpt) {
 /// This is called for expressions that start with an identifier, after the
 /// initial identifier has been read.
 Parser::OwningExprResult
-Parser::ParseExpressionTail(IdentifierInfo *II, TypeSwitchGuardParam *TSGOpt) {
-  OwningExprResult LHS = ParsePrimaryExprTail(II);
+Parser::ParseExpressionTail(SourceLocation IILoc, IdentifierInfo *II,
+                            TypeSwitchGuardParam *TSGOpt) {
+  OwningExprResult LHS = ParsePrimaryExprTail(IILoc, II);
   LHS = ParsePrimaryExprSuffix(move(LHS), TSGOpt);
   return ParseRHSOfBinaryExpression(move(LHS), prec::Lowest, TSGOpt);
 }
@@ -189,8 +190,8 @@ Parser::ParsePrimaryExpr(TypeSwitchGuardParam *TSGOpt, TypeParam *TOpt) {
     break;
   case tok::identifier: {
     IdentifierInfo *II = Tok.getIdentifierInfo();
-    ConsumeToken();
-    Res = ParsePrimaryExprTail(II);
+    SourceLocation IILoc = ConsumeToken();
+    Res = ParsePrimaryExprTail(IILoc, II);
     break;
   }
   case tok::kw_chan:
@@ -241,7 +242,12 @@ Parser::ParsePrimaryExpr(TypeSwitchGuardParam *TSGOpt, TypeParam *TOpt) {
 /// This is called if the first token in a PrimaryExpression was an identifier,
 /// after that identifier has been read.
 Action::OwningExprResult
-Parser::ParsePrimaryExprTail(IdentifierInfo *II) {
+Parser::ParsePrimaryExprTail(SourceLocation IILoc, IdentifierInfo *II) {
+  // FIXME: this function should eventually disappear (once types work, calls
+  // should all accept types as parameters, and then sema can diag on that for
+  // non-builtincalls.)
+
+  OwningExprResult Res = Actions.ActOnOperandName(IILoc, II, getCurScope());
   // FIXME: Requiring this classification from the Action interface in the limit
   // means that MinimalAction needs to do module loading, which is probably
   // undesirable for most non-Sema clients.  Consider doing something like
@@ -313,7 +319,7 @@ Parser::ParsePrimaryExprTail(IdentifierInfo *II) {
       // '.(type)'.
       // FIXME This is not true if the builtin is shadowed.
       OwningExprResult LHS = ParseExpression(NULL, &TypeOpt);
-      IdentOrExprList Exprs(Actions, move(LHS));
+      IdentOrExprList Exprs(Actions, getCurScope(), move(LHS));
       ParseExpressionListTail(Exprs);
       if (Tok.is(tok::ellipsis))
         ConsumeToken();
@@ -334,7 +340,7 @@ Parser::ParsePrimaryExprTail(IdentifierInfo *II) {
     // suffix-parsing in ParsePrimaryExprSuffix().
     break;
   }
-  return Actions.ExprEmpty();  // FIXME
+  return move(Res);
 }
 
 /// Conversion = Type "(" Expression ")" .
@@ -627,9 +633,9 @@ Parser::ParseElement() {
   IdentifierInfo *FieldName = NULL;
   if (Tok.is(tok::identifier)) {
     IdentifierInfo *II = Tok.getIdentifierInfo();
-    ConsumeToken();
+    SourceLocation IILoc = ConsumeToken();
     if (Tok.isNot(tok::colon)) {
-      ParseExpressionTail(II);
+      ParseExpressionTail(IILoc, II);
     } else {
       FieldName = II;
     }
@@ -687,7 +693,7 @@ Parser::ParseExpressionList(ExprListTy &Exprs, TypeSwitchGuardParam *TSGOpt) {
   OwningExprResult LHS = ParseExpression(TSGOpt);
   if (Tok.is(tok::comma) && TSGOpt)
     TSGOpt->Reset(*this);
-  IdentOrExprList R(Actions, move(LHS));
+  IdentOrExprList R(Actions, getCurScope(), move(LHS));
   bool Failed = ParseExpressionListTail(R);
   Exprs = R.Expressions();
   return Failed;
@@ -713,7 +719,7 @@ Parser::ParseExpressionListTail(IdentOrExprList &Exprs) {
     if (IsPossiblyIdentifierList()) {
       Exprs.AddIdent(CommaLoc, IILoc, II);
     } else {
-      OwningExprResult R(ParseExpressionTail(II, NULL));
+      OwningExprResult R(ParseExpressionTail(IILoc, II, NULL));
       Exprs.AddExpr(move(R));
     }
   }
