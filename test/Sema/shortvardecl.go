@@ -3,11 +3,25 @@
 package p
 
 func f() {
-  a := 1  // expected-note {{previous definition is here}}
-  b, c := 2, 3  // expected-note {{previous definition is here}}
+  a := 1  // expected-note {{'a' declared here}}
+  b, c := 2, 3  // expected-note {{'b' declared here}}
 
-  a := 1  // expected-diag {{redefinition of 'a'}}
-  b := 1  // expected-diag {{redefinition of 'b'}}
+  a := 1  // expected-diag {{no new variables declared}}
+  b := 1  // expected-diag {{no new variables declared}}
+
+  // http://tip.golang.org/ref/spec#Short_variable_declarations
+  // "a short variable declaration may redeclare variables provided they were
+  // originally declared in the same block with the same type, and at least
+  // one of the non-blank variables is new."
+  a, d := 1, 2
+
+  // gc rejects this, but see here for a spec clarification request:
+  // https://code.google.com/p/go/issues/detail?id=4612
+  e, e := 1, 2  // expected-diag {{redefinition of 'e'}} expected-note {{previous definition is here}}
+
+  // FIXME: gc accepts this. should gong? wait for the resolution of the above
+  // bug.
+  a, f, f := 1, 2, 3  // expected-diag {{redefinition of 'f'}} expected-note {{previous definition is here}}
 }
 
 func num() {

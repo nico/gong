@@ -138,3 +138,6 @@ DIAG(too_few_initializers,      CLASS_ERROR,
     "too few initializers, expected %0, have %1")
 DIAG(too_many_initializers,     CLASS_ERROR,
     "too many initializers, expected %0, have %1")
+DIAG(no_new_vars_in_shortvardecl,  CLASS_ERROR,
+    "no new variables declared, use '=' instead of ':='")
+DIAG(note_var_declared,         CLASS_NOTE, "%0 declared here")

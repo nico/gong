@@ -62,36 +62,36 @@ func f() {
 type D int
 
 func scope_if() {
-  a := 1  // expected-note {{previous definition is here}}
+  a := 1  // expected-note {{declared here}}
   if a := 1; true {
     // FIXME: check that |a| is defined at this point.
-    a := 1  // expected-note {{previous definition is here}}
-    a := 1  // expected-diag {{redefinition of 'a'}}
+    a := 1  // expected-note {{declared here}}
+    a := 1  // expected-diag {{no new variables declared}}
   } else {
     // FIXME: check that |a| is defined at this point.
-    a := 1  // expected-note {{previous definition is here}}
-    a := 1  // expected-diag {{redefinition of 'a'}}
+    a := 1  // expected-note {{declared here}}
+    a := 1  // expected-diag {{no new variables declared}}
   }
-  a := 1  // expected-diag {{redefinition of 'a'}}
+  a := 1  // expected-diag {{no new variables declared}}
 }
 
 func scope_for() {
-  a := 1  // expected-note {{previous definition is here}}
+  a := 1  // expected-note {{declared here}}
   for a := 1; ; {
     // FIXME: check that |a| is defined at this point.
-    a := 1  // expected-note {{previous definition is here}}
-    a := 1  // expected-diag {{redefinition of 'a'}}
+    a := 1  // expected-note {{declared here}}
+    a := 1  // expected-diag {{no new variables declared}}
   }
-  a := 1  // expected-diag {{redefinition of 'a'}}
+  a := 1  // expected-diag {{no new variables declared}}
 }
 
 func scope_switch() {
-  a := 1  // expected-note {{previous definition is here}}
+  a := 1  // expected-note {{declared here}}
   switch a := 1; {
   default:
     // FIXME: check that |a| is defined at this point.
-    a := 1  // expected-note {{previous definition is here}}
-    a := 1  // expected-diag {{redefinition of 'a'}}
+    a := 1  // expected-note {{declared here}}
+    a := 1  // expected-diag {{no new variables declared}}
   }
-  a := 1  // expected-diag {{redefinition of 'a'}}
+  a := 1  // expected-diag {{no new variables declared}}
 }

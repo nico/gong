@@ -2206,8 +2206,7 @@ public:
                               RedeclarationKind Redecl
                                 = NotForRedeclaration);
 #endif
-  bool LookupName(LookupResult &R, Scope *S,
-                  bool AllowBuiltinCreation = false);
+  bool LookupName(LookupResult &R, Scope *S, bool AllowBuiltinCreation = false);
 #if 0
   bool LookupQualifiedName(LookupResult &R, DeclContext *LookupCtx,
                            bool InUnqualifiedLookup = false);

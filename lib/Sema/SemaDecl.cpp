@@ -1347,6 +1347,9 @@ static void CheckRedefinitionAndPushOnScope(Sema &Self, DeclContext *DC,
   Self.LookupName(Previous, S, /* CreateBuiltins = */ true);
 
   if (!Previous.empty()) {
+    // FIXME: It's a bit silly to do a full lookup and then check if the result
+    // is in the topmost scope.  Check if this can be done better. (Also in
+    // clang.)
     NamedDecl *Old = Previous.getRepresentativeDecl();
     if (Self.IdResolver.isDeclInScope(Old, DC, S)) {
       // FIXME: maybe check if this is a type redecl and do something more
@@ -1457,11 +1460,43 @@ Sema::ActOnShortVarDeclStmt(IdentifierList &IdentList,
     // FIXME: Remove superfluous expressions.
   }
 
+  // Collect previous decls.
+  llvm::SmallVector<NamedDecl *, 8> PrevDecls;
+  bool FoundNew = false;
+  for (unsigned i = 0; i < Idents.size(); ++i) {
+    LookupResult Previous(*this, Idents[i], IdentLocs[i],
+                          Sema::LookupOrdinaryName, Sema::ForRedeclaration);
+    LookupName(Previous, getCurScope());
+    if (!Previous.empty()) {
+      NamedDecl *Old = Previous.getRepresentativeDecl();
+      if (IdResolver.isDeclInScope(Old, CurContext, getCurScope())) {
+        PrevDecls.push_back(Old);
+        continue;
+      }
+    }
+    PrevDecls.push_back(NULL);
+    FoundNew = true;
+  }
+
+  if (!FoundNew) {
+    Diag(OpLoc, diag::no_new_vars_in_shortvardecl);
+    for (llvm::SmallVector<NamedDecl *, 10>::iterator I = PrevDecls.begin(),
+                                                      E = PrevDecls.end();
+         I != E; ++I)
+      Diag((*I)->getLocation(), diag::note_var_declared)
+          << &(*I)->getDeclName();
+    // FIXME: Recover by calling ActOnAssignment()
+    return StmtError();
+  }
+
+  // FIXME: own ast node for shortvardecl decls (and stmts)
   // FIXME: ownership
   VarSpecDecl *VarSpec = VarSpecDecl::Create(Context, CurContext, IdentLocs[0]);
   VarSpec->setIdents(Idents, IdentLocs);
 
   for (unsigned i = 0; i < Idents.size(); ++i) {
+    if (PrevDecls[i])
+      continue;
     VarDecl *New = VarDecl::Create(Context, VarSpec, i);
     CheckRedefinitionAndPushOnScope(*this, VarSpec, getCurScope(), New);
   }
