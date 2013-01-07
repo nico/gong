@@ -46,7 +46,7 @@ typedef llvm::PointerUnion<const Diagnostic *,
 class DiagnosticRenderer {
 protected:
   const LangOptions &LangOpts;
-  IntrusiveRefCntPtr<DiagnosticOptions> DiagOpts;
+  //IntrusiveRefCntPtr<DiagnosticOptions> DiagOpts;
   
   /// \brief The location of the previous diagnostic if known.
   ///
@@ -108,23 +108,13 @@ protected:
 
   
 private:
-  void emitIncludeStack(SourceLocation Loc, PresumedLoc PLoc,
-                        DiagnosticsEngine::Level Level, const SourceManager &SM);
-  void emitIncludeStackRecursively(SourceLocation Loc, const SourceManager &SM);
-  void emitImportStack(SourceLocation Loc, const SourceManager &SM);
-  void emitImportStackRecursively(SourceLocation Loc, StringRef ModuleName,
-                                  const SourceManager &SM);
-  void emitModuleBuildStack(const SourceManager &SM);
+  //void emitImportStack(SourceLocation Loc, const SourceManager &SM);
+  //void emitImportStackRecursively(SourceLocation Loc, StringRef ModuleName,
+                                  //const SourceManager &SM);
+  //void emitModuleBuildStack(const SourceManager &SM);
   void emitCaret(SourceLocation Loc, DiagnosticsEngine::Level Level,
                  ArrayRef<CharSourceRange> Ranges, ArrayRef<FixItHint> Hints,
                  const SourceManager &SM);
-  void emitMacroExpansions(SourceLocation Loc,
-                           DiagnosticsEngine::Level Level,
-                           ArrayRef<CharSourceRange> Ranges,
-                           ArrayRef<FixItHint> Hints,
-                           const SourceManager &SM,
-                           unsigned &MacroDepth,
-                           unsigned OnMacroInst = 0);
 public:
   /// \brief Emit a diagnostic.
   ///

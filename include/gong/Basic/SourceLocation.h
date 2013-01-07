@@ -75,7 +75,7 @@ public:
 /// A 'presumed' location can be modified by \#line and GNU line marker
 /// directives and is always the expansion point of a normal location.
 ///
-/// You can get a PresumedLoc from a SourceLocation with SourceManager.
+/// You can get a PresumedLoc from a SourceLocation with SourceMgr.
 class PresumedLoc {
   const char *Filename;
   unsigned Line, Col;
