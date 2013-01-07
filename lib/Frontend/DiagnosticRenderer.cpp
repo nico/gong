@@ -8,7 +8,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "gong/Frontend/DiagnosticRenderer.h"
-//#include "gong/Basic/DiagnosticOptions.h"
+#include "gong/Basic/DiagnosticOptions.h"
 #include "gong/Basic/Diagnostic.h"
 //#include "gong/Basic/FileManager.h"
 //#include "gong/Basic/SourceManager.h"
@@ -26,7 +26,7 @@ using namespace gong;
 
 DiagnosticRenderer::DiagnosticRenderer(const LangOptions &LangOpts,
                                        DiagnosticOptions *DiagOpts)
-  : LangOpts(LangOpts), /*DiagOpts(DiagOpts),*/ LastLevel() {}
+  : LangOpts(LangOpts), DiagOpts(DiagOpts), LastLevel() {}
 
 DiagnosticRenderer::~DiagnosticRenderer() {}
 

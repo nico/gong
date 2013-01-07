@@ -46,7 +46,7 @@ typedef llvm::PointerUnion<const Diagnostic *,
 class DiagnosticRenderer {
 protected:
   const LangOptions &LangOpts;
-  //IntrusiveRefCntPtr<DiagnosticOptions> DiagOpts;
+  IntrusiveRefCntPtr<DiagnosticOptions> DiagOpts;
   
   /// \brief The location of the previous diagnostic if known.
   ///
