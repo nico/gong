@@ -16,13 +16,6 @@
 
 namespace gong {
 
-/// \brief Specifies which overload candidates to display when overload
-/// resolution fails.
-enum OverloadsShown {
-  Ovl_All,  ///< Show all overloads.
-  Ovl_Best  ///< Show just the "best" overload candidates.
-};
-
 /// DiagnosticOptions - Options for controlling the compiler diagnostics
 /// engine.
 class DiagnosticOptions : public llvm::RefCountedBase<DiagnosticOptions>{
@@ -50,17 +43,17 @@ protected:
 public:
   /// If non-empty, a file to log extended build information to, for development
   /// testing and analysis.
-  std::string DumpBuildInformation;
+  //std::string DumpBuildInformation;
 
   /// The file to log diagnostic output to.
-  std::string DiagnosticLogFile;
+  //std::string DiagnosticLogFile;
   
   /// The file to serialize diagnostics to (non-appending).
-  std::string DiagnosticSerializationFile;
+  //std::string DiagnosticSerializationFile;
 
   /// The list of -W... options used to alter the diagnostic mappings, with the
   /// prefixes removed.
-  std::vector<std::string> Warnings;
+  //std::vector<std::string> Warnings;
 
 public:
   // Define accessors/mutators for diagnostic options of enumeration type.
