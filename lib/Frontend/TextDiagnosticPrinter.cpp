@@ -14,6 +14,7 @@
 #include "gong/Frontend/TextDiagnosticPrinter.h"
 
 #include "gong/Basic/SourceLocation.h"
+#include "gong/Frontend/TextDiagnostic.h"
 #include "llvm/ADT/Twine.h"
 #include "llvm/Support/SourceMgr.h"
 #include "llvm/ADT/SmallString.h"
