@@ -36,6 +36,93 @@ class DiagnosticBuilder;
 class DiagnosticConsumer;
 class IdentifierInfo;
 
+/// \brief Annotates a diagnostic with some code that should be
+/// inserted, removed, or replaced to fix the problem.
+///
+/// This kind of hint should be used when we are certain that the
+/// introduction, removal, or modification of a particular (small!)
+/// amount of code will correct a compilation error. The compiler
+/// should also provide full recovery from such errors, such that
+/// suppressing the diagnostic output can still result in successful
+/// compilation.
+class FixItHint {
+public:
+  /// \brief Code that should be replaced to correct the error. Empty for an
+  /// insertion hint.
+  CharSourceRange RemoveRange;
+
+  /// \brief Code in the specific range that should be inserted in the insertion
+  /// location.
+  CharSourceRange InsertFromRange;
+
+  /// \brief The actual code to insert at the insertion location, as a
+  /// string.
+  std::string CodeToInsert;
+
+  bool BeforePreviousInsertions;
+
+  /// \brief Empty code modification hint, indicating that no code
+  /// modification is known.
+  FixItHint() : BeforePreviousInsertions(false) { }
+
+  bool isNull() const {
+    return !RemoveRange.isValid();
+  }
+  
+  /// \brief Create a code modification hint that inserts the given
+  /// code string at a specific location.
+  static FixItHint CreateInsertion(SourceLocation InsertionLoc,
+                                   StringRef Code,
+                                   bool BeforePreviousInsertions = false) {
+    FixItHint Hint;
+    Hint.RemoveRange =
+        CharSourceRange::getCharRange(InsertionLoc, InsertionLoc);
+    Hint.CodeToInsert = Code;
+    Hint.BeforePreviousInsertions = BeforePreviousInsertions;
+    return Hint;
+  }
+  
+  /// \brief Create a code modification hint that inserts the given
+  /// code from \p FromRange at a specific location.
+  static FixItHint CreateInsertionFromRange(SourceLocation InsertionLoc,
+                                            CharSourceRange FromRange,
+                                        bool BeforePreviousInsertions = false) {
+    FixItHint Hint;
+    Hint.RemoveRange =
+      CharSourceRange::getCharRange(InsertionLoc, InsertionLoc);
+    Hint.InsertFromRange = FromRange;
+    Hint.BeforePreviousInsertions = BeforePreviousInsertions;
+    return Hint;
+  }
+
+  /// \brief Create a code modification hint that removes the given
+  /// source range.
+  static FixItHint CreateRemoval(CharSourceRange RemoveRange) {
+    FixItHint Hint;
+    Hint.RemoveRange = RemoveRange;
+    return Hint;
+  }
+  static FixItHint CreateRemoval(SourceRange RemoveRange) {
+    return CreateRemoval(CharSourceRange::getTokenRange(RemoveRange));
+  }
+  
+  /// \brief Create a code modification hint that replaces the given
+  /// source range with the given code string.
+  static FixItHint CreateReplacement(CharSourceRange RemoveRange,
+                                     StringRef Code) {
+    FixItHint Hint;
+    Hint.RemoveRange = RemoveRange;
+    Hint.CodeToInsert = Code;
+    return Hint;
+  }
+  
+  static FixItHint CreateReplacement(SourceRange RemoveRange,
+                                     StringRef Code) {
+    return CreateReplacement(CharSourceRange::getTokenRange(RemoveRange), Code);
+  }
+};
+
+
 /// \brief Concrete class used by the front-end to report problems and issues.
 ///
 /// This massages the diagnostics (e.g. handling things like "report warnings
