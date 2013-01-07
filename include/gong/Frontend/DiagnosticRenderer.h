@@ -84,8 +84,6 @@ protected:
                                  ArrayRef<CharSourceRange> Ranges,
                                  const SourceManager &SM) = 0;
   
-  virtual void emitBasicNote(StringRef Message) = 0;
-  
   virtual void emitCodeContext(SourceLocation Loc,
                                DiagnosticsEngine::Level Level,
                                SmallVectorImpl<CharSourceRange>& Ranges,
@@ -149,8 +147,6 @@ public:
   
   virtual ~DiagnosticNoteRenderer();
   
-  virtual void emitBasicNote(StringRef Message);
-    
   virtual void emitIncludeLocation(SourceLocation Loc,
                                    PresumedLoc PLoc,
                                    const SourceManager &SM);

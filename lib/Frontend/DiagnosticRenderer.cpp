@@ -173,8 +173,3 @@ DiagnosticNoteRenderer::emitBuildingModuleLocation(SourceLocation Loc,
           << PLoc.getFilename() << ':' << PLoc.getLine() << ":";
   emitNote(Loc, Message.str(), &SM);
 }
-
-
-void DiagnosticNoteRenderer::emitBasicNote(StringRef Message) {
-  emitNote(SourceLocation(), Message, 0);  
-}

@@ -16,6 +16,8 @@ literal lexing and diags (078 vs 078.0, 'aa', etc. `ack FIXME test/Lex`)
 use lexer to train a n-gram token model, write a markov go generator using that
 data
 
+unifiy utf8 functions with the ones in Basic (used by libFrontend)
+
 
 Parser
 =====
