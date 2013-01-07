@@ -1222,8 +1222,8 @@ bool Parser::ExpectAndConsume(tok::TokenKind ExpectedTok, unsigned DiagID,
     SourceLocation Loc = Tok.getLocation();
     Diag(Loc, DiagID)
       << Msg
-      /*<< FixItHint::CreateReplacement(SourceRange(Loc),
-                                      getTokenSimpleSpelling(ExpectedTok))*/;
+      << FixItHint::CreateReplacement(SourceRange(Loc, Loc),
+                                      getTokenSimpleSpelling(ExpectedTok));
     ConsumeAnyToken();
 
     // Pretend there wasn't a problem.
