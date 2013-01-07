@@ -1196,30 +1196,6 @@ void PrettyStackTraceParserEntry::print(raw_ostream &OS) const {
   OS << ": current parser token '" << L.getSpelling(Tok) << "'\n";
 }
 
-#if 0
-
-/// \brief Emits a diagnostic suggesting parentheses surrounding a
-/// given range.
-///
-/// \param Loc The location where we'll emit the diagnostic.
-/// \param DK The kind of diagnostic to emit.
-/// \param ParenRange Source range enclosing code that should be parenthesized.
-void Parser::SuggestParentheses(SourceLocation Loc, unsigned DK,
-                                SourceRange ParenRange) {
-  SourceLocation EndLoc = PP.getLocForEndOfToken(ParenRange.getEnd());
-  if (!ParenRange.getEnd().isFileID() || EndLoc.isInvalid()) {
-    // We can't display the parentheses, so just dig the
-    // warning/error and return.
-    Diag(Loc, DK);
-    return;
-  }
-
-  Diag(Loc, DK)
-    << FixItHint::CreateInsertion(ParenRange.getBegin(), "(")
-    << FixItHint::CreateInsertion(EndLoc, ")");
-}
-#endif
-
 static bool IsCommonTypo(tok::TokenKind ExpectedTok, const Token &Tok) {
   switch (ExpectedTok) {
   case tok::semi:

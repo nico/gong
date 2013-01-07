@@ -121,7 +121,6 @@ public:
   // Type forwarding.  All of these are statically 'void*', but they may all be
   // different actual classes based on the actions in place.
   //typedef OpaquePtr<DeclGroupRef> DeclGroupPtrTy;
-  //typedef OpaquePtr<TemplateName> TemplateTy;
 
   //typedef SmallVector<TemplateParameterList *, 4> TemplateParameterLists;
 
@@ -509,10 +508,6 @@ private:
     return Tok.getKind() == tok::string_literal;
   }
 
-  /// \brief Returns true if the current token is '=' or is a type of '='.
-  /// For typos, give a fixit to '='
-  bool isTokenEqualOrEqualTypo();
-
   /// ConsumeAnyToken - Dispatch to the right Consume* method based on the
   /// current token type.  This should only be used in cases where the type of
   /// the token really isn't known, e.g. in error recovery.
@@ -714,10 +709,6 @@ public:
     return Diag(Tok, DiagID);
   }
 
-private:
-  void SuggestParentheses(SourceLocation Loc, unsigned DK,
-                          SourceRange ParenRange);
-
 public:
   /// SkipUntil - Read tokens until we get to the specified token, then consume
   /// it (unless DontConsume is true).  Because we cannot guarantee that the
@@ -751,13 +742,6 @@ public:
   void SkipMalformedDecl();
 
 #if 0
-private:
-
-  Decl *ParseFunctionDefinition(ParsingDeclarator &D,
-                 const ParsedTemplateInfo &TemplateInfo = ParsedTemplateInfo(),
-                 LateParsedAttrList *LateParsedAttrs = 0);
-
-
 public:
   //===--------------------------------------------------------------------===//
   // Preprocessor code-completion pass-through
