@@ -318,11 +318,11 @@ private:
   intptr_t DiagArgumentsVal[MaxArguments];
 
   /// \brief The list of ranges added to this diagnostic.
-  //CharSourceRange DiagRanges[MaxRanges];
+  CharSourceRange DiagRanges[MaxRanges];
 
   /// \brief If valid, provides a hint with some code to insert, remove,
   /// or modify at a particular position.
-  //FixItHint DiagFixItHints[MaxFixItHints];
+  FixItHint DiagFixItHints[MaxFixItHints];
 
 
   friend class Diagnostic;
@@ -467,19 +467,19 @@ public:
     DiagObj->DiagArgumentsVal[NumArgs++] = V;
   }
 
-  //void AddSourceRange(const CharSourceRange &R) const {
-  //  assert(isActive() && "Clients must not add to cleared diagnostic!");
-  //  assert(NumRanges < DiagnosticsEngine::MaxRanges &&
-  //         "Too many arguments to diagnostic!");
-  //  DiagObj->DiagRanges[NumRanges++] = R;
-  //}
+  void AddSourceRange(const CharSourceRange &R) const {
+    assert(isActive() && "Clients must not add to cleared diagnostic!");
+    assert(NumRanges < DiagnosticsEngine::MaxRanges &&
+           "Too many arguments to diagnostic!");
+    DiagObj->DiagRanges[NumRanges++] = R;
+  }
 
-  //void AddFixItHint(const FixItHint &Hint) const {
-  //  assert(isActive() && "Clients must not add to cleared diagnostic!");
-  //  assert(NumFixits < DiagnosticsEngine::MaxFixItHints &&
-  //         "Too many arguments to diagnostic!");
-  //  DiagObj->DiagFixItHints[NumFixits++] = Hint;
-  //}
+  void AddFixItHint(const FixItHint &Hint) const {
+    assert(isActive() && "Clients must not add to cleared diagnostic!");
+    assert(NumFixits < DiagnosticsEngine::MaxFixItHints &&
+           "Too many arguments to diagnostic!");
+    DiagObj->DiagFixItHints[NumFixits++] = Hint;
+  }
 
   bool hasMaxRanges() const {
     return NumRanges == DiagnosticsEngine::MaxRanges;
@@ -522,24 +522,24 @@ inline const DiagnosticBuilder &operator<<(const DiagnosticBuilder &DB,
   return DB;
 }
 
-//inline const DiagnosticBuilder &operator<<(const DiagnosticBuilder &DB,
-//                                           const SourceRange &R) {
-//  DB.AddSourceRange(CharSourceRange::getTokenRange(R));
-//  return DB;
-//}
-//
-//inline const DiagnosticBuilder &operator<<(const DiagnosticBuilder &DB,
-//                                           const CharSourceRange &R) {
-//  DB.AddSourceRange(R);
-//  return DB;
-//}
-//  
-//inline const DiagnosticBuilder &operator<<(const DiagnosticBuilder &DB,
-//                                           const FixItHint &Hint) {
-//  if (!Hint.isNull())
-//    DB.AddFixItHint(Hint);
-//  return DB;
-//}
+inline const DiagnosticBuilder &operator<<(const DiagnosticBuilder &DB,
+                                           const SourceRange &R) {
+  DB.AddSourceRange(CharSourceRange::getTokenRange(R));
+  return DB;
+}
+
+inline const DiagnosticBuilder &operator<<(const DiagnosticBuilder &DB,
+                                           const CharSourceRange &R) {
+  DB.AddSourceRange(R);
+  return DB;
+}
+  
+inline const DiagnosticBuilder &operator<<(const DiagnosticBuilder &DB,
+                                           const FixItHint &Hint) {
+  if (!Hint.isNull())
+    DB.AddFixItHint(Hint);
+  return DB;
+}
 
 inline DiagnosticBuilder DiagnosticsEngine::Report(SourceLocation Loc,
                                             unsigned DiagID){
