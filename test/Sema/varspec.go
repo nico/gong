@@ -25,3 +25,7 @@ func withInitializers() {
     vC float32 = 4  // expected-diag {{redefinition of 'vC'}}
   )
 }
+
+var (
+  A = func()int {var (C = 4); return C}()
+)

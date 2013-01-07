@@ -118,8 +118,6 @@ Sema / AST
 
 Inject into scopes:
 * function parameters
-* simplevardecls
-* decls in ifs, fors, switchs, selects
 * decls in case clauses
 * handle methoddecls
 
@@ -143,36 +141,6 @@ Inject into scopes:
   the same names as file-scoped stuff.
 
   - Identifier resolving: IdentifierResolver.cpp
-
-  Plan:
-    ActOnDeclGroupStart/End() for () decls? With type, for iota
-        Sema needs a stack of groups
-        Where is the SourceLoc for the 'var'/'const'/'type' keywords stored?
-        Groups need paren locs too
-
-      ActOnTypeSpec(identifier, type)
-
-      // type* and exprlist* can both be NULL (for implicit iota and so on)
-      // if type* is not NULL, exprlist* is always non-NULL too.
-      ActOnConstSpec(identlist, type*, sourceloc equalloc, exprlist*)
-
-      // type is mandatory, exprlist is optional.
-      ActOnVarSpec(identlist, type, sourceloc equalloc, exprlist*)
-
-      // exprlist is mandatory
-      ActOnVarSpec(identlist, equalloc, exprlist)
-
-    ActOnFunctionDecl(sourceloc funcloc, ident name, signature)
-    ActOnMethodDecl(ident, star, ident, funcloc, name, signature)
-
-    ActOnShortVarDecl(identlist, equalloc, exprlist)
-
-    Hm, these need Type and Expr already. Punt that part for now.
-
-  This is valid and has nested decl groups:
-  var (
-    A = func()int {const (C = iota); return C}()
-  )
 
   identlists in gong vs declarators in clang: ActOnDeclarator called for every
   single declarator
@@ -211,10 +179,6 @@ Inject into scopes:
     decl merging
 
   substeps
-  - ast nodes for specs, spec groups
-    - for all types too eventually
-  - actions interface for specs, scopes
-  - get scoping right
   - special rules: don't bind to '_', allow redefinitions of global 'init()'
   - later: structs, methoddecls, type correction for structs, modules
   - DeclTy ownership
@@ -231,10 +195,6 @@ Inject into scopes:
 
 
 Find out:
-* DeclTy casting system
-  Sema::ActOnAlignOfExpr() for example just takes a void* and casts.
-  There's also ExprArg with a takeAs<Expr>() method
-  Calls have MultiExprArg (ActOnCallExpr)
 * go doesn't need predeclarations for methods, figure out how to do that
   => similar to objc, check what clang does.
   Parser.h:
@@ -263,15 +223,11 @@ Find out:
 
 
  http://lists.cs.uiuc.edu/pipermail/cfe-commits/Week-of-Mon-20120206/052791.html
-* DeclTY etc allocation: new (Context) Whatevs(...)
-* Find out why Sema.h moved from lib/ to include/
 * QualType and Type
 * ASTContext turns Decls into QualTypes
 * QualType vs CanQualType
 * redeclarations in go -> not allowed at all!
   ...except for init() 9_9
-* i-c-e handling
-  -> http://clang.llvm.org/docs/InternalsManual.html#Constants
 * Basic idea of package handling
   Looks like all source files in the same package need to be compiled in one
   compiler invocation. They're probably all parsed, then merged, then Sema'd
@@ -280,6 +236,7 @@ Find out:
 
 
 constants / constant expressions:
+  -> http://clang.llvm.org/docs/InternalsManual.html#Constants
   http://tip.golang.org/ref/spec#Constant_expressions
   http://tip.golang.org/ref/spec#Constants
  integer, rune, float complex, string
