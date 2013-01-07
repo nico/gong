@@ -1143,32 +1143,6 @@ public:
     return SourceRange();
   }
   
-  /// \brief Parsed an id-expression (C++) or identifier (C) in expression
-  /// context, e.g., the expression "x" that refers to a variable named "x".
-  ///
-  /// \param S the scope in which this id-expression or identifier occurs.
-  ///
-  /// \param SS the C++ nested-name-specifier that qualifies the name of the
-  /// value, e.g., "std::" in "std::sort".
-  ///
-  /// \param Name the name to which the id-expression refers. In C, this will
-  /// always be an identifier. In C++, it may also be an overloaded operator,
-  /// destructor name (if there is a nested-name-specifier), or template-id.
-  ///
-  /// \param HasTrailingLParen whether the next token following the 
-  /// id-expression or identifier is a left parentheses ('(').
-  ///
-  /// \param IsAddressOfOperand whether the token that precedes this 
-  /// id-expression or identifier was an ampersand ('&'), indicating that 
-  /// we will be taking the address of this expression.
-  virtual OwningExprResult ActOnIdExpression(Scope *S,
-                                             CXXScopeSpec &SS,
-                                             UnqualifiedId &Name,
-                                             bool HasTrailingLParen,
-                                             bool IsAddressOfOperand) {
-    return ExprEmpty();
-  }
-  
   // Postfix Expressions.
 
   /// \brief Parsed a member access expresion (C99 6.5.2.3, C++ [expr.ref])
