@@ -748,20 +748,20 @@ void TextDiagnostic::emitDiagnosticLoc(SourceLocation Loc, PresumedLoc PLoc,
                                        ArrayRef<CharSourceRange> Ranges,
                                        const SourceManager &SM) {
   if (PLoc.isInvalid()) {
-    // At least print the file name if available: FIXME
-    //FileID FID = SM.getFileID(Loc);
-    //if (!FID.isInvalid()) {
-    //  const FileEntry* FE = SM.getFileEntryForID(FID);
-    //  if (FE && FE->getName()) {
-    //    OS << FE->getName();
-    //    if (FE->getDevice() == 0 && FE->getInode() == 0
-    //        && FE->getFileMode() == 0) {
-    //      // in PCH is a guess, but a good one:
-    //      OS << " (in PCH)";
-    //    }
-    //    OS << ": ";
-    //  }
-    //}
+    // At least print the file name if available:
+    int FID = SM.FindBufferContainingLoc(Loc);
+    if (FID != -1) {
+      const llvm::MemoryBuffer* FE = SM.getMemoryBuffer(FID);
+      if (FE && FE->getBufferIdentifier()) {
+        OS << FE->getBufferIdentifier();
+        //if (FE->getDevice() == 0 && FE->getInode() == 0
+        //    && FE->getFileMode() == 0) {
+        //  // in PCH is a guess, but a good one:
+        //  OS << " (in PCH)";
+        //}
+        OS << ": ";
+      }
+    }
     return;
   }
   unsigned LineNo = PLoc.getLine();
