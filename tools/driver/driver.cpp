@@ -38,11 +38,14 @@
 #include "llvm/Support/Host.h"
 #include "llvm/Support/Path.h"
 #include "llvm/Support/Program.h"
+#include "llvm/Support/Process.h"
 #include "llvm/Support/Signals.h"
 #include "llvm/Support/SourceMgr.h"
 #include "llvm/Support/TargetSelect.h"
 #include <cctype>
 using namespace gong;
+
+namespace {
 
 void DumpTokens(Lexer &L) {
   Token Tok;
@@ -51,6 +54,15 @@ void DumpTokens(Lexer &L) {
     L.DumpToken(Tok, true);
     llvm::errs() << "\n";
   } while (Tok.isNot(tok::eof));
+}
+
+void ParseDiagnosticArgs(DiagnosticOptions &DiagOpts, int argc,
+                         const char **argv) {
+  DiagOpts.ShowColors = llvm::sys::Process::StandardErrHasColors();
+  for (int i = 1; i < argc; ++i) {
+  }
+}
+
 }
 
 int main(int argc_, const char **argv_) {
@@ -79,8 +91,15 @@ int main(int argc_, const char **argv_) {
 
   llvm::SourceMgr SM;
 
+  IntrusiveRefCntPtr<DiagnosticOptions> DiagOpts = new DiagnosticOptions;
+  ParseDiagnosticArgs(*DiagOpts, argc_, argv_);
+  // Now we can create the DiagnosticsEngine with a properly-filled-out
+  // DiagnosticOptions instance.
+  TextDiagnosticPrinter *DiagClient
+    = new TextDiagnosticPrinter(llvm::errs(), &*DiagOpts);
+
   IntrusiveRefCntPtr<DiagnosticIDs> DiagIDs(new DiagnosticIDs);
-  DiagnosticsEngine Diags(DiagIDs, new TextDiagnosticPrinter);
+  DiagnosticsEngine Diags(DiagIDs, DiagClient);
   Diags.setSourceManager(&SM);
 
   if (FileName) {

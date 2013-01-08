@@ -6,10 +6,10 @@ func g() {
 
 ;  // expected-note {{random note}}
 }
-// CHECK: <unknown>:0: error: 'error' diagnostic expected but not seen: 
+// CHECK: error: 'error' diagnostic expected but not seen: 
 // CHECK-NEXT:   Line 5: empty run literal
-// CHECK-NEXT: <unknown>:0: error: 'error' diagnostic seen but not expected: 
+// CHECK-NEXT: error: 'error' diagnostic seen but not expected: 
 // CHECK-NEXT:   Line 5: empty rune literal
 // CHECK-NEXT:   Line 5: expected statement
-// CHECK-NEXT: <unknown>:0: error: 'note' diagnostic expected but not seen: 
+// CHECK-NEXT: error: 'note' diagnostic expected but not seen: 
 // CHECK-NEXT:   Line 7: random note
