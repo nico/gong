@@ -19,6 +19,7 @@
 #include "gong/Basic/Diagnostic.h"
 #include "gong/Basic/LLVM.h"
 #include "gong/Basic/SourceLocation.h"
+#include "gong/Basic/SourceManager.h"
 #include "llvm/ADT/Optional.h"
 #include "llvm/ADT/PointerUnion.h"
 
@@ -26,7 +27,6 @@ namespace gong {
 
 class DiagnosticOptions;
 class LangOptions;
-class SourceManager;
 class StoredDiagnostic;
 
 typedef llvm::PointerUnion<const Diagnostic *,
