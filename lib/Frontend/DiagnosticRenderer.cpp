@@ -55,7 +55,7 @@ void DiagnosticRenderer::emitDiagnostic(SourceLocation Loc,
       if (I->RemoveRange.isValid())
         MutableRanges.push_back(I->RemoveRange);
 
-    PresumedLoc PLoc; // FIXME = SM->getPresumedLoc(Loc);
+    PresumedLoc PLoc = PresumedLoc::build(*SM, Loc);
 
     // Next, emit the actual diagnostic message and caret.
     emitDiagnosticMessage(Loc, PLoc, Level, Message, Ranges, SM, D);
