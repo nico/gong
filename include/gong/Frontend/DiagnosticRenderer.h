@@ -26,7 +26,7 @@
 namespace gong {
 
 class DiagnosticOptions;
-class LangOptions;
+//class LangOptions;
 class StoredDiagnostic;
 
 typedef llvm::PointerUnion<const Diagnostic *,
@@ -45,7 +45,7 @@ typedef llvm::PointerUnion<const Diagnostic *,
 /// class.
 class DiagnosticRenderer {
 protected:
-  const LangOptions &LangOpts;
+  //const LangOptions &LangOpts;
   IntrusiveRefCntPtr<DiagnosticOptions> DiagOpts;
   
   /// \brief The location of the previous diagnostic if known.
@@ -67,7 +67,7 @@ protected:
   /// which change the amount of information displayed.
   DiagnosticsEngine::Level LastLevel;
 
-  DiagnosticRenderer(const LangOptions &LangOpts,
+  DiagnosticRenderer(//const LangOptions &LangOpts,
                      DiagnosticOptions *DiagOpts);
   
   virtual ~DiagnosticRenderer();
@@ -141,9 +141,9 @@ public:
 /// notes.  It is up to subclasses to further define the behavior.
 class DiagnosticNoteRenderer : public DiagnosticRenderer {
 public:
-  DiagnosticNoteRenderer(const LangOptions &LangOpts,
+  DiagnosticNoteRenderer(//const LangOptions &LangOpts,
                          DiagnosticOptions *DiagOpts)
-    : DiagnosticRenderer(LangOpts, DiagOpts) {}
+    : DiagnosticRenderer(/*LangOpts,*/ DiagOpts) {}
   
   virtual ~DiagnosticNoteRenderer();
   

@@ -24,9 +24,9 @@
 #include <algorithm>
 using namespace gong;
 
-DiagnosticRenderer::DiagnosticRenderer(const LangOptions &LangOpts,
+DiagnosticRenderer::DiagnosticRenderer(//const LangOptions &LangOpts,
                                        DiagnosticOptions *DiagOpts)
-  : LangOpts(LangOpts), DiagOpts(DiagOpts), LastLevel() {}
+  : /*LangOpts(LangOpts),*/ DiagOpts(DiagOpts), LastLevel() {}
 
 DiagnosticRenderer::~DiagnosticRenderer() {}
 

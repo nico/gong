@@ -646,9 +646,9 @@ static bool printWordWrapped(raw_ostream &OS, StringRef Str,
 }
 
 TextDiagnostic::TextDiagnostic(raw_ostream &OS,
-                               const LangOptions &LangOpts,
+                               //const LangOptions &LangOpts,
                                DiagnosticOptions *DiagOpts)
-  : DiagnosticRenderer(LangOpts, DiagOpts), OS(OS) {}
+  : DiagnosticRenderer(/*LangOpts,*/ DiagOpts), OS(OS) {}
 
 TextDiagnostic::~TextDiagnostic() {}
 
@@ -865,8 +865,8 @@ static void highlightRange(const CharSourceRange &R,
                            unsigned LineNo,
                            const SourceColumnMap &map,
                            std::string &CaretLine,
-                           const SourceManager &SM,
-                           const LangOptions &LangOpts) {
+                           const SourceManager &SM/*,
+                           const LangOptions &LangOpts*/) {
   if (!R.isValid()) return;
 
   SourceLocation Begin = R.getBegin();
@@ -1065,7 +1065,7 @@ void TextDiagnostic::emitSnippetAndCaret(
   for (SmallVectorImpl<CharSourceRange>::iterator I = Ranges.begin(),
                                                   E = Ranges.end();
        I != E; ++I)
-    highlightRange(*I, LineNo, sourceColMap, CaretLine, SM, LangOpts);
+    highlightRange(*I, LineNo, sourceColMap, CaretLine, SM/*, LangOpts*/);
 
   // Next, insert the caret itself.
   ColNo = sourceColMap.byteToContainingColumn(ColNo-1);
