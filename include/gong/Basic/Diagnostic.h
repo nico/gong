@@ -629,6 +629,35 @@ public:
     return DiagObj->DiagArgumentsVal[Idx];
   }
 
+  /// \brief Return the number of source ranges associated with this diagnostic.
+  unsigned getNumRanges() const {
+    return DiagObj->NumDiagRanges;
+  }
+
+  /// \pre Idx < getNumRanges()
+  const CharSourceRange &getRange(unsigned Idx) const {
+    assert(Idx < DiagObj->NumDiagRanges && "Invalid diagnostic range index!");
+    return DiagObj->DiagRanges[Idx];
+  }
+
+  /// \brief Return an array reference for this diagnostic's ranges.
+  ArrayRef<CharSourceRange> getRanges() const {
+    return llvm::makeArrayRef(DiagObj->DiagRanges, DiagObj->NumDiagRanges);
+  }
+
+  unsigned getNumFixItHints() const {
+    return DiagObj->NumDiagFixItHints;
+  }
+
+  const FixItHint &getFixItHint(unsigned Idx) const {
+    assert(Idx < getNumFixItHints() && "Invalid index!");
+    return DiagObj->DiagFixItHints[Idx];
+  }
+
+  const FixItHint *getFixItHints() const {
+    return getNumFixItHints()? DiagObj->DiagFixItHints : 0;
+  }
+
   /// \brief Format this diagnostic into a string, substituting the
   /// formal arguments into the %0 slots.
   ///
