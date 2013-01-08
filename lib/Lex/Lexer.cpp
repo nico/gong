@@ -217,9 +217,9 @@ Lexer::Lexer(DiagnosticsEngine &Diags, llvm::SourceMgr& SM,
 /// Lexer constructor - Create a new raw lexer object.  This object is only
 /// suitable for calls to 'LexFromRawLexer'.  This lexer assumes that the text
 /// range will outlive it, so it doesn't take ownership of it.
-Lexer::Lexer(SourceLocation fileloc, //const LangOptions &langOpts,
+Lexer::Lexer(//SourceLocation fileloc, //const LangOptions &langOpts,
              const char *BufStart, const char *BufPtr, const char *BufEnd)
-  : Diags(NULL),SM(NULL) /*FileLoc(fileloc), LangOpts(langOpts)*/ {
+  : Diags(NULL), SM(NULL) /*FileLoc(fileloc), LangOpts(langOpts)*/ {
 
   InitLexer(BufStart, BufPtr, BufEnd);
 
@@ -728,22 +728,21 @@ void Lexer::Stringify(SmallVectorImpl<char> &Str) {
     }
   }
 }
+#endif
 
 //===----------------------------------------------------------------------===//
 // Token Spelling
 //===----------------------------------------------------------------------===//
-
-static bool isWhitespace(unsigned char c);
 
 /// MeasureTokenLength - Relex the token at the specified location and return
 /// its length in bytes in the input file.  If the token needs cleaning (e.g.
 /// includes a trigraph or an escaped newline) then this count includes bytes
 /// that are part of that.
 unsigned Lexer::MeasureTokenLength(SourceLocation Loc,
-                                   const SourceManager &SM,
-                                   const LangOptions &LangOpts) {
+                                   const llvm::SourceMgr &SM/*,
+                                   const LangOptions &LangOpts*/) {
   Token TheTok;
-  if (getRawToken(Loc, TheTok, SM, LangOpts))
+  if (getRawToken(Loc, TheTok, SM/*, LangOpts*/))
     return 0;
   return TheTok.getLength();
 }
@@ -751,36 +750,33 @@ unsigned Lexer::MeasureTokenLength(SourceLocation Loc,
 /// \brief Relex the token at the specified location.
 /// \returns true if there was a failure, false on success.
 bool Lexer::getRawToken(SourceLocation Loc, Token &Result,
-                        const SourceManager &SM,
-                        const LangOptions &LangOpts) {
+                        const llvm::SourceMgr &SM/*,
+                        const LangOptions &LangOpts*/) {
   // TODO: this could be special cased for common tokens like identifiers, ')',
   // etc to make this faster, if it mattered.  Just look at StrData[0] to handle
   // all obviously single-char tokens.  This could use
   // Lexer::isObviouslySimpleCharacter for example to handle identifiers or
   // something.
 
-  // If this comes from a macro expansion, we really do want the macro name, not
-  // the token this macro expanded to.
-  Loc = SM.getExpansionLoc(Loc);
-  std::pair<FileID, unsigned> LocInfo = SM.getDecomposedLoc(Loc);
-  bool Invalid = false;
-  StringRef Buffer = SM.getBufferData(LocInfo.first, &Invalid);
-  if (Invalid)
+  int LocInfo = SM.FindBufferContainingLoc(Loc);
+  if (LocInfo == -1)
     return true;
+  StringRef Buffer = SM.getMemoryBuffer(LocInfo)->getBuffer();
 
-  const char *StrData = Buffer.data()+LocInfo.second;
+  const char *StrData = Loc.getPointer();
 
   if (isWhitespace(StrData[0]))
     return true;
 
   // Create a lexer starting at the beginning of this token.
-  Lexer TheLexer(SM.getLocForStartOfFile(LocInfo.first), LangOpts,
+  Lexer TheLexer(//SM.getLocForStartOfFile(LocInfo.first), //LangOpts,
                  Buffer.begin(), StrData, Buffer.end());
-  TheLexer.SetCommentRetentionState(true);
+  //TheLexer.SetCommentRetentionState(true);
   TheLexer.LexFromRawLexer(Result);
   return false;
 }
 
+#if 0
 static SourceLocation getBeginningOfFileToken(SourceLocation Loc,
                                               const SourceManager &SM,
                                               const LangOptions &LangOpts) {

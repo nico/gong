@@ -106,7 +106,7 @@ public:
   /// Lexer constructor - Create a new raw lexer object.  This object is only
   /// suitable for calls to 'LexFromRawLexer'.  This lexer assumes that the
   /// text range will outlive it, so it doesn't take ownership of it.
-  Lexer(SourceLocation FileLoc, //const LangOptions &LangOpts,
+  Lexer(//SourceLocation FileLoc, //const LangOptions &LangOpts,
         const char *BufStart, const char *BufPtr, const char *BufEnd);
 
   /// Lex - Return the next token in the file.  If this is the end of file, it
@@ -157,6 +157,20 @@ public:
 
   StringRef getSpelling(const Token &Tok) const;
   void DumpToken(const Token &Tok, bool DumpFlags) const;
+
+  /// MeasureTokenLength - Relex the token at the specified location and return
+  /// its length in bytes in the input file.  If the token needs cleaning (e.g.
+  /// includes a trigraph or an escaped newline) then this count includes bytes
+  /// that are part of that.
+  static unsigned MeasureTokenLength(SourceLocation Loc,
+                                     const llvm::SourceMgr &SM/*,
+                                     const LangOptions &LangOpts*/);
+
+  /// \brief Relex the token at the specified location.
+  /// \returns true if there was a failure, false on success.
+  static bool getRawToken(SourceLocation Loc, Token &Result,
+                          const llvm::SourceMgr &SM/*,
+                          const LangOptions &LangOpts*/);
 
   /// \brief Return the current location in the buffer.
   const char *getBufferLocation() const { return BufferPtr; }
