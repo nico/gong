@@ -33,9 +33,6 @@ TextDiagnosticPrinter::~TextDiagnosticPrinter() {
     delete &OS;
 }
 
-//#define USE_LLVM_SOURCEMGR_DIAGS
-#if !defined(USE_LLVM_SOURCEMGR_DIAGS)
-
 /// \brief Print any diagnostic option information to a raw_ostream.
 ///
 /// This implements all of the logic for adding diagnostic options to a message
@@ -147,25 +144,3 @@ void TextDiagnosticPrinter::handleDiagnostic(DiagnosticsEngine::Level Level,
 
   OS.flush();
 }
-#else
-
-void TextDiagnosticPrinter::handleDiagnostic(DiagnosticsEngine::Level Level,
-                                             const Diagnostic &Info) {
-  // Default implementation (Diags count).
-  DiagnosticConsumer::handleDiagnostic(Level, Info);
-
-  // Render the diagnostic message into a temporary buffer eagerly. We'll use
-  // this later as we print out the diagnostic to the terminal.
-  SmallString<100> OutStr;
-  Info.FormatDiagnostic(OutStr);
-
-  SourceLocation Loc = Info.getLocation();
-  llvm::SourceMgr &SM = Info.getSourceManager();
-  llvm::SourceMgr::DiagKind Kind;
-  switch (Level) {
-  case DiagnosticsEngine::Note: Kind = llvm::SourceMgr::DK_Note; break;
-  case DiagnosticsEngine::Error: Kind = llvm::SourceMgr::DK_Error; break;
-  }
-  SM.PrintMessage(Loc, Kind, OutStr.str());
-}
-#endif

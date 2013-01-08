@@ -8,7 +8,6 @@ Lexer
 =====
 
 Eventually: code completion markers
-fixits, ranges
 flag to dump stats
 
 mark unknown tokens in the rune / string error cases as literals, so that semi
@@ -37,19 +36,15 @@ for f in $(find ~/src/go/src/pkg/ -name '*.go'); do echo $f; if ! ../../Release+
 
 check IsExpression() everywhere ParseExpression() is called
 
-ExprResult/StmtResult for result passing
-
 diag only once on 
   a := (a[1)
 
 Only one diag when ending a file without a closing ) (imports) / } (blocks)
 
 Actions interface
-  Ensmarten ShortVarDecl parsing to pass IdentifierList
   Create ExprList
   Ensmarten expr parser to hand out right stuff for ForStmt action methods
-  ExprResult -> OwningExprResult
-  Actions for Exprs
+  Actions for Types
 
 measureTokenLength
 
