@@ -795,11 +795,7 @@ void TextDiagnostic::emitDiagnosticLoc(SourceLocation Loc, PresumedLoc PLoc,
   case DiagnosticOptions::Msvc:  OS << ") : "; break;
   }
 
-  // FIXME!
-#if 0
   if (DiagOpts->ShowSourceRanges && !Ranges.empty()) {
-    FileID CaretFileID =
-      SM.getFileID(SM.getExpansionLoc(Loc));
     bool PrintedRange = false;
 
     for (ArrayRef<CharSourceRange>::const_iterator RI = Ranges.begin(),
@@ -808,22 +804,21 @@ void TextDiagnostic::emitDiagnosticLoc(SourceLocation Loc, PresumedLoc PLoc,
       // Ignore invalid ranges.
       if (!RI->isValid()) continue;
 
-      SourceLocation B = SM.getExpansionLoc(RI->getBegin());
-      SourceLocation E = SM.getExpansionLoc(RI->getEnd());
+      SourceLocation B = RI->getBegin();
+      SourceLocation E = RI->getEnd();
 
-      std::pair<FileID, unsigned> BInfo = SM.getDecomposedLoc(B);
-      std::pair<FileID, unsigned> EInfo = SM.getDecomposedLoc(E);
+      std::pair<unsigned, unsigned> BLoc = SM.getLineAndColumn(B);
+      std::pair<unsigned, unsigned> ELoc = SM.getLineAndColumn(E);
 
       // Add in the length of the token, so that we cover multi-char
       // tokens.
       unsigned TokSize = 0;
       if (RI->isTokenRange())
-        TokSize = Lexer::MeasureTokenLength(E, SM, LangOpts);
+        TokSize = Lexer::MeasureTokenLength(E, SM/*, LangOpts*/);
 
-      OS << '{' << SM.getLineNumber(BInfo.first, BInfo.second) << ':'
-        << SM.getColumnNumber(BInfo.first, BInfo.second) << '-'
-        << SM.getLineNumber(EInfo.first, EInfo.second) << ':'
-        << (SM.getColumnNumber(EInfo.first, EInfo.second)+TokSize)
+      OS << '{'
+        << BLoc.first << ':' << BLoc.second << '-'
+        << ELoc.first << ':' << (ELoc.second+TokSize)
         << '}';
       PrintedRange = true;
     }
@@ -832,7 +827,6 @@ void TextDiagnostic::emitDiagnosticLoc(SourceLocation Loc, PresumedLoc PLoc,
       OS << ':';
   }
   OS << ' ';
-#endif
 }
 
 void TextDiagnostic::emitIncludeLocation(SourceLocation Loc,
