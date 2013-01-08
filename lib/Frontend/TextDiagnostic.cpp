@@ -953,20 +953,18 @@ static std::string buildFixItInsertionLine(unsigned LineNo,
   for (ArrayRef<FixItHint>::iterator I = Hints.begin(), E = Hints.end();
        I != E; ++I) {
     if (!I->CodeToInsert.empty()) {
-#if 0  // FIXME!
       // We have an insertion hint. Determine whether the inserted
       // code contains no newlines and is on the same line as the caret.
-      std::pair<FileID, unsigned> HintLocInfo
-        = SM.getDecomposedExpansionLoc(I->RemoveRange.getBegin());
-      if (LineNo == SM.getLineNumber(HintLocInfo.first, HintLocInfo.second) &&
+      std::pair<unsigned, unsigned> HintLoc =
+          SM.getLineAndColumn(I->RemoveRange.getBegin());
+      if (LineNo == HintLoc.first &&
           StringRef(I->CodeToInsert).find_first_of("\n\r") == StringRef::npos) {
         // Insert the new code into the line just below the code
         // that the user wrote.
         // Note: When modifying this function, be very careful about what is a
         // "column" (printed width, platform-dependent) and what is a
         // "byte offset" (SourceManager "column").
-        unsigned HintByteOffset
-          = SM.getColumnNumber(HintLocInfo.first, HintLocInfo.second) - 1;
+        unsigned HintByteOffset = HintLoc.second - 1;
 
         // The hint must start inside the source or right at the end
         assert(HintByteOffset < static_cast<unsigned>(map.bytes())+1);
@@ -1004,7 +1002,6 @@ static std::string buildFixItInsertionLine(unsigned LineNo,
         FixItInsertionLine.clear();
         break;
       }
-#endif
     }
   }
 
