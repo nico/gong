@@ -16,11 +16,15 @@
 #define LLVM_GONG_SOURCELOCATION_H
 
 #include "gong/Basic/LLVM.h"
-#include "gong/Basic/SourceManager.h"
 #include "llvm/Support/SMLoc.h"
-#include "llvm/Support/MemoryBuffer.h"
+
+namespace llvm {
+class SourceMgr;
+}
 
 namespace gong {
+
+typedef llvm::SourceMgr SourceManager;
 
 typedef llvm::SMLoc SourceLocation;
 typedef llvm::SMRange SourceRange;
@@ -88,15 +92,9 @@ public:
     : Filename(FN), Line(Ln), Col(Co), IncludeLoc(IL) {
   }
 
-  // FIXME: Move out of line.
-  static PresumedLoc build(const SourceManager &SM, SourceLocation Loc) {
-    int ID = SM.FindBufferContainingLoc(Loc);
-    if (ID == -1)
-      return PresumedLoc();
-    std::pair<unsigned, unsigned> LC = SM.getLineAndColumn(Loc);
-    return PresumedLoc(SM.getMemoryBuffer(ID)->getBufferIdentifier(), LC.first,
-                       LC.second, SM.getBufferInfo(ID).IncludeLoc);
-  }
+  /// \brief builds a PresumedLoc given a SourceManager and a SourceLocation
+  /// that belongs to that manager.
+  static PresumedLoc build(const SourceManager &SM, SourceLocation Loc);
 
   /// \brief Return true if this object is invalid or uninitialized.
   ///
