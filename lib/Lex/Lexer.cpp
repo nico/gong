@@ -191,6 +191,12 @@ void Lexer::InitLexer(const char *BufStart, const char *BufPtr,
   // Start of the file is a start of line.
   IsAtStartOfLine = true;
 
+  // We are not in raw mode.  Raw mode disables diagnostics and interpretation
+  // of tokens (e.g. identifiers, thus disabling macro expansion).  It is used
+  // to quickly lex the tokens of the buffer, e.g. when handling a "#if 0" block
+  // or otherwise skipping over tokens.
+  LexingRawMode = false;
+
   LastTokenKind = tok::eof;
 }
 
@@ -200,12 +206,25 @@ void Lexer::InitLexer(const char *BufStart, const char *BufPtr,
 /// outlive it, so it doesn't take ownership of either of them.
 Lexer::Lexer(DiagnosticsEngine &Diags, llvm::SourceMgr& SM,
              const llvm::MemoryBuffer *InputFile)
-    : Diags(Diags), SM(SM) {
+    : Diags(&Diags), SM(&SM) {
   InitLexer(InputFile->getBufferStart(), InputFile->getBufferStart(),
             InputFile->getBufferEnd());
 
   // Default to keeping comments if the preprocessor wants them.
   //SetCommentRetentionState(PP.getCommentRetentionState());
+}
+
+/// Lexer constructor - Create a new raw lexer object.  This object is only
+/// suitable for calls to 'LexFromRawLexer'.  This lexer assumes that the text
+/// range will outlive it, so it doesn't take ownership of it.
+Lexer::Lexer(SourceLocation fileloc, //const LangOptions &langOpts,
+             const char *BufStart, const char *BufPtr, const char *BufEnd)
+  : Diags(NULL),SM(NULL) /*FileLoc(fileloc), LangOpts(langOpts)*/ {
+
+  InitLexer(BufStart, BufPtr, BufEnd);
+
+  // We *are* in raw mode.
+  LexingRawMode = true;
 }
 
 /// CurPtr points to the end of this file.  Handle this
@@ -222,7 +241,7 @@ bool Lexer::LexEndOfFile(Token &Result, const char *CurPtr) {
 }
 
 void Lexer::Diag(const char *Loc, unsigned DiagID) const {
-  Diags.Report(llvm::SMLoc::getFromPointer(Loc), DiagID);
+  Diags->Report(llvm::SMLoc::getFromPointer(Loc), DiagID);
 }
 
 /// getSourceLocation - Return a source location identifier for the specified
@@ -252,10 +271,10 @@ void Lexer::DumpToken(const Token &Tok, bool DumpFlags) const {
   if (Tok.isInsertedSemi())
     llvm::errs() << " [InsertedSemi]";
 
-  int BufID = SM.FindBufferContainingLoc(Tok.getLocation());
-  std::pair<unsigned, unsigned> Pos = SM.getLineAndColumn(Tok.getLocation());
+  int BufID = SM->FindBufferContainingLoc(Tok.getLocation());
+  std::pair<unsigned, unsigned> Pos = SM->getLineAndColumn(Tok.getLocation());
   llvm::errs() << "\tLoc=<" <<
-    SM.getMemoryBuffer(BufID)->getBufferIdentifier()
+    SM->getMemoryBuffer(BufID)->getBufferIdentifier()
     << ":" << Pos.first << ":" << Pos.second << ">";
 }
 
@@ -352,15 +371,21 @@ void Lexer::LexUtfIdentifier(Token &Result, const char *CurPtr) {
     CurPtr += len;
   }
 
-  if (C == Runeerror && len == 1)
-    Diag(CurPtr, diag::invalid_utf_sequence);
-  else
+  if (C == Runeerror && len == 1) {
+    if (!isLexingRawMode())
+      Diag(CurPtr, diag::invalid_utf_sequence);
+  } else
     CurPtr -= len;   // Back up over the skipped character.
 
 
   const char *IdStart = BufferPtr;
 
   FormTokenWithChars(Result, CurPtr, tok::identifier);
+
+  // If we are in raw mode, return this identifier raw.  There is no need to
+  // look up identifier information.
+  if (LexingRawMode)
+    return;
 
   // Update the token info (identifier info and appropriate token kind).
   IdentifierInfo *II = &Identifiers.get(StringRef(IdStart, Result.getLength()));
@@ -400,7 +425,8 @@ void Lexer::LexRuneLiteral(Token &Result, const char *CurPtr,
 
   char C = getAndAdvanceChar(CurPtr, Result);
   if (C == '\'') {
-    Diag(BufferPtr, diag::empty_rune);
+    if (!isLexingRawMode())
+      Diag(BufferPtr, diag::empty_rune);
     FormTokenWithChars(Result, CurPtr, tok::unknown);
     return;
   }
@@ -412,7 +438,8 @@ void Lexer::LexRuneLiteral(Token &Result, const char *CurPtr,
 
     if (C == '\n' || C == '\r' ||             // Newline.
         (C == 0 && CurPtr-1 == BufferEnd)) {  // End of file.
-      Diag(BufferPtr, diag::unterminated_rune);
+      if (!isLexingRawMode())
+        Diag(BufferPtr, diag::unterminated_rune);
       FormTokenWithChars(Result, CurPtr-1, tok::unknown);
       return;
     }
@@ -424,7 +451,7 @@ void Lexer::LexRuneLiteral(Token &Result, const char *CurPtr,
   }
 
   // If a nul character existed in the character, warn about it.
-  if (NulCharacter)
+  if (NulCharacter && !isLexingRawMode())
     Diag(NulCharacter, diag::null_in_rune);
 
   // Update the location of token as well as BufferPtr.
@@ -447,7 +474,8 @@ void Lexer::LexStringLiteral(Token &Result, const char *CurPtr,
     
     if (C == '\n' || C == '\r' ||             // Newline.
         (C == 0 && CurPtr-1 == BufferEnd)) {  // End of file.
-      Diag(BufferPtr, diag::unterminated_string);
+      if (!isLexingRawMode())
+        Diag(BufferPtr, diag::unterminated_string);
       FormTokenWithChars(Result, CurPtr-1, tok::unknown);
       return;
     }
@@ -459,7 +487,7 @@ void Lexer::LexStringLiteral(Token &Result, const char *CurPtr,
   }
 
   // If a nul character existed in the string, warn about it.
-  if (NulCharacter)
+  if (NulCharacter && !isLexingRawMode())
     Diag(NulCharacter, diag::null_in_string);
 
   // Update the location of the token as well as the BufferPtr instance var.
@@ -477,7 +505,8 @@ void Lexer::LexRawStringLiteral(Token &Result, const char *CurPtr,
   char C = getAndAdvanceChar(CurPtr, Result);
   while (C != '`') {
     if (C == 0 && CurPtr-1 == BufferEnd) {  // End of file.
-      Diag(BufferPtr, diag::unterminated_raw_string);
+      if (!isLexingRawMode())
+        Diag(BufferPtr, diag::unterminated_raw_string);
       FormTokenWithChars(Result, CurPtr-1, tok::unknown);
       return;
     }
@@ -489,7 +518,7 @@ void Lexer::LexRawStringLiteral(Token &Result, const char *CurPtr,
   }
 
   // If a nul character existed in the string, warn about it.
-  if (NulCharacter)
+  if (NulCharacter && !isLexingRawMode())
     Diag(NulCharacter, diag::null_in_string);
 
   // Update the location of the token as well as the BufferPtr instance var.
@@ -525,7 +554,8 @@ bool Lexer::SkipBlockComment(Token &Result, const char *CurPtr) {
   unsigned char C = getCharAndSize(CurPtr, CharSize);
   CurPtr += CharSize;
   if (C == 0 && CurPtr == BufferEnd+1) {
-    Diag(BufferPtr, diag::unterminated_block_comment);
+    if (!isLexingRawMode())
+      Diag(BufferPtr, diag::unterminated_block_comment);
     --CurPtr;
 
     BufferPtr = CurPtr;
@@ -593,7 +623,8 @@ bool Lexer::SkipBlockComment(Token &Result, const char *CurPtr) {
       if (CurPtr[-2] == '*')  // We found the final */.  We're done!
         break;
     } else if (C == 0 && CurPtr == BufferEnd+1) {
-      Diag(BufferPtr, diag::unterminated_block_comment);
+      if (!isLexingRawMode())
+        Diag(BufferPtr, diag::unterminated_block_comment);
       // Note: the user probably forgot a */.  We could continue immediately
       // after the /*, but this would involve lexing a lot of what really is the
       // comment, which surely would confuse the parser.
@@ -1020,7 +1051,7 @@ bool Lexer::IsStartOfConflictMarker(const char *CurPtr) {
 
   // If we have a situation where we don't care about conflict markers, ignore
   // it.
-  if (CurrentConflictMarkerState)
+  if (CurrentConflictMarkerState || isLexingRawMode())
     return false;
   
   ConflictMarkerKind Kind = *CurPtr == '<' ? CMK_Normal : CMK_Perforce;
@@ -1127,7 +1158,8 @@ LexNextToken:
       assert(false);
     }
 
-    Diag(CurPtr-1, diag::null_in_file);
+    if (!isLexingRawMode())
+      Diag(CurPtr-1, diag::null_in_file);
     Result.setFlag(Token::LeadingSpace);
     if (SkipWhitespace(Result, CurPtr))
       return; // KeepWhitespaceMode
@@ -1446,7 +1478,7 @@ LexNextToken:
       if (isalpharune(r)) {
         return LexUtfIdentifier(Result, CurPtr);
       }
-      if (r == Runeerror && len == 1) {
+      if (r == Runeerror && len == 1 && !isLexingRawMode()) {
         Diag(CurPtr - 1, diag::invalid_utf_sequence);
       }
     }

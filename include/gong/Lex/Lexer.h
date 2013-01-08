@@ -66,19 +66,30 @@ class Lexer {
   // line" flag set on it.
   bool IsAtStartOfLine;
 
-  // The Kind of the last token that was emitted. Used for semicolon insertion.
+  // The Kind of the last token that was emitted.  Used for semicolon insertion.
   unsigned short LastTokenKind;
 
   /// This is mapping/lookup information for all identifiers in / the program,
   /// including program keywords.
   mutable IdentifierTable Identifiers;
 
-  DiagnosticsEngine &Diags;
-  llvm::SourceMgr &SM;
+  DiagnosticsEngine *Diags;  // NULL if LexingRawMode is set.
+  llvm::SourceMgr *SM;       // NULL if LexingRawMode is set.
 
   /// \brief Tracks all of the comment handlers that the client registered
   /// with this preprocessor.
   std::vector<CommentHandler *> CommentHandlers;
+
+  /// \brief True if in raw mode.
+  ///
+  /// Raw mode disables interpretation of tokens and is a far faster mode to
+  /// lex in than non-raw-mode.  This flag:
+  ///  1. If EOF of the current lexer is found, the include stack isn't popped.
+  ///  2. Identifier information is not looked up for identifier tokens.
+  ///  3. All diagnostic messages are disabled.
+  ///
+  /// Note that in raw mode that the MS and Diags pointers are null.
+  bool LexingRawMode;
 
   Lexer(const Lexer &) LLVM_DELETED_FUNCTION;
   void operator=(const Lexer &) LLVM_DELETED_FUNCTION;
@@ -91,6 +102,12 @@ public:
   /// it, so it doesn't take ownership of it.
   Lexer(DiagnosticsEngine &Diags, llvm::SourceMgr& SM,
         const llvm::MemoryBuffer *InputBuffer);
+
+  /// Lexer constructor - Create a new raw lexer object.  This object is only
+  /// suitable for calls to 'LexFromRawLexer'.  This lexer assumes that the
+  /// text range will outlive it, so it doesn't take ownership of it.
+  Lexer(SourceLocation FileLoc, //const LangOptions &LangOpts,
+        const char *BufStart, const char *BufPtr, const char *BufEnd);
 
   /// Lex - Return the next token in the file.  If this is the end of file, it
   /// return the tok::eof token.  This implicitly involves the preprocessor.
@@ -110,7 +127,21 @@ public:
     LexTokenInternal(Result);
   }
 
+  /// LexFromRawLexer - Lex a token from a designated raw lexer (one with no
+  /// associated preprocessor object.  Return true if the 'next character to
+  /// read' pointer points at the end of the lexer buffer, false otherwise.
+  bool LexFromRawLexer(Token &Result) {
+    assert(LexingRawMode && "Not already in raw mode!");
+    Lex(Result);
+    // Note that lexing to the end of the buffer doesn't implicitly delete the
+    // lexer when in raw mode.
+    return BufferPtr == BufferEnd;
+  }
+
   const char *getBufferStart() const { return BufferStart; }
+
+  /// \brief Return true if this lexer is in raw mode or not.
+  bool isLexingRawMode() const { return LexingRawMode; }
 
   /// Forwarding function for diagnostics.  This translate a source position
   /// in the current buffer into a SourceLocation object for rendering.
@@ -120,8 +151,8 @@ public:
   /// offset in the current file.
   SourceLocation getSourceLocation(const char *Loc) const;
 
-  DiagnosticsEngine &getDiagnostics() { return Diags; }
-  const llvm::SourceMgr &getSourceManager() const { return SM; }
+  DiagnosticsEngine &getDiagnostics() { return *Diags; }
+  const llvm::SourceMgr &getSourceManager() const { return *SM; }
   IdentifierTable &getIdentifierTable() { return Identifiers; }
 
   StringRef getSpelling(const Token &Tok) const;
