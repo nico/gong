@@ -16,7 +16,9 @@
 #define LLVM_GONG_SOURCELOCATION_H
 
 #include "gong/Basic/LLVM.h"
+#include "gong/Basic/SourceManager.h"
 #include "llvm/Support/SMLoc.h"
+#include "llvm/Support/MemoryBuffer.h"
 
 namespace gong {
 
@@ -84,6 +86,16 @@ public:
   PresumedLoc() : Filename(0) {}
   PresumedLoc(const char *FN, unsigned Ln, unsigned Co, SourceLocation IL)
     : Filename(FN), Line(Ln), Col(Co), IncludeLoc(IL) {
+  }
+
+  // FIXME: Move out of line.
+  static PresumedLoc build(const SourceManager &SM, SourceLocation Loc) {
+    int ID = SM.FindBufferContainingLoc(Loc);
+    if (ID == -1)
+      return PresumedLoc();
+    std::pair<unsigned, unsigned> LC = SM.getLineAndColumn(Loc);
+    return PresumedLoc(SM.getMemoryBuffer(ID)->getBufferIdentifier(), LC.first,
+                       LC.second, SM.getBufferInfo(ID).IncludeLoc);
   }
 
   /// \brief Return true if this object is invalid or uninitialized.

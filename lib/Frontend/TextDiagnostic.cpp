@@ -79,8 +79,8 @@ printableTextForNextCharacter(StringRef SourceLine, size_t *i,
   assert(*i<SourceLine.size() && "must point to a valid index");
   
   if (SourceLine[*i]=='\t') {
-    //assert(0 < TabStop && TabStop <= DiagnosticOptions::MaxTabStop &&
-           //"Invalid -ftabstop value");  FIXME
+    assert(0 < TabStop && TabStop <= DiagnosticOptions::MaxTabStop &&
+           "Invalid -ftabstop value");
     unsigned col = bytesSincePreviousTabOrLineBegin(SourceLine, *i);
     unsigned NumSpaces = TabStop - col%TabStop;
     assert(0 < NumSpaces && NumSpaces <= TabStop
@@ -872,32 +872,32 @@ static void highlightRange(const CharSourceRange &R,
   SourceLocation Begin = R.getBegin();
   SourceLocation End = R.getEnd();
 
-  unsigned StartLineNo = 0; // FIXME SM.getExpansionLineNumber(Begin);
+  unsigned StartLineNo = SM.getLineAndColumn(Begin).first;
   if (StartLineNo > LineNo)
     return;  // No intersection.
 
-  unsigned EndLineNo = 0;  // FIXME SM.getExpansionLineNumber(End);
+  unsigned EndLineNo = SM.getLineAndColumn(End).first;
   if (EndLineNo < LineNo)
     return;  // No intersection.
 
   // Compute the column number of the start.
   unsigned StartColNo = 0;
   if (StartLineNo == LineNo) {
-    StartColNo = 0; // FIXME SM.getExpansionColumnNumber(Begin);
+    StartColNo = SM.getLineAndColumn(Begin).first;
     if (StartColNo) --StartColNo;  // Zero base the col #.
   }
 
   // Compute the column number of the end.
   unsigned EndColNo = map.getSourceLine().size();
   if (EndLineNo == LineNo) {
-    EndColNo = 0; // FIXME SM.getExpansionColumnNumber(End);
+    EndColNo = SM.getLineAndColumn(End).first;
     if (EndColNo) {
       --EndColNo;  // Zero base the col #.
 
       // Add in the length of the token, so that we cover multi-char tokens if
       // this is a token range.
       if (R.isTokenRange())
-        EndColNo += 0; // FIXME! Lexer::MeasureTokenLength(End, SM, LangOpts);
+        EndColNo += Lexer::MeasureTokenLength(End, SM/*, LangOpts*/);
     } else {
       EndColNo = CaretLine.size();
     }
@@ -1037,22 +1037,12 @@ void TextDiagnostic::emitSnippetAndCaret(
       (LastLevel != DiagnosticsEngine::Note || Level == LastLevel))
     return;
 
-  // Decompose the location into a FID/Offset pair.
-  //std::pair<FileID, unsigned> LocInfo = SM.getDecomposedLoc(Loc);
-  //FileID FID = LocInfo.first;
-  unsigned FileOffset = 0;  // FIXME LocInfo.second;
-
-  // Get information about the buffer it points into.
-  bool Invalid = false;
-  const char *BufStart = NULL; // FIXME! SM.getBufferData(FID, &Invalid).data();
-  if (Invalid)
-    return;
-
-  unsigned LineNo = 0; // FIXME SM.getLineNumber(FID, FileOffset);
-  unsigned ColNo = 0; // FIXME SM.getColumnNumber(FID, FileOffset);
+  std::pair<unsigned, unsigned> LC = SM.getLineAndColumn(Loc);
+  unsigned LineNo = LC.first;
+  unsigned ColNo = LC.second;
 
   // Rewind from the current position to the start of the line.
-  const char *TokPtr = BufStart+FileOffset;
+  const char *TokPtr = Loc.getPointer();
   const char *LineStart = TokPtr-ColNo+1; // Column # is 1-based.
 
 
@@ -1183,32 +1173,29 @@ void TextDiagnostic::emitParseableFixits(ArrayRef<FixItHint> Hints,
 
   for (ArrayRef<FixItHint>::iterator I = Hints.begin(), E = Hints.end();
        I != E; ++I) {
-#if 0  // FIXME!
+
     SourceLocation BLoc = I->RemoveRange.getBegin();
     SourceLocation ELoc = I->RemoveRange.getEnd();
 
-    std::pair<FileID, unsigned> BInfo = SM.getDecomposedLoc(BLoc);
-    std::pair<FileID, unsigned> EInfo = SM.getDecomposedLoc(ELoc);
+    std::pair<unsigned, unsigned> BInfo = SM.getLineAndColumn(BLoc);
+    std::pair<unsigned, unsigned> EInfo = SM.getLineAndColumn(ELoc);
 
     // Adjust for token ranges.
     if (I->RemoveRange.isTokenRange())
-      EInfo.second += Lexer::MeasureTokenLength(ELoc, SM, LangOpts);
+      EInfo.second += Lexer::MeasureTokenLength(ELoc, SM/*, LangOpts*/);
 
     // We specifically do not do word-wrapping or tab-expansion here,
     // because this is supposed to be easy to parse.
-    PresumedLoc PLoc = SM.getPresumedLoc(BLoc);
+    PresumedLoc PLoc = PresumedLoc::build(SM, BLoc);
     if (PLoc.isInvalid())
       break;
 
     OS << "fix-it:\"";
     OS.write_escaped(PLoc.getFilename());
-    OS << "\":{" << SM.getLineNumber(BInfo.first, BInfo.second)
-      << ':' << SM.getColumnNumber(BInfo.first, BInfo.second)
-      << '-' << SM.getLineNumber(EInfo.first, EInfo.second)
-      << ':' << SM.getColumnNumber(EInfo.first, EInfo.second)
+    OS << "\":{" << BInfo.first << ':' << BInfo.second
+      << '-' << EInfo.first << ':' << EInfo.second
       << "}:\"";
     OS.write_escaped(I->CodeToInsert);
     OS << "\"\n";
-#endif
   }
 }
