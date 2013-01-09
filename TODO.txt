@@ -46,8 +46,6 @@ Actions interface
   Ensmarten expr parser to hand out right stuff for ForStmt action methods
   Actions for Types
 
-measureTokenLength
-
 Have nice fixit for toplevel `a := b`
 
 Nice fixit to replace "while" with "for" (if no identifier with same name found)
@@ -134,7 +132,9 @@ Inject into scopes:
   For structs: ActOnTag -> DeclPtr, ActOnTagStartDefinition(DeclPtr),
     FinishDefinition(DeclPtr), DefinitionError(DeclPtr)
 
-  Functions: ActOnStartOfFunctionDef, ActOnFinishFunctionBody
+  Functions: ActOnFunctionDeclarator() uses DeclaratorChunk::FunctionTypeInfo
+             to set parmvardecls on FunctionDecl.
+             ActOnStartOfFunctionDef, ActOnFinishFunctionBody
 
   - Scopes, in clang
 

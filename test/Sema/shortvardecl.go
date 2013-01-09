@@ -15,13 +15,10 @@ func f() {
   // one of the non-blank variables is new."
   a, d := 1, 2
 
-  // gc rejects this, but see here for a spec clarification request:
+  // See here for a spec clarification request:
   // https://code.google.com/p/go/issues/detail?id=4612
   e, e := 1, 2  // expected-diag {{redefinition of 'e'}} expected-note {{previous definition is here}}
   a, f, f := 1, 2, 3  // expected-diag {{redefinition of 'f'}} expected-note {{previous definition is here}}
-
-  // FIXME: gc accepts this. should gong? wait for the resolution of the above
-  // bug.
   g, a, a := 1, 2, 3
 }
 
