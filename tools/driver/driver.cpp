@@ -60,6 +60,41 @@ void ParseDiagnosticArgs(DiagnosticOptions &DiagOpts, int argc,
                          const char **argv) {
   DiagOpts.ShowColors = llvm::sys::Process::StandardErrHasColors();
   for (int i = 1; i < argc; ++i) {
+    if (argv[i] == std::string("-fshow-column"))
+      DiagOpts.ShowColumn = 1;
+    else if (argv[i] == std::string("-fno-show-column"))
+      DiagOpts.ShowColumn = 0;
+    else if (argv[i] == std::string("-fshow-source-location"))
+      DiagOpts.ShowLocation = 1;
+    else if (argv[i] == std::string("-fno-show-source-location"))
+      DiagOpts.ShowLocation = 0;
+    else if (argv[i] == std::string("-fcaret-diagnostics"))
+      DiagOpts.ShowCarets = 1;
+    else if (argv[i] == std::string("-fno-caret-diagnostics"))
+      DiagOpts.ShowCarets = 0;
+    else if (argv[i] == std::string("-fdiagnostics-fixit-info"))
+      DiagOpts.ShowFixits = 1;
+    else if (argv[i] == std::string("-fno-diagnostics-fixit-info"))
+      DiagOpts.ShowFixits = 0;
+    else if (argv[i] == std::string("-fdiagnostics-print-source-range-info"))
+      // clang warns about -fno-diagnostics-print-source-range-info, ignore it.
+      DiagOpts.ShowSourceRanges = 1;
+    else if (argv[i] == std::string("-fdiagnostics-parseable-fixits"))
+      // clang warns about -fno-diagnostic-parseable-fixits, ignore it.
+      DiagOpts.ShowParseableFixits = 1;
+    else if (argv[i] == std::string("-fdiagnostics-format=gong"))
+      DiagOpts.setFormat(DiagnosticOptions::Gong);
+    else if (argv[i] == std::string("-fdiagnostics-format=msvc"))
+      DiagOpts.setFormat(DiagnosticOptions::Msvc);
+    else if (argv[i] == std::string("-fdiagnostics-format=vi"))
+      DiagOpts.setFormat(DiagnosticOptions::Vi);
+    else if (argv[i] == std::string("-fcolor-diagnostics"))
+      DiagOpts.ShowColors = 1;
+    else if (argv[i] == std::string("-fno-color-diagnostics"))
+      DiagOpts.ShowColors = 0;
+    else if (argv[i] == std::string("-verify"))
+      DiagOpts.VerifyDiagnostics = 1;
+    // FIXME: -ferror-limit=, -fmessage-length=, -ftabstop=
   }
 }
 
@@ -72,7 +107,6 @@ int main(int argc_, const char **argv_) {
   llvm::InitializeAllTargets();
 
   bool dumpTokens = false;
-  bool verify = false;
   bool sema = false;
   bool stats = false;
   const char* FileName = NULL;
@@ -81,8 +115,6 @@ int main(int argc_, const char **argv_) {
       FileName = argv_[i];
     } else if (argv_[i] == std::string("-dump-tokens")) {
       dumpTokens = true;
-    } else if (argv_[i] == std::string("-verify")) {
-      verify = true;
     } else if (argv_[i] == std::string("-sema")) {
       sema = true;  // This should become opt-out once sema is useful.
     } else if (argv_[i] == std::string("-print-stats")) {
@@ -109,7 +141,7 @@ int main(int argc_, const char **argv_) {
       unsigned id = SM.AddNewSourceBuffer(NewBuf.take(), llvm::SMLoc());
       Lexer L(Diags, SM, SM.getMemoryBuffer(id));
 
-      if (verify) {
+      if (DiagOpts->VerifyDiagnostics) {
         VerifyDiagnosticConsumer* verifier =
             new VerifyDiagnosticConsumer(Diags);
         Diags.setClient(verifier);  // Takes ownership.

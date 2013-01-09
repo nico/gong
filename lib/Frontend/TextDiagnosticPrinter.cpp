@@ -43,7 +43,7 @@ static void printDiagnosticOptions(raw_ostream &OS,
                                    const Diagnostic &Info,
                                    const DiagnosticOptions &DiagOpts) {
   bool Started = false;
-  if (DiagOpts.ShowOptionNames) {
+  //if (DiagOpts.ShowOptionNames) {
     // Handle special cases for non-warnings early.
     //if (Info.getID() == diag::fatal_too_many_errors) {
     //  OS << " [-ferror-limit=]";
@@ -71,7 +71,7 @@ static void printDiagnosticOptions(raw_ostream &OS,
     //  OS << (Started ? "," : " [") << "-W" << Opt;
     //  Started = true;
     //}
-  }
+  //}
 
   // If the user wants to see category information, include it too.
   //if (DiagOpts.ShowCategories) {

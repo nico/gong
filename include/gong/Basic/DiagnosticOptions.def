@@ -53,10 +53,11 @@ DIAGOPT(ShowCarets, 1, 1)       /// Show carets in diagnostics.
 DIAGOPT(ShowFixits, 1, 1)       /// Show fixit information.
 DIAGOPT(ShowSourceRanges, 1, 0) /// Show source ranges in numeric form.
 DIAGOPT(ShowParseableFixits, 1, 0) /// Show machine parseable fix-its.
-DIAGOPT(ShowOptionNames, 1, 0)  /// Show the option name for mappable
-                                /// diagnostics.
-VALUE_DIAGOPT(ShowCategories, 2, 0) /// Show categories: 0 -> none, 1 -> Number,
-                                    /// 2 -> Full Name.
+//DIAGOPT(ShowOptionNames, 1, 0)  /// Show the option name for mappable
+                                  /// diagnostics.
+//VALUE_DIAGOPT(ShowCategories, 2, 0) /// Show categories: 0 -> none,
+                                      ///                  1 -> Number,
+                                      ///                  2 -> Full Name.
                                  
 ENUM_DIAGOPT(Format, TextDiagnosticFormat, 2, Gong) /// Format for diagnostics: 
   
@@ -64,8 +65,6 @@ DIAGOPT(ShowColors, 1, 0)       /// Show diagnostics with ANSI color sequences.
 DIAGOPT(VerifyDiagnostics, 1, 0) /// Check that diagnostics match the expected
                                  /// diagnostics, indicated by markers in the
                                  /// input source file.
-
-DIAGOPT(ElideType, 1, 0)         /// Elide identical types in template diffing
 
 VALUE_DIAGOPT(ErrorLimit, 32, 0)           /// Limit # errors emitted.
 
