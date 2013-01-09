@@ -894,6 +894,7 @@ SourceLocation Lexer::AdvanceToTokenCharacter(SourceLocation TokStart,
   
   return TokStart.getLocWithOffset(PhysOffset);
 }
+#endif
 
 /// \brief Computes the source location just past the end of the
 /// token at this source location.
@@ -911,26 +912,21 @@ SourceLocation Lexer::AdvanceToTokenCharacter(SourceLocation TokStart,
 /// location pointing just past the end of the token; an offset of 1 produces
 /// a source location pointing to the last character in the token, etc.
 SourceLocation Lexer::getLocForEndOfToken(SourceLocation Loc, unsigned Offset,
-                                          const SourceManager &SM,
-                                          const LangOptions &LangOpts) {
-  if (Loc.isInvalid())
+                                          const SourceManager &SM/*,
+                                          const LangOptions &LangOpts*/) {
+  if (!Loc.isValid())
     return SourceLocation();
 
-  if (Loc.isMacroID()) {
-    if (Offset > 0 || !isAtEndOfMacroExpansion(Loc, SM, LangOpts, &Loc))
-      return SourceLocation(); // Points inside the macro expansion.
-  }
-
-  unsigned Len = Lexer::MeasureTokenLength(Loc, SM, LangOpts);
+  unsigned Len = Lexer::MeasureTokenLength(Loc, SM/*, LangOpts*/);
   if (Len > Offset)
     Len = Len - Offset;
   else
     return Loc;
   
-  return Loc.getLocWithOffset(Len);
+  return SourceLocation::getFromPointer(Loc.getPointer() + Len);
 }
 
-
+#if 0
 //===----------------------------------------------------------------------===//
 // Diagnostics forwarding code.
 //===----------------------------------------------------------------------===//

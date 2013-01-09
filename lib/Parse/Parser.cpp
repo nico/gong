@@ -1230,16 +1230,16 @@ bool Parser::ExpectAndConsume(tok::TokenKind ExpectedTok, unsigned DiagID,
     return false;
   }
 
-  // FIXME
-  //const char *Spelling = 0;
-  //SourceLocation EndLoc = L.getLocForEndOfToken(PrevTokLocation);
-  //if (EndLoc.isValid() &&
-  //    (Spelling = tok::getTokenSimpleSpelling(ExpectedTok))) {
-  //  // Show what code to insert to fix this problem.
-  //  Diag(EndLoc, DiagID)
-  //    << Msg
-  //    /*<< FixItHint::CreateInsertion(EndLoc, Spelling)*/;
-  //} else
+  const char *Spelling = 0;
+  SourceLocation EndLoc = Lexer::getLocForEndOfToken(PrevTokLocation,
+                                                     0, L.getSourceManager());
+  if (EndLoc.isValid() &&
+      (Spelling = tok::getTokenSimpleSpelling(ExpectedTok))) {
+    // Show what code to insert to fix this problem.
+    Diag(EndLoc, DiagID)
+      << Msg
+      << FixItHint::CreateInsertion(EndLoc, Spelling);
+  } else
     Diag(Tok, DiagID) << Msg;
 
   if (SkipToTok != tok::unknown)

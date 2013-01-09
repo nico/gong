@@ -198,9 +198,9 @@ public:
   /// location should refer to. The default offset (0) produces a source
   /// location pointing just past the end of the token; an offset of 1 produces
   /// a source location pointing to the last character in the token, etc.
-  //static SourceLocation getLocForEndOfToken(SourceLocation Loc, unsigned Offset,
-                                            //const SourceManager &SM,
-                                            //const LangOptions &LangOpts);
+  static SourceLocation getLocForEndOfToken(SourceLocation Loc, unsigned Offset,
+                                            const SourceManager &SM/*,
+                                            const LangOptions &LangOpts*/);
 
 
   //===--------------------------------------------------------------------===//
