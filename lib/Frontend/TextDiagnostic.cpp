@@ -883,14 +883,14 @@ static void highlightRange(const CharSourceRange &R,
   // Compute the column number of the start.
   unsigned StartColNo = 0;
   if (StartLineNo == LineNo) {
-    StartColNo = SM.getLineAndColumn(Begin).first;
+    StartColNo = SM.getLineAndColumn(Begin).second;
     if (StartColNo) --StartColNo;  // Zero base the col #.
   }
 
   // Compute the column number of the end.
   unsigned EndColNo = map.getSourceLine().size();
   if (EndLineNo == LineNo) {
-    EndColNo = SM.getLineAndColumn(End).first;
+    EndColNo = SM.getLineAndColumn(End).second;
     if (EndColNo) {
       --EndColNo;  // Zero base the col #.
 
