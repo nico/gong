@@ -52,6 +52,7 @@ func f() {
 
   a := 4  // FIXME: Remove! This is needed because the case below does a
           //        lookup for "a" on the lhs of ':=' :-/
+          // See also https://code.google.com/p/go/issues/detail?id=4653
   select {
     default:
       type A int  // expected-note {{previous definition is here}}
@@ -71,13 +72,18 @@ type D int
 func scope_if() {
   a := 1  // expected-note {{declared here}}
   if a := 1; true {
-    // FIXME: check that |a| is defined at this point.
+    a // check that |a| is defined at this point.
     a := 1  // expected-note {{declared here}}
     a := 1  // expected-diag {{no new variables declared}}
   } else {
-    // FIXME: check that |a| is defined at this point.
+    a // check that |a| is defined at this point.
     a := 1  // expected-note {{declared here}}
     a := 1  // expected-diag {{no new variables declared}}
+  }
+  if b := 1; true {
+    b // check that |b| is defined at this point.
+  } else {
+    b // check that |b| is defined at this point.
   }
   a := 1  // expected-diag {{no new variables declared}}
 }
@@ -85,9 +91,12 @@ func scope_if() {
 func scope_for() {
   a := 1  // expected-note {{declared here}}
   for a := 1; ; {
-    // FIXME: check that |a| is defined at this point.
+    a // check that |a| is defined at this point.
     a := 1  // expected-note {{declared here}}
     a := 1  // expected-diag {{no new variables declared}}
+  }
+  for b := 1; ; {
+    b // check that |b| is defined at this point.
   }
   a := 1  // expected-diag {{no new variables declared}}
 }
@@ -96,9 +105,13 @@ func scope_switch() {
   a := 1  // expected-note {{declared here}}
   switch a := 1; {
   default:
-    // FIXME: check that |a| is defined at this point.
+    a // check that |a| is defined at this point.
     a := 1  // expected-note {{declared here}}
     a := 1  // expected-diag {{no new variables declared}}
+  }
+  switch b := 1; {
+  default:
+    b // check that |b| is defined at this point.
   }
   a := 1  // expected-diag {{no new variables declared}}
 }
