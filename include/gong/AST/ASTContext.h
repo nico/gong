@@ -158,8 +158,6 @@ class ASTContext : public RefCountedBase<ASTContext> {
   /// This is lazily created.  This is intentionally not serialized.
   mutable llvm::DenseMap<const RecordDecl*, const ASTRecordLayout*>
     ASTRecordLayouts;
-  mutable llvm::DenseMap<const ObjCContainerDecl*, const ASTRecordLayout*>
-    ObjCLayouts;
 
   /// \brief A cache from types to size and alignment information.
   typedef llvm::DenseMap<const Type*,
@@ -244,8 +242,6 @@ class ASTContext : public RefCountedBase<ASTContext> {
   /// Since so few decls have attrs, we keep them in a hash map instead of
   /// wasting space in the Decl class.
   llvm::DenseMap<const Decl*, AttrVec*> DeclAttrs;
-
-  llvm::DenseMap<FieldDecl *, FieldDecl *> InstantiatedFromUnnamedFieldDecl;
 
   /// \brief Mapping that stores the methods overridden by a given C++
   /// member function.
@@ -681,13 +677,6 @@ public:
   /// replaced.
   QualType getAddrSpaceQualType(QualType T, unsigned AddressSpace) const;
 
-  /// \brief Return the uniqued reference to the type for an Objective-C
-  /// gc-qualified type.
-  ///
-  /// The retulting type has a union of the qualifiers from T and the gc
-  /// attribute.
-  QualType getObjCGCQualType(QualType T, Qualifiers::GC gcAttr) const;
-
   /// \brief Return the uniqued reference to the type for a \c restrict
   /// qualified type.
   ///
@@ -873,34 +862,6 @@ public:
                              QualType modifiedType,
                              QualType equivalentType);
 
-  QualType getSubstTemplateTypeParmType(const TemplateTypeParmType *Replaced,
-                                        QualType Replacement) const;
-  QualType getSubstTemplateTypeParmPackType(
-                                          const TemplateTypeParmType *Replaced,
-                                            const TemplateArgument &ArgPack);
-
-  QualType getTemplateTypeParmType(unsigned Depth, unsigned Index,
-                                   bool ParameterPack,
-                                   TemplateTypeParmDecl *ParmDecl = 0) const;
-
-  QualType getTemplateSpecializationType(TemplateName T,
-                                         const TemplateArgument *Args,
-                                         unsigned NumArgs,
-                                         QualType Canon = QualType()) const;
-
-  QualType getCanonicalTemplateSpecializationType(TemplateName T,
-                                                  const TemplateArgument *Args,
-                                                  unsigned NumArgs) const;
-
-  QualType getTemplateSpecializationType(TemplateName T,
-                                         const TemplateArgumentListInfo &Args,
-                                         QualType Canon = QualType()) const;
-
-  TypeSourceInfo *
-  getTemplateSpecializationTypeInfo(TemplateName T, SourceLocation TLoc,
-                                    const TemplateArgumentListInfo &Args,
-                                    QualType Canon = QualType()) const;
-
   QualType getParenType(QualType NamedType) const;
 
   QualType getElaboratedType(ElaboratedTypeKeyword Keyword,
@@ -910,16 +871,6 @@ public:
                                 NestedNameSpecifier *NNS,
                                 const IdentifierInfo *Name,
                                 QualType Canon = QualType()) const;
-
-  QualType getDependentTemplateSpecializationType(ElaboratedTypeKeyword Keyword,
-                                                  NestedNameSpecifier *NNS,
-                                                  const IdentifierInfo *Name,
-                                    const TemplateArgumentListInfo &Args) const;
-  QualType getDependentTemplateSpecializationType(ElaboratedTypeKeyword Keyword,
-                                                  NestedNameSpecifier *NNS,
-                                                  const IdentifierInfo *Name,
-                                                  unsigned NumArgs,
-                                            const TemplateArgument *Args) const;
 
   /// \brief GCC extension.
   QualType getTypeOfExprType(Expr *e) const;
@@ -1206,20 +1157,8 @@ public:
   /// position information.
   const ASTRecordLayout &getASTRecordLayout(const RecordDecl *D) const;
 
-  /// \brief Get or compute information about the layout of the specified
-  /// Objective-C interface.
-  const ASTRecordLayout &getASTObjCInterfaceLayout(const ObjCInterfaceDecl *D)
-    const;
-
   void DumpRecordLayout(const RecordDecl *RD, raw_ostream &OS,
                         bool Simple = false) const;
-
-  /// \brief Get or compute information about the layout of the specified
-  /// Objective-C implementation.
-  ///
-  /// This may differ from the interface if synthesized ivars are present.
-  const ASTRecordLayout &
-  getASTObjCImplementationLayout(const ObjCImplementationDecl *D) const;
 
   /// \brief Get the key function for the given record decl, or NULL if there
   /// isn't one.
@@ -1237,13 +1176,6 @@ public:
 
   MangleContext *createMangleContext();
   
-  void DeepCollectObjCIvars(const ObjCInterfaceDecl *OI, bool leafClass,
-                            SmallVectorImpl<const ObjCIvarDecl*> &Ivars) const;
-  
-  unsigned CountNonClassIvars(const ObjCInterfaceDecl *OI) const;
-  void CollectInheritedProtocols(const Decl *CDecl,
-                          llvm::SmallPtrSet<ObjCProtocolDecl*, 8> &Protocols);
-
   //===--------------------------------------------------------------------===//
   //                            Type Operators
   //===--------------------------------------------------------------------===//
@@ -1397,10 +1329,6 @@ public:
   /// 6.3.1.1p2, assuming that \p PromotableType is a promotable integer type.
   QualType getPromotedIntegerType(QualType PromotableType) const;
 
-  /// \brief Recurses in pointer/array types until it finds an Objective-C
-  /// retainable type and returns its ownership.
-  Qualifiers::ObjCLifetime getInnerObjCOwnership(QualType T) const;
-
   /// \brief Whether this is a promotable bitfield reference according
   /// to C99 6.3.1.1p2, bullet 2 (and GCC extensions).
   ///
@@ -1460,8 +1388,6 @@ public:
 
   bool propertyTypesAreCompatible(QualType, QualType); 
   bool typesAreBlockPointerCompatible(QualType, QualType); 
-
-  bool QualifiedIdConformsQualifiedId(QualType LHS, QualType RHS);
 
   // Functions for calculating composite types
   QualType mergeTypes(QualType, QualType, bool OfBlockPointer=false,

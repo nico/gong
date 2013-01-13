@@ -228,7 +228,8 @@ Find out:
 
  http://lists.cs.uiuc.edu/pipermail/cfe-commits/Week-of-Mon-20120206/052791.html
 * QualType and Type
-* ASTContext turns Decls into QualTypes
+* ASTContext turns Decls into QualTypes (ASTContext::getRecordType() etc)
+  Creates builtin types in InitBuiltinTypes
 * QualType vs CanQualType
 * redeclarations in go -> not allowed at all!
   ...except for init() 9_9
