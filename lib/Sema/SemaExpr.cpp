@@ -13,6 +13,10 @@
 
 #include "gong/Sema/Sema.h"
 
+#include "gong/Sema/Lookup.h"
+using namespace gong;
+using namespace sema;
+
 #if 0
 #include "TreeTransform.h"
 #include "gong/AST/ASTConsumer.h"
@@ -37,14 +41,11 @@
 #include "gong/Sema/DelayedDiagnostic.h"
 #include "gong/Sema/Designator.h"
 #include "gong/Sema/Initialization.h"
-#include "gong/Sema/Lookup.h"
 #include "gong/Sema/ParsedTemplate.h"
 #include "gong/Sema/Scope.h"
 #include "gong/Sema/ScopeInfo.h"
 #include "gong/Sema/SemaFixItUtils.h"
 #include "gong/Sema/Template.h"
-using namespace gong;
-using namespace sema;
 
 /// \brief Determine whether the use of this declaration is valid, without
 /// emitting diagnostics.
@@ -1484,418 +1485,252 @@ Sema::DecomposeUnqualifiedId(const UnqualifiedId &Id,
     TemplateArgs = 0;
   }
 }
+#endif
 
 /// Diagnose an empty lookup.
 ///
 /// \return false if new lookup candidates were found
-bool Sema::DiagnoseEmptyLookup(Scope *S, CXXScopeSpec &SS, LookupResult &R,
-                               CorrectionCandidateCallback &CCC,
-                               TemplateArgumentListInfo *ExplicitTemplateArgs,
+bool Sema::DiagnoseEmptyLookup(Scope *S, LookupResult &R,
+                               //CorrectionCandidateCallback &CCC,
                                llvm::ArrayRef<Expr *> Args) {
-  DeclarationName Name = R.getLookupName();
+  IdentifierInfo *Name = R.getLookupName();
 
-  unsigned diagnostic = diag::err_undeclared_var_use;
-  unsigned diagnostic_suggest = diag::err_undeclared_var_use_suggest;
-  if (Name.getNameKind() == DeclarationName::CXXOperatorName ||
-      Name.getNameKind() == DeclarationName::CXXLiteralOperatorName ||
-      Name.getNameKind() == DeclarationName::CXXConversionFunctionName) {
-    diagnostic = diag::err_undeclared_use;
-    diagnostic_suggest = diag::err_undeclared_use_suggest;
-  }
+  unsigned diagnostic = diag::undeclared_var_use;
+  // FIXME: Typo correction:
+  //unsigned diagnostic_suggest = diag::err_undeclared_var_use_suggest;
+  //if (Name.getNameKind() == DeclarationName::CXXOperatorName ||
+  //    Name.getNameKind() == DeclarationName::CXXLiteralOperatorName ||
+  //    Name.getNameKind() == DeclarationName::CXXConversionFunctionName) {
+  //  diagnostic = diag::err_undeclared_use;
+  //  diagnostic_suggest = diag::err_undeclared_use_suggest;
+  //}
 
-  // If the original lookup was an unqualified lookup, fake an
-  // unqualified lookup.  This is useful when (for example) the
-  // original lookup would not have found something because it was a
-  // dependent name.
-  DeclContext *DC = (SS.isEmpty() && !CallsUndergoingInstantiation.empty())
-    ? CurContext : 0;
-  while (DC) {
-    if (isa<CXXRecordDecl>(DC)) {
-      LookupQualifiedName(R, DC);
+  //// If the original lookup was an unqualified lookup, fake an
+  //// unqualified lookup.  This is useful when (for example) the
+  //// original lookup would not have found something because it was a
+  //// dependent name.
+  //DeclContext *DC = (SS.isEmpty() && !CallsUndergoingInstantiation.empty())
+  //  ? CurContext : 0;
+  //while (DC) {
+  //  if (isa<CXXRecordDecl>(DC)) {
+  //    LookupQualifiedName(R, DC);
 
-      if (!R.empty()) {
-        // Don't give errors about ambiguities in this lookup.
-        R.suppressDiagnostics();
+  //    if (!R.empty()) {
+  //      // Don't give errors about ambiguities in this lookup.
+  //      R.suppressDiagnostics();
 
-        // During a default argument instantiation the CurContext points
-        // to a CXXMethodDecl; but we can't apply a this-> fixit inside a
-        // function parameter list, hence add an explicit check.
-        bool isDefaultArgument = !ActiveTemplateInstantiations.empty() &&
-                              ActiveTemplateInstantiations.back().Kind ==
-            ActiveTemplateInstantiation::DefaultFunctionArgumentInstantiation;
-        CXXMethodDecl *CurMethod = dyn_cast<CXXMethodDecl>(CurContext);
-        bool isInstance = CurMethod &&
-                          CurMethod->isInstance() &&
-                          DC == CurMethod->getParent() && !isDefaultArgument;
-                          
+  //      // During a default argument instantiation the CurContext points
+  //      // to a CXXMethodDecl; but we can't apply a this-> fixit inside a
+  //      // function parameter list, hence add an explicit check.
+  //      bool isDefaultArgument = !ActiveTemplateInstantiations.empty() &&
+  //                            ActiveTemplateInstantiations.back().Kind ==
+  //          ActiveTemplateInstantiation::DefaultFunctionArgumentInstantiation;
+  //      CXXMethodDecl *CurMethod = dyn_cast<CXXMethodDecl>(CurContext);
+  //      bool isInstance = CurMethod &&
+  //                        CurMethod->isInstance() &&
+  //                        DC == CurMethod->getParent() && !isDefaultArgument;
+  //                        
 
-        // Give a code modification hint to insert 'this->'.
-        // TODO: fixit for inserting 'Base<T>::' in the other cases.
-        // Actually quite difficult!
-        if (getLangOpts().MicrosoftMode)
-          diagnostic = diag::warn_found_via_dependent_bases_lookup;
-        if (isInstance) {
-          Diag(R.getNameLoc(), diagnostic) << Name
-            << FixItHint::CreateInsertion(R.getNameLoc(), "this->");
-          UnresolvedLookupExpr *ULE = cast<UnresolvedLookupExpr>(
-              CallsUndergoingInstantiation.back()->getCallee());
+  //      // Give a code modification hint to insert 'this->'.
+  //      // TODO: fixit for inserting 'Base<T>::' in the other cases.
+  //      // Actually quite difficult!
+  //      if (getLangOpts().MicrosoftMode)
+  //        diagnostic = diag::warn_found_via_dependent_bases_lookup;
+  //      if (isInstance) {
+  //        Diag(R.getNameLoc(), diagnostic) << Name
+  //          << FixItHint::CreateInsertion(R.getNameLoc(), "this->");
+  //        UnresolvedLookupExpr *ULE = cast<UnresolvedLookupExpr>(
+  //            CallsUndergoingInstantiation.back()->getCallee());
 
-          
-          CXXMethodDecl *DepMethod;
-          if (CurMethod->getTemplatedKind() ==
-              FunctionDecl::TK_FunctionTemplateSpecialization)
-            DepMethod = cast<CXXMethodDecl>(CurMethod->getPrimaryTemplate()->
-                getInstantiatedFromMemberTemplate()->getTemplatedDecl());
-          else
-            DepMethod = cast<CXXMethodDecl>(
-                CurMethod->getInstantiatedFromMemberFunction());
-          assert(DepMethod && "No template pattern found");
+  //        
+  //        CXXMethodDecl *DepMethod;
+  //        if (CurMethod->getTemplatedKind() ==
+  //            FunctionDecl::TK_FunctionTemplateSpecialization)
+  //          DepMethod = cast<CXXMethodDecl>(CurMethod->getPrimaryTemplate()->
+  //              getInstantiatedFromMemberTemplate()->getTemplatedDecl());
+  //        else
+  //          DepMethod = cast<CXXMethodDecl>(
+  //              CurMethod->getInstantiatedFromMemberFunction());
+  //        assert(DepMethod && "No template pattern found");
 
-          QualType DepThisType = DepMethod->getThisType(Context);
-          CheckCXXThisCapture(R.getNameLoc());
-          CXXThisExpr *DepThis = new (Context) CXXThisExpr(
-                                     R.getNameLoc(), DepThisType, false);
-          TemplateArgumentListInfo TList;
-          if (ULE->hasExplicitTemplateArgs())
-            ULE->copyTemplateArgumentsInto(TList);
-          
-          CXXScopeSpec SS;
-          SS.Adopt(ULE->getQualifierLoc());
-          CXXDependentScopeMemberExpr *DepExpr =
-              CXXDependentScopeMemberExpr::Create(
-                  Context, DepThis, DepThisType, true, SourceLocation(),
-                  SS.getWithLocInContext(Context),
-                  ULE->getTemplateKeywordLoc(), 0,
-                  R.getLookupNameInfo(),
-                  ULE->hasExplicitTemplateArgs() ? &TList : 0);
-          CallsUndergoingInstantiation.back()->setCallee(DepExpr);
-        } else {
-          Diag(R.getNameLoc(), diagnostic) << Name;
-        }
+  //        QualType DepThisType = DepMethod->getThisType(Context);
+  //        CheckCXXThisCapture(R.getNameLoc());
+  //        CXXThisExpr *DepThis = new (Context) CXXThisExpr(
+  //                                   R.getNameLoc(), DepThisType, false);
+  //        TemplateArgumentListInfo TList;
+  //        if (ULE->hasExplicitTemplateArgs())
+  //          ULE->copyTemplateArgumentsInto(TList);
+  //        
+  //        CXXScopeSpec SS;
+  //        SS.Adopt(ULE->getQualifierLoc());
+  //        CXXDependentScopeMemberExpr *DepExpr =
+  //            CXXDependentScopeMemberExpr::Create(
+  //                Context, DepThis, DepThisType, true, SourceLocation(),
+  //                SS.getWithLocInContext(Context),
+  //                ULE->getTemplateKeywordLoc(), 0,
+  //                R.getLookupNameInfo(),
+  //                ULE->hasExplicitTemplateArgs() ? &TList : 0);
+  //        CallsUndergoingInstantiation.back()->setCallee(DepExpr);
+  //      } else {
+  //        Diag(R.getNameLoc(), diagnostic) << Name;
+  //      }
 
-        // Do we really want to note all of these?
-        for (LookupResult::iterator I = R.begin(), E = R.end(); I != E; ++I)
-          Diag((*I)->getLocation(), diag::note_dependent_var_use);
+  //      // Do we really want to note all of these?
+  //      for (LookupResult::iterator I = R.begin(), E = R.end(); I != E; ++I)
+  //        Diag((*I)->getLocation(), diag::note_dependent_var_use);
 
-        // Return true if we are inside a default argument instantiation
-        // and the found name refers to an instance member function, otherwise
-        // the function calling DiagnoseEmptyLookup will try to create an
-        // implicit member call and this is wrong for default argument.
-        if (isDefaultArgument && ((*R.begin())->isCXXInstanceMember())) {
-          Diag(R.getNameLoc(), diag::err_member_call_without_object);
-          return true;
-        }
+  //      // Return true if we are inside a default argument instantiation
+  //      // and the found name refers to an instance member function, otherwise
+  //      // the function calling DiagnoseEmptyLookup will try to create an
+  //      // implicit member call and this is wrong for default argument.
+  //      if (isDefaultArgument && ((*R.begin())->isCXXInstanceMember())) {
+  //        Diag(R.getNameLoc(), diag::err_member_call_without_object);
+  //        return true;
+  //      }
 
-        // Tell the callee to try to recover.
-        return false;
-      }
+  //      // Tell the callee to try to recover.
+  //      return false;
+  //    }
 
-      R.clear();
-    }
+  //    R.clear();
+  //  }
 
-    // In Microsoft mode, if we are performing lookup from within a friend
-    // function definition declared at class scope then we must set
-    // DC to the lexical parent to be able to search into the parent
-    // class.
-    if (getLangOpts().MicrosoftMode && isa<FunctionDecl>(DC) &&
-        cast<FunctionDecl>(DC)->getFriendObjectKind() &&
-        DC->getLexicalParent()->isRecord())
-      DC = DC->getLexicalParent();
-    else
-      DC = DC->getParent();
-  }
+  //  // In Microsoft mode, if we are performing lookup from within a friend
+  //  // function definition declared at class scope then we must set
+  //  // DC to the lexical parent to be able to search into the parent
+  //  // class.
+  //  if (getLangOpts().MicrosoftMode && isa<FunctionDecl>(DC) &&
+  //      cast<FunctionDecl>(DC)->getFriendObjectKind() &&
+  //      DC->getLexicalParent()->isRecord())
+  //    DC = DC->getLexicalParent();
+  //  else
+  //    DC = DC->getParent();
+  //}
 
-  // We didn't find anything, so try to correct for a typo.
-  TypoCorrection Corrected;
-  if (S && (Corrected = CorrectTypo(R.getLookupNameInfo(), R.getLookupKind(),
-                                    S, &SS, CCC))) {
-    std::string CorrectedStr(Corrected.getAsString(getLangOpts()));
-    std::string CorrectedQuotedStr(Corrected.getQuoted(getLangOpts()));
-    R.setLookupName(Corrected.getCorrection());
+  //// We didn't find anything, so try to correct for a typo.
+  //TypoCorrection Corrected;
+  //if (S && (Corrected = CorrectTypo(R.getLookupNameInfo(), R.getLookupKind(),
+  //                                  S, &SS, CCC))) {
+  //  std::string CorrectedStr(Corrected.getAsString(getLangOpts()));
+  //  std::string CorrectedQuotedStr(Corrected.getQuoted(getLangOpts()));
+  //  R.setLookupName(Corrected.getCorrection());
 
-    if (NamedDecl *ND = Corrected.getCorrectionDecl()) {
-      if (Corrected.isOverloaded()) {
-        OverloadCandidateSet OCS(R.getNameLoc());
-        OverloadCandidateSet::iterator Best;
-        for (TypoCorrection::decl_iterator CD = Corrected.begin(),
-                                        CDEnd = Corrected.end();
-             CD != CDEnd; ++CD) {
-          if (FunctionTemplateDecl *FTD =
-                   dyn_cast<FunctionTemplateDecl>(*CD))
-            AddTemplateOverloadCandidate(
-                FTD, DeclAccessPair::make(FTD, AS_none), ExplicitTemplateArgs,
-                Args, OCS);
-          else if (FunctionDecl *FD = dyn_cast<FunctionDecl>(*CD))
-            if (!ExplicitTemplateArgs || ExplicitTemplateArgs->size() == 0)
-              AddOverloadCandidate(FD, DeclAccessPair::make(FD, AS_none),
-                                   Args, OCS);
-        }
-        switch (OCS.BestViableFunction(*this, R.getNameLoc(), Best)) {
-          case OR_Success:
-            ND = Best->Function;
-            break;
-          default:
-            break;
-        }
-      }
-      R.addDecl(ND);
-      if (isa<ValueDecl>(ND) || isa<FunctionTemplateDecl>(ND)) {
-        if (SS.isEmpty())
-          Diag(R.getNameLoc(), diagnostic_suggest) << Name << CorrectedQuotedStr
-            << FixItHint::CreateReplacement(R.getNameLoc(), CorrectedStr);
-        else
-          Diag(R.getNameLoc(), diag::err_no_member_suggest)
-            << Name << computeDeclContext(SS, false) << CorrectedQuotedStr
-            << SS.getRange()
-            << FixItHint::CreateReplacement(Corrected.getCorrectionRange(),
-                                            CorrectedStr);
-        if (ND)
-          Diag(ND->getLocation(), diag::note_previous_decl)
-            << CorrectedQuotedStr;
+  //  if (NamedDecl *ND = Corrected.getCorrectionDecl()) {
+  //    if (Corrected.isOverloaded()) {
+  //      OverloadCandidateSet OCS(R.getNameLoc());
+  //      OverloadCandidateSet::iterator Best;
+  //      for (TypoCorrection::decl_iterator CD = Corrected.begin(),
+  //                                      CDEnd = Corrected.end();
+  //           CD != CDEnd; ++CD) {
+  //        if (FunctionTemplateDecl *FTD =
+  //                 dyn_cast<FunctionTemplateDecl>(*CD))
+  //          AddTemplateOverloadCandidate(
+  //              FTD, DeclAccessPair::make(FTD, AS_none), ExplicitTemplateArgs,
+  //              Args, OCS);
+  //        else if (FunctionDecl *FD = dyn_cast<FunctionDecl>(*CD))
+  //          if (!ExplicitTemplateArgs || ExplicitTemplateArgs->size() == 0)
+  //            AddOverloadCandidate(FD, DeclAccessPair::make(FD, AS_none),
+  //                                 Args, OCS);
+  //      }
+  //      switch (OCS.BestViableFunction(*this, R.getNameLoc(), Best)) {
+  //        case OR_Success:
+  //          ND = Best->Function;
+  //          break;
+  //        default:
+  //          break;
+  //      }
+  //    }
+  //    R.addDecl(ND);
+  //    if (isa<ValueDecl>(ND) || isa<FunctionTemplateDecl>(ND)) {
+  //      if (SS.isEmpty())
+  //        Diag(R.getNameLoc(), diagnostic_suggest) << Name << CorrectedQuotedStr
+  //          << FixItHint::CreateReplacement(R.getNameLoc(), CorrectedStr);
+  //      else
+  //        Diag(R.getNameLoc(), diag::err_no_member_suggest)
+  //          << Name << computeDeclContext(SS, false) << CorrectedQuotedStr
+  //          << SS.getRange()
+  //          << FixItHint::CreateReplacement(Corrected.getCorrectionRange(),
+  //                                          CorrectedStr);
+  //      if (ND)
+  //        Diag(ND->getLocation(), diag::note_previous_decl)
+  //          << CorrectedQuotedStr;
 
-        // Tell the callee to try to recover.
-        return false;
-      }
+  //      // Tell the callee to try to recover.
+  //      return false;
+  //    }
 
-      if (isa<TypeDecl>(ND) || isa<ObjCInterfaceDecl>(ND)) {
-        // FIXME: If we ended up with a typo for a type name or
-        // Objective-C class name, we're in trouble because the parser
-        // is in the wrong place to recover. Suggest the typo
-        // correction, but don't make it a fix-it since we're not going
-        // to recover well anyway.
-        if (SS.isEmpty())
-          Diag(R.getNameLoc(), diagnostic_suggest)
-            << Name << CorrectedQuotedStr;
-        else
-          Diag(R.getNameLoc(), diag::err_no_member_suggest)
-            << Name << computeDeclContext(SS, false) << CorrectedQuotedStr
-            << SS.getRange();
+  //    if (isa<TypeDecl>(ND) || isa<ObjCInterfaceDecl>(ND)) {
+  //      // FIXME: If we ended up with a typo for a type name or
+  //      // Objective-C class name, we're in trouble because the parser
+  //      // is in the wrong place to recover. Suggest the typo
+  //      // correction, but don't make it a fix-it since we're not going
+  //      // to recover well anyway.
+  //      if (SS.isEmpty())
+  //        Diag(R.getNameLoc(), diagnostic_suggest)
+  //          << Name << CorrectedQuotedStr;
+  //      else
+  //        Diag(R.getNameLoc(), diag::err_no_member_suggest)
+  //          << Name << computeDeclContext(SS, false) << CorrectedQuotedStr
+  //          << SS.getRange();
 
-        // Don't try to recover; it won't work.
-        return true;
-      }
-    } else {
-      // FIXME: We found a keyword. Suggest it, but don't provide a fix-it
-      // because we aren't able to recover.
-      if (SS.isEmpty())
-        Diag(R.getNameLoc(), diagnostic_suggest) << Name << CorrectedQuotedStr;
-      else
-        Diag(R.getNameLoc(), diag::err_no_member_suggest)
-        << Name << computeDeclContext(SS, false) << CorrectedQuotedStr
-        << SS.getRange();
-      return true;
-    }
-  }
-  R.clear();
+  //      // Don't try to recover; it won't work.
+  //      return true;
+  //    }
+  //  } else {
+  //    // FIXME: We found a keyword. Suggest it, but don't provide a fix-it
+  //    // because we aren't able to recover.
+  //    if (SS.isEmpty())
+  //      Diag(R.getNameLoc(), diagnostic_suggest) << Name << CorrectedQuotedStr;
+  //    else
+  //      Diag(R.getNameLoc(), diag::err_no_member_suggest)
+  //      << Name << computeDeclContext(SS, false) << CorrectedQuotedStr
+  //      << SS.getRange();
+  //    return true;
+  //  }
+  //}
+  //R.clear();
 
-  // Emit a special diagnostic for failed member lookups.
-  // FIXME: computing the declaration context might fail here (?)
-  if (!SS.isEmpty()) {
-    Diag(R.getNameLoc(), diag::err_no_member)
-      << Name << computeDeclContext(SS, false)
-      << SS.getRange();
-    return true;
-  }
+  //// Emit a special diagnostic for failed member lookups.
+  //// FIXME: computing the declaration context might fail here (?)
+  //if (!SS.isEmpty()) {
+  //  Diag(R.getNameLoc(), diag::err_no_member)
+  //    << Name << computeDeclContext(SS, false)
+  //    << SS.getRange();
+  //  return true;
+  //}
 
   // Give up, we can't recover.
   Diag(R.getNameLoc(), diagnostic) << Name;
   return true;
 }
 
-ExprResult Sema::ActOnIdExpression(Scope *S,
-                                   CXXScopeSpec &SS,
-                                   SourceLocation TemplateKWLoc,
-                                   UnqualifiedId &Id,
-                                   bool HasTrailingLParen,
-                                   bool IsAddressOfOperand,
-                                   CorrectionCandidateCallback *CCC) {
-  assert(!(IsAddressOfOperand && HasTrailingLParen) &&
-         "cannot be direct & operand and have a trailing lparen");
-
-  if (SS.isInvalid())
-    return ExprError();
-
-  TemplateArgumentListInfo TemplateArgsBuffer;
-
-  // Decompose the UnqualifiedId into the following data.
-  DeclarationNameInfo NameInfo;
-  const TemplateArgumentListInfo *TemplateArgs;
-  DecomposeUnqualifiedId(Id, TemplateArgsBuffer, NameInfo, TemplateArgs);
-
-  DeclarationName Name = NameInfo.getName();
-  IdentifierInfo *II = Name.getAsIdentifierInfo();
-  SourceLocation NameLoc = NameInfo.getLoc();
-
-  // C++ [temp.dep.expr]p3:
-  //   An id-expression is type-dependent if it contains:
-  //     -- an identifier that was declared with a dependent type,
-  //        (note: handled after lookup)
-  //     -- a template-id that is dependent,
-  //        (note: handled in BuildTemplateIdExpr)
-  //     -- a conversion-function-id that specifies a dependent type,
-  //     -- a nested-name-specifier that contains a class-name that
-  //        names a dependent type.
-  // Determine whether this is a member of an unknown specialization;
-  // we need to handle these differently.
-  bool DependentID = false;
-  if (Name.getNameKind() == DeclarationName::CXXConversionFunctionName &&
-      Name.getCXXNameType()->isDependentType()) {
-    DependentID = true;
-  } else if (SS.isSet()) {
-    if (DeclContext *DC = computeDeclContext(SS, false)) {
-      if (RequireCompleteDeclContext(SS, DC))
-        return ExprError();
-    } else {
-      DependentID = true;
-    }
-  }
-
-  if (DependentID)
-    return ActOnDependentIdExpression(SS, TemplateKWLoc, NameInfo,
-                                      IsAddressOfOperand, TemplateArgs);
-
+Action::OwningExprResult
+Sema::ActOnOperandName(SourceLocation IILoc, IdentifierInfo *II,
+                       Scope *S) {
+                       //CorrectionCandidateCallback *CCC) {
   // Perform the required lookup.
-  LookupResult R(*this, NameInfo, 
-                 (Id.getKind() == UnqualifiedId::IK_ImplicitSelfParam) 
-                  ? LookupObjCImplicitSelfParam : LookupOrdinaryName);
-  if (TemplateArgs) {
-    // Lookup the template name again to correctly establish the context in
-    // which it was found. This is really unfortunate as we already did the
-    // lookup to determine that it was a template name in the first place. If
-    // this becomes a performance hit, we can work harder to preserve those
-    // results until we get here but it's likely not worth it.
-    bool MemberOfUnknownSpecialization;
-    LookupTemplateName(R, S, SS, QualType(), /*EnteringContext=*/false,
-                       MemberOfUnknownSpecialization);
-    
-    if (MemberOfUnknownSpecialization ||
-        (R.getResultKind() == LookupResult::NotFoundInCurrentInstantiation))
-      return ActOnDependentIdExpression(SS, TemplateKWLoc, NameInfo,
-                                        IsAddressOfOperand, TemplateArgs);
-  } else {
-    bool IvarLookupFollowUp = II && !SS.isSet() && getCurMethodDecl();
-    LookupParsedName(R, S, &SS, !IvarLookupFollowUp);
+  LookupResult R(*this, II, IILoc, LookupOrdinaryName);
+  LookupName(R, S);
 
-    // If the result might be in a dependent base class, this is a dependent 
-    // id-expression.
-    if (R.getResultKind() == LookupResult::NotFoundInCurrentInstantiation)
-      return ActOnDependentIdExpression(SS, TemplateKWLoc, NameInfo,
-                                        IsAddressOfOperand, TemplateArgs);
+  // If this name wasn't predeclared and if this is not a function
+  // call, diagnose the problem.
+  if (R.empty()) {
+    //CorrectionCandidateCallback DefaultValidator;
+    if (DiagnoseEmptyLookup(S, R/*, DefaultValidator*/)) // CCC ? *CCC : DefaultValidator))
+      return ExprError();
 
-    // If this reference is in an Objective-C method, then we need to do
-    // some special Objective-C lookup, too.
-    if (IvarLookupFollowUp) {
-      ExprResult E(LookupInObjCMethod(R, S, II, true));
-      if (E.isInvalid())
-        return ExprError();
-
-      if (Expr *Ex = E.takeAs<Expr>())
-        return Owned(Ex);
-    }
-  }
-
-  if (R.isAmbiguous())
-    return ExprError();
-
-  // Determine whether this name might be a candidate for
-  // argument-dependent lookup.
-  bool ADL = UseArgumentDependentLookup(SS, R, HasTrailingLParen);
-
-  if (R.empty() && !ADL) {
-    // Otherwise, this could be an implicitly declared function reference (legal
-    // in C90, extension in C99, forbidden in C++).
-    if (HasTrailingLParen && II && !getLangOpts().CPlusPlus) {
-      NamedDecl *D = ImplicitlyDefineFunction(NameLoc, *II, S);
-      if (D) R.addDecl(D);
-    }
-
-    // If this name wasn't predeclared and if this is not a function
-    // call, diagnose the problem.
-    if (R.empty()) {
-
-      // In Microsoft mode, if we are inside a template class member function
-      // and we can't resolve an identifier then assume the identifier is type
-      // dependent. The goal is to postpone name lookup to instantiation time 
-      // to be able to search into type dependent base classes.
-      if (getLangOpts().MicrosoftMode && CurContext->isDependentContext() &&
-          isa<CXXMethodDecl>(CurContext))
-        return ActOnDependentIdExpression(SS, TemplateKWLoc, NameInfo,
-                                          IsAddressOfOperand, TemplateArgs);
-
-      CorrectionCandidateCallback DefaultValidator;
-      if (DiagnoseEmptyLookup(S, SS, R, CCC ? *CCC : DefaultValidator))
-        return ExprError();
-
-      assert(!R.empty() &&
-             "DiagnoseEmptyLookup returned false but added no results");
-
-      // If we found an Objective-C instance variable, let
-      // LookupInObjCMethod build the appropriate expression to
-      // reference the ivar.
-      if (ObjCIvarDecl *Ivar = R.getAsSingle<ObjCIvarDecl>()) {
-        R.clear();
-        ExprResult E(LookupInObjCMethod(R, S, Ivar->getIdentifier()));
-        // In a hopelessly buggy code, Objective-C instance variable
-        // lookup fails and no expression will be built to reference it.
-        if (!E.isInvalid() && !E.get())
-          return ExprError();
-        return E;
-      }
-    }
+    assert(!R.empty() &&
+           "DiagnoseEmptyLookup returned false but added no results");
   }
 
   // This is guaranteed from this point on.
-  assert(!R.empty() || ADL);
+  assert(!R.empty());
 
-  // Check whether this might be a C++ implicit instance member access.
-  // C++ [class.mfct.non-static]p3:
-  //   When an id-expression that is not part of a class member access
-  //   syntax and not used to form a pointer to member is used in the
-  //   body of a non-static member function of class X, if name lookup
-  //   resolves the name in the id-expression to a non-static non-type
-  //   member of some class C, the id-expression is transformed into a
-  //   class member access expression using (*this) as the
-  //   postfix-expression to the left of the . operator.
-  //
-  // But we don't actually need to do this for '&' operands if R
-  // resolved to a function or overloaded function set, because the
-  // expression is ill-formed if it actually works out to be a
-  // non-static member function:
-  //
-  // C++ [expr.ref]p4:
-  //   Otherwise, if E1.E2 refers to a non-static member function. . .
-  //   [t]he expression can be used only as the left-hand operand of a
-  //   member function call.
-  //
-  // There are other safeguards against such uses, but it's important
-  // to get this right here so that we don't end up making a
-  // spuriously dependent expression if we're inside a dependent
-  // instance method.
-  if (!R.empty() && (*R.begin())->isCXXClassMember()) {
-    bool MightBeImplicitMember;
-    if (!IsAddressOfOperand)
-      MightBeImplicitMember = true;
-    else if (!SS.isEmpty())
-      MightBeImplicitMember = false;
-    else if (R.isOverloadedResult())
-      MightBeImplicitMember = false;
-    else if (R.isUnresolvableResult())
-      MightBeImplicitMember = true;
-    else
-      MightBeImplicitMember = isa<FieldDecl>(R.getFoundDecl()) ||
-                              isa<IndirectFieldDecl>(R.getFoundDecl());
-
-    if (MightBeImplicitMember)
-      return BuildPossibleImplicitMemberExpr(SS, TemplateKWLoc,
-                                             R, TemplateArgs);
-  }
-
-  if (TemplateArgs || TemplateKWLoc.isValid())
-    return BuildTemplateIdExpr(SS, TemplateKWLoc, R, ADL, TemplateArgs);
-
-  return BuildDeclarationNameExpr(SS, R, ADL);
+  return ExprError();  // FIXME
+  //return BuildDeclarationNameExpr(SS, R, ADL);
 }
 
+#if 0
 /// BuildQualifiedDeclarationNameExpr - Build a C++ qualified
 /// declaration name, generally during template instantiation.
 /// There's a large number of things which don't need to be done along

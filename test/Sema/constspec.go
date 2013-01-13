@@ -2,6 +2,9 @@
 
 package p
 
+// FIXME: Remove once built-in iota works.
+const iota = 4
+
 func noInitializers() {
   const (
     cC int = iota  // expected-note {{previous definition is here}}

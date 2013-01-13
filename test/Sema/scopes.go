@@ -2,6 +2,11 @@
 
 package p
 
+// FIXME: Remove once built-in true/false/nil work.
+const true = 1 == 1
+const false = 1 != 1
+const nil = 0
+
 // http://tip.golang.org/ref/spec#Blocks
 
 type A int
@@ -45,6 +50,8 @@ func f() {
       type D int
   }
 
+  a := 4  // FIXME: Remove! This is needed because the case below does a
+          //        lookup for "a" on the lhs of ':=' :-/
   select {
     default:
       type A int  // expected-note {{previous definition is here}}

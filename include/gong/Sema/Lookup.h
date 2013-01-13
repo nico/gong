@@ -16,7 +16,7 @@
 #define LLVM_GONG_SEMA_LOOKUP_H
 
 #include "gong/AST/UnresolvedSet.h"
-//#include "gong/AST/DeclCXX.h"
+#include "gong/AST/Decl.h"
 #include "gong/Sema/Sema.h"
 
 namespace gong {

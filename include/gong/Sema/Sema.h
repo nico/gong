@@ -2705,10 +2705,14 @@ public:
 
   bool makeUnavailableInSystemHeader(SourceLocation loc,
                                      StringRef message);
+#endif
 
   //===--------------------------------------------------------------------===//
   // Expression Parsing Callbacks: SemaExpr.cpp.
+  OwningExprResult ActOnOperandName(SourceLocation IILoc, IdentifierInfo *II,
+                                    Scope *CurScope) LLVM_OVERRIDE;
 
+#if 0
   bool CanUseDecl(NamedDecl *D);
   bool DiagnoseUseOfDecl(NamedDecl *D, SourceLocation Loc,
                          const ObjCInterfaceDecl *UnknownObjCClass=0);
@@ -2834,12 +2838,13 @@ public:
                               TemplateArgumentListInfo &Buffer,
                               DeclarationNameInfo &NameInfo,
                               const TemplateArgumentListInfo *&TemplateArgs);
+#endif
 
-  bool DiagnoseEmptyLookup(Scope *S, CXXScopeSpec &SS, LookupResult &R,
-                           CorrectionCandidateCallback &CCC,
-                           TemplateArgumentListInfo *ExplicitTemplateArgs = 0,
+  bool DiagnoseEmptyLookup(Scope *S, LookupResult &R,
+                           //CorrectionCandidateCallback &CCC,
                        llvm::ArrayRef<Expr *> Args = llvm::ArrayRef<Expr *>());
 
+#if 0
   ExprResult LookupInObjCMethod(LookupResult &LookUp, Scope *S,
                                 IdentifierInfo *II,
                                 bool AllowBuiltinCreation=false);
