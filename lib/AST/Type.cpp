@@ -12,6 +12,11 @@
 //===----------------------------------------------------------------------===//
 
 #include "gong/AST/Type.h"
+
+#include "llvm/ADT/StringRef.h"
+#include "llvm/Support/ErrorHandling.h"
+using namespace gong;
+
 #if 0
 #include "gong/AST/ASTContext.h"
 #include "gong/AST/Attr.h"
@@ -27,7 +32,6 @@
 #include "llvm/ADT/StringExtras.h"
 #include "llvm/Support/raw_ostream.h"
 #include <algorithm>
-using namespace gong;
 
 const IdentifierInfo* QualType::getBaseTypeIdentifier() const {
   const Type* ty = getTypePtr();
@@ -1450,49 +1454,34 @@ const char *Type::getTypeClassName() const {
   
   llvm_unreachable("Invalid type class.");
 }
+#endif
 
-StringRef BuiltinType::getName(const PrintingPolicy &Policy) const {
+StringRef BuiltinType::getName() const {
   switch (getKind()) {
-  case Void:              return "void";
-  case Bool:              return Policy.Bool ? "bool" : "_Bool";
-  case Char_S:            return "char";
-  case Char_U:            return "char";
-  case SChar:             return "signed char";
-  case Short:             return "short";
-  case Int:               return "int";
-  case Long:              return "long";
-  case LongLong:          return "long long";
-  case Int128:            return "__int128";
-  case UChar:             return "unsigned char";
-  case UShort:            return "unsigned short";
-  case UInt:              return "unsigned int";
-  case ULong:             return "unsigned long";
-  case ULongLong:         return "unsigned long long";
-  case UInt128:           return "unsigned __int128";
-  case Half:              return "half";
-  case Float:             return "float";
-  case Double:            return "double";
-  case LongDouble:        return "long double";
-  case WChar_S:
-  case WChar_U:           return "wchar_t";
-  case Char16:            return "char16_t";
-  case Char32:            return "char32_t";
+  case Bool:              return "bool";
+  case Int8:              return "int8";
+  case Int16:             return "int16";
+  case Int32:             return "int32";
+  case Int64:             return "int64";
+  case UInt8:             return "uint8";
+  case UInt16:            return "uint16";
+  case UInt32:            return "uint32";
+  case UInt64:            return "uint64";
+
+  case Float32:           return "float32";
+  case Float64:           return "float64";
+
+  case Complex64:         return "complex64";
+  case Complex128:        return "complex128";
   case NullPtr:           return "nullptr_t";
-  case Overload:          return "<overloaded function type>";
-  case BoundMember:       return "<bound member function type>";
-  case PseudoObject:      return "<pseudo-object type>";
-  case Dependent:         return "<dependent type>";
   case UnknownAny:        return "<unknown type>";
-  case ARCUnbridgedCast:  return "<ARC unbridged cast type>";
   case BuiltinFn:         return "<builtin fn type>";
-  case ObjCId:            return "id";
-  case ObjCClass:         return "Class";
-  case ObjCSel:           return "SEL";
   }
   
   llvm_unreachable("Invalid builtin type.");
 }
 
+#if 0
 QualType QualType::getNonLValueExprType(ASTContext &Context) const {
   if (const ReferenceType *RefType = getTypePtr()->getAs<ReferenceType>())
     return RefType->getPointeeType();

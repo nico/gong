@@ -98,6 +98,7 @@ FLOATING_TYPE(Complex128, Complex128Ty)
 
 //===- Language-specific types --------------------------------------------===//
 
+// FIXME: needed for 'nil'?
 // This is the type of C++0x 'nullptr'.
 BUILTIN_TYPE(NullPtr, NullPtrTy)
 

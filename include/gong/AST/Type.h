@@ -15,13 +15,14 @@
 #define LLVM_GONG_AST_TYPE_H
 
 #include "llvm/Support/Compiler.h"
+#include "gong/Basic/LLVM.h"
+
 #if 0
 #include "gong/AST/NestedNameSpecifier.h"
 #include "gong/AST/TemplateName.h"
 #include "gong/Basic/Diagnostic.h"
 #include "gong/Basic/ExceptionSpecificationType.h"
 #include "gong/Basic/IdentifierTable.h"
-#include "gong/Basic/LLVM.h"
 #include "gong/Basic/Linkage.h"
 #include "gong/Basic/PartialDiagnostic.h"
 #include "gong/Basic/Specifiers.h"
@@ -643,13 +644,13 @@ public:
   }
 
   Kind getKind() const { return static_cast<Kind>(BuiltinTypeBits.Kind); }
-  //StringRef getName(const PrintingPolicy &Policy) const;
-  //const char *getNameAsCString(const PrintingPolicy &Policy) const {
-  //  // The StringRef is null-terminated.
-  //  StringRef str = getName(Policy);
-  //  assert(!str.empty() && str.data()[str.size()] == '\0');
-  //  return str.data();
-  //}
+  StringRef getName() const;
+  const char *getNameAsCString() const {
+    // The StringRef is null-terminated.
+    StringRef str = getName();
+    assert(!str.empty() && str.data()[str.size()] == '\0');
+    return str.data();
+  }
 
   bool isSugared() const { return false; }
   //QualType desugar() const { return QualType(this, 0); }
