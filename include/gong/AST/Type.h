@@ -266,8 +266,8 @@ private:
 protected:
   // silence VC++ warning C4355: 'this' : used in base member initializer list
   Type *this_() { return this; }
-  Type(TypeClass tc, const Type *canon, bool Dependent,
-       bool InstantiationDependent, bool VariablyModified)
+  Type(TypeClass tc, const Type *canon,
+       bool VariablyModified)
     : ExtQualsTypeCommonBase(this, canon) {
     TypeBits.TC = tc;
     //TypeBits.VariablyModified = VariablyModified;
@@ -440,14 +440,6 @@ public:
   /// that its definition somehow depends on a template parameter
   /// (C++ [temp.dep.type]).
   bool isDependentType() const { return TypeBits.Dependent; }
-
-  /// \brief Determine whether this type is an instantiation-dependent type,
-  /// meaning that the type involves a template parameter (even if the
-  /// definition does not actually depend on the type substituted for that
-  /// template parameter).
-  bool isInstantiationDependentType() const {
-    return TypeBits.InstantiationDependent;
-  }
 
   /// \brief Whether this type is a variably-modified type (C99 6.7.5).
   bool isVariablyModifiedType() const { return TypeBits.VariablyModified; }
@@ -631,6 +623,7 @@ template <> inline const Class##Type *Type::castAs() const { \
 }
 #include "gong/AST/TypeNodes.def"
 
+#endif
 
 /// BuiltinType - This class is used for builtin types like 'int'.  Builtin
 /// types are always canonical and have a literal name field.
@@ -644,69 +637,43 @@ public:
 
 public:
   BuiltinType(Kind K)
-    : Type(Builtin, QualType(), /*Dependent=*/(K == Dependent),
-           /*InstantiationDependent=*/(K == Dependent),
-           /*VariablyModified=*/false,
-           /*Unexpanded paramter pack=*/false) {
+    : Type(Builtin, /*canon=*/0,
+           /*VariablyModified=*/false) {
     BuiltinTypeBits.Kind = K;
   }
 
   Kind getKind() const { return static_cast<Kind>(BuiltinTypeBits.Kind); }
-  StringRef getName(const PrintingPolicy &Policy) const;
-  const char *getNameAsCString(const PrintingPolicy &Policy) const {
-    // The StringRef is null-terminated.
-    StringRef str = getName(Policy);
-    assert(!str.empty() && str.data()[str.size()] == '\0');
-    return str.data();
-  }
+  //StringRef getName(const PrintingPolicy &Policy) const;
+  //const char *getNameAsCString(const PrintingPolicy &Policy) const {
+  //  // The StringRef is null-terminated.
+  //  StringRef str = getName(Policy);
+  //  assert(!str.empty() && str.data()[str.size()] == '\0');
+  //  return str.data();
+  //}
 
   bool isSugared() const { return false; }
-  QualType desugar() const { return QualType(this, 0); }
+  //QualType desugar() const { return QualType(this, 0); }
 
   bool isInteger() const {
-    return getKind() >= Bool && getKind() <= Int128;
+    return getKind() >= UInt8 && getKind() <= Int64;
   }
 
   bool isSignedInteger() const {
-    return getKind() >= Char_S && getKind() <= Int128;
+    return getKind() >= Int8 && getKind() <= Int64;
   }
 
   bool isUnsignedInteger() const {
-    return getKind() >= Bool && getKind() <= UInt128;
+    return getKind() >= UInt8 && getKind() <= UInt64;
   }
 
   bool isFloatingPoint() const {
-    return getKind() >= Half && getKind() <= LongDouble;
-  }
-
-  /// Determines whether the given kind corresponds to a placeholder type.
-  static bool isPlaceholderTypeKind(Kind K) {
-    return K >= Overload;
-  }
-
-  /// Determines whether this type is a placeholder type, i.e. a type
-  /// which cannot appear in arbitrary positions in a fully-formed
-  /// expression.
-  bool isPlaceholderType() const {
-    return isPlaceholderTypeKind(getKind());
-  }
-
-  /// Determines whether this type is a placeholder type other than
-  /// Overload.  Most placeholder types require only syntactic
-  /// information about their context in order to be resolved (e.g.
-  /// whether it is a call expression), which means they can (and
-  /// should) be resolved in an earlier "phase" of analysis.
-  /// Overload expressions sometimes pick up further information
-  /// from their context, like whether the context expects a
-  /// specific function-pointer type, and so frequently need
-  /// special treatment.
-  bool isNonOverloadPlaceholderType() const {
-    return getKind() > Overload;
+    return getKind() >= Float32 && getKind() <= Float64;
   }
 
   static bool classof(const Type *T) { return T->getTypeClass() == Builtin; }
 };
 
+#if 0
 /// ComplexType - C99 6.2.5p11 - Complex values.  This supports the C99 complex
 /// types (_Complex float etc) as well as the GCC integer complex extensions.
 ///
