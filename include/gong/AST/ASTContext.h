@@ -166,16 +166,6 @@ class ASTContext : public RefCountedBase<ASTContext> {
                          std::pair<uint64_t, unsigned> > TypeInfoMap;
   mutable TypeInfoMap MemoizedTypeInfo;
 
-  /// \brief A cache mapping from CXXRecordDecls to key functions.
-  llvm::DenseMap<const CXXRecordDecl*, const CXXMethodDecl*> KeyFunctions;
-  
-  /// \brief Mapping from ObjCContainers to their ObjCImplementations.
-  llvm::DenseMap<ObjCContainerDecl*, ObjCImplDecl*> ObjCImpls;
-  
-  /// \brief Mapping from ObjCMethod to its duplicate declaration in the same
-  /// interface.
-  llvm::DenseMap<const ObjCMethodDecl*,const ObjCMethodDecl*> ObjCMethodRedecls;
-
   /// \brief Mapping from __block VarDecls to their copy initialization expr.
   llvm::DenseMap<const VarDecl*, Expr*> BlockVarCopyInits;
     
@@ -183,30 +173,6 @@ class ASTContext : public RefCountedBase<ASTContext> {
   /// template patterns.
   llvm::DenseMap<const FunctionDecl*, FunctionDecl*>
     ClassScopeSpecializationPattern;
-
-  /// \brief Representation of a "canonical" template template parameter that
-  /// is used in canonical template names.
-  class CanonicalTemplateTemplateParm : public llvm::FoldingSetNode {
-    TemplateTemplateParmDecl *Parm;
-    
-#endif
-  public:
-#if 0
-    CanonicalTemplateTemplateParm(TemplateTemplateParmDecl *Parm) 
-      : Parm(Parm) { }
-    
-    TemplateTemplateParmDecl *getParam() const { return Parm; }
-    
-    void Profile(llvm::FoldingSetNodeID &ID) { Profile(ID, Parm); }
-    
-    static void Profile(llvm::FoldingSetNodeID &ID, 
-                        TemplateTemplateParmDecl *Parm);
-  };
-  mutable llvm::FoldingSet<CanonicalTemplateTemplateParm>
-    CanonTemplateTemplateParms;
-  
-  TemplateTemplateParmDecl *
-    getCanonicalTemplateTemplateParmDecl(TemplateTemplateParmDecl *TTP) const;
 
   /// \brief The typedef for the __int128_t type.
   mutable TypedefDecl *Int128Decl;
@@ -271,9 +237,6 @@ class ASTContext : public RefCountedBase<ASTContext> {
   /// serialized.
   mutable RecordDecl *BlockDescriptorExtendedType;
 
-  /// \brief Declaration for the CUDA cudaConfigureCall function.
-  FunctionDecl *cudaConfigureCallDecl;
-
   TypeSourceInfo NullTypeSourceInfo;
 
   /// \brief Keeps track of all declaration attributes.
@@ -281,62 +244,6 @@ class ASTContext : public RefCountedBase<ASTContext> {
   /// Since so few decls have attrs, we keep them in a hash map instead of
   /// wasting space in the Decl class.
   llvm::DenseMap<const Decl*, AttrVec*> DeclAttrs;
-
-  /// \brief Keeps track of the static data member templates from which
-  /// static data members of class template specializations were instantiated.
-  ///
-  /// This data structure stores the mapping from instantiations of static
-  /// data members to the static data member representations within the
-  /// class template from which they were instantiated along with the kind
-  /// of instantiation or specialization (a TemplateSpecializationKind - 1).
-  ///
-  /// Given the following example:
-  ///
-  /// \code
-  /// template<typename T>
-  /// struct X {
-  ///   static T value;
-  /// };
-  ///
-  /// template<typename T>
-  ///   T X<T>::value = T(17);
-  ///
-  /// int *x = &X<int>::value;
-  /// \endcode
-  ///
-  /// This mapping will contain an entry that maps from the VarDecl for
-  /// X<int>::value to the corresponding VarDecl for X<T>::value (within the
-  /// class template X) and will be marked TSK_ImplicitInstantiation.
-  llvm::DenseMap<const VarDecl *, MemberSpecializationInfo *> 
-    InstantiatedFromStaticDataMember;
-
-  /// \brief Keeps track of the declaration from which a UsingDecl was
-  /// created during instantiation.
-  ///
-  /// The source declaration is always a UsingDecl, an UnresolvedUsingValueDecl,
-  /// or an UnresolvedUsingTypenameDecl.
-  ///
-  /// For example:
-  /// \code
-  /// template<typename T>
-  /// struct A {
-  ///   void f();
-  /// };
-  ///
-  /// template<typename T>
-  /// struct B : A<T> {
-  ///   using A<T>::f;
-  /// };
-  ///
-  /// template struct B<int>;
-  /// \endcode
-  ///
-  /// This mapping will contain an entry that maps from the UsingDecl in
-  /// B<int> to the UnresolvedUsingDecl in B<T>.
-  llvm::DenseMap<UsingDecl *, NamedDecl *> InstantiatedFromUsingDecl;
-
-  llvm::DenseMap<UsingShadowDecl*, UsingShadowDecl*>
-    InstantiatedFromUsingShadowDecl;
 
   llvm::DenseMap<FieldDecl *, FieldDecl *> InstantiatedFromUnnamedFieldDecl;
 
@@ -400,8 +307,10 @@ class ASTContext : public RefCountedBase<ASTContext> {
 
   const TargetInfo *Target;
   gong::PrintingPolicy PrintingPolicy;
+#endif
   
 public:
+#if 0
   IdentifierTable &Idents;
   SelectorTable &Selectors;
   Builtin::Context &BuiltinInfo;
@@ -573,40 +482,6 @@ public:
   /// \brief Erase the attributes corresponding to the given declaration.
   void eraseDeclAttrs(const Decl *D);
 
-  /// \brief If this variable is an instantiated static data member of a
-  /// class template specialization, returns the templated static data member
-  /// from which it was instantiated.
-  MemberSpecializationInfo *getInstantiatedFromStaticDataMember(
-                                                           const VarDecl *Var);
-
-  FunctionDecl *getClassScopeSpecializationPattern(const FunctionDecl *FD);
-
-  void setClassScopeSpecializationPattern(FunctionDecl *FD,
-                                          FunctionDecl *Pattern);
-
-  /// \brief Note that the static data member \p Inst is an instantiation of
-  /// the static data member template \p Tmpl of a class template.
-  void setInstantiatedFromStaticDataMember(VarDecl *Inst, VarDecl *Tmpl,
-                                           TemplateSpecializationKind TSK,
-                        SourceLocation PointOfInstantiation = SourceLocation());
-
-  /// \brief If the given using decl \p Inst is an instantiation of a
-  /// (possibly unresolved) using decl from a template instantiation,
-  /// return it.
-  NamedDecl *getInstantiatedFromUsingDecl(UsingDecl *Inst);
-
-  /// \brief Remember that the using decl \p Inst is an instantiation
-  /// of the using decl \p Pattern of a class template.
-  void setInstantiatedFromUsingDecl(UsingDecl *Inst, NamedDecl *Pattern);
-
-  void setInstantiatedFromUsingShadowDecl(UsingShadowDecl *Inst,
-                                          UsingShadowDecl *Pattern);
-  UsingShadowDecl *getInstantiatedFromUsingShadowDecl(UsingShadowDecl *Inst);
-
-  FieldDecl *getInstantiatedFromUnnamedFieldDecl(FieldDecl *Field);
-
-  void setInstantiatedFromUnnamedFieldDecl(FieldDecl *Inst, FieldDecl *Tmpl);
-  
   /// \brief Return \c true if \p FD is a zero-length bitfield which follows
   /// the non-bitfield \p LastFD.
   bool ZeroBitfieldFollowsNonBitfield(const FieldDecl *FD, 
@@ -874,13 +749,6 @@ public:
   /// pointer to blocks.
   QualType getBlockDescriptorExtendedType() const;
 
-  void setcudaConfigureCallDecl(FunctionDecl *FD) {
-    cudaConfigureCallDecl = FD;
-  }
-  FunctionDecl *getcudaConfigureCallDecl() {
-    return cudaConfigureCallDecl;
-  }
-
   /// Returns true iff we need copy/dispose helpers for the given type.
   bool BlockRequiresCopying(QualType Ty, const VarDecl *D);
   
@@ -1053,19 +921,6 @@ public:
                                                   unsigned NumArgs,
                                             const TemplateArgument *Args) const;
 
-  QualType getPackExpansionType(QualType Pattern,
-                                llvm::Optional<unsigned> NumExpansions);
-
-  QualType getObjCInterfaceType(const ObjCInterfaceDecl *Decl,
-                                ObjCInterfaceDecl *PrevDecl = 0) const;
-
-  QualType getObjCObjectType(QualType Base,
-                             ObjCProtocolDecl * const *Protocols,
-                             unsigned NumProtocols) const;
-
-  /// \brief Return a ObjCObjectPointerType type for the given ObjCObjectType.
-  QualType getObjCObjectPointerType(QualType OIT) const;
-
   /// \brief GCC extension.
   QualType getTypeOfExprType(Expr *e) const;
   QualType getTypeOfType(QualType t) const;
@@ -1131,82 +986,6 @@ public:
   /// <sys/types.h>. We need this to compute the correct type for vfork().
   QualType getProcessIDType() const;
 
-  /// \brief Return the C structure type used to represent constant CFStrings.
-  QualType getCFConstantStringType() const;
-
-  /// Get the structure type used to representation CFStrings, or NULL
-  /// if it hasn't yet been built.
-  QualType getRawCFConstantStringType() const {
-    if (CFConstantStringTypeDecl)
-      return getTagDeclType(CFConstantStringTypeDecl);
-    return QualType();
-  }
-  void setCFConstantStringType(QualType T);
-
-  // This setter/getter represents the ObjC type for an NSConstantString.
-  void setObjCConstantStringInterface(ObjCInterfaceDecl *Decl);
-  QualType getObjCConstantStringInterface() const {
-    return ObjCConstantStringType;
-  }
-
-  QualType getObjCNSStringType() const {
-    return ObjCNSStringType;
-  }
-  
-  void setObjCNSStringType(QualType T) {
-    ObjCNSStringType = T;
-  }
-  
-  /// \brief Retrieve the type that \c id has been defined to, which may be
-  /// different from the built-in \c id if \c id has been typedef'd.
-  QualType getObjCIdRedefinitionType() const {
-    if (ObjCIdRedefinitionType.isNull())
-      return getObjCIdType();
-    return ObjCIdRedefinitionType;
-  }
-  
-  /// \brief Set the user-written type that redefines \c id.
-  void setObjCIdRedefinitionType(QualType RedefType) {
-    ObjCIdRedefinitionType = RedefType;
-  }
-
-  /// \brief Retrieve the type that \c Class has been defined to, which may be
-  /// different from the built-in \c Class if \c Class has been typedef'd.
-  QualType getObjCClassRedefinitionType() const {
-    if (ObjCClassRedefinitionType.isNull())
-      return getObjCClassType();
-    return ObjCClassRedefinitionType;
-  }
-  
-  /// \brief Set the user-written type that redefines 'SEL'.
-  void setObjCClassRedefinitionType(QualType RedefType) {
-    ObjCClassRedefinitionType = RedefType;
-  }
-
-  /// \brief Retrieve the type that 'SEL' has been defined to, which may be
-  /// different from the built-in 'SEL' if 'SEL' has been typedef'd.
-  QualType getObjCSelRedefinitionType() const {
-    if (ObjCSelRedefinitionType.isNull())
-      return getObjCSelType();
-    return ObjCSelRedefinitionType;
-  }
-
-  
-  /// \brief Set the user-written type that redefines 'SEL'.
-  void setObjCSelRedefinitionType(QualType RedefType) {
-    ObjCSelRedefinitionType = RedefType;
-  }
-
-  /// \brief Retrieve the Objective-C "instancetype" type, if already known;
-  /// otherwise, returns a NULL type;
-  QualType getObjCInstanceType() {
-    return getTypeDeclType(getObjCInstanceTypeDecl());
-  }
-
-  /// \brief Retrieve the typedef declaration corresponding to the Objective-C
-  /// "instancetype" type.
-  TypedefDecl *getObjCInstanceTypeDecl();
-  
   /// \brief Set the type for the C FILE type.
   void setFILEDecl(TypeDecl *FILEDecl) { this->FILEDecl = FILEDecl; }
 
@@ -1258,112 +1037,6 @@ public:
     return getLangOpts().CPlusPlus ? BoolTy : IntTy;
   }
 
-  /// \brief Emit the Objective-CC type encoding for the given type \p T into
-  /// \p S.
-  ///
-  /// If \p Field is specified then record field names are also encoded.
-  void getObjCEncodingForType(QualType T, std::string &S,
-                              const FieldDecl *Field=0) const;
-
-  void getLegacyIntegralTypeEncoding(QualType &t) const;
-
-  /// \brief Put the string version of the type qualifiers \p QT into \p S.
-  void getObjCEncodingForTypeQualifier(Decl::ObjCDeclQualifier QT,
-                                       std::string &S) const;
-
-  /// \brief Emit the encoded type for the function \p Decl into \p S.
-  ///
-  /// This is in the same format as Objective-C method encodings.
-  ///
-  /// \returns true if an error occurred (e.g., because one of the parameter
-  /// types is incomplete), false otherwise.
-  bool getObjCEncodingForFunctionDecl(const FunctionDecl *Decl, std::string& S);
-
-  /// \brief Emit the encoded type for the method declaration \p Decl into
-  /// \p S.
-  ///
-  /// \returns true if an error occurred (e.g., because one of the parameter
-  /// types is incomplete), false otherwise.
-  bool getObjCEncodingForMethodDecl(const ObjCMethodDecl *Decl, std::string &S,
-                                    bool Extended = false)
-    const;
-
-  /// \brief Return the encoded type for this block declaration.
-  std::string getObjCEncodingForBlock(const BlockExpr *blockExpr) const;
-  
-  /// getObjCEncodingForPropertyDecl - Return the encoded type for
-  /// this method declaration. If non-NULL, Container must be either
-  /// an ObjCCategoryImplDecl or ObjCImplementationDecl; it should
-  /// only be NULL when getting encodings for protocol properties.
-  void getObjCEncodingForPropertyDecl(const ObjCPropertyDecl *PD,
-                                      const Decl *Container,
-                                      std::string &S) const;
-
-  bool ProtocolCompatibleWithProtocol(ObjCProtocolDecl *lProto,
-                                      ObjCProtocolDecl *rProto) const;
-
-  /// \brief Return the size of type \p T for Objective-C encoding purpose,
-  /// in characters.
-  CharUnits getObjCEncodingTypeSize(QualType T) const;
-
-  /// \brief Retrieve the typedef corresponding to the predefined \c id type
-  /// in Objective-C.
-  TypedefDecl *getObjCIdDecl() const;
-  
-  /// \brief Represents the Objective-CC \c id type.
-  ///
-  /// This is set up lazily, by Sema.  \c id is always a (typedef for a)
-  /// pointer type, a pointer to a struct.
-  QualType getObjCIdType() const {
-    return getTypeDeclType(getObjCIdDecl());
-  }
-
-  /// \brief Retrieve the typedef corresponding to the predefined 'SEL' type
-  /// in Objective-C.
-  TypedefDecl *getObjCSelDecl() const;
-  
-  /// \brief Retrieve the type that corresponds to the predefined Objective-C
-  /// 'SEL' type.
-  QualType getObjCSelType() const { 
-    return getTypeDeclType(getObjCSelDecl());
-  }
-
-  /// \brief Retrieve the typedef declaration corresponding to the predefined
-  /// Objective-C 'Class' type.
-  TypedefDecl *getObjCClassDecl() const;
-  
-  /// \brief Represents the Objective-C \c Class type.
-  ///
-  /// This is set up lazily, by Sema.  \c Class is always a (typedef for a)
-  /// pointer type, a pointer to a struct.
-  QualType getObjCClassType() const { 
-    return getTypeDeclType(getObjCClassDecl());
-  }
-
-  /// \brief Retrieve the Objective-C class declaration corresponding to 
-  /// the predefined \c Protocol class.
-  ObjCInterfaceDecl *getObjCProtocolDecl() const;
-
-  /// \brief Retrieve declaration of 'BOOL' typedef
-  TypedefDecl *getBOOLDecl() const {
-    return BOOLDecl;
-  }
-
-  /// \brief Save declaration of 'BOOL' typedef
-  void setBOOLDecl(TypedefDecl *TD) {
-    BOOLDecl = TD;
-  }
-
-  /// \brief type of 'BOOL' type.
-  QualType getBOOLType() const {
-    return getTypeDeclType(getBOOLDecl());
-  }
-  
-  /// \brief Retrieve the type of the Objective-C \c Protocol class.
-  QualType getObjCProtoType() const {
-    return getObjCInterfaceType(getObjCProtocolDecl());
-  }
-  
   /// \brief Retrieve the C type declaration corresponding to the predefined
   /// \c __builtin_va_list type.
   TypedefDecl *getBuiltinVaListDecl() const;
@@ -1421,22 +1094,6 @@ public:
   DeclarationNameInfo getNameForTemplate(TemplateName Name,
                                          SourceLocation NameLoc) const;
 
-  TemplateName getOverloadedTemplateName(UnresolvedSetIterator Begin,
-                                         UnresolvedSetIterator End) const;
-
-  TemplateName getQualifiedTemplateName(NestedNameSpecifier *NNS,
-                                        bool TemplateKeyword,
-                                        TemplateDecl *Template) const;
-
-  TemplateName getDependentTemplateName(NestedNameSpecifier *NNS,
-                                        const IdentifierInfo *Name) const;
-  TemplateName getDependentTemplateName(NestedNameSpecifier *NNS,
-                                        OverloadedOperatorKind Operator) const;
-  TemplateName getSubstTemplateTemplateParm(TemplateTemplateParmDecl *param,
-                                            TemplateName replacement) const;
-  TemplateName getSubstTemplateTemplateParmPack(TemplateTemplateParmDecl *Param,
-                                        const TemplateArgument &ArgPack) const;
-  
   enum GetBuiltinTypeError {
     GE_None,              ///< No error
     GE_Missing_stdio,     ///< Missing a type from <stdio.h>
@@ -1461,22 +1118,12 @@ private:
   //===--------------------------------------------------------------------===//
 
 public:
-  /// \brief Return one of the GCNone, Weak or Strong Objective-C garbage
-  /// collection attributes.
-  Qualifiers::GC getObjCGCAttrKind(QualType Ty) const;
-
   /// \brief Return true if the given vector types are of the same unqualified
   /// type or if they are equivalent to the same GCC vector type.
   ///
   /// \note This ignores whether they are target-specific (AltiVec or Neon)
   /// types.
   bool areCompatibleVectorTypes(QualType FirstVec, QualType SecondVec);
-
-  /// \brief Return true if this is an \c NSObject object with its \c NSObject
-  /// attribute set.
-  static bool isObjCNSObjectType(QualType Ty) {
-    return Ty->isObjCNSObjectType();
-  }
 
   //===--------------------------------------------------------------------===//
   //                         Type Sizing and Analysis
@@ -1693,38 +1340,6 @@ public:
     return (getCanonicalCallConv(lcc) == getCanonicalCallConv(rcc));
   }
 
-  /// \brief Retrieves the "canonical" template name that refers to a
-  /// given template.
-  ///
-  /// The canonical template name is the simplest expression that can
-  /// be used to refer to a given template. For most templates, this
-  /// expression is just the template declaration itself. For example,
-  /// the template std::vector can be referred to via a variety of
-  /// names---std::vector, \::std::vector, vector (if vector is in
-  /// scope), etc.---but all of these names map down to the same
-  /// TemplateDecl, which is used to form the canonical template name.
-  ///
-  /// Dependent template names are more interesting. Here, the
-  /// template name could be something like T::template apply or
-  /// std::allocator<T>::template rebind, where the nested name
-  /// specifier itself is dependent. In this case, the canonical
-  /// template name uses the shortest form of the dependent
-  /// nested-name-specifier, which itself contains all canonical
-  /// types, values, and templates.
-  TemplateName getCanonicalTemplateName(TemplateName Name) const;
-
-  /// \brief Determine whether the given template names refer to the same
-  /// template.
-  bool hasSameTemplateName(TemplateName X, TemplateName Y);
-  
-  /// \brief Retrieve the "canonical" template argument.
-  ///
-  /// The canonical template argument is the simplest template argument
-  /// (which may be a type, value, expression, or declaration) that
-  /// expresses the value of the argument.
-  TemplateArgument getCanonicalTemplateArgument(const TemplateArgument &Arg)
-    const;
-
   /// Type Query functions.  If the type is an instance of the specified class,
   /// return the Type pointer for the underlying maximally pretty type.  This
   /// is a member of ASTContext because this may need to do some amount of
@@ -1846,34 +1461,7 @@ public:
   bool propertyTypesAreCompatible(QualType, QualType); 
   bool typesAreBlockPointerCompatible(QualType, QualType); 
 
-  bool isObjCIdType(QualType T) const {
-    return T == getObjCIdType();
-  }
-  bool isObjCClassType(QualType T) const {
-    return T == getObjCClassType();
-  }
-  bool isObjCSelType(QualType T) const {
-    return T == getObjCSelType();
-  }
   bool QualifiedIdConformsQualifiedId(QualType LHS, QualType RHS);
-  bool ObjCQualifiedIdTypesAreCompatible(QualType LHS, QualType RHS,
-                                         bool ForCompare);
-
-  bool ObjCQualifiedClassTypesAreCompatible(QualType LHS, QualType RHS);
-  
-  // Check the safety of assignment from LHS to RHS
-  bool canAssignObjCInterfaces(const ObjCObjectPointerType *LHSOPT,
-                               const ObjCObjectPointerType *RHSOPT);
-  bool canAssignObjCInterfaces(const ObjCObjectType *LHS,
-                               const ObjCObjectType *RHS);
-  bool canAssignObjCInterfacesInBlockPointer(
-                                          const ObjCObjectPointerType *LHSOPT,
-                                          const ObjCObjectPointerType *RHSOPT,
-                                          bool BlockReturnType);
-  bool areComparableObjCPointerTypes(QualType LHS, QualType RHS);
-  QualType areCommonBaseCompatible(const ObjCObjectPointerType *LHSOPT,
-                                   const ObjCObjectPointerType *RHSOPT);
-  bool canBindObjCObjectType(QualType To, QualType From);
 
   // Functions for calculating composite types
   QualType mergeTypes(QualType, QualType, bool OfBlockPointer=false,
@@ -1887,15 +1475,9 @@ public:
                                      bool OfBlockPointer=false,
                                      bool Unqualified = false);
   
-  QualType mergeObjCGCQualifiers(QualType, QualType);
-    
   bool FunctionTypesMatchOnNSConsumedAttrs(
          const FunctionProtoType *FromFunctionType,
          const FunctionProtoType *ToFunctionType);
-
-  void ResetObjCLayout(const ObjCContainerDecl *CD) {
-    ObjCLayouts[CD] = 0;
-  }
 
   //===--------------------------------------------------------------------===//
   //                    Integer Predicates
@@ -1936,43 +1518,6 @@ public:
   }
 
   bool isSentinelNullExpr(const Expr *E);
-
-  /// \brief Get the implementation of the ObjCInterfaceDecl \p D, or NULL if
-  /// none exists.
-  ObjCImplementationDecl *getObjCImplementation(ObjCInterfaceDecl *D);
-  /// \brief Get the implementation of the ObjCCategoryDecl \p D, or NULL if
-  /// none exists.
-  ObjCCategoryImplDecl   *getObjCImplementation(ObjCCategoryDecl *D);
-
-  /// \brief Return true if there is at least one \@implementation in the TU.
-  bool AnyObjCImplementation() {
-    return !ObjCImpls.empty();
-  }
-
-  /// \brief Set the implementation of ObjCInterfaceDecl.
-  void setObjCImplementation(ObjCInterfaceDecl *IFaceD,
-                             ObjCImplementationDecl *ImplD);
-  /// \brief Set the implementation of ObjCCategoryDecl.
-  void setObjCImplementation(ObjCCategoryDecl *CatD,
-                             ObjCCategoryImplDecl *ImplD);
-
-  /// \brief Get the duplicate declaration of a ObjCMethod in the same
-  /// interface, or null if none exists.
-  const ObjCMethodDecl *getObjCMethodRedeclaration(
-                                               const ObjCMethodDecl *MD) const {
-    return ObjCMethodRedecls.lookup(MD);
-  }
-
-  void setObjCMethodRedeclaration(const ObjCMethodDecl *MD,
-                                  const ObjCMethodDecl *Redecl) {
-    assert(!getObjCMethodRedeclaration(MD) && "MD already has a redeclaration");
-    ObjCMethodRedecls[MD] = Redecl;
-  }
-
-  /// \brief Returns the Objective-C interface that \p ND belongs to if it is
-  /// an Objective-C method/property/ivar etc. that is part of an interface,
-  /// otherwise returns null.
-  ObjCInterfaceDecl *getObjContainingInterface(NamedDecl *ND) const;
   
   /// \brief Set the copy inialization expression of a block var decl.
   void setBlockVarCopyInits(VarDecl*VD, Expr* Init);
@@ -2099,31 +1644,6 @@ public:
   
 private:
   void InitBuiltinType(CanQualType &R, BuiltinType::Kind K);
-
-  // Return the Objective-C type encoding for a given type.
-  void getObjCEncodingForTypeImpl(QualType t, std::string &S,
-                                  bool ExpandPointedToStructures,
-                                  bool ExpandStructures,
-                                  const FieldDecl *Field,
-                                  bool OutermostType = false,
-                                  bool EncodingProperty = false,
-                                  bool StructField = false,
-                                  bool EncodeBlockParameters = false,
-                                  bool EncodeClassNames = false) const;
-
-  // Adds the encoding of the structure's members.
-  void getObjCEncodingForStructureImpl(RecordDecl *RD, std::string &S,
-                                       const FieldDecl *Field,
-                                       bool includeVBases = true) const;
-
-  // Adds the encoding of a method parameter or return type.
-  void getObjCEncodingForMethodParameter(Decl::ObjCDeclQualifier QT,
-                                         QualType T, std::string& S,
-                                         bool Extended) const;
-
-  const ASTRecordLayout &
-  getObjCLayout(const ObjCInterfaceDecl *D,
-                const ObjCImplementationDecl *Impl) const;
 
 private:
   /// \brief A set of deallocations that should be performed when the 
