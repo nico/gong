@@ -266,6 +266,7 @@ bool Parser::ParseFunctionDecl(SourceLocation FuncLoc) {
     ParseSignature();
   } else {
     Diag(Tok, diag::expected_l_paren);
+    // FIXME: if the next token is a '{', fixit to insert empty parameter list.
   }
 
   Action::DeclPtrTy Fun =
@@ -300,7 +301,12 @@ bool Parser::ParseMethodDecl() {
   (void)MethodName;  // FIXME
   (void)MethodLoc;  // FIXME
 
-  ParseSignature();
+  if (Tok.is(tok::l_paren)) {
+    ParseSignature();
+  } else {
+    Diag(Tok, diag::expected_l_paren);
+    // FIXME: if the next token is a '{', fixit to insert empty parameter list?
+  }
 
   if (Tok.is(tok::l_brace)) {
     // FIXME

@@ -3,6 +3,7 @@
 
 General s/llvm::SourceMgr/SourceManager/g
 
+Look at SourceMgr-based fixits! They were added r172086.
 
 Lexer
 =====
