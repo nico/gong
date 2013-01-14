@@ -13,6 +13,7 @@
 
 #include "gong/AST/ASTContext.h"
 
+#include "gong/Basic/IdentifierTable.h"
 using namespace gong;
 
 #if 0
@@ -379,12 +380,12 @@ static const LangAS::Map *getAddressSpaceMap(const TargetInfo &T,
 #endif
 
 ASTContext::ASTContext(/*LangOptions& LOpts, SourceManager &SM,
-                       const TargetInfo *t,
-                       IdentifierTable &idents, SelectorTable &sels,
+                       const TargetInfo *t,*/
+                       IdentifierTable &idents/*, SelectorTable &sels,
                        Builtin::Context &builtins,
                        unsigned size_reserve,
                        bool DelayInitialization*/) 
-  /*: FunctionProtoTypes(this_()),
+  : /*FunctionProtoTypes(this_()),
     TemplateSpecializationTypes(this_()),
     DependentTemplateSpecializationTypes(this_()),
     SubstTemplateTemplateParmPacks(this_()),
@@ -401,8 +402,8 @@ ASTContext::ASTContext(/*LangOptions& LOpts, SourceManager &SM,
     NullTypeSourceInfo(QualType()), 
     FirstLocalImport(), LastLocalImport(),
     SourceMgr(SM), LangOpts(LOpts), 
-    AddrSpaceMap(0), Target(t), PrintingPolicy(LOpts),
-    Idents(idents), Selectors(sels),
+    AddrSpaceMap(0), Target(t), PrintingPolicy(LOpts),*/
+    BoolDecl(0), Idents(idents)/*, Selectors(sels),
     BuiltinInfo(builtins),
     DeclarationNames(*this),
     ExternalSource(0), Listener(0),
@@ -543,6 +544,17 @@ TypedefDecl *ASTContext::getUInt128Decl() const {
   return UInt128Decl;
 }
 #endif
+
+TypeSpecDecl *ASTContext::getBoolDecl() const {
+  if (!BoolDecl) {
+    BoolDecl = TypeSpecDecl::Create(const_cast<ASTContext &>(*this),
+                                    getTranslationUnitDecl(), SourceLocation(),
+                                    &Idents.get("bool"),
+                                    /*Type=*/ NULL); // FIXME
+  }
+
+  return BoolDecl;
+}
 
 //void ASTContext::InitBuiltinType(CanQualType &R, BuiltinType::Kind K) {
 void ASTContext::InitBuiltinType(Type *&R, BuiltinType::Kind K) {

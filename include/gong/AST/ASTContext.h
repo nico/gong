@@ -30,7 +30,6 @@
 #include "gong/AST/TemplateName.h"
 #include "gong/AST/Type.h"
 #include "gong/Basic/AddressSpaces.h"
-#include "gong/Basic/IdentifierTable.h"
 #include "gong/Basic/LangOptions.h"
 #include "gong/Basic/OperatorKinds.h"
 #include "gong/Basic/PartialDiagnostic.h"
@@ -48,6 +47,7 @@ namespace llvm {
 
 #endif
 namespace gong {
+class IdentifierTable;
 #if 0
   class FileManager;
   class ASTRecordLayout;
@@ -57,7 +57,6 @@ namespace gong {
   class Expr;
   class ExternalASTSource;
   class ASTMutationListener;
-  class IdentifierTable;
   class SelectorTable;
   class TargetInfo;
   class CXXABI;
@@ -180,7 +179,12 @@ class ASTContext : public RefCountedBase<ASTContext> {
 
   /// \brief The typedef for the __uint128_t type.
   mutable TypedefDecl *UInt128Decl;
+#endif
+
+  /// \brief The bool type.
+  mutable TypeSpecDecl *BoolDecl;
   
+#if 0
   /// \brief The typedef for the target specific predefined
   /// __builtin_va_list type.
   mutable TypedefDecl *BuiltinVaListDecl;
@@ -309,8 +313,8 @@ class ASTContext : public RefCountedBase<ASTContext> {
 #endif
   
 public:
-#if 0
   IdentifierTable &Idents;
+#if 0
   SelectorTable &Selectors;
   Builtin::Context &BuiltinInfo;
   mutable DeclarationNameTable DeclarationNames;
@@ -616,8 +620,8 @@ public:
   mutable QualType VaListTagTy;
 #endif
 
-  ASTContext(/*LangOptions& LOpts, SourceManager &SM, const TargetInfo *t,
-             IdentifierTable &idents, SelectorTable &sels,
+  ASTContext(/*LangOptions& LOpts, SourceManager &SM, const TargetInfo *t,*/
+             IdentifierTable &idents/*, SelectorTable &sels,
              Builtin::Context &builtins,
              unsigned size_reserve,
              bool DelayInitialization = false*/);
@@ -657,7 +661,10 @@ public:
 
   /// \brief Retrieve the declaration for the 128-bit unsigned integer type.
   TypedefDecl *getUInt128Decl() const;
+#endif
+  TypeSpecDecl *getBoolDecl() const;
   
+#if 0
   //===--------------------------------------------------------------------===//
   //                           Type Constructors
   //===--------------------------------------------------------------------===//

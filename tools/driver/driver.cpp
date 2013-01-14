@@ -154,7 +154,7 @@ int main(int argc_, const char **argv_) {
         if (sema) {
           if (stats)
             Decl::EnableStatistics();
-          ASTContext Context;
+          ASTContext Context(L.getIdentifierTable());
           Sema ParseActions(L, Context);
           Parser P(L, ParseActions);
           P.ParseSourceFile();

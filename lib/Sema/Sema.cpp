@@ -68,6 +68,8 @@ PrintingPolicy Sema::getPrintingPolicy(const ASTContext &Context,
 void Sema::ActOnTranslationUnitScope(Scope *S) {
   TUScope = S;
   PushDeclContext(S, Context.getTranslationUnitDecl());
+
+  Initialize();
 }
 
 Sema::Sema(Lexer &L, /*Preprocessor &pp,*/ ASTContext &ctxt
@@ -146,6 +148,10 @@ void Sema::Initialize() {
   //DeclarationName BuiltinVaList = &Context.Idents.get("__builtin_va_list");
   //if (IdResolver.begin(BuiltinVaList) == IdResolver.end())
   //  PushOnScopeChains(Context.getBuiltinVaListDecl(), TUScope);
+
+  // FIXME: These should all be in the universe block.
+  assert(IdResolver.begin(Context.Idents.get("bool")) == IdResolver.end());
+  PushOnScopeChains(Context.getBoolDecl(), TUScope);
 }
 
 Sema::~Sema() {
