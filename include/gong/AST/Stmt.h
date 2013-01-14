@@ -110,10 +110,7 @@ public:
     NoStmtClass = 0,
 #define STMT(CLASS, PARENT) CLASS##Class,
 #define FIRST_STMT(CLASS) firstStmtConstant = CLASS##Class,
-#define LAST_STMT(CLASS) lastStmtConstant = CLASS##Class,
-#define FIRST_EXPR(CLASS) firstExprConstant = CLASS##Class,
-#define LAST_EXPR(CLASS) lastExprConstant = CLASS##Class
-#define ABSTRACT_EXPR(CLASS, PARENT)
+#define LAST_STMT(CLASS) lastStmtConstant = CLASS##Class
 #include "gong/AST/StmtNodes.def"
   };
 

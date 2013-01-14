@@ -98,7 +98,18 @@ struct SubobjectAdjustment {
 
 /// This represents one expression.
 class Expr {
+public:
+  enum ExprClass {
+    NoExprClass = 0,
+#define EXPR(CLASS, PARENT) CLASS##Class,
+#define FIRST_EXPR(CLASS) firstStmtConstant = CLASS##Class,
+#define LAST_EXPR(CLASS) lastStmtConstant = CLASS##Class
+#define ABSTRACT_EXPR(CLASS, PARENT)
+#include "gong/AST/ExprNodes.def"
+  };
+
 #if 0
+private:
   QualType TR;
 
 protected:
