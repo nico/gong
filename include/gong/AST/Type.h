@@ -14,6 +14,7 @@
 #ifndef LLVM_GONG_AST_TYPE_H
 #define LLVM_GONG_AST_TYPE_H
 
+#include "llvm/ADT/FoldingSet.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/Support/Compiler.h"
 #include "gong/Basic/LLVM.h"
@@ -29,7 +30,6 @@
 #include "gong/Basic/Specifiers.h"
 #include "gong/Basic/Visibility.h"
 #include "llvm/ADT/APSInt.h"
-#include "llvm/ADT/FoldingSet.h"
 #include "llvm/ADT/Optional.h"
 #include "llvm/ADT/PointerIntPair.h"
 #include "llvm/ADT/PointerUnion.h"
@@ -268,8 +268,7 @@ private:
 protected:
   // silence VC++ warning C4355: 'this' : used in base member initializer list
   Type *this_() { return this; }
-  Type(TypeClass tc, const Type *canon,
-       bool VariablyModified)
+  Type(TypeClass tc, const Type *canon)
     : ExtQualsTypeCommonBase(this, canon) {
     TypeBits.TC = tc;
     //TypeBits.VariablyModified = VariablyModified;
@@ -442,9 +441,6 @@ public:
   /// that its definition somehow depends on a template parameter
   /// (C++ [temp.dep.type]).
   bool isDependentType() const { return TypeBits.Dependent; }
-
-  /// \brief Whether this type is a variably-modified type (C99 6.7.5).
-  bool isVariablyModifiedType() const { return TypeBits.VariablyModified; }
 
   /// \brief Whether this type involves a variable-length array type
   /// with a definite size.
@@ -639,8 +635,7 @@ public:
 
 public:
   BuiltinType(Kind K)
-    : Type(Builtin, /*canon=*/0,  // FIXME: why not |this|?
-           /*VariablyModified=*/false) {
+    : Type(Builtin, /*canon=*/0 /* FIXME: why not |this|?*/) {
     BuiltinTypeBits.Kind = K;
   }
 
@@ -736,38 +731,37 @@ public:
 
   static bool classof(const Type *T) { return T->getTypeClass() == Paren; }
 };
+#endif
 
 /// PointerType - C99 6.7.5.1 - Pointer Declarators.
 ///
 class PointerType : public Type, public llvm::FoldingSetNode {
-  QualType PointeeType;
+  Type *PointeeType;
 
-  PointerType(QualType Pointee, QualType CanonicalPtr) :
-    Type(Pointer, CanonicalPtr, Pointee->isDependentType(),
-         Pointee->isInstantiationDependentType(),
-         Pointee->isVariablyModifiedType(),
-         Pointee->containsUnexpandedParameterPack()),
+  PointerType(Type *Pointee,  Type *CanonicalPtr) :
+    Type(Pointer, CanonicalPtr),
     PointeeType(Pointee) {
   }
   friend class ASTContext;  // ASTContext creates these.
 
 public:
 
-  QualType getPointeeType() const { return PointeeType; }
+  Type *getPointeeType() const { return PointeeType; }
 
   bool isSugared() const { return false; }
-  QualType desugar() const { return QualType(this, 0); }
+  //QualType desugar() const { return QualType(this, 0); }
 
   void Profile(llvm::FoldingSetNodeID &ID) {
     Profile(ID, getPointeeType());
   }
-  static void Profile(llvm::FoldingSetNodeID &ID, QualType Pointee) {
-    ID.AddPointer(Pointee.getAsOpaquePtr());
+  static void Profile(llvm::FoldingSetNodeID &ID, Type *Pointee) {
+    ID.AddPointer(Pointee);
   }
 
   static bool classof(const Type *T) { return T->getTypeClass() == Pointer; }
 };
 
+#if 0
 /// BlockPointerType - pointer to a block type.
 /// This type is to represent types syntactically represented as
 /// "void (^)(int)", etc. Pointee is required to always be a function type.
