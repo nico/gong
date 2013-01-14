@@ -31,10 +31,12 @@
 #include "llvm/ADT/StringRef.h"
 #include "llvm/Support/Compiler.h"
 #include <cctype>
+#endif
 
 namespace gong {
+class ASTContext;
+#if 0
   class APValue;
-  class ASTContext;
   class BlockDecl;
   class CXXBaseSpecifier;
   class CXXMemberCallExpr;
@@ -107,6 +109,198 @@ public:
 #define ABSTRACT_EXPR(CLASS, PARENT)
 #include "gong/AST/ExprNodes.def"
   };
+
+  // Make vanilla 'new' and 'delete' illegal for Exprs.
+protected:
+  void* operator new(size_t bytes) throw() {
+    llvm_unreachable("Stmts cannot be allocated with regular 'new'.");
+  }
+  void operator delete(void* data) throw() {
+    llvm_unreachable("Stmts cannot be released with regular 'delete'.");
+  }
+
+#if 0
+  class ExprBitfields {
+    friend class Expr;
+    friend class DeclRefExpr; // computeDependence
+    friend class InitListExpr; // ctor
+    friend class DesignatedInitExpr; // ctor
+    friend class BlockDeclRefExpr; // ctor
+    friend class ASTStmtReader; // deserialization
+    friend class CXXNewExpr; // ctor
+    friend class DependentScopeDeclRefExpr; // ctor
+    friend class CXXConstructExpr; // ctor
+    friend class CallExpr; // ctor
+    friend class OffsetOfExpr; // ctor
+    friend class ObjCMessageExpr; // ctor
+    friend class ObjCArrayLiteral; // ctor
+    friend class ObjCDictionaryLiteral; // ctor
+    friend class ShuffleVectorExpr; // ctor
+    friend class ParenListExpr; // ctor
+    friend class CXXUnresolvedConstructExpr; // ctor
+    friend class CXXDependentScopeMemberExpr; // ctor
+    friend class OverloadExpr; // ctor
+    friend class PseudoObjectExpr; // ctor
+    friend class AtomicExpr; // ctor
+    unsigned : NumStmtBits;
+
+    unsigned ValueKind : 2;
+    unsigned ObjectKind : 2;
+    unsigned TypeDependent : 1;
+    unsigned ValueDependent : 1;
+    unsigned InstantiationDependent : 1;
+    unsigned ContainsUnexpandedParameterPack : 1;
+  };
+  enum { NumExprBits = 16 };
+
+  class CharacterLiteralBitfields {
+    friend class CharacterLiteral;
+    unsigned : NumExprBits;
+
+    unsigned Kind : 2;
+  };
+
+  class FloatingLiteralBitfields {
+    friend class FloatingLiteral;
+    unsigned : NumExprBits;
+
+    unsigned IsIEEE : 1; // Distinguishes between PPC128 and IEEE128.
+    unsigned IsExact : 1;
+  };
+
+  class UnaryExprOrTypeTraitExprBitfields {
+    friend class UnaryExprOrTypeTraitExpr;
+    unsigned : NumExprBits;
+
+    unsigned Kind : 2;
+    unsigned IsType : 1; // true if operand is a type, false if an expression.
+  };
+
+  class DeclRefExprBitfields {
+    friend class DeclRefExpr;
+    friend class ASTStmtReader; // deserialization
+    unsigned : NumExprBits;
+
+    unsigned HasQualifier : 1;
+    unsigned HasTemplateKWAndArgsInfo : 1;
+    unsigned HasFoundDecl : 1;
+    unsigned HadMultipleCandidates : 1;
+    unsigned RefersToEnclosingLocal : 1;
+  };
+
+  class CastExprBitfields {
+    friend class CastExpr;
+    unsigned : NumExprBits;
+
+    unsigned Kind : 6;
+    unsigned BasePathSize : 32 - 6 - NumExprBits;
+  };
+
+  class CallExprBitfields {
+    friend class CallExpr;
+    unsigned : NumExprBits;
+
+    unsigned NumPreArgs : 1;
+  };
+
+  class ExprWithCleanupsBitfields {
+    friend class ExprWithCleanups;
+    friend class ASTStmtReader; // deserialization
+
+    unsigned : NumExprBits;
+
+    unsigned NumObjects : 32 - NumExprBits;
+  };
+
+  class PseudoObjectExprBitfields {
+    friend class PseudoObjectExpr;
+    friend class ASTStmtReader; // deserialization
+
+    unsigned : NumExprBits;
+
+    // These don't need to be particularly wide, because they're
+    // strictly limited by the forms of expressions we permit.
+    unsigned NumSubExprs : 8;
+    unsigned ResultIndex : 32 - 8 - NumExprBits;
+  };
+
+  class ObjCIndirectCopyRestoreExprBitfields {
+    friend class ObjCIndirectCopyRestoreExpr;
+    unsigned : NumExprBits;
+
+    unsigned ShouldCopy : 1;
+  };
+
+  class InitListExprBitfields {
+    friend class InitListExpr;
+
+    unsigned : NumExprBits;
+
+    /// Whether this initializer list originally had a GNU array-range
+    /// designator in it. This is a temporary marker used by CodeGen.
+    unsigned HadArrayRangeDesignator : 1;
+
+    /// Whether this initializer list initializes a std::initializer_list
+    /// object.
+    unsigned InitializesStdInitializerList : 1;
+  };
+
+  class TypeTraitExprBitfields {
+    friend class TypeTraitExpr;
+    friend class ASTStmtReader;
+    friend class ASTStmtWriter;
+    
+    unsigned : NumExprBits;
+    
+    /// \brief The kind of type trait, which is a value of a TypeTrait enumerator.
+    unsigned Kind : 8;
+    
+    /// \brief If this expression is not value-dependent, this indicates whether
+    /// the trait evaluated true or false.
+    unsigned Value : 1;
+
+    /// \brief The number of arguments to this type trait.
+    unsigned NumArgs : 32 - 8 - 1 - NumExprBits;
+  };
+#endif
+
+  union {
+    // FIXME: this is wasteful on 64-bit platforms.
+    void *Aligner;
+
+#if 0
+    ExprBitfields ExprBits;
+    CharacterLiteralBitfields CharacterLiteralBits;
+    FloatingLiteralBitfields FloatingLiteralBits;
+    UnaryExprOrTypeTraitExprBitfields UnaryExprOrTypeTraitExprBits;
+    DeclRefExprBitfields DeclRefExprBits;
+    CastExprBitfields CastExprBits;
+    CallExprBitfields CallExprBits;
+    ExprWithCleanupsBitfields ExprWithCleanupsBits;
+    PseudoObjectExprBitfields PseudoObjectExprBits;
+    ObjCIndirectCopyRestoreExprBitfields ObjCIndirectCopyRestoreExprBits;
+    InitListExprBitfields InitListExprBits;
+    TypeTraitExprBitfields TypeTraitExprBits;
+#endif
+  };
+  
+public:
+  // Only allow allocation of Exprs using the allocator in ASTContext
+  // or by doing a placement new.
+  void* operator new(size_t bytes, ASTContext& C,
+                     unsigned alignment = 8) throw();
+
+  void* operator new(size_t bytes, ASTContext* C,
+                     unsigned alignment = 8) throw();
+
+  void* operator new(size_t bytes, void* mem) throw() {
+    return mem;
+  }
+
+  void operator delete(void*, ASTContext&, unsigned) throw() { }
+  void operator delete(void*, ASTContext*, unsigned) throw() { }
+  void operator delete(void*, std::size_t) throw() { }
+  void operator delete(void*, void*) throw() { }
 
 #if 0
 private:
@@ -4659,8 +4853,9 @@ public:
     return child_range(SubExprs, SubExprs+NumSubExprs);
   }
 };
-}  // end namespace gong
 
 #endif
+
+}  // end namespace gong
 
 #endif
