@@ -181,6 +181,7 @@ protected:
     unsigned Kind : 2;
     unsigned IsType : 1; // true if operand is a type, false if an expression.
   };
+#endif
 
   class DeclRefExprBitfields {
     friend class DeclRefExpr;
@@ -193,6 +194,7 @@ protected:
     unsigned RefersToEnclosingLocal : 1;
   };
 
+#if 0
   class CastExprBitfields {
     friend class CastExpr;
     unsigned : NumExprBits;
@@ -278,7 +280,9 @@ protected:
     CharacterLiteralBitfields CharacterLiteralBits;
     FloatingLiteralBitfields FloatingLiteralBits;
     UnaryExprOrTypeTraitExprBitfields UnaryExprOrTypeTraitExprBits;
+#endif
     DeclRefExprBitfields DeclRefExprBits;
+#if 0
     CastExprBitfields CastExprBits;
     CallExprBitfields CallExprBits;
     ExprWithCleanupsBitfields ExprWithCleanupsBits;
@@ -914,6 +918,7 @@ public:
     return T->getStmtClass() == OpaqueValueExprClass;
   }
 };
+#endif
 
 /// \brief A reference to a declared variable, function, enum, etc.
 /// [C99 6.5.1p2]
@@ -932,9 +937,13 @@ public:
 ///       Specifies when this declaration reference expression has a record of
 ///       a NamedDecl (different from the referenced ValueDecl) which was found
 ///       during name lookup and/or overload resolution.
+///   DeclRefExprBits.HasTemplateKWAndArgsInfo:
+///       Specifies when this declaration reference expression has an explicit
+///       C++ template keyword and/or template argument list.
 ///   DeclRefExprBits.RefersToEnclosingLocal
 ///       Specifies when this declaration reference expression (validly)
 ///       refers to a local variable from a different function.
+class ValueDecl;  // FIXME: This is probably needed, but doesn't exist yet.
 class DeclRefExpr : public Expr {
   /// \brief The declaration that we are referencing.
   ValueDecl *D;
@@ -944,18 +953,18 @@ class DeclRefExpr : public Expr {
 
   /// \brief Provides source/type location info for the declaration name
   /// embedded in D.
-  DeclarationNameLoc DNLoc;
+  //DeclarationNameLoc DNLoc;
 
-  /// \brief Helper to retrieve the optional NestedNameSpecifierLoc.
-  NestedNameSpecifierLoc &getInternalQualifierLoc() {
-    assert(hasQualifier());
-    return *reinterpret_cast<NestedNameSpecifierLoc *>(this + 1);
-  }
+  ///// \brief Helper to retrieve the optional NestedNameSpecifierLoc.
+  //NestedNameSpecifierLoc &getInternalQualifierLoc() {
+  //  assert(hasQualifier());
+  //  return *reinterpret_cast<NestedNameSpecifierLoc *>(this + 1);
+  //}
 
-  /// \brief Helper to retrieve the optional NestedNameSpecifierLoc.
-  const NestedNameSpecifierLoc &getInternalQualifierLoc() const {
-    return const_cast<DeclRefExpr *>(this)->getInternalQualifierLoc();
-  }
+  ///// \brief Helper to retrieve the optional NestedNameSpecifierLoc.
+  //const NestedNameSpecifierLoc &getInternalQualifierLoc() const {
+  //  return const_cast<DeclRefExpr *>(this)->getInternalQualifierLoc();
+  //}
 
   /// \brief Test whether there is a distinct FoundDecl attached to the end of
   /// this DRE.
@@ -965,8 +974,8 @@ class DeclRefExpr : public Expr {
   /// reference occured.
   NamedDecl *&getInternalFoundDecl() {
     assert(hasFoundDecl());
-    if (hasQualifier())
-      return *reinterpret_cast<NamedDecl **>(&getInternalQualifierLoc() + 1);
+    //if (hasQualifier())
+      //return *reinterpret_cast<NamedDecl **>(&getInternalQualifierLoc() + 1);
     return *reinterpret_cast<NamedDecl **>(this + 1);
   }
 
@@ -977,67 +986,56 @@ class DeclRefExpr : public Expr {
   }
 
   DeclRefExpr(ASTContext &Ctx,
-              NestedNameSpecifierLoc QualifierLoc,
+              //NestedNameSpecifierLoc QualifierLoc,
               ValueDecl *D, bool refersToEnclosingLocal,
-              const DeclarationNameInfo &NameInfo,
+              //const DeclarationNameInfo &NameInfo,
               NamedDecl *FoundD,
-              const TemplateArgumentListInfo *TemplateArgs,
-              QualType T, ExprValueKind VK);
+              Type *T/*, ExprValueKind VK*/);
 
   /// \brief Construct an empty declaration reference expression.
   explicit DeclRefExpr(EmptyShell Empty)
     : Expr(DeclRefExprClass, Empty) { }
 
-  /// \brief Computes the type- and value-dependence flags for this
-  /// declaration reference expression.
-  void computeDependence(ASTContext &C);
-
 public:
-  DeclRefExpr(ValueDecl *D, bool refersToEnclosingLocal, QualType T,
-              ExprValueKind VK, SourceLocation L,
-              const DeclarationNameLoc &LocInfo = DeclarationNameLoc())
-    : Expr(DeclRefExprClass, T, VK, OK_Ordinary, false, false, false, false),
-      D(D), Loc(L), DNLoc(LocInfo) {
-    DeclRefExprBits.HasQualifier = 0;
+  DeclRefExpr(ValueDecl *D, bool refersToEnclosingLocal, Type *T,
+              /*ExprValueKind VK,*/ SourceLocation L/*,
+              const DeclarationNameLoc &LocInfo = DeclarationNameLoc()*/)
+    : Expr(DeclRefExprClass, T/*, VK*/),
+      D(D), Loc(L)/*, DNLoc(LocInfo)*/ {
+    //DeclRefExprBits.HasQualifier = 0;
     DeclRefExprBits.HasFoundDecl = 0;
     DeclRefExprBits.HadMultipleCandidates = 0;
     DeclRefExprBits.RefersToEnclosingLocal = refersToEnclosingLocal;
-    computeDependence(D->getASTContext());
   }
 
   static DeclRefExpr *Create(ASTContext &Context,
-                             NestedNameSpecifierLoc QualifierLoc,
-                             SourceLocation TemplateKWLoc,
+                             //NestedNameSpecifierLoc QualifierLoc,
                              ValueDecl *D,
                              bool isEnclosingLocal,
                              SourceLocation NameLoc,
-                             QualType T, ExprValueKind VK,
-                             NamedDecl *FoundD = 0,
-                             const TemplateArgumentListInfo *TemplateArgs = 0);
+                             Type *T,// ExprValueKind VK,
+                             NamedDecl *FoundD = 0);
 
   static DeclRefExpr *Create(ASTContext &Context,
-                             NestedNameSpecifierLoc QualifierLoc,
-                             SourceLocation TemplateKWLoc,
+                             //NestedNameSpecifierLoc QualifierLoc,
                              ValueDecl *D,
                              bool isEnclosingLocal,
-                             const DeclarationNameInfo &NameInfo,
-                             QualType T, ExprValueKind VK,
-                             NamedDecl *FoundD = 0,
-                             const TemplateArgumentListInfo *TemplateArgs = 0);
+                             //const DeclarationNameInfo &NameInfo,
+                             Type *T, //ExprValueKind VK,
+                             NamedDecl *FoundD = 0);
 
   /// \brief Construct an empty declaration reference expression.
   static DeclRefExpr *CreateEmpty(ASTContext &Context,
-                                  bool HasQualifier,
-                                  bool HasFoundDecl,
-                                  unsigned NumTemplateArgs);
+                                  //bool HasQualifier,
+                                  bool HasFoundDecl);
 
   ValueDecl *getDecl() { return D; }
   const ValueDecl *getDecl() const { return D; }
   void setDecl(ValueDecl *NewD) { D = NewD; }
 
-  DeclarationNameInfo getNameInfo() const {
-    return DeclarationNameInfo(getDecl()->getDeclName(), Loc, DNLoc);
-  }
+  //DeclarationNameInfo getNameInfo() const {
+    //return DeclarationNameInfo(getDecl()->getDeclName(), Loc, DNLoc);
+  //}
 
   SourceLocation getLocation() const { return Loc; }
   void setLocation(SourceLocation L) { Loc = L; }
@@ -1046,25 +1044,25 @@ public:
 
   /// \brief Determine whether this declaration reference was preceded by a
   /// C++ nested-name-specifier, e.g., \c N::foo.
-  bool hasQualifier() const { return DeclRefExprBits.HasQualifier; }
+  //bool hasQualifier() const { return DeclRefExprBits.HasQualifier; }
 
   /// \brief If the name was qualified, retrieves the nested-name-specifier
   /// that precedes the name. Otherwise, returns NULL.
-  NestedNameSpecifier *getQualifier() const {
-    if (!hasQualifier())
-      return 0;
+  //NestedNameSpecifier *getQualifier() const {
+  //  if (!hasQualifier())
+  //    return 0;
 
-    return getInternalQualifierLoc().getNestedNameSpecifier();
-  }
+  //  return getInternalQualifierLoc().getNestedNameSpecifier();
+  //}
 
   /// \brief If the name was qualified, retrieves the nested-name-specifier
   /// that precedes the name, with source-location information.
-  NestedNameSpecifierLoc getQualifierLoc() const {
-    if (!hasQualifier())
-      return NestedNameSpecifierLoc();
+  //NestedNameSpecifierLoc getQualifierLoc() const {
+  //  if (!hasQualifier())
+  //    return NestedNameSpecifierLoc();
 
-    return getInternalQualifierLoc();
-  }
+  //  return getInternalQualifierLoc();
+  //}
 
   /// \brief Get the NamedDecl through which this reference occured.
   ///
@@ -1072,67 +1070,15 @@ public:
   /// presence of using declarations, etc. It always returns non-NULL, and may
   /// simple return the ValueDecl when appropriate.
   NamedDecl *getFoundDecl() {
-    return hasFoundDecl() ? getInternalFoundDecl() : D;
+    //return hasFoundDecl() ? getInternalFoundDecl() : D;  FIXME
+    assert (hasFoundDecl());
+    return getInternalFoundDecl();
   }
 
   /// \brief Get the NamedDecl through which this reference occurred.
   /// See non-const variant.
   const NamedDecl *getFoundDecl() const {
-    return hasFoundDecl() ? getInternalFoundDecl() : D;
-  }
-
-  /// \brief Determines whether the name in this declaration reference
-  /// was preceded by the template keyword.
-  bool hasTemplateKeyword() const { return getTemplateKeywordLoc().isValid(); }
-
-  /// \brief Determines whether this declaration reference was followed by an
-  /// explicit template argument list.
-  bool hasExplicitTemplateArgs() const { return getLAngleLoc().isValid(); }
-
-  /// \brief Retrieve the explicit template argument list that followed the
-  /// member template name.
-  ASTTemplateArgumentListInfo &getExplicitTemplateArgs() {
-    assert(hasExplicitTemplateArgs());
-    return *getTemplateKWAndArgsInfo();
-  }
-
-  /// \brief Retrieve the explicit template argument list that followed the
-  /// member template name.
-  const ASTTemplateArgumentListInfo &getExplicitTemplateArgs() const {
-    return const_cast<DeclRefExpr *>(this)->getExplicitTemplateArgs();
-  }
-
-  /// \brief Retrieves the optional explicit template arguments.
-  /// This points to the same data as getExplicitTemplateArgs(), but
-  /// returns null if there are no explicit template arguments.
-  const ASTTemplateArgumentListInfo *getOptionalExplicitTemplateArgs() const {
-    if (!hasExplicitTemplateArgs()) return 0;
-    return &getExplicitTemplateArgs();
-  }
-
-  /// \brief Copies the template arguments (if present) into the given
-  /// structure.
-  void copyTemplateArgumentsInto(TemplateArgumentListInfo &List) const {
-    if (hasExplicitTemplateArgs())
-      getExplicitTemplateArgs().copyInto(List);
-  }
-
-  /// \brief Retrieve the template arguments provided as part of this
-  /// template-id.
-  const TemplateArgumentLoc *getTemplateArgs() const {
-    if (!hasExplicitTemplateArgs())
-      return 0;
-
-    return getExplicitTemplateArgs().getTemplateArgs();
-  }
-
-  /// \brief Retrieve the number of template arguments provided as part of this
-  /// template-id.
-  unsigned getNumTemplateArgs() const {
-    if (!hasExplicitTemplateArgs())
-      return 0;
-
-    return getExplicitTemplateArgs().NumTemplateArgs;
+    return const_cast<DeclRefExpr*>(this)->getFoundDecl();
   }
 
   /// \brief Returns true if this expression refers to a function that
@@ -1153,17 +1099,18 @@ public:
     return DeclRefExprBits.RefersToEnclosingLocal;
   }
 
-  static bool classof(const Stmt *T) {
-    return T->getStmtClass() == DeclRefExprClass;
+  static bool classof(const Expr *T) {
+    return T->getExprClass() == DeclRefExprClass;
   }
 
   // Iterators
-  child_range children() { return child_range(); }
+  //child_range children() { return child_range(); }
 
   friend class ASTStmtReader;
   friend class ASTStmtWriter;
 };
 
+#if 0
 /// PredefinedExpr - [C99 6.4.2.2] - A predefined identifier such as __func__.
 class PredefinedExpr : public Expr {
 public:
