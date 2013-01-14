@@ -13,6 +13,7 @@
 
 #include "gong/Sema/Sema.h"
 
+#include "gong/AST/Expr.h"
 #include "gong/Sema/Lookup.h"
 using namespace gong;
 using namespace sema;
@@ -26,7 +27,6 @@ using namespace sema;
 #include "gong/AST/DeclObjC.h"
 #include "gong/AST/DeclTemplate.h"
 #include "gong/AST/EvaluatedExprVisitor.h"
-#include "gong/AST/Expr.h"
 #include "gong/AST/ExprCXX.h"
 #include "gong/AST/ExprObjC.h"
 #include "gong/AST/RecursiveASTVisitor.h"
