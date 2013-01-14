@@ -416,7 +416,7 @@ ASTContext::ASTContext(/*LangOptions& LOpts, SourceManager &SM,
   
   //if (!DelayInitialization) {
   //  assert(t && "No target supplied for ASTContext initialization");
-  //  InitBuiltinTypes(*t);
+    InitBuiltinTypes(/**t*/);
   //}
 }
 
@@ -542,14 +542,34 @@ TypedefDecl *ASTContext::getUInt128Decl() const {
   
   return UInt128Decl;
 }
+#endif
 
-void ASTContext::InitBuiltinType(CanQualType &R, BuiltinType::Kind K) {
+//void ASTContext::InitBuiltinType(CanQualType &R, BuiltinType::Kind K) {
+void ASTContext::InitBuiltinType(Type *&R, BuiltinType::Kind K) {
   BuiltinType *Ty = new (*this, TypeAlignment) BuiltinType(K);
-  R = CanQualType::CreateUnsafe(QualType(Ty, 0));
+  //R = CanQualType::CreateUnsafe(QualType(Ty, 0));
+  R = Ty;
   Types.push_back(Ty);
 }
 
-void ASTContext::InitBuiltinTypes(const TargetInfo &Target) {
+//void ASTContext::InitBuiltinTypes(const TargetInfo &Target) {
+void ASTContext::InitBuiltinTypes() {
+  InitBuiltinType(BoolTy,          BuiltinType::Bool);
+
+  InitBuiltinType(Int8Ty,          BuiltinType::Int8);
+  InitBuiltinType(Int16Ty,         BuiltinType::Int16);
+  InitBuiltinType(Int32Ty,         BuiltinType::Int32);
+  InitBuiltinType(Int64Ty,         BuiltinType::Int64);
+
+  InitBuiltinType(UInt8Ty,         BuiltinType::UInt8);
+  InitBuiltinType(UInt16Ty,        BuiltinType::UInt16);
+  InitBuiltinType(UInt32Ty,        BuiltinType::UInt32);
+  InitBuiltinType(UInt64Ty,        BuiltinType::UInt64);
+
+  InitBuiltinType(Float32Ty,       BuiltinType::Float32);
+  InitBuiltinType(Float64Ty,       BuiltinType::Float64);
+
+#if 0
   assert((!this->Target || this->Target == &Target) &&
          "Incorrect target reinitialization");
   assert(VoidTy.isNull() && "Context reinitialized?");
@@ -668,8 +688,10 @@ void ASTContext::InitBuiltinTypes(const TargetInfo &Target) {
 
   // Builtin type used to help define __builtin_va_list.
   VaListTagTy = QualType();
+#endif
 }
 
+#if 0
 DiagnosticsEngine &ASTContext::getDiagnostics() const {
   return SourceMgr.getDiagnostics();
 }

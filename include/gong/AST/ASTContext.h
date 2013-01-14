@@ -97,8 +97,11 @@ namespace gong {
 class ASTContext : public RefCountedBase<ASTContext> {
 #if 0
   ASTContext &this_() { return *this; }
+#endif
 
   mutable std::vector<Type*> Types;
+
+#if 0
   mutable llvm::FoldingSet<ExtQuals> ExtQualNodes;
   mutable llvm::FoldingSet<ComplexType> ComplexTypes;
   mutable llvm::FoldingSet<PointerType> PointerTypes;
@@ -582,6 +585,10 @@ public:
   
   TranslationUnitDecl *getTranslationUnitDecl() const { return TUDecl; }
 
+  Type *BoolTy;
+  Type *Int8Ty, *Int16Ty, *Int32Ty, *Int64Ty;
+  Type *UInt8Ty, *UInt16Ty, *UInt32Ty, *UInt64Ty;
+  Type *Float32Ty, *Float64Ty;
 #if 0
   // Builtin Types.
   CanQualType VoidTy;
@@ -594,18 +601,11 @@ public:
   CanQualType SignedCharTy, ShortTy, IntTy, LongTy, LongLongTy, Int128Ty;
   CanQualType UnsignedCharTy, UnsignedShortTy, UnsignedIntTy, UnsignedLongTy;
   CanQualType UnsignedLongLongTy, UnsignedInt128Ty;
-  CanQualType FloatTy, DoubleTy, LongDoubleTy;
-  CanQualType HalfTy; // [OpenCL 6.1.1.1], ARM NEON
+  CanQualType Float32Ty, Float64Ty;
   CanQualType FloatComplexTy, DoubleComplexTy, LongDoubleComplexTy;
   CanQualType VoidPtrTy, NullPtrTy;
-  CanQualType DependentTy, OverloadTy, BoundMemberTy, UnknownAnyTy;
+  CanQualType UnknownAnyTy;
   CanQualType BuiltinFnTy;
-  CanQualType PseudoObjectTy, ARCUnbridgedCastTy;
-  CanQualType ObjCBuiltinIdTy, ObjCBuiltinClassTy, ObjCBuiltinSelTy;
-  CanQualType ObjCBuiltinBoolTy;
-  CanQualType OCLImage1dTy, OCLImage1dArrayTy, OCLImage1dBufferTy;
-  CanQualType OCLImage2dTy, OCLImage2dArrayTy;
-  CanQualType OCLImage3dTy;
 
   // Types for deductions in C++0x [stmt.ranged]'s desugaring. Built on demand.
   mutable QualType AutoDeductTy;     // Deduction against 'auto'.
@@ -1556,6 +1556,7 @@ public:
 private:
   ASTContext(const ASTContext &) LLVM_DELETED_FUNCTION;
   void operator=(const ASTContext &) LLVM_DELETED_FUNCTION;
+#endif
 
 public:
   /// \brief Initialize built-in types.
@@ -1566,11 +1567,14 @@ public:
   /// of calling this function on the user of that object.
   ///
   /// \param Target The target 
-  void InitBuiltinTypes(const TargetInfo &Target);
+  //void InitBuiltinTypes(const TargetInfo &Target);
+  void InitBuiltinTypes();
   
 private:
-  void InitBuiltinType(CanQualType &R, BuiltinType::Kind K);
+  //void InitBuiltinType(CanQualType &R, BuiltinType::Kind K);
+  void InitBuiltinType(Type *&R, BuiltinType::Kind K);
 
+#if 0
 private:
   /// \brief A set of deallocations that should be performed when the 
   /// ASTContext is destroyed.
@@ -1586,9 +1590,9 @@ private:
   /// \brief A counter used to uniquely identify "blocks".
   mutable unsigned int UniqueBlockByRefTypeID;
   
-  friend class DeclContext;
-  friend class DeclarationNameTable;
 #endif
+  friend class DeclContext;
+  //friend class DeclarationNameTable;
   void ReleaseDeclContextMaps();
 };
 #if 0

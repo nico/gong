@@ -14,6 +14,7 @@
 #ifndef LLVM_GONG_AST_TYPE_H
 #define LLVM_GONG_AST_TYPE_H
 
+#include "llvm/ADT/StringRef.h"
 #include "llvm/Support/Compiler.h"
 #include "gong/Basic/LLVM.h"
 
@@ -638,7 +639,7 @@ public:
 
 public:
   BuiltinType(Kind K)
-    : Type(Builtin, /*canon=*/0,
+    : Type(Builtin, /*canon=*/0,  // FIXME: why not |this|?
            /*VariablyModified=*/false) {
     BuiltinTypeBits.Kind = K;
   }

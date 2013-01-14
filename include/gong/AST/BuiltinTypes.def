@@ -81,6 +81,7 @@ SIGNED_TYPE(Int64, Int64Ty)
 
 // FIXME: should 'byte' and 'rune' be in this file?
 //        what about 'uint', 'int' (likely yes) and 'uintptr' (likely no)?
+//        string should probably be here
 
 //===- Floating point types -----------------------------------------------===//
 
