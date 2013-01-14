@@ -14,6 +14,8 @@
 #ifndef LLVM_GONG_AST_EXPR_H
 #define LLVM_GONG_AST_EXPR_H
 
+#include "gong/AST/Type.h"
+
 #if 0
 
 #include "gong/AST/APValue.h"
@@ -23,7 +25,6 @@
 #include "gong/AST/OperationKinds.h"
 #include "gong/AST/Stmt.h"
 #include "gong/AST/TemplateBase.h"
-#include "gong/AST/Type.h"
 #include "gong/Basic/TypeTraits.h"
 #include "llvm/ADT/APFloat.h"
 #include "llvm/ADT/APSInt.h"
@@ -104,11 +105,17 @@ public:
   enum ExprClass {
     NoExprClass = 0,
 #define EXPR(CLASS, PARENT) CLASS##Class,
-#define FIRST_EXPR(CLASS) firstStmtConstant = CLASS##Class,
-#define LAST_EXPR(CLASS) lastStmtConstant = CLASS##Class
+#define FIRST_EXPR(CLASS) firstExprConstant = CLASS##Class,
+#define LAST_EXPR(CLASS) lastExprConstant = CLASS##Class
 #define ABSTRACT_EXPR(CLASS, PARENT)
 #include "gong/AST/ExprNodes.def"
   };
+
+public:
+  /// \brief A placeholder type used to construct an empty shell of a
+  /// type, that will be filled in later (e.g., by some
+  /// de-serialization).
+  struct EmptyShell { };
 
   // Make vanilla 'new' and 'delete' illegal for Exprs.
 protected:
@@ -118,8 +125,6 @@ protected:
   void operator delete(void* data) throw() {
     llvm_unreachable("Stmts cannot be released with regular 'delete'.");
   }
-
-#if 0
   class ExprBitfields {
     friend class Expr;
     friend class DeclRefExpr; // computeDependence
@@ -142,17 +147,18 @@ protected:
     friend class OverloadExpr; // ctor
     friend class PseudoObjectExpr; // ctor
     friend class AtomicExpr; // ctor
-    unsigned : NumStmtBits;
 
-    unsigned ValueKind : 2;
+    unsigned ExprClass : 8;
+    //unsigned ValueKind : 2;
     unsigned ObjectKind : 2;
-    unsigned TypeDependent : 1;
-    unsigned ValueDependent : 1;
-    unsigned InstantiationDependent : 1;
-    unsigned ContainsUnexpandedParameterPack : 1;
+    //unsigned TypeDependent : 1;
+    //unsigned ValueDependent : 1;
+    //unsigned InstantiationDependent : 1;
+    //unsigned ContainsUnexpandedParameterPack : 1;
   };
   enum { NumExprBits = 16 };
 
+#if 0
   class CharacterLiteralBitfields {
     friend class CharacterLiteral;
     unsigned : NumExprBits;
@@ -268,8 +274,8 @@ protected:
     // FIXME: this is wasteful on 64-bit platforms.
     void *Aligner;
 
-#if 0
     ExprBitfields ExprBits;
+#if 0
     CharacterLiteralBitfields CharacterLiteralBits;
     FloatingLiteralBitfields FloatingLiteralBits;
     UnaryExprOrTypeTraitExprBitfields UnaryExprOrTypeTraitExprBits;
@@ -302,30 +308,30 @@ public:
   void operator delete(void*, std::size_t) throw() { }
   void operator delete(void*, void*) throw() { }
 
-#if 0
 private:
-  QualType TR;
+  Type *TR;
 
 protected:
-  Expr(StmtClass SC, QualType T, ExprValueKind VK, ExprObjectKind OK,
-       bool TD, bool VD, bool ID, bool ContainsUnexpandedParameterPack)
-    : Stmt(SC)
-  {
-    ExprBits.TypeDependent = TD;
-    ExprBits.ValueDependent = VD;
-    ExprBits.InstantiationDependent = ID;
-    ExprBits.ValueKind = VK;
-    ExprBits.ObjectKind = OK;
-    ExprBits.ContainsUnexpandedParameterPack = ContainsUnexpandedParameterPack;
+  Expr(ExprClass EC, Type *T/*, ExprValueKind VK*/) {
+    ExprBits.ExprClass = EC;
+    //ExprBits.ValueKind = VK;
     setType(T);
+    //if (StatisticsEnabled) Expr::addExprClass(SC);
   }
 
   /// \brief Construct an empty expression.
-  explicit Expr(StmtClass SC, EmptyShell) : Stmt(SC) { }
+  explicit Expr(ExprClass EC, EmptyShell) {
+    ExprBits.ExprClass = EC;
+    //if (StatisticsEnabled) Expr::addExprClass(SC);
+  }
 
 public:
-  QualType getType() const { return TR; }
-  void setType(QualType t) {
+  ExprClass getExprClass() const {
+    return static_cast<ExprClass>(ExprBits.ExprClass);
+  }
+
+  Type *getType() const { return TR; }
+  void setType(Type *t) {
     // In C++, the type of an expression is always adjusted so that it
     // will not have reference type an expression will never have
     // reference type (C++ [expr]p6). Use
@@ -333,98 +339,13 @@ public:
     // type. Additionally, inspect Expr::isLvalue to determine whether
     // an expression that is adjusted in this manner should be
     // considered an lvalue.
-    assert((t.isNull() || !t->isReferenceType()) &&
-           "Expressions can't have reference type");
+    //assert((t.isNull() || !t->isReferenceType()) &&
+           //"Expressions can't have reference type");
 
     TR = t;
   }
 
-  /// isValueDependent - Determines whether this expression is
-  /// value-dependent (C++ [temp.dep.constexpr]). For example, the
-  /// array bound of "Chars" in the following example is
-  /// value-dependent.
-  /// @code
-  /// template<int Size, char (&Chars)[Size]> struct meta_string;
-  /// @endcode
-  bool isValueDependent() const { return ExprBits.ValueDependent; }
-
-  /// \brief Set whether this expression is value-dependent or not.
-  void setValueDependent(bool VD) {
-    ExprBits.ValueDependent = VD;
-    if (VD)
-      ExprBits.InstantiationDependent = true;
-  }
-
-  /// isTypeDependent - Determines whether this expression is
-  /// type-dependent (C++ [temp.dep.expr]), which means that its type
-  /// could change from one template instantiation to the next. For
-  /// example, the expressions "x" and "x + y" are type-dependent in
-  /// the following code, but "y" is not type-dependent:
-  /// @code
-  /// template<typename T>
-  /// void add(T x, int y) {
-  ///   x + y;
-  /// }
-  /// @endcode
-  bool isTypeDependent() const { return ExprBits.TypeDependent; }
-
-  /// \brief Set whether this expression is type-dependent or not.
-  void setTypeDependent(bool TD) {
-    ExprBits.TypeDependent = TD;
-    if (TD)
-      ExprBits.InstantiationDependent = true;
-  }
-
-  /// \brief Whether this expression is instantiation-dependent, meaning that
-  /// it depends in some way on a template parameter, even if neither its type
-  /// nor (constant) value can change due to the template instantiation.
-  ///
-  /// In the following example, the expression \c sizeof(sizeof(T() + T())) is
-  /// instantiation-dependent (since it involves a template parameter \c T), but
-  /// is neither type- nor value-dependent, since the type of the inner
-  /// \c sizeof is known (\c std::size_t) and therefore the size of the outer
-  /// \c sizeof is known.
-  ///
-  /// \code
-  /// template<typename T>
-  /// void f(T x, T y) {
-  ///   sizeof(sizeof(T() + T());
-  /// }
-  /// \endcode
-  ///
-  bool isInstantiationDependent() const {
-    return ExprBits.InstantiationDependent;
-  }
-
-  /// \brief Set whether this expression is instantiation-dependent or not.
-  void setInstantiationDependent(bool ID) {
-    ExprBits.InstantiationDependent = ID;
-  }
-
-  /// \brief Whether this expression contains an unexpanded parameter
-  /// pack (for C++11 variadic templates).
-  ///
-  /// Given the following function template:
-  ///
-  /// \code
-  /// template<typename F, typename ...Types>
-  /// void forward(const F &f, Types &&...args) {
-  ///   f(static_cast<Types&&>(args)...);
-  /// }
-  /// \endcode
-  ///
-  /// The expressions \c args and \c static_cast<Types&&>(args) both
-  /// contain parameter packs.
-  bool containsUnexpandedParameterPack() const {
-    return ExprBits.ContainsUnexpandedParameterPack;
-  }
-
-  /// \brief Set the bit that describes whether this expression
-  /// contains an unexpanded parameter pack.
-  void setContainsUnexpandedParameterPack(bool PP = true) {
-    ExprBits.ContainsUnexpandedParameterPack = PP;
-  }
-
+#if 0
   /// getExprLoc - Return the preferred location for the arrow when diagnosing
   /// a problem with a generic expression.
   SourceLocation getExprLoc() const LLVM_READONLY;
@@ -607,23 +528,8 @@ public:
     return static_cast<ExprValueKind>(ExprBits.ValueKind);
   }
 
-  /// getObjectKind - The object kind that this expression produces.
-  /// Object kinds are meaningful only for expressions that yield an
-  /// l-value or x-value.
-  ExprObjectKind getObjectKind() const {
-    return static_cast<ExprObjectKind>(ExprBits.ObjectKind);
-  }
-
-  bool isOrdinaryOrBitFieldObject() const {
-    ExprObjectKind OK = getObjectKind();
-    return (OK == OK_Ordinary || OK == OK_BitField);
-  }
-
   /// setValueKind - Set the value kind produced by this expression.
   void setValueKind(ExprValueKind Cat) { ExprBits.ValueKind = Cat; }
-
-  /// setObjectKind - Set the object kind produced by this expression.
-  void setObjectKind(ExprObjectKind Cat) { ExprBits.ObjectKind = Cat; }
 
 private:
   Classification ClassifyImpl(ASTContext &Ctx, SourceLocation *Loc) const;
@@ -636,29 +542,6 @@ public:
 
   const FieldDecl *getBitField() const {
     return const_cast<Expr*>(this)->getBitField();
-  }
-
-  /// \brief If this expression is an l-value for an Objective C
-  /// property, find the underlying property reference expression.
-  const ObjCPropertyRefExpr *getObjCProperty() const;
-
-  /// \brief Check if this expression is the ObjC 'self' implicit parameter.
-  bool isObjCSelfExpr() const;
-
-  /// \brief Returns whether this expression refers to a vector element.
-  bool refersToVectorElement() const;
-
-  /// \brief Returns whether this expression has a placeholder type.
-  bool hasPlaceholderType() const {
-    return getType()->isPlaceholderType();
-  }
-
-  /// \brief Returns whether this expression has a specific placeholder type.
-  bool hasPlaceholderType(BuiltinType::Kind K) const {
-    assert(BuiltinType::isPlaceholderTypeKind(K));
-    if (const BuiltinType *BT = dyn_cast<BuiltinType>(getType()))
-      return BT->getKind() == K;
-    return false;
   }
 
   /// isKnownToHaveBooleanValue - Return true if this is an integer expression
@@ -957,12 +840,12 @@ public:
   /// binding with a reference.
   const Expr *
   findMaterializedTemporary(const MaterializeTemporaryExpr *&MTE) const;
-
-  static bool classof(const Stmt *T) {
-    return T->getStmtClass() >= firstExprConstant &&
-           T->getStmtClass() <= lastExprConstant;
-  }
 #endif
+
+  static bool classof(const Expr *T) {
+    return T->getExprClass() >= firstExprConstant &&
+           T->getExprClass() <= lastExprConstant;
+  }
 };
 
 
