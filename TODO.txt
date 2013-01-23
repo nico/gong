@@ -109,10 +109,9 @@ less horrible diag for "fmt.Println.("
 
 audit and test QualifiedIdent handling once classifyIdentifier() is gone
 
-Add scopes:
-function parameters
-each if, for, and switch is in its own implicit block
-each clause of a switch or select acts as an implicit block
+ident and expr lists for forranges and commcases:
+https://code.google.com/p/go/source/detail?r=ef1ce4503d85
+
 
 
 Sema / AST
