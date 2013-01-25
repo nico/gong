@@ -131,6 +131,7 @@ DIAG(expected_idents_only_before_ellipsis, CLASS_ERROR,
     "expected only identifiers before '...'")
 DIAG(there_is_no_while,            CLASS_ERROR,
     "'while' is spelled 'for' in Go")
+DIAG(missing_parameter_list,       CLASS_ERROR, "missing parameter list")
 
 // FIXME: move to DiagnosticSemaKinds
 DIAG(unimplemented_package_import, CLASS_ERROR, "sema cannot handle import yet")

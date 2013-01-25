@@ -265,8 +265,14 @@ bool Parser::ParseFunctionDecl(SourceLocation FuncLoc) {
   if (Tok.is(tok::l_paren)) {
     ParseSignature();
   } else {
-    Diag(Tok, diag::expected_l_paren);
-    // FIXME: if the next token is a '{', fixit to insert empty parameter list.
+    if (Tok.is(tok::l_brace)) {
+      SourceLocation EndLoc = Lexer::getLocForEndOfToken(PrevTokLocation, 0,
+                                                         L.getSourceManager());
+      Diag(EndLoc, diag::missing_parameter_list)
+          << FixItHint::CreateInsertion(EndLoc, "()");
+    } else
+      // FIXME: SkipUntil(tok::l_brace)?
+      Diag(Tok, diag::expected_l_paren);
   }
 
   Action::DeclPtrTy Fun =
@@ -304,8 +310,14 @@ bool Parser::ParseMethodDecl() {
   if (Tok.is(tok::l_paren)) {
     ParseSignature();
   } else {
-    Diag(Tok, diag::expected_l_paren);
-    // FIXME: if the next token is a '{', fixit to insert empty parameter list?
+    if (Tok.is(tok::l_brace)) {
+      SourceLocation EndLoc = Lexer::getLocForEndOfToken(PrevTokLocation, 0,
+                                                         L.getSourceManager());
+      Diag(EndLoc, diag::missing_parameter_list)
+          << FixItHint::CreateInsertion(EndLoc, "()");
+    } else
+      // FIXME: SkipUntil(tok::l_brace)?
+      Diag(Tok, diag::expected_l_paren);
   }
 
   if (Tok.is(tok::l_brace)) {

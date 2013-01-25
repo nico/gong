@@ -62,8 +62,8 @@ func a(p1 int, p2 p.int)
 func (foo) a()
 func (foo) a() int
 
-func a {}  // expected-diag {{expected '('}}
-func (foo) a {}  // expected-diag {{expected '('}}
+func a {}  // expected-diag {{missing parameter list}}
+func (foo) a {}  // expected-diag {{missing parameter list}}
 
 func f() {
   func(func(){myprint("yo")})  // expected-diag {{expected ')'}} expected-note {{to match this '('}} expected-diag {{expected '{' or '('}}

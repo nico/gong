@@ -96,9 +96,6 @@ with this code in ParseParenExpr() (at the very end):
   T.consumeClose();
 
 
-
-nice diag with fixit (insert '()') for `func main {}`
-
 nice diag with fixit (insert ',') for
   myfunc(
     4
