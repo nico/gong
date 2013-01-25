@@ -50,6 +50,19 @@ Action::OwningStmtResult Parser::ParseStatement() {
   case tok::identifier: {
     IdentifierInfo *II = Tok.getIdentifierInfo();
     SourceLocation IILoc = ConsumeToken();
+
+    // If a statement starts with "while", maybe the user meant "for" and is
+    // just new to Go.  However, it is possible that "while" is just a variable
+    // name and that it starts a valid expression.  If the token after "while"
+    // could start a for loop and is not valid after "while" in a regular
+    // expression, treat "while" as a typo for "for".
+    if (II == Ident_while) {
+      bool ValidForLoop = Tok.is(tok::l_brace) || IsExpression() ||
+                          Tok.is(tok::semi);
+      if (ValidForLoop && getBinOpPrecedence(Tok.getKind()) == prec::Unknown)
+        return ParseWhileAsForStmt(IILoc);
+    }
+
     if (Tok.is(tok::colon))
       return ParseLabeledStmtTail(IILoc, II);
     return ParseSimpleStmtTail(IILoc, II);
@@ -738,7 +751,20 @@ bool Parser::ParseCommCase() {
 Action::OwningStmtResult Parser::ParseForStmt() {
   assert(Tok.is(tok::kw_for) && "expected 'for'");
   SourceLocation ForLoc = ConsumeToken();
+  return ParseForStmtTail(ForLoc);
+}
 
+// This is called after the identifier "while" has been read if the token after
+// it cannot possibly be valid as an expression.  In that case, try to recover
+// by treating "while" as a typo for "for".
+Action::OwningStmtResult Parser::ParseWhileAsForStmt(SourceLocation WhileLoc) {
+  Diag(WhileLoc, diag::there_is_no_while)
+      << FixItHint::CreateReplacement(SourceRange(WhileLoc, WhileLoc), "for");
+  return ParseForStmtTail(WhileLoc);
+}
+
+// This is called after the 'for' keyword of a ForStmt has been read.
+Action::OwningStmtResult Parser::ParseForStmtTail(SourceLocation ForLoc) {
   // http://tip.golang.org/ref/spec#Blocks
   // "Each for ... statement is considered to be in its own implicit block."
   ParseScope ForScope(this, Scope::DeclScope);

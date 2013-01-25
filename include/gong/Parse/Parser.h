@@ -14,6 +14,7 @@
 #ifndef LLVM_GONG_PARSE_PARSER_H
 #define LLVM_GONG_PARSE_PARSER_H
 
+#include "gong/Basic/OperatorPrecedence.h"
 //#include "gong/Basic/Specifiers.h"
 #include "gong/Lex/Lexer.h"
 #include "gong/Parse/Action.h"
@@ -44,21 +45,6 @@ public:
   PrettyStackTraceParserEntry(const Parser &p) : P(p) {}
   virtual void print(raw_ostream &OS) const;
 };
-
-/// These are precedences for the binary operators in the Go grammar.
-/// Low precedences numbers bind more weakly than high numbers.
-/// http://golang.org/ref/spec#Operator_precedence
-namespace prec {
-  enum Level {
-    Unknown         = 0,    // Not binary operator.
-    Lowest          = 1,
-    LogicalOr       = 1,    // ||
-    LogicalAnd      = 2,    // &&
-    Equality        = 3,    // ==, !=, <, <=, >, >=
-    Additive        = 4,    // +, -, |, ^
-    Multiplicative  = 5     // *, /, %, <<, >>, &, , &^
-  };
-}
 
 /// Parser - This implements a parser for the C family of languages.  After
 /// parsing units of the grammar, productions are invoked to handle whatever has
@@ -95,8 +81,8 @@ class Parser /*: public CodeCompletionHandler */ {
   unsigned NumCachedScopes;
   Scope *ScopeCache[ScopeCacheSize];
 
-  /// \brief Identifier for "message".
-  IdentifierInfo *Ident_message;
+  /// \brief Identifier for "while".
+  IdentifierInfo *Ident_while;
 
   //bool SkipFunctionBodies;
 
@@ -460,6 +446,8 @@ public:
   OwningStmtResult ParseCommClause();
   bool ParseCommCase();
   OwningStmtResult ParseForStmt();
+  OwningStmtResult ParseWhileAsForStmt(SourceLocation WhileLoc);
+  OwningStmtResult ParseForStmtTail(SourceLocation ForLoc);
   bool ParseRangeClauseTail(tok::TokenKind Op, SimpleStmtKind *OutKind,
                             SimpleStmtExts Exts);
   OwningStmtResult ParseDeferStmt();

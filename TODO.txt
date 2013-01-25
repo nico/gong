@@ -34,6 +34,9 @@ Allow parens around receiver types,
 https://code.google.com/p/go/source/detail?r=c7fe6d0e90eb
 
 for f in $(find ~/src/go/src/pkg/ -name '*.go'); do echo $f; if ! ../../Release+Asserts/bin/gong $f; then break; fi; done
+Takes:
+6.3s on dec 6.
+6s on jan 24.
 
 check IsExpression() everywhere ParseExpression() is called
 
@@ -48,8 +51,6 @@ Actions interface
   Actions for Types
 
 Have nice fixit for toplevel `a := b`
-
-Nice fixit to replace "while" with "for" (if no identifier with same name found)
 
 Have nice fixit for "func a(){}" at function scope (just remove name?)
 

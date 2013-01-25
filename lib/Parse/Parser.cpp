@@ -63,7 +63,7 @@ void Parser::Initialize() {
   EnterScope(Scope::DeclScope);
   Actions.ActOnTranslationUnitScope(getCurScope());
 
-  //Ident_super = &PP.getIdentifierTable().get("super");
+  Ident_while = &L.getIdentifierTable().get("while");
 
   //Actions.Initialize();
 

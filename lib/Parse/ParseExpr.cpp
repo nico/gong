@@ -19,35 +19,6 @@
 //#include "llvm/ADT/SmallString.h"
 using namespace gong;
 
-/// \brief Return the precedence of the specified binary operator token.
-static prec::Level getBinOpPrecedence(tok::TokenKind Kind) {
-  switch (Kind) {
-  default:                        return prec::Unknown;
-  case tok::pipepipe:             return prec::LogicalOr;
-  case tok::ampamp:               return prec::LogicalAnd;
-
-  case tok::equalequal:
-  case tok::exclaimequal:
-  case tok::less:
-  case tok::lessequal:
-  case tok::greater:
-  case tok::greaterequal:         return prec::Equality;
-
-  case tok::plus:
-  case tok::minus:
-  case tok::pipe:
-  case tok::caret:                return prec::Additive;
-
-  case tok::star:
-  case tok::slash:
-  case tok::percent:
-  case tok::lessless:
-  case tok::greatergreater:
-  case tok::amp:
-  case tok::ampcaret:             return prec::Multiplicative;
-  }
-}
-
 /// Expression = UnaryExpr | Expression binary_op UnaryExpr .
 /// binary_op  = "||" | "&&" | rel_op | add_op | mul_op .
 /// rel_op     = "==" | "!=" | "<" | "<=" | ">" | ">=" .
