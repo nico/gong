@@ -743,79 +743,6 @@ public:
   static void EnableStatistics();
   static void PrintStats();
 
-#if 0
-  /// isTemplateParameter - Determines whether this declaration is a
-  /// template parameter.
-  bool isTemplateParameter() const;
-
-  /// isTemplateParameter - Determines whether this declaration is a
-  /// template parameter pack.
-  bool isTemplateParameterPack() const;
-
-  /// \brief Whether this declaration is a parameter pack.
-  bool isParameterPack() const;
-
-  /// \brief returns true if this declaration is a template
-  bool isTemplateDecl() const;
-
-  /// \brief Whether this declaration is a function or function template.
-  bool isFunctionOrFunctionTemplate() const;
-
-  /// \brief Changes the namespace of this declaration to reflect that it's
-  /// the object of a friend declaration.
-  ///
-  /// These declarations appear in the lexical context of the friending
-  /// class, but in the semantic context of the actual entity.  This property
-  /// applies only to a specific decl object;  other redeclarations of the
-  /// same entity may not (and probably don't) share this property.
-  void setObjectOfFriendDecl(bool PreviouslyDeclared) {
-    unsigned OldNS = IdentifierNamespace;
-    assert((OldNS & (IDNS_Tag | IDNS_Ordinary |
-                     IDNS_TagFriend | IDNS_OrdinaryFriend)) &&
-           "namespace includes neither ordinary nor tag");
-    assert(!(OldNS & ~(IDNS_Tag | IDNS_Ordinary | IDNS_Type |
-                       IDNS_TagFriend | IDNS_OrdinaryFriend)) &&
-           "namespace includes other than ordinary or tag");
-
-    IdentifierNamespace = 0;
-    if (OldNS & (IDNS_Tag | IDNS_TagFriend)) {
-      IdentifierNamespace |= IDNS_TagFriend;
-      if (PreviouslyDeclared) IdentifierNamespace |= IDNS_Tag | IDNS_Type;
-    }
-
-    if (OldNS & (IDNS_Ordinary | IDNS_OrdinaryFriend)) {
-      IdentifierNamespace |= IDNS_OrdinaryFriend;
-      if (PreviouslyDeclared) IdentifierNamespace |= IDNS_Ordinary;
-    }
-  }
-
-  enum FriendObjectKind {
-    FOK_None, // not a friend object
-    FOK_Declared, // a friend of a previously-declared entity
-    FOK_Undeclared // a friend of a previously-undeclared entity
-  };
-
-  /// \brief Determines whether this declaration is the object of a
-  /// friend declaration and, if so, what kind.
-  ///
-  /// There is currently no direct way to find the associated FriendDecl.
-  FriendObjectKind getFriendObjectKind() const {
-    unsigned mask
-      = (IdentifierNamespace & (IDNS_TagFriend | IDNS_OrdinaryFriend));
-    if (!mask) return FOK_None;
-    return (IdentifierNamespace & (IDNS_Tag | IDNS_Ordinary) ?
-              FOK_Declared : FOK_Undeclared);
-  }
-
-  /// Specifies that this declaration is a C++ overloaded non-member.
-  void setNonMemberOperator() {
-    assert(getKind() == Function || getKind() == FunctionTemplate);
-    assert((IdentifierNamespace & IDNS_Ordinary) &&
-           "visible non-member operators should be in ordinary namespace");
-    IdentifierNamespace |= IDNS_NonMemberOperator;
-  }
-
-#endif
   static bool classofKind(Kind K) { return true; }
   static DeclContext *castToDeclContext(const Decl *);
   static Decl *castFromDeclContext(const DeclContext *);
@@ -1408,22 +1335,6 @@ public:
 
   all_lookups_iterator lookups_end() const;
 
-  /// udir_iterator - Iterates through the using-directives stored
-  /// within this context.
-  //typedef UsingDirectiveDecl * const * udir_iterator;
-
-  //typedef std::pair<udir_iterator, udir_iterator> udir_iterator_range;
-
-  //udir_iterator_range getUsingDirectives() const;
-
-  //udir_iterator using_directives_begin() const {
-    //return getUsingDirectives().first;
-  //}
-
-  //udir_iterator using_directives_end() const {
-    //return getUsingDirectives().second;
-  //}
-
   // These are all defined in DependentDiagnostic.h.
   //class ddiag_iterator;
   //inline ddiag_iterator ddiag_begin() const;
@@ -1495,13 +1406,6 @@ private:
                                          bool Rediscoverable);
   void makeDeclVisibleInContextImpl(NamedDecl *D, bool Internal);
 };
-
-#if 0
-inline bool Decl::isTemplateParameter() const {
-  return getKind() == TemplateTypeParm || getKind() == NonTypeTemplateParm ||
-         getKind() == TemplateTemplateParm;
-}
-#endif
 
 // Specialization selected when ToTy is not a known subclass of DeclContext.
 template <class ToTy,

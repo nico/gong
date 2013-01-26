@@ -4,6 +4,8 @@ General s/llvm::SourceMgr/SourceManager/g
 Look at SourceMgr-based fixits! They were added r172086.
 
 hotlist:
+P0 give ASTContext::getBoolDecl() type BoolTy
+P0 let Sema::ActOnOperandName() pass on the type from the decl
 P0 some type support (named, the pointers, then structs)
 P1 function parameter lists (and return names, and methoddecls)
 P2 function literal parameter lists
