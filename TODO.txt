@@ -490,30 +490,6 @@ if (x == T{a,b,c}[i]) { … }
 spec groups:
 import, var, const, type
 
-
-range expressions are weird. They're the only place where full expressions are
-allowed at the lhs (actually, RecvStms are like this too). This is valid:
-
-package main
-func main() {
-  arr := [...]int {1, 2, 3 }
-  for arr[0] := range arr {
-    println(arr[0])
-  }
-}
-
-But this is not:
-
-package main
-func main() {
-  arr := [...]int {1, 2, 3 }
-  for arr[0] := 0; arr[0] < 2; arr[0]++ {
-    println(arr[0])
-  }
-}
-
-(Both programs are valid if you use '=' instead of ':=')
-
 minimalaction deletion:
 http://lists.cs.uiuc.edu/pipermail/cfe-commits/Week-of-Mon-20100719/032534.html
 
