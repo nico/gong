@@ -13,6 +13,7 @@
 
 #include "gong/Sema/Sema.h"
 
+#include "gong/AST/ASTContext.h"
 #include "gong/AST/Expr.h"
 #include "gong/Sema/Lookup.h"
 using namespace gong;
@@ -21,7 +22,6 @@ using namespace sema;
 #if 0
 #include "TreeTransform.h"
 #include "gong/AST/ASTConsumer.h"
-#include "gong/AST/ASTContext.h"
 #include "gong/AST/ASTMutationListener.h"
 #include "gong/AST/CXXInheritance.h"
 #include "gong/AST/DeclObjC.h"
@@ -1403,57 +1403,33 @@ Sema::BuildDeclRefExpr(ValueDecl *D, QualType Ty, ExprValueKind VK,
   DeclarationNameInfo NameInfo(D->getDeclName(), Loc);
   return BuildDeclRefExpr(D, Ty, VK, NameInfo, SS);
 }
+#endif
 
 /// BuildDeclRefExpr - Build an expression that references a
 /// declaration that does not require a closure capture.
-ExprResult
-Sema::BuildDeclRefExpr(ValueDecl *D, QualType Ty, ExprValueKind VK,
-                       const DeclarationNameInfo &NameInfo,
-                       const CXXScopeSpec *SS) {
-  if (getLangOpts().CUDA)
-    if (const FunctionDecl *Caller = dyn_cast<FunctionDecl>(CurContext))
-      if (const FunctionDecl *Callee = dyn_cast<FunctionDecl>(D)) {
-        CUDAFunctionTarget CallerTarget = IdentifyCUDATarget(Caller),
-                           CalleeTarget = IdentifyCUDATarget(Callee);
-        if (CheckCUDATarget(CallerTarget, CalleeTarget)) {
-          Diag(NameInfo.getLoc(), diag::err_ref_bad_target)
-            << CalleeTarget << D->getIdentifier() << CallerTarget;
-          Diag(D->getLocation(), diag::note_previous_decl)
-            << D->getIdentifier();
-          return ExprError();
-        }
-      }
+Action::OwningExprResult
+Sema::BuildDeclRefExpr(Decl *D//, QualType Ty, ExprValueKind VK,
+                       //const DeclarationNameInfo &NameInfo,
+                       //const CXXScopeSpec *SS
+                       ) {
+  bool refersToEnclosingScope = (CurContext != D->getDeclContext() &&
+                                 D->getDeclContext()->isFunctionOrMethod());
 
-  bool refersToEnclosingScope =
-    (CurContext != D->getDeclContext() &&
-     D->getDeclContext()->isFunctionOrMethod());
-
+  // FIXME: clang does some adjustments of the type.
+  Type *Ty = Context.UnknownAnyTy; // FIXME
   DeclRefExpr *E = DeclRefExpr::Create(Context,
-                                       SS ? SS->getWithLocInContext(Context)
-                                              : NestedNameSpecifierLoc(),
-                                       SourceLocation(),
                                        D, refersToEnclosingScope,
-                                       NameInfo, Ty, VK);
+                                       //NameInfo,
+                                       //D->getType(),
+                                       Ty
+                                       /*VK*/);
 
-  MarkDeclRefReferenced(E);
-
-  if (getLangOpts().ObjCARCWeak && isa<VarDecl>(D) &&
-      Ty.getObjCLifetime() == Qualifiers::OCL_Weak) {
-    DiagnosticsEngine::Level Level =
-      Diags.getDiagnosticLevel(diag::warn_arc_repeated_use_of_weak,
-                               E->getLocStart());
-    if (Level != DiagnosticsEngine::Ignored)
-      getCurFunction()->recordUseOfWeak(E);
-  }
-
-  // Just in case we're building an illegal pointer-to-member.
-  FieldDecl *FD = dyn_cast<FieldDecl>(D);
-  if (FD && FD->isBitField())
-    E->setObjectKind(OK_BitField);
+  //MarkDeclRefReferenced(E);
 
   return Owned(E);
 }
 
+#if 0
 /// Decomposes the given name into a DeclarationNameInfo, its location, and
 /// possibly a list of template arguments.
 ///
@@ -1726,8 +1702,9 @@ Sema::ActOnOperandName(SourceLocation IILoc, IdentifierInfo *II,
   // This is guaranteed from this point on.
   assert(!R.empty());
 
-  return ExprError();  // FIXME
-  //return BuildDeclarationNameExpr(SS, R, ADL);
+  //return BuildDeclarationNameExpr(SS, R, ADL); // FIXME
+
+  return BuildDeclRefExpr(R.getFoundDecl());
 }
 
 #if 0

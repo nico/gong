@@ -850,10 +850,10 @@ public:
   void DeleteExpr(ExprTy *E) LLVM_OVERRIDE;
   void DeleteStmt(StmtTy *S) LLVM_OVERRIDE;
 
-  //OwningExprResult Owned(Expr* E) {
+  OwningExprResult Owned(Expr* E) {
     //assert(!E || E->isRetained());
-    //return OwningExprResult(*this, E);
-  //}
+    return OwningExprResult(*this, E);
+  }
   //OwningExprResult Owned(ExprResult R) {
     //if (R.isInvalid())
       //return ExprError();
@@ -2843,6 +2843,8 @@ public:
   bool DiagnoseEmptyLookup(Scope *S, LookupResult &R,
                            //CorrectionCandidateCallback &CCC,
                        llvm::ArrayRef<Expr *> Args = llvm::ArrayRef<Expr *>());
+
+  OwningExprResult BuildDeclRefExpr(Decl *D);
 
 #if 0
   ExprResult LookupInObjCMethod(LookupResult &LookUp, Scope *S,

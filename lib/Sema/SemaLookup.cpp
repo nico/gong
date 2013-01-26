@@ -289,24 +289,22 @@ static inline unsigned getIDNS(Sema::LookupNameKind NameKind,
 void LookupResult::configure() {
 }
 
-#if 0
 void LookupResult::sanityImpl() const {
   // Note that this function is never called by NDEBUG builds. See
   // LookupResult::sanity().
   assert(ResultKind != NotFound || Decls.size() == 0);
   assert(ResultKind != Found || Decls.size() == 1);
-  assert(ResultKind != FoundOverloaded || Decls.size() > 1 ||
-         (Decls.size() == 1 &&
-          isa<FunctionTemplateDecl>((*begin())->getUnderlyingDecl())));
-  assert(ResultKind != FoundUnresolvedValue || sanityCheckUnresolved());
+  assert(ResultKind != FoundOverloaded || Decls.size() > 1);
+  //assert(ResultKind != FoundUnresolvedValue || sanityCheckUnresolved());
   assert(ResultKind != Ambiguous || Decls.size() > 1 ||
          (Decls.size() == 1 && (Ambiguity == AmbiguousBaseSubobjects ||
                                 Ambiguity == AmbiguousBaseSubobjectTypes)));
-  assert((Paths != NULL) == (ResultKind == Ambiguous &&
-                             (Ambiguity == AmbiguousBaseSubobjectTypes ||
-                              Ambiguity == AmbiguousBaseSubobjects)));
+  //assert((Paths != NULL) == (ResultKind == Ambiguous &&
+  //                           (Ambiguity == AmbiguousBaseSubobjectTypes ||
+  //                            Ambiguity == AmbiguousBaseSubobjects)));
 }
 
+#if 0
 // Necessary because CXXBasePaths is not complete in Sema.h
 void LookupResult::deletePaths(CXXBasePaths *Paths) {
   delete Paths;

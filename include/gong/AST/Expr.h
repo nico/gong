@@ -14,13 +14,14 @@
 #ifndef LLVM_GONG_AST_EXPR_H
 #define LLVM_GONG_AST_EXPR_H
 
+#include "gong/AST/Decl.h"
 #include "gong/AST/Type.h"
+#include "llvm/Support/ErrorHandling.h"
 
 #if 0
 
 #include "gong/AST/APValue.h"
 #include "gong/AST/ASTVector.h"
-#include "gong/AST/Decl.h"
 #include "gong/AST/DeclAccessPair.h"
 #include "gong/AST/OperationKinds.h"
 #include "gong/AST/Stmt.h"
@@ -943,7 +944,7 @@ public:
 ///   DeclRefExprBits.RefersToEnclosingLocal
 ///       Specifies when this declaration reference expression (validly)
 ///       refers to a local variable from a different function.
-class ValueDecl;  // FIXME: This is probably needed, but doesn't exist yet.
+typedef Decl ValueDecl;  // FIXME: This is probably needed, but doesn't exist yet.
 class DeclRefExpr : public Expr {
   /// \brief The declaration that we are referencing.
   ValueDecl *D;
@@ -1008,13 +1009,13 @@ public:
     DeclRefExprBits.RefersToEnclosingLocal = refersToEnclosingLocal;
   }
 
-  static DeclRefExpr *Create(ASTContext &Context,
-                             //NestedNameSpecifierLoc QualifierLoc,
-                             ValueDecl *D,
-                             bool isEnclosingLocal,
-                             SourceLocation NameLoc,
-                             Type *T,// ExprValueKind VK,
-                             NamedDecl *FoundD = 0);
+  //static DeclRefExpr *Create(ASTContext &Context,
+  //                           //NestedNameSpecifierLoc QualifierLoc,
+  //                           ValueDecl *D,
+  //                           bool isEnclosingLocal,
+  //                           SourceLocation NameLoc,
+  //                           Type *T,// ExprValueKind VK,
+  //                           NamedDecl *FoundD = 0);
 
   static DeclRefExpr *Create(ASTContext &Context,
                              //NestedNameSpecifierLoc QualifierLoc,

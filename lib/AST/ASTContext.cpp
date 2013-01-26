@@ -581,6 +581,10 @@ void ASTContext::InitBuiltinTypes() {
   InitBuiltinType(Float32Ty,       BuiltinType::Float32);
   InitBuiltinType(Float64Ty,       BuiltinType::Float64);
 
+  // "any" type; useful for debugger-like clients. (and bringup.)
+  InitBuiltinType(UnknownAnyTy,        BuiltinType::UnknownAny);
+
+
 #if 0
   assert((!this->Target || this->Target == &Target) &&
          "Incorrect target reinitialization");
@@ -659,9 +663,6 @@ void ASTContext::InitBuiltinTypes() {
 
   // Placeholder type for pseudo-objects.
   InitBuiltinType(PseudoObjectTy,      BuiltinType::PseudoObject);
-
-  // "any" type; useful for debugger-like clients.
-  InitBuiltinType(UnknownAnyTy,        BuiltinType::UnknownAny);
 
   // Placeholder type for unbridged ARC casts.
   InitBuiltinType(ARCUnbridgedCastTy,  BuiltinType::ARCUnbridgedCast);

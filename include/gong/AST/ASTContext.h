@@ -593,6 +593,7 @@ public:
   Type *Int8Ty, *Int16Ty, *Int32Ty, *Int64Ty;
   Type *UInt8Ty, *UInt16Ty, *UInt32Ty, *UInt64Ty;
   Type *Float32Ty, *Float64Ty;
+  Type *UnknownAnyTy;
 #if 0
   // Builtin Types.
   CanQualType VoidTy;
@@ -608,7 +609,6 @@ public:
   CanQualType Float32Ty, Float64Ty;
   CanQualType FloatComplexTy, DoubleComplexTy, LongDoubleComplexTy;
   CanQualType VoidPtrTy, NullPtrTy;
-  CanQualType UnknownAnyTy;
   CanQualType BuiltinFnTy;
 
   // Types for deductions in C++0x [stmt.ranged]'s desugaring. Built on demand.
