@@ -482,7 +482,7 @@ namespace gong {
     { }
 
     void **take() {
-      return &this->front();
+      return this->begin();
     }
 
     template<typename T> T **takeAs() { return (T**)take(); }
