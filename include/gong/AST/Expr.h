@@ -313,10 +313,10 @@ public:
   void operator delete(void*, void*) throw() { }
 
 private:
-  Type *TR;
+  const Type *TR;
 
 protected:
-  Expr(ExprClass EC, Type *T/*, ExprValueKind VK*/) {
+  Expr(ExprClass EC, const Type *T/*, ExprValueKind VK*/) {
     ExprBits.ExprClass = EC;
     //ExprBits.ValueKind = VK;
     setType(T);
@@ -334,8 +334,8 @@ public:
     return static_cast<ExprClass>(ExprBits.ExprClass);
   }
 
-  Type *getType() const { return TR; }
-  void setType(Type *t) {
+  const Type *getType() const { return TR; }
+  void setType(const Type *t) {
     // In C++, the type of an expression is always adjusted so that it
     // will not have reference type an expression will never have
     // reference type (C++ [expr]p6). Use
@@ -991,14 +991,14 @@ class DeclRefExpr : public Expr {
               ValueDecl *D, bool refersToEnclosingLocal,
               //const DeclarationNameInfo &NameInfo,
               NamedDecl *FoundD,
-              Type *T/*, ExprValueKind VK*/);
+              const Type *T/*, ExprValueKind VK*/);
 
   /// \brief Construct an empty declaration reference expression.
   explicit DeclRefExpr(EmptyShell Empty)
     : Expr(DeclRefExprClass, Empty) { }
 
 public:
-  DeclRefExpr(ValueDecl *D, bool refersToEnclosingLocal, Type *T,
+  DeclRefExpr(ValueDecl *D, bool refersToEnclosingLocal, const Type *T,
               /*ExprValueKind VK,*/ SourceLocation L/*,
               const DeclarationNameLoc &LocInfo = DeclarationNameLoc()*/)
     : Expr(DeclRefExprClass, T/*, VK*/),
@@ -1022,7 +1022,7 @@ public:
                              ValueDecl *D,
                              bool isEnclosingLocal,
                              //const DeclarationNameInfo &NameInfo,
-                             Type *T, //ExprValueKind VK,
+                             const Type *T, //ExprValueKind VK,
                              NamedDecl *FoundD = 0);
 
   /// \brief Construct an empty declaration reference expression.

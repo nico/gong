@@ -584,7 +584,7 @@ void TypeSpecDecl::anchor() { }
 
 TypeSpecDecl *TypeSpecDecl::Create(ASTContext &C, DeclContext *DC,
                                    SourceLocation L, IdentifierInfo *II,
-                                   Type *T) {
+                                   const Type *T) {
   return new (C) TypeSpecDecl(DC, L, II, T);
 }
 

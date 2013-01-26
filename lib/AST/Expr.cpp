@@ -356,7 +356,7 @@ DeclRefExpr::DeclRefExpr(ASTContext &Ctx,
                          ValueDecl *D, bool RefersToEnclosingLocal,
                          //const DeclarationNameInfo &NameInfo,
                          NamedDecl *FoundD,
-                         Type *T/*, ExprValueKind VK*/)
+                         const Type *T/*, ExprValueKind VK*/)
   : Expr(DeclRefExprClass, T), //, VK, OK_Ordinary, false, false, false, false),
     D(D)/*, Loc(NameInfo.getLoc()), DNLoc(NameInfo.getInfo()) */{
   //DeclRefExprBits.HasQualifier = QualifierLoc ? 1 : 0;
@@ -394,7 +394,7 @@ DeclRefExpr *DeclRefExpr::Create(ASTContext &Context,
                                  ValueDecl *D,
                                  bool RefersToEnclosingLocal,
                                  //const DeclarationNameInfo &NameInfo,
-                                 Type *T,
+                                 const Type *T,
                                  //ExprValueKind VK,
                                  NamedDecl *FoundD) {
   // Filter out cases where the found Decl is the same as the value refenenced.

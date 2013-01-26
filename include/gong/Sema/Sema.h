@@ -70,6 +70,7 @@ namespace sema {
 
 class ASTContext;
 class LookupResult;
+class Type;
 #if 0
   class ADLResult;
   class ASTConsumer;
@@ -2844,7 +2845,7 @@ public:
                            //CorrectionCandidateCallback &CCC,
                        llvm::ArrayRef<Expr *> Args = llvm::ArrayRef<Expr *>());
 
-  OwningExprResult BuildDeclRefExpr(Decl *D);
+  OwningExprResult BuildDeclRefExpr(Decl *D, const Type *Ty);
 
 #if 0
   ExprResult LookupInObjCMethod(LookupResult &LookUp, Scope *S,

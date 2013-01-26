@@ -365,13 +365,16 @@ public:
 class TypeSpecDecl : public NamedDecl {
   virtual void anchor();
 
-  Type *T;
+  const Type *T;
 
-  TypeSpecDecl(DeclContext *DC, SourceLocation L, IdentifierInfo *N, Type *T)
+  TypeSpecDecl(DeclContext *DC, SourceLocation L, IdentifierInfo *N,
+               const Type *T)
     : NamedDecl(Decl::TypeSpec, DC, L, N), T(T) { }
 public:
   static TypeSpecDecl *Create(ASTContext &C, DeclContext *DC, SourceLocation L,
-                              IdentifierInfo *II, Type *T);
+                              IdentifierInfo *II, const Type *T);
+
+  const Type *getType() const { return T; }
 
   // Implement isa/cast/dyncast/etc.
   static bool classof(const Decl *D) { return classofKind(D->getKind()); }

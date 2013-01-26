@@ -549,8 +549,7 @@ TypeSpecDecl *ASTContext::getBoolDecl() const {
   if (!BoolDecl) {
     BoolDecl = TypeSpecDecl::Create(const_cast<ASTContext &>(*this),
                                     getTranslationUnitDecl(), SourceLocation(),
-                                    &Idents.get("bool"),
-                                    /*Type=*/ NULL); // FIXME
+                                    &Idents.get("bool"), BoolTy);
   }
 
   return BoolDecl;
@@ -582,7 +581,7 @@ void ASTContext::InitBuiltinTypes() {
   InitBuiltinType(Float64Ty,       BuiltinType::Float64);
 
   // "any" type; useful for debugger-like clients. (and bringup.)
-  InitBuiltinType(UnknownAnyTy,        BuiltinType::UnknownAny);
+  InitBuiltinType(UnknownAnyTy,    BuiltinType::UnknownAny);
 
 
 #if 0
