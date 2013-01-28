@@ -186,7 +186,7 @@ public:
   OwningDeclResult ParseTypeNameTail(SourceLocation IILoc, IdentifierInfo *Head,
                                      bool *SawIdentifierOnly = NULL);
   bool ParseTypeLit();
-  bool ParseArrayOrSliceType();
+  OwningDeclResult ParseArrayOrSliceType();
   OwningDeclResult ParseArrayType(BalancedDelimiterTracker &T);
   OwningDeclResult ParseSliceType(BalancedDelimiterTracker &T);
   bool ParseStructType();

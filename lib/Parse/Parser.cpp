@@ -558,7 +558,7 @@ Parser::ParseTypeNameTail(SourceLocation IILoc, IdentifierInfo *Head,
 ///             InterfaceType | SliceType | MapType | ChannelType .
 bool Parser::ParseTypeLit() {
   switch (Tok.getKind()) {
-  case tok::l_square:     return ParseArrayOrSliceType();
+  case tok::l_square:     return ParseArrayOrSliceType().isInvalid();
   case tok::kw_struct:    return ParseStructType();
   case tok::star:         return ParsePointerType().isInvalid();
   case tok::kw_func:      return ParseFunctionType();
@@ -573,14 +573,14 @@ bool Parser::ParseTypeLit() {
 /// ArrayType   = "[" ArrayLength "]" ElementType .
 /// ArrayLength = Expression .
 /// SliceType = "[" "]" ElementType .
-bool Parser::ParseArrayOrSliceType() {
+Action::OwningDeclResult Parser::ParseArrayOrSliceType() {
   assert(Tok.is(tok::l_square) && "Expected '['");
   BalancedDelimiterTracker T(*this, tok::l_square);
   T.consumeOpen();
   
   if (Tok.is(tok::r_square))
-    return ParseSliceType(T).isInvalid();
-  return ParseArrayType(T).isInvalid();
+    return ParseSliceType(T);
+  return ParseArrayType(T);
 }
 
 /// Tok points at ArrayLength when this is called.
