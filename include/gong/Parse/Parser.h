@@ -187,7 +187,7 @@ public:
                                      bool *SawIdentifierOnly = NULL);
   bool ParseTypeLit();
   bool ParseArrayOrSliceType();
-  bool ParseArrayType(BalancedDelimiterTracker &T);
+  OwningDeclResult ParseArrayType(BalancedDelimiterTracker &T);
   OwningDeclResult ParseSliceType(BalancedDelimiterTracker &T);
   bool ParseStructType();
   bool ParseFieldDecl();
@@ -218,6 +218,7 @@ public:
   bool ParseIdentifierList(IdentifierList &IdentList);
   bool ParseIdentifierListTail(IdentifierList &IdentList);
 
+  // FIXME: These should probably return OwningDeclResult too.
   Action::DeclPtrTy ParseDeclaration();
   Action::DeclPtrTy ParseConstDecl();
   bool ParseConstSpec(Action::DeclPtrTy ConstDecl);

@@ -580,21 +580,25 @@ bool Parser::ParseArrayOrSliceType() {
   
   if (Tok.is(tok::r_square))
     return ParseSliceType(T).isInvalid();
-  return ParseArrayType(T);
+  return ParseArrayType(T).isInvalid();
 }
 
 /// Tok points at ArrayLength when this is called.
-bool Parser::ParseArrayType(BalancedDelimiterTracker &T) {
+Action::OwningDeclResult Parser::ParseArrayType(BalancedDelimiterTracker &T) {
   OwningExprResult Expr = ParseExpression();
-  (void)Expr;  // FIXME
   if (T.consumeClose()) {
     SkipUntil(tok::semi, /*StopAtSemi=*/false, /*DontConsume=*/true);
-    return true;
+    return DeclError();
   }
-  if (IsElementType())
-    return ParseElementType().isInvalid();
+  if (IsElementType()) {
+    OwningDeclResult Res = ParseElementType();
+    if (!Res.isInvalid() && !Expr.isInvalid())
+      Res = Actions.ActOnArrayType(T.getOpenLocation(), move(Expr),
+                                   T.getCloseLocation(), move(Res));
+    return Res;
+  }
   Diag(Tok, diag::expected_element_type);
-  return true;
+  return DeclError();
 }
 
 /// Tok points at the ']' when this is called.

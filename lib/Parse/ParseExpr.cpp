@@ -540,7 +540,7 @@ Parser::ParseCompositeLitOrConversion(TypeParam *TOpt) {
     } else if (Tok.is(tok::r_square))
       ParseSliceType(T).isInvalid();
     else
-      ParseArrayType(T);
+      ParseArrayType(T).isInvalid();
     break;
   }
   case tok::kw_map:

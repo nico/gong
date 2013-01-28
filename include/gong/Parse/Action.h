@@ -383,6 +383,20 @@ public:
     return DeclEmpty();
   }
 
+  /// \brief Parsed an array type, for example "[4]int".
+  ///
+  /// \param L location of the '['.
+  ///
+  /// \param Size the expression evaluating to the size of the array.
+  ///
+  /// \param R location of the ']'.
+  ///
+  /// \param Type the type in the array.
+  virtual OwningDeclResult ActOnArrayType(SourceLocation L, ExprArg Size,
+                                          SourceLocation R, DeclArg Type) {
+    return DeclEmpty();
+  }
+
   //===--------------------------------------------------------------------===//
   // Statement Parsing Callbacks.
   //===--------------------------------------------------------------------===//
