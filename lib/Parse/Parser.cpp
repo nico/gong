@@ -497,7 +497,7 @@ bool Parser::ParseReceiver() {
 /// Type      = TypeName | TypeLit | "(" Type ")" .
 bool Parser::ParseType() {
   if (Tok.is(tok::identifier))
-    return ParseTypeName();
+    return ParseTypeName().isInvalid();
 
   if (Tok.is(tok::l_paren)) {
     BalancedDelimiterTracker T(*this, tok::l_paren);
@@ -516,7 +516,7 @@ bool Parser::ParseType() {
 
 /// TypeName  = identifier | QualifiedIdent .
 /// QualifiedIdent = PackageName "." identifier .
-bool Parser::ParseTypeName() {
+Action::OwningDeclResult Parser::ParseTypeName() {
   assert(Tok.is(tok::identifier) && "Expected identifier");
   IdentifierInfo *TypeII = Tok.getIdentifierInfo();
   SourceLocation IILoc = ConsumeToken();
@@ -524,11 +524,12 @@ bool Parser::ParseTypeName() {
 }
 
 /// This is called for TypeName after the initial identifier has been read.
-bool Parser::ParseTypeNameTail(SourceLocation IILoc, IdentifierInfo *Head,
-                               bool *SawIdentifierOnly) {
+Action::OwningDeclResult
+Parser::ParseTypeNameTail(SourceLocation IILoc, IdentifierInfo *Head,
+                          bool *SawIdentifierOnly) {
   if (Tok.isNot(tok::period)) {
     // The type name was just the identifier.
-    return Actions.ActOnTypeName(IILoc, *Head, getCurScope()).isInvalid();
+    return Actions.ActOnTypeName(IILoc, *Head, getCurScope());
   }
 
   // It's a QualifiedIdent.
@@ -543,14 +544,14 @@ bool Parser::ParseTypeNameTail(SourceLocation IILoc, IdentifierInfo *Head,
     // interface{} types.
     SkipUntil(tok::l_brace, tok::semi,
               /*StopAtSemi=*/false, /*DontConsume=*/true);
-    return true;
+    return DeclError();
   }
 
-  // FIXME: call Actions.ActOnQualifiedTypeName() or some such.
   IdentifierInfo *Qualified = Tok.getIdentifierInfo();
   (void)Qualified;
   ConsumeToken();
-  return false;
+  // FIXME: call Actions.ActOnQualifiedTypeName() or some such.
+  return DeclError();
 }
 
 /// TypeLit   = ArrayType | StructType | PointerType | FunctionType |
@@ -696,7 +697,7 @@ bool Parser::ParseAnonymousField() {
 }
 
 bool Parser::ParseAnonymousFieldTail(SourceLocation IILoc, IdentifierInfo* II) {
-  return ParseTypeNameTail(IILoc, II);
+  return ParseTypeNameTail(IILoc, II).isInvalid();
 }
 
 /// PointerType = "*" BaseType .
@@ -778,7 +779,7 @@ bool Parser::ParseMethodSpec() {
   if (Tok.is(tok::l_paren))
     return ParseSignature();
   else
-    return ParseTypeNameTail(IILoc, II);
+    return ParseTypeNameTail(IILoc, II).isInvalid();
 }
 
 /// MapType     = "map" "[" KeyType "]" ElementType .

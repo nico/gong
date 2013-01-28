@@ -182,9 +182,9 @@ public:
   bool ParseReceiver();
 
   bool ParseType();
-  bool ParseTypeName();
-  bool ParseTypeNameTail(SourceLocation IILoc, IdentifierInfo *Head,
-                         bool *SawIdentifierOnly = NULL);
+  OwningDeclResult ParseTypeName();
+  OwningDeclResult ParseTypeNameTail(SourceLocation IILoc, IdentifierInfo *Head,
+                                     bool *SawIdentifierOnly = NULL);
   bool ParseTypeLit();
   bool ParseArrayOrSliceType();
   bool ParseArrayType(BalancedDelimiterTracker &T);
