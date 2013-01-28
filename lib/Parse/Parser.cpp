@@ -828,8 +828,8 @@ Parser::OwningDeclResult Parser::ParseChannelType() {
     ArrowLoc = ConsumeToken();
 
     if (ExpectAndConsume(tok::kw_chan, diag::expected_chan)) {
-      // FIXME: recover better for "var a <- }", "(<-)(".
-      SkipUntil(tok::semi, /*StopAtSemi=*/false, /*DontConsume=*/true);
+      SkipUntil(tok::r_brace, tok::r_paren,
+                /*StopAtSemi=*/true, /*DontConsume=*/true);
       return DeclError();
     }
     ChanLoc = PrevTokLocation;
@@ -837,7 +837,8 @@ Parser::OwningDeclResult Parser::ParseChannelType() {
 
   if (!IsElementType()) {
     Diag(Tok, diag::expected_element_type);
-    SkipUntil(tok::semi, /*StopAtSemi=*/false, /*DontConsume=*/true);
+    SkipUntil(tok::r_brace, tok::r_paren,
+              /*StopAtSemi=*/true, /*DontConsume=*/true);
     return DeclError();
   }
   OwningDeclResult Res = ParseElementType();

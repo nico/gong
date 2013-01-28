@@ -81,7 +81,12 @@ type t chan int
 type t chan<- int
 type t <-chan int
 type t <-int  // expected-diag{{expected 'chan'}}
+type t <-;  // expected-diag{{expected 'chan'}}
 type t <-chan<-chan int
+func f() { var t <- }  // expected-diag{{expected 'chan'}}
+func f() { var t (<-) }  // expected-diag{{expected 'chan'}}
+func f() { var t <-chan }  // expected-diag{{expected element type}}
+func f() { var t (<-chan) }  // expected-diag{{expected element type}}
 
 // '(' Type ')'
 type t (int)
