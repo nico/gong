@@ -200,7 +200,7 @@ public:
   bool ParseMapType();
   bool ParseChannelType();
   bool IsElementType() { return IsType(); }
-  bool ParseElementType();
+  OwningDeclResult ParseElementType();
   bool ParseTypeList();
   bool ParseTypeListTail(bool AcceptEllipsis = false,
                          bool *SawIdentifiersOnly = NULL);

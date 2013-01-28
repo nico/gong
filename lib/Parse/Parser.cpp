@@ -592,7 +592,7 @@ bool Parser::ParseArrayType(BalancedDelimiterTracker &T) {
     return true;
   }
   if (IsElementType())
-    return ParseElementType();
+    return ParseElementType().isInvalid();
   Diag(Tok, diag::expected_element_type);
   return true;
 }
@@ -602,7 +602,7 @@ bool Parser::ParseSliceType(BalancedDelimiterTracker &T) {
   assert(Tok.is(tok::r_square) && "Expected ']'");
   T.consumeClose();
   if (IsElementType())
-    return ParseElementType();
+    return ParseElementType().isInvalid();
   Diag(Tok, diag::expected_element_type);
   return false;
 }
@@ -809,7 +809,7 @@ bool Parser::ParseMapType() {
     SkipUntil(tok::semi, /*StopAtSemi=*/false, /*DontConsume=*/true);
     return true;
   }
-  return ParseElementType();
+  return ParseElementType().isInvalid();
 }
 
 /// ChannelType = ( "chan" [ "<-" ] | "<-" "chan" ) ElementType .
@@ -835,12 +835,12 @@ bool Parser::ParseChannelType() {
     SkipUntil(tok::semi, /*StopAtSemi=*/false, /*DontConsume=*/true);
     return true;
   }
-  return ParseElementType();
+  return ParseElementType().isInvalid();
 }
 
 /// ElementType = Type .
-bool Parser::ParseElementType() {
-  return ParseType().isInvalid();
+Parser::OwningDeclResult Parser::ParseElementType() {
+  return ParseType();
 }
 
 /// TypeList        = Type { "," Type } .
