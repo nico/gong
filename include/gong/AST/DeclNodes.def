@@ -90,7 +90,9 @@ ABSTRACT_DECL(Named,  Decl)
 
   DECL(Function, NamedDecl)
 
-  ABSTRACT_DECL(Type, NamedDecl)
+  ABSTRACT_DECL(Type, Decl)
+    DECL(NameType, TypeDecl)
+    DECL(PointerType, TypeDecl)
     LAST_DECL(Typedef, TypeDecl)
     //ABSTRACT_DECL(Tag, TypeDecl)
     //  DECL(Enum, TagDecl)

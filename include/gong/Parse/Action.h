@@ -94,6 +94,7 @@ public:
   /// Same, but with ownership.
   typedef ASTOwningResult<&ActionBase::DeleteExpr> OwningExprResult;
   typedef ASTOwningResult<&ActionBase::DeleteStmt> OwningStmtResult;
+  typedef ASTOwningResult<&ActionBase::DeleteDecl> OwningDeclResult;
   // Note that these will replace ExprResult and StmtResult when the transition
   // is complete.
 
@@ -148,6 +149,7 @@ public:
 
   OwningExprResult ExprError() { return OwningExprResult(*this, true); }
   OwningStmtResult StmtError() { return OwningStmtResult(*this, true); }
+  OwningDeclResult DeclError() { return OwningDeclResult(*this, true); }
 
   OwningExprResult ExprError(const DiagnosticBuilder&) { return ExprError(); }
   OwningStmtResult StmtError(const DiagnosticBuilder&) { return StmtError(); }
@@ -273,6 +275,12 @@ public:
   //===--------------------------------------------------------------------===//
   // Type Parsing Callbacks.
   //===--------------------------------------------------------------------===//
+
+  /// A TypeName was parsed.
+  virtual OwningDeclResult ActOnTypeName(SourceLocation IILoc,
+                                         IdentifierInfo &II, Scope *CurScope) {
+    return DeclError();
+  }
 
   //===--------------------------------------------------------------------===//
   // Statement Parsing Callbacks.
@@ -949,11 +957,6 @@ public:
   //===--------------------------------------------------------------------===//
   // Type Parsing Callbacks.
   //===--------------------------------------------------------------------===//
-
-  /// ActOnTypeName - A type-name (type-id in C++) was parsed.
-  virtual TypeResult ActOnTypeName(Scope *S, Declarator &D) {
-    return TypeResult();
-  }
 
   enum TagUseKind {
     TUK_Reference,   // Reference to a tag:  'struct foo *X;'

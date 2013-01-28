@@ -12,6 +12,13 @@ P2 function literal parameter lists
 P2 typo correction for names (blocked on structs)
 P1 type checking
 
+Types have no sourcelocs
+Decls do
+Maybe have "Declarators" (and DeclaratorDecls) for go types?
+Or have TypenameDecl, PointerDecl, MapDecl, InterfaceDecl, StructDecl, etc?
+=> Let's go with the latter for now. Seems simpler, and I can always change
+   to Declarators if needed.
+
 Lexer
 =====
 
@@ -29,7 +36,7 @@ literal lexing and diags (078 vs 078.0, 'aa', etc. `ack FIXME test/Lex`)
 use lexer to train a n-gram token model, write a markov go generator using that
 data
 
-unifiy utf8 functions with the ones in Basic (used by libFrontend)
+unify utf8 functions with the ones in Basic (used by libFrontend)
 
 
 Parser

@@ -362,6 +362,7 @@ public:
 };
 
 /// Represents a TypeSpec in Go. A TypeSpec is just a name for a type.
+// FIXME: derive from TypeDecl?
 class TypeSpecDecl : public NamedDecl {
   virtual void anchor();
 
@@ -2230,9 +2231,10 @@ public:
 };
 #endif
 
-/// TypeDecl - Represents a declaration of a type.
+/// Represents a declaration of a type.
 ///
-class TypeDecl : public NamedDecl {
+/// For example, "*int" is a PointerTypeDecl containing a NameTypeDecl.
+class TypeDecl : public Decl {
   virtual void anchor();
   /// TypeForDecl - This indicates the Type object that represents
   /// this TypeDecl.  It is a cache maintained by
@@ -2240,18 +2242,16 @@ class TypeDecl : public NamedDecl {
   /// ASTContext::getTemplateTypeParmType, and TemplateTypeParmDecl.
   mutable const Type *TypeForDecl;
   /// LocStart - The start of the source range for this declaration.
-  SourceLocation LocStart;
+  //SourceLocation LocStart;
   friend class ASTContext;
   friend class DeclContext;
   friend class TagDecl;
   friend class TagType;
   friend class ASTReader;
 
-//protected:
-public:  // FIXME: Make protected
-  TypeDecl(Kind DK, DeclContext *DC, SourceLocation L, IdentifierInfo *Id,
-           SourceLocation StartL = SourceLocation())
-    : NamedDecl(DK, DC, L, Id), TypeForDecl(0), LocStart(StartL) {}
+protected:
+  TypeDecl(Kind DK, DeclContext *DC, SourceLocation L)
+    : Decl(DK, DC, L), TypeForDecl(0) {}
 
 public:
   // Low-level accessor. If you just want the type defined by this node,
@@ -2261,8 +2261,8 @@ public:
   const Type *getTypeForDecl() const { return TypeForDecl; }
   void setTypeForDecl(const Type *TD) { TypeForDecl = TD; }
 
-  SourceLocation getLocStart() const LLVM_READONLY { return LocStart; }
-  void setLocStart(SourceLocation L) { LocStart = L; }
+  //SourceLocation getLocStart() const LLVM_READONLY { return LocStart; }
+  //void setLocStart(SourceLocation L) { LocStart = L; }
   //virtual SourceRange getSourceRange() const LLVM_READONLY {
   //  if (LocStart.isValid())
   //    return SourceRange(LocStart, getLocation());
@@ -2273,6 +2273,41 @@ public:
   // Implement isa/cast/dyncast/etc.
   static bool classof(const Decl *D) { return classofKind(D->getKind()); }
   static bool classofKind(Kind K) { return K >= firstType && K <= lastType; }
+};
+
+/// Refers to an existing type by name.
+class NameTypeDecl : public TypeDecl {
+  /// The Decl this refers to.
+  TypeDecl *D;
+
+  NameTypeDecl(DeclContext *DC, SourceLocation Loc, TypeDecl *D)
+    : TypeDecl(NameType, DC, Loc), D(D) {}
+public:
+  static NameTypeDecl *Create(ASTContext &C, DeclContext *DC,
+                              SourceLocation Loc, TypeDecl, TypeDecl *D);
+
+  // Implement isa/cast/dyncast/etc.
+  static bool classof(const Decl *D) { return classofKind(D->getKind()); }
+  static bool classofKind(Kind K) { return K == PointerType; }
+};
+
+/// Represents a pointer to another type.
+class PointerTypeDecl : public TypeDecl {
+  TypeDecl *PointeeType;
+
+  PointerTypeDecl(DeclContext *DC, SourceLocation Loc, TypeDecl *PointeeType)
+    : TypeDecl(PointerType, DC, Loc), PointeeType(PointeeType) {}
+
+public:
+  static PointerTypeDecl *Create(ASTContext &C, DeclContext *DC,
+                                 SourceLocation Loc, TypeDecl *PointeeType);
+  //static PointerTypeDecl *CreateDeserialized(ASTContext &C, unsigned ID);
+  
+  //SourceRange getSourceRange() const LLVM_READONLY;
+
+  // Implement isa/cast/dyncast/etc.
+  static bool classof(const Decl *D) { return classofKind(D->getKind()); }
+  static bool classofKind(Kind K) { return K == PointerType; }
 };
 
 #if 0

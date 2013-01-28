@@ -199,7 +199,7 @@ namespace gong {
 
     // Types - Though these don't actually enforce strong typing, they document
     // what types are required to be identical for the actions.
-    typedef OpaquePtr<0> DeclPtrTy;
+    typedef OpaquePtr<0> DeclPtrTy;  // FIXME: remove
     typedef OpaquePtr<1> DeclGroupPtrTy;
     typedef OpaquePtr<2> TemplateTy;
     typedef void AttrTy;
@@ -207,6 +207,7 @@ namespace gong {
     typedef void MemInitTy;
     typedef void ExprTy;
     typedef void StmtTy;
+    typedef void DeclTy;
     typedef void TemplateParamsTy;
     typedef void CXXScopeTy;
     typedef void TypeTy;  // FIXME: Change TypeTy to use OpaquePtr<N>.
@@ -295,6 +296,7 @@ namespace gong {
     /// pointers need access to them.
     virtual void DeleteExpr(ExprTy *E) {}
     virtual void DeleteStmt(StmtTy *S) {}
+    virtual void DeleteDecl(DeclTy *S) {}
     virtual void DeleteTemplateParams(TemplateParamsTy *P) {}
   };
 
@@ -309,6 +311,9 @@ namespace gong {
   };
   template <> struct DestroyerToUID<&ActionBase::DeleteStmt> {
     static const unsigned UID = 1;
+  };
+  template <> struct DestroyerToUID<&ActionBase::DeleteDecl> {
+    static const unsigned UID = 2;
   };
   /// ASTOwningResult - A moveable smart pointer for AST nodes that also
   /// has an extra flag to indicate an additional success status.
