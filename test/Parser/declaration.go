@@ -58,3 +58,6 @@ var (
   bar int = 19; foo = 20
   baz  // expected-diag{{expected '=' or type}}
 )
+
+func f() { var foo }  // expected-diag{{expected '=' or type}}
+func f() { var foo int }

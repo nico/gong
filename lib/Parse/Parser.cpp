@@ -828,6 +828,7 @@ Parser::OwningDeclResult Parser::ParseChannelType() {
     ArrowLoc = ConsumeToken();
 
     if (ExpectAndConsume(tok::kw_chan, diag::expected_chan)) {
+      // FIXME: recover better for "var a <- }", "(<-)(".
       SkipUntil(tok::semi, /*StopAtSemi=*/false, /*DontConsume=*/true);
       return DeclError();
     }
@@ -1027,7 +1028,7 @@ bool Parser::ParseVarSpec(Action::DeclPtrTy VarDecl) {
   ParseIdentifierList(IdentList);
   if (Tok.isNot(tok::equal) && !IsType()) {
     Diag(Tok, diag::expected_equal_or_type);
-    SkipUntil(tok::semi, tok::r_paren,
+    SkipUntil(tok::semi, tok::r_paren, tok::r_brace,
               /*ConsumeSemi=*/false, /*DontConsume=*/true);
     return true;
   }
@@ -1037,7 +1038,7 @@ bool Parser::ParseVarSpec(Action::DeclPtrTy VarDecl) {
   // FIXME: call this later; pass equalloc, rhs
   Actions.ActOnVarSpec(VarDecl, IdentList, getCurScope());
 
-  if (Tok.is(tok::semi) || Tok.is(tok::r_paren))
+  if (Tok.is(tok::semi) || Tok.is(tok::r_paren) || Tok.is(tok::r_brace))
     return false;
   if (Tok.isNot(tok::equal))
     Diag(Tok, diag::expected_equal);
