@@ -348,9 +348,26 @@ public:
   ///
   /// \param ChanLoc location of the 'chan'.
   ///
-  /// \param Type the type in the channel
+  /// \param Type the type in the channel.
   virtual OwningDeclResult ActOnBiChannelType(SourceLocation ChanLoc,
                                               DeclArg Type) {
+    return DeclEmpty();
+  }
+
+  /// \brief Parsed a map type, for example "map[string]int".
+  ///
+  /// \param MapLoc location of the 'map'.
+  ///
+  /// \param L location of the '['.
+  ///
+  /// \param KeyType the key type.
+  ///
+  /// \param R location of the ']'.
+  ///
+  /// \param KeyType the value type.
+  virtual OwningDeclResult ActOnMapType(SourceLocation MapLoc,
+                                        SourceLocation L, DeclArg KeyType,
+                                        SourceLocation R, DeclArg ValueType) {
     return DeclEmpty();
   }
 

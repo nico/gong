@@ -544,7 +544,7 @@ Parser::ParseCompositeLitOrConversion(TypeParam *TOpt) {
     break;
   }
   case tok::kw_map:
-    if (ParseMapType())
+    if (ParseMapType().isInvalid())
       return ExprError();
     break;
   }

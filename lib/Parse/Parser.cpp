@@ -563,7 +563,7 @@ bool Parser::ParseTypeLit() {
   case tok::star:         return ParsePointerType().isInvalid();
   case tok::kw_func:      return ParseFunctionType();
   case tok::kw_interface: return ParseInterfaceType();
-  case tok::kw_map:       return ParseMapType();
+  case tok::kw_map:       return ParseMapType().isInvalid();
   case tok::kw_chan:
   case tok::lessminus:    return ParseChannelType().isInvalid();
   default: llvm_unreachable("unexpected token kind");
@@ -784,36 +784,42 @@ bool Parser::ParseMethodSpec() {
 
 /// MapType     = "map" "[" KeyType "]" ElementType .
 /// KeyType     = Type .
-bool Parser::ParseMapType() {
+Action::OwningDeclResult Parser::ParseMapType() {
   assert(Tok.is(tok::kw_map) && "Expected 'map'");
-  ConsumeToken();
+  SourceLocation MapLoc = ConsumeToken();
 
   BalancedDelimiterTracker T(*this, tok::l_square);
   if (T.expectAndConsume(diag::expected_l_square)) {
     SkipUntil(tok::semi, /*StopAtSemi=*/false, /*DontConsume=*/true);
-    return true;
+    return DeclError();
   }
 
   if (!IsType()) {
     Diag(Tok, diag::expected_type);
     SkipUntil(tok::semi, /*StopAtSemi=*/false, /*DontConsume=*/true);
-    return true;
+    return DeclError();
   }
-  ParseType();
+  OwningDeclResult KeyType = ParseType();
 
   if (T.consumeClose())
-    return true;
+    return DeclError();
 
   if (!IsElementType()) {
     Diag(Tok, diag::expected_type);
     SkipUntil(tok::semi, /*StopAtSemi=*/false, /*DontConsume=*/true);
-    return true;
+    return DeclError();
   }
-  return ParseElementType().isInvalid();
+  OwningDeclResult ValueType = ParseType();
+
+  if (KeyType.isInvalid() || ValueType.isInvalid())
+    return DeclError();
+
+  return Actions.ActOnMapType(MapLoc, T.getOpenLocation(), move(KeyType),
+                              T.getCloseLocation(), move(ValueType));
 }
 
 /// ChannelType = ( "chan" [ "<-" ] | "<-" "chan" ) ElementType .
-Parser::OwningDeclResult Parser::ParseChannelType() {
+Action::OwningDeclResult Parser::ParseChannelType() {
   assert((Tok.is(tok::kw_chan) || Tok.is(tok::lessminus)) && "Expected 'map'");
 
   SourceLocation ChanLoc, ArrowLoc;
