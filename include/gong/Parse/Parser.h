@@ -178,7 +178,8 @@ public:
 
   bool ParseType();
   bool ParseTypeName();
-  bool ParseTypeNameTail(IdentifierInfo *Head, bool *SawIdentifierOnly = NULL);
+  bool ParseTypeNameTail(SourceLocation IILoc, IdentifierInfo *Head,
+                         bool *SawIdentifierOnly = NULL);
   bool ParseTypeLit();
   bool ParseArrayOrSliceType();
   bool ParseArrayType(BalancedDelimiterTracker &T);
@@ -186,7 +187,7 @@ public:
   bool ParseStructType();
   bool ParseFieldDecl();
   bool ParseAnonymousField();
-  bool ParseAnonymousFieldTail(IdentifierInfo *II);
+  bool ParseAnonymousFieldTail(SourceLocation IILoc, IdentifierInfo *II);
   bool ParsePointerType();
   bool ParseFunctionType();
   bool ParseInterfaceType();

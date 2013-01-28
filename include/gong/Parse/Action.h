@@ -156,6 +156,7 @@ public:
 
   OwningExprResult ExprEmpty() { return OwningExprResult(*this, false); }
   OwningStmtResult StmtEmpty() { return OwningStmtResult(*this, false); }
+  OwningDeclResult DeclEmpty() { return OwningDeclResult(*this, false); }
 
   /// Statistics.
   virtual void PrintStats() const {}
@@ -279,7 +280,7 @@ public:
   /// A TypeName was parsed.
   virtual OwningDeclResult ActOnTypeName(SourceLocation IILoc,
                                          IdentifierInfo &II, Scope *CurScope) {
-    return DeclError();
+    return DeclEmpty();
   }
 
   //===--------------------------------------------------------------------===//

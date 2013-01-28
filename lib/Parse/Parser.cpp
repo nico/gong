@@ -397,10 +397,10 @@ bool Parser::ParseParameterDecl() {
   if (Tok.is(tok::identifier)) {
     // FIXME: This would be marginally nicer if the lexer had 1 lookahead.
     IdentifierInfo *II = Tok.getIdentifierInfo();
-    ConsumeToken();
+    SourceLocation IILoc = ConsumeToken();
 
     bool SawIdentifiersOnly = true;
-    ParseTypeNameTail(II, &SawIdentifiersOnly);
+    ParseTypeNameTail(IILoc, II, &SawIdentifiersOnly);
     ParseTypeListTail(/*AcceptEllipsis=*/true, &SawIdentifiersOnly);
 
     bool HadEllipsis = false;
@@ -515,14 +515,17 @@ bool Parser::ParseType() {
 bool Parser::ParseTypeName() {
   assert(Tok.is(tok::identifier) && "Expected identifier");
   IdentifierInfo *TypeII = Tok.getIdentifierInfo();
-  ConsumeToken();
-  return ParseTypeNameTail(TypeII);
+  SourceLocation IILoc = ConsumeToken();
+  return ParseTypeNameTail(IILoc, TypeII);
 }
 
 /// This is called for TypeName after the initial identifier has been read.
-bool Parser::ParseTypeNameTail(IdentifierInfo *Head, bool *SawIdentifierOnly) {
-  if (Tok.isNot(tok::period))
-    return false;  // The type name was just the identifier.
+bool Parser::ParseTypeNameTail(SourceLocation IILoc, IdentifierInfo *Head,
+                               bool *SawIdentifierOnly) {
+  if (Tok.isNot(tok::period)) {
+    // The type name was just the identifier.
+    return Actions.ActOnTypeName(IILoc, *Head, getCurScope()).isInvalid();
+  }
 
   // It's a QualifiedIdent.
   ConsumeToken();
@@ -538,6 +541,8 @@ bool Parser::ParseTypeNameTail(IdentifierInfo *Head, bool *SawIdentifierOnly) {
               /*StopAtSemi=*/false, /*DontConsume=*/true);
     return true;
   }
+
+  // FIXME: call Actions.ActOnQualifiedTypeName() or some such.
   IdentifierInfo *Qualified = Tok.getIdentifierInfo();
   (void)Qualified;
   ConsumeToken();
@@ -662,7 +667,7 @@ bool Parser::ParseFieldDecl() {
     } else if (IsType()) {
       ParseType();
     } else {
-      ParseAnonymousFieldTail(II);
+      ParseAnonymousFieldTail(IILoc, II);
     }
   }
 
@@ -682,12 +687,12 @@ bool Parser::ParseAnonymousField() {
     return true;
   }
   IdentifierInfo* II = Tok.getIdentifierInfo();
-  ConsumeToken();
-  return ParseAnonymousFieldTail(II);
+  SourceLocation IILoc = ConsumeToken();
+  return ParseAnonymousFieldTail(IILoc, II);
 }
 
-bool Parser::ParseAnonymousFieldTail(IdentifierInfo* II) {
-  return ParseTypeNameTail(II);
+bool Parser::ParseAnonymousFieldTail(SourceLocation IILoc, IdentifierInfo* II) {
+  return ParseTypeNameTail(IILoc, II);
 }
 
 /// PointerType = "*" BaseType .
@@ -759,12 +764,12 @@ bool Parser::ParseMethodSpec() {
   // '.' identifier was head of InterfaceTypeName as part of a QualifiedIdent
   // else: InterfaceTypeName as identifier
   IdentifierInfo *II = Tok.getIdentifierInfo();
-  ConsumeToken();
+  SourceLocation IILoc = ConsumeToken();
 
   if (Tok.is(tok::l_paren))
     return ParseSignature();
   else
-    return ParseTypeNameTail(II);
+    return ParseTypeNameTail(IILoc, II);
 }
 
 /// MapType     = "map" "[" KeyType "]" ElementType .
@@ -856,8 +861,8 @@ bool Parser::ParseTypeListTail(bool AcceptEllipsis, bool *SawIdentifiersOnly) {
     }
 
     IdentifierInfo *II = Tok.getIdentifierInfo();
-    ConsumeToken();
-    ParseTypeNameTail(II, SawIdentifiersOnly);
+    SourceLocation IILoc = ConsumeToken();
+    ParseTypeNameTail(IILoc, II, SawIdentifiersOnly);
   }
   return false;
 }
