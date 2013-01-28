@@ -181,7 +181,7 @@ public:
   bool ParseParameterDecl();
   bool ParseReceiver();
 
-  bool ParseType();
+  OwningDeclResult ParseType();
   OwningDeclResult ParseTypeName();
   OwningDeclResult ParseTypeNameTail(SourceLocation IILoc, IdentifierInfo *Head,
                                      bool *SawIdentifierOnly = NULL);

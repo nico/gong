@@ -351,7 +351,7 @@ bool Parser::ParseResult() {
   if (Tok.is(tok::l_paren))
     return ParseParameters();
   // FIXME: check IsType()
-  return ParseType();
+  return ParseType().isInvalid();
 }
 
 /// Parameters     = "(" [ ParameterList [ "," ] ] ")" .
@@ -453,7 +453,7 @@ bool Parser::ParseParameterDecl() {
     Diag(Tok, diag::expected_type);
     return true;
   }
-  return ParseType();
+  return ParseType().isInvalid();
 }
 
 /// Receiver     = "(" [ identifier ] [ "*" ] BaseTypeName ")" .
@@ -495,23 +495,23 @@ bool Parser::ParseReceiver() {
 }
 
 /// Type      = TypeName | TypeLit | "(" Type ")" .
-bool Parser::ParseType() {
+Action::OwningDeclResult Parser::ParseType() {
   if (Tok.is(tok::identifier))
-    return ParseTypeName().isInvalid();
+    return ParseTypeName();
 
   if (Tok.is(tok::l_paren)) {
     BalancedDelimiterTracker T(*this, tok::l_paren);
     T.consumeOpen();
-    OwningDeclResult Res = ParseType() ? DeclError() : DeclEmpty(); // FIXME
+    OwningDeclResult Res = ParseType();
     T.consumeClose();
 
     if (!Res.isInvalid())
       Res = Actions.ActOnParenType(T.getOpenLocation(), move(Res),
                                    T.getCloseLocation());
-    return Res.isInvalid();
+    return Res;
   }
 
-  return ParseTypeLit();
+  return ParseTypeLit() ? DeclError() : DeclEmpty();  // FIXME
 }
 
 /// TypeName  = identifier | QualifiedIdent .
@@ -706,7 +706,7 @@ Action::OwningDeclResult Parser::ParsePointerType() {
   assert(Tok.is(tok::star) && "Expected '*'");
   SourceLocation StarLoc = ConsumeToken();
   if (IsType()) {
-    OwningDeclResult T = ParseType() ? DeclError() : DeclEmpty(); // FIXME
+    OwningDeclResult T = ParseType();
     if (T.isInvalid())
       return DeclError();
 
@@ -840,7 +840,7 @@ bool Parser::ParseChannelType() {
 
 /// ElementType = Type .
 bool Parser::ParseElementType() {
-  return ParseType();
+  return ParseType().isInvalid();
 }
 
 /// TypeList        = Type { "," Type } .
@@ -984,8 +984,9 @@ bool Parser::ParseTypeSpec(Action::DeclPtrTy TypeDecl) {
     Diag(Tok, diag::expected_type);
     return true;
   }
+  // FIXME: pass type to ActOnTypeSpec(), return result from ActOnTypeSpec().
   Actions.ActOnTypeSpec(TypeDecl, TypeNameLoc, *TypeName, getCurScope());
-  return ParseType();
+  return ParseType().isInvalid();
 }
 
 /// VarDecl     = "var" ( VarSpec | "(" { VarSpec ";" } ")" ) .
