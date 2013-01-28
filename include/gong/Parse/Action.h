@@ -280,6 +280,9 @@ public:
 
   /// \brief Parsed a TypeName.
   ///
+  /// Note that in expression contexts, ActOnOperandName() is called for
+  /// type names instead.
+  ///
   /// \param IILoc the location of the label.
   ///
   /// \param II the label.
@@ -298,6 +301,21 @@ public:
   virtual OwningDeclResult ActOnPointerType(SourceLocation StarLoc,
                                             DeclArg PointeeType) {
     return DeclEmpty();
+  }
+
+  /// \brief Parsed a parenthesized type.
+  ///
+  /// Note that in expression contexts, ActOnParenExpr() is called for
+  /// parenthesized types instead.
+  ///
+  /// \param L location of the '('.
+  ///
+  /// \param Type the type in parentheses.
+  ///
+  /// \param R the location of the ')'.
+  virtual OwningDeclResult ActOnParenType(SourceLocation L, DeclArg Type,
+                                          SourceLocation R) {
+    return move(Type);  // Default impl returns operand.
   }
 
   //===--------------------------------------------------------------------===//

@@ -502,9 +502,13 @@ bool Parser::ParseType() {
   if (Tok.is(tok::l_paren)) {
     BalancedDelimiterTracker T(*this, tok::l_paren);
     T.consumeOpen();
-    bool Result = ParseType();
-    T.consumeClose(); // FIXME: Use result
-    return Result;
+    OwningDeclResult Res = ParseType() ? DeclError() : DeclEmpty(); // FIXME
+    T.consumeClose();
+
+    if (!Res.isInvalid())
+      Res = Actions.ActOnParenType(T.getOpenLocation(), move(Res),
+                                   T.getCloseLocation());
+    return Res.isInvalid();
   }
 
   return ParseTypeLit();
