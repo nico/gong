@@ -397,6 +397,11 @@ public:
     return DeclEmpty();
   }
 
+  // FIXME:
+  // struct types
+  // function types
+  // interface types
+
   //===--------------------------------------------------------------------===//
   // Statement Parsing Callbacks.
   //===--------------------------------------------------------------------===//
