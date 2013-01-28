@@ -953,7 +953,7 @@ bool Parser::ParseConstSpec(Action::DeclPtrTy ConstDecl) {
   // FIXME: call this later; pass equalloc, rhs
   Actions.ActOnConstSpec(ConstDecl, IdentList, getCurScope());
 
-  if (Tok.is(tok::semi) || Tok.is(tok::r_paren))
+  if (Tok.is(tok::semi) || Tok.is(tok::r_paren) || Tok.is(tok::r_brace))
     return false;
   if (Tok.isNot(tok::equal) && !IsType()) {
     Diag(Tok, diag::expected_equal_or_type);

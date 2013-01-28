@@ -29,6 +29,10 @@ const (
 
 const { foo, bar }  // expected-diag{{expected identifier or '('}}
 
+func f() { const foo }
+func f() { const foo int }  // expected-diag{{expected '='}}
+func f() { const foo 4 }  // expected-diag{{expected '=' or type}}
+
 
 // TypeDecls is covered by test/Parser/type.go.
 
