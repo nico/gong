@@ -364,10 +364,22 @@ public:
   ///
   /// \param R location of the ']'.
   ///
-  /// \param KeyType the value type.
+  /// \param ValueType the value type.
   virtual OwningDeclResult ActOnMapType(SourceLocation MapLoc,
                                         SourceLocation L, DeclArg KeyType,
                                         SourceLocation R, DeclArg ValueType) {
+    return DeclEmpty();
+  }
+
+  /// \brief Parsed a slice type, for example "[]int".
+  ///
+  /// \param L location of the '['.
+  ///
+  /// \param R location of the ']'.
+  ///
+  /// \param Type the type in the slice.
+  virtual OwningDeclResult ActOnSliceType(SourceLocation L, SourceLocation R,
+                                          DeclArg Type) {
     return DeclEmpty();
   }
 

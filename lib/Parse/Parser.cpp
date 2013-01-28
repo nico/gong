@@ -579,7 +579,7 @@ bool Parser::ParseArrayOrSliceType() {
   T.consumeOpen();
   
   if (Tok.is(tok::r_square))
-    return ParseSliceType(T);
+    return ParseSliceType(T).isInvalid();
   return ParseArrayType(T);
 }
 
@@ -598,13 +598,18 @@ bool Parser::ParseArrayType(BalancedDelimiterTracker &T) {
 }
 
 /// Tok points at the ']' when this is called.
-bool Parser::ParseSliceType(BalancedDelimiterTracker &T) {
+Action::OwningDeclResult Parser::ParseSliceType(BalancedDelimiterTracker &T) {
   assert(Tok.is(tok::r_square) && "Expected ']'");
   T.consumeClose();
-  if (IsElementType())
-    return ParseElementType().isInvalid();
+  if (IsElementType()) {
+    OwningDeclResult Res = ParseElementType();
+    if (!Res.isInvalid())
+      Res = Actions.ActOnSliceType(T.getOpenLocation(), T.getCloseLocation(),
+                                   move(Res));
+    return Res;
+  }
   Diag(Tok, diag::expected_element_type);
-  return false;
+  return DeclError();
 }
 
 /// StructType     = "struct" "{" { FieldDecl ";" } "}" .

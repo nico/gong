@@ -188,7 +188,7 @@ public:
   bool ParseTypeLit();
   bool ParseArrayOrSliceType();
   bool ParseArrayType(BalancedDelimiterTracker &T);
-  bool ParseSliceType(BalancedDelimiterTracker &T);
+  OwningDeclResult ParseSliceType(BalancedDelimiterTracker &T);
   bool ParseStructType();
   bool ParseFieldDecl();
   bool ParseAnonymousField();

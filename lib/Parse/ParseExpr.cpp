@@ -536,9 +536,9 @@ Parser::ParseCompositeLitOrConversion(TypeParam *TOpt) {
       if (Tok.isNot(tok::r_square))
         Diag(Tok, diag::expected_r_square);
       else
-        ParseSliceType(T);
+        ParseSliceType(T).isInvalid();
     } else if (Tok.is(tok::r_square))
-      ParseSliceType(T);
+      ParseSliceType(T).isInvalid();
     else
       ParseArrayType(T);
     break;
