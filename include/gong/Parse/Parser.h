@@ -118,6 +118,7 @@ public:
 
   typedef Action::OwningExprResult OwningExprResult;
   typedef Action::OwningStmtResult OwningStmtResult;
+  typedef Action::OwningDeclResult OwningDeclResult;
 
   //typedef Expr *ExprArg;
   //typedef llvm::MutableArrayRef<Stmt*> MultiStmtArg;
@@ -134,11 +135,15 @@ public:
 
   OwningExprResult ExprError() { return OwningExprResult(Actions, true); }
   OwningStmtResult StmtError() { return OwningStmtResult(Actions, true); }
+  OwningDeclResult DeclError() { return OwningDeclResult(Actions, true); }
 
   //OwningExprResult ExprError(const DiagnosticBuilder &) { return ExprError(); }
   //OwningStmtResult StmtError(const DiagnosticBuilder &) { return StmtError(); }
 
   OwningExprResult ExprEmpty() { return OwningExprResult(Actions, false); }
+
+  // FIXME: Remove again when no longer needed.
+  OwningDeclResult DeclEmpty() { return OwningDeclResult(Actions, false); }
 
   // Parsing methods.
 
@@ -188,7 +193,7 @@ public:
   bool ParseFieldDecl();
   bool ParseAnonymousField();
   bool ParseAnonymousFieldTail(SourceLocation IILoc, IdentifierInfo *II);
-  bool ParsePointerType();
+  OwningDeclResult ParsePointerType();
   bool ParseFunctionType();
   bool ParseInterfaceType();
   bool ParseMethodSpec();

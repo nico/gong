@@ -555,7 +555,7 @@ bool Parser::ParseTypeLit() {
   switch (Tok.getKind()) {
   case tok::l_square:     return ParseArrayOrSliceType();
   case tok::kw_struct:    return ParseStructType();
-  case tok::star:         return ParsePointerType();
+  case tok::star:         return ParsePointerType().isInvalid();
   case tok::kw_func:      return ParseFunctionType();
   case tok::kw_interface: return ParseInterfaceType();
   case tok::kw_map:       return ParseMapType();
@@ -697,14 +697,19 @@ bool Parser::ParseAnonymousFieldTail(SourceLocation IILoc, IdentifierInfo* II) {
 
 /// PointerType = "*" BaseType .
 /// BaseType = Type .
-bool Parser::ParsePointerType() {
+Action::OwningDeclResult Parser::ParsePointerType() {
   assert(Tok.is(tok::star) && "Expected '*'");
-  ConsumeToken();
-  if (IsType())
-    return ParseType();
+  SourceLocation StarLoc = ConsumeToken();
+  if (IsType()) {
+    OwningDeclResult T = ParseType() ? DeclError() : DeclEmpty(); // FIXME
+    if (T.isInvalid())
+      return DeclError();
+
+    return Actions.ActOnPointerType(StarLoc, move(T));
+  }
   Diag(Tok, diag::expected_type);
   SkipUntil(tok::semi, /*StopAtSemi=*/false, /*DontConsume=*/true);
-  return true;
+  return DeclError();
 }
 
 /// FunctionType   = "func" Signature .

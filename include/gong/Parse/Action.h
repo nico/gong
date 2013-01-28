@@ -101,6 +101,7 @@ public:
   /// Single expressions or statements as arguments.
   typedef ASTOwningPtr<&ActionBase::DeleteExpr> ExprArg;
   typedef ASTOwningPtr<&ActionBase::DeleteStmt> StmtArg;
+  typedef ASTOwningPtr<&ActionBase::DeleteDecl> DeclArg;
 
   /// Multiple expressions or statements as arguments.
   typedef ASTMultiPtr<&ActionBase::DeleteExpr> MultiExprArg;
@@ -277,9 +278,25 @@ public:
   // Type Parsing Callbacks.
   //===--------------------------------------------------------------------===//
 
-  /// A TypeName was parsed.
+  /// \brief Parsed a TypeName.
+  ///
+  /// \param IILoc the location of the label.
+  ///
+  /// \param II the label.
+  ///
+  /// \param CurScope the current scope.
   virtual OwningDeclResult ActOnTypeName(SourceLocation IILoc,
                                          IdentifierInfo &II, Scope *CurScope) {
+    return DeclEmpty();
+  }
+
+  /// \brief Parsed a PointerType.
+  ///
+  /// \param StarLoc the location of the '*'.
+  ///
+  /// \param PointeeType the type after '*'.
+  virtual OwningDeclResult ActOnPointerType(SourceLocation StarLoc,
+                                            DeclArg PointeeType) {
     return DeclEmpty();
   }
 
