@@ -318,6 +318,42 @@ public:
     return move(Type);  // Default impl returns operand.
   }
 
+  /// \brief Parsed a send channel type, for example "chan<- int".
+  ///
+  /// \param ChanLoc location of the 'chan'.
+  ///
+  /// \param ArrowLoc location of the '<-'.
+  ///
+  /// \param Type the type in the channel
+  virtual OwningDeclResult ActOnSendChannelType(SourceLocation ChanLoc,
+                                                SourceLocation ArrowLoc,
+                                                DeclArg Type) {
+    return DeclEmpty();
+  }
+
+  /// \brief Parsed a receive channel type, for example "<-chan int".
+  ///
+  /// \param ArrowLoc location of the '<-'.
+  ///
+  /// \param ChanLoc location of the 'chan'.
+  ///
+  /// \param Type the type in the channel
+  virtual OwningDeclResult ActOnRecvChannelType(SourceLocation ArrowLoc,
+                                                SourceLocation ChanLoc,
+                                                DeclArg Type) {
+    return DeclEmpty();
+  }
+
+  /// \brief Parsed a bidirectional channel type, for example "chan int".
+  ///
+  /// \param ChanLoc location of the 'chan'.
+  ///
+  /// \param Type the type in the channel
+  virtual OwningDeclResult ActOnBiChannelType(SourceLocation ChanLoc,
+                                              DeclArg Type) {
+    return DeclEmpty();
+  }
+
   //===--------------------------------------------------------------------===//
   // Statement Parsing Callbacks.
   //===--------------------------------------------------------------------===//

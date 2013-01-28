@@ -565,7 +565,7 @@ bool Parser::ParseTypeLit() {
   case tok::kw_interface: return ParseInterfaceType();
   case tok::kw_map:       return ParseMapType();
   case tok::kw_chan:
-  case tok::lessminus:    return ParseChannelType();
+  case tok::lessminus:    return ParseChannelType().isInvalid();
   default: llvm_unreachable("unexpected token kind");
   }
 }
@@ -813,29 +813,42 @@ bool Parser::ParseMapType() {
 }
 
 /// ChannelType = ( "chan" [ "<-" ] | "<-" "chan" ) ElementType .
-bool Parser::ParseChannelType() {
+Parser::OwningDeclResult Parser::ParseChannelType() {
   assert((Tok.is(tok::kw_chan) || Tok.is(tok::lessminus)) && "Expected 'map'");
-  if (Tok.is(tok::kw_chan)) {
+
+  SourceLocation ChanLoc, ArrowLoc;
+  bool IsRecv = Tok.is(tok::lessminus);
+  if (!IsRecv) {
     // "chan" [ "<-" ]
-    ConsumeToken();
+    ChanLoc = ConsumeToken();
     if (Tok.is(tok::lessminus))
-      ConsumeToken();
+      ArrowLoc = ConsumeToken();
   } else {
     // "<-" "chan"
-    ConsumeToken();
+    ArrowLoc = ConsumeToken();
 
     if (ExpectAndConsume(tok::kw_chan, diag::expected_chan)) {
       SkipUntil(tok::semi, /*StopAtSemi=*/false, /*DontConsume=*/true);
-      return true;
+      return DeclError();
     }
+    ChanLoc = PrevTokLocation;
   }
 
   if (!IsElementType()) {
     Diag(Tok, diag::expected_element_type);
     SkipUntil(tok::semi, /*StopAtSemi=*/false, /*DontConsume=*/true);
-    return true;
+    return DeclError();
   }
-  return ParseElementType().isInvalid();
+  OwningDeclResult Res = ParseElementType();
+  if (!Res.isInvalid()) {
+    if (IsRecv)
+      Res = Actions.ActOnRecvChannelType(ArrowLoc, ChanLoc, move(Res));
+    else if (ArrowLoc.isValid())
+      Res = Actions.ActOnSendChannelType(ChanLoc, ArrowLoc, move(Res));
+    else
+      Res = Actions.ActOnBiChannelType(ChanLoc, move(Res));
+  }
+  return Res;
 }
 
 /// ElementType = Type .
