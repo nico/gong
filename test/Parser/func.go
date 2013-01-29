@@ -26,6 +26,9 @@ func foo(foo bar) (foo, baz... bar) {}
 func foo(foo bar) foo.bar {}
 
 func foo(foo bar) foo . 4 {}  // expected-diag {{expected identifier}}
+func foo(foo bar) foo . 4 {  // expected-diag {{expected identifier}}
+  4 4  // expected-diag {{expected ';'}}
+}
 // .4 is lexed as numeric literal here:
 func foo(foo bar) foo.4 {}  // expected-diag {{expected ';'}}
 
