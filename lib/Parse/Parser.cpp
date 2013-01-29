@@ -540,9 +540,9 @@ Parser::ParseTypeNameTail(SourceLocation IILoc, IdentifierInfo *Head,
 
   if (Tok.isNot(tok::identifier)) {
     Diag(Tok, diag::expected_ident);
-    // FIXME: This doesn't recover well when called from ParseMethodSpec() for
-    // interface{} types.
-    SkipUntil(tok::l_brace, tok::semi,
+    // l_brace for skipping in function decls until function body.
+    // r_brace for skipping in struct / interface types.
+    SkipUntil(tok::l_brace, tok::r_brace, tok::semi,
               /*StopAtSemi=*/false, /*DontConsume=*/true);
     return DeclError();
   }

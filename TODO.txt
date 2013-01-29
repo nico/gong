@@ -53,6 +53,13 @@ check IsExpression() everywhere ParseExpression() is called
 diag only once on 
   a := (a[1)
 
+Try to emit diags at end of previous token instead of on current token in
+many cases. e.g.
+
+  interface {
+    foo.  // should diag here
+  }       // does diag here
+
 Only one diag when ending a file without a closing ) (imports) / } (blocks)
 
 Nicer diag for function literal in struct ("unexpected function body",

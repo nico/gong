@@ -60,10 +60,9 @@ type t interface {
   baz(foo, bar quux)
   foo []int  // expected-diag{{expected ';' or '}'}}
 }
-// FIXME
-//type t interface{
-  //foo.  // exected-diag{{expected identifier}}
-//}
+type t interface{
+  foo.
+}  // expected-diag{{expected identifier}}
 
 // TypeLit, SliceType
 type t []int
