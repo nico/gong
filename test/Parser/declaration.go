@@ -26,6 +26,10 @@ const (
   bar int = 19; foo = 20
   baz
 )
+const a = 4 4  // expected-diag-re{{expected ';'$}}
+const (
+  a = 4 4  // expected-diag{{expected ';' or ')'}}
+)
 
 const { foo, bar }  // expected-diag{{expected identifier or '('}}
 

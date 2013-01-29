@@ -33,7 +33,7 @@ type t struct {
 
   bar, baz []int
   bar, baz, []int  // expected-diag{{expected identifier}}
-  *anon5000 []int  // expected-diag{{expected ';'}}
+  *anon5000 []int  // expected-diag{{expected ';' or '}'}}
 }
 type t struct {
   4  // expected-diag{{expected identifier}}
@@ -50,14 +50,15 @@ type t func() int
 
 // TypeLit, InterfaceType
 type t interface{}
-type t interface{ foo }
-type t interface{
+type t interface { foo }
+type t interface {
   4 // expected-diag{{expected identifier}}
 }
-type t interface{
+type t interface {
   foo
   foo.bar
   baz(foo, bar quux)
+  foo []int  // expected-diag{{expected ';' or '}'}}
 }
 // FIXME
 //type t interface{

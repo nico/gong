@@ -84,6 +84,8 @@ DIAG(invalid_package_name,         CLASS_ERROR, "invalid package name %0")
 DIAG(expected_semi_package, CLASS_ERROR, "expected ';' after package name")
 DIAG(expected_semi_import,  CLASS_ERROR, "expected ';' after import line")
 DIAG(expected_semi,                CLASS_ERROR, "expected ';'")
+DIAG(expected_semi_or_r_brace,     CLASS_ERROR, "expected ';' or '}'")
+DIAG(expected_semi_or_r_paren,     CLASS_ERROR, "expected ';' or ')'")
 DIAG(expected_string_literal,      CLASS_ERROR, "expected string literal")
 DIAG(expected_ident_or_l_paren,    CLASS_ERROR, "expected identifier or '('")
 DIAG(expected_ident_or_star,       CLASS_ERROR,

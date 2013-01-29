@@ -551,7 +551,7 @@ Parser::ParseTypeNameTail(SourceLocation IILoc, IdentifierInfo *Head,
   (void)Qualified;
   ConsumeToken();
   // FIXME: call Actions.ActOnQualifiedTypeName() or some such.
-  return DeclError();
+  return DeclEmpty();
 }
 
 /// TypeLit   = ArrayType | StructType | PointerType | FunctionType |
@@ -643,7 +643,7 @@ bool Parser::ParseStructType() {
     }
 
     if (Tok.isNot(tok::semi) && Tok.isNot(tok::r_brace)) {
-      Diag(diag::expected_semi);  // FIXME "...in 'interface'"
+      Diag(diag::expected_semi_or_r_brace);  // FIXME "...in 'struct'"
       SkipUntil(tok::r_brace, /*StopAtSemi=*/true, /*DontConsume=*/true);
     }
     if (Tok.is(tok::semi))
@@ -762,7 +762,7 @@ bool Parser::ParseInterfaceType() {
     }
 
     if (Tok.isNot(tok::semi) && Tok.isNot(tok::r_brace)) {
-      Diag(diag::expected_semi);  // FIXME "...in 'interface'"
+      Diag(diag::expected_semi_or_r_brace);  // FIXME "...in 'interface'"
       SkipUntil(tok::r_brace, /*StopAtSemi=*/true, /*DontConsume=*/true);
     }
     if (Tok.is(tok::semi))
@@ -1095,7 +1095,7 @@ Action::DeclPtrTy Parser::ParseDeclGroup(DeclGroupKind Kind,
     }
 
     if (Tok.isNot(tok::semi) && Tok.isNot(tok::r_paren)) {
-      Diag(diag::expected_semi);
+      Diag(diag::expected_semi_or_r_paren);
       SkipUntil(tok::r_paren, /*StopAtSemi=*/true, /*DontConsume=*/true);
     }
     if (Tok.is(tok::semi))

@@ -55,6 +55,9 @@ diag only once on
 
 Only one diag when ending a file without a closing ) (imports) / } (blocks)
 
+Nicer diag for function literal in struct ("unexpected function body",
+"no function iterals allowed in structs", ...)
+
 Actions interface
   Create ExprList
   Ensmarten expr parser to hand out right stuff for ForStmt action methods
