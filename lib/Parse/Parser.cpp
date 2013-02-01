@@ -511,7 +511,7 @@ Action::OwningDeclResult Parser::ParseType() {
     return Res;
   }
 
-  return ParseTypeLit() ? DeclError() : DeclEmpty();  // FIXME
+  return ParseTypeLit();
 }
 
 /// TypeName  = identifier | QualifiedIdent .
@@ -556,16 +556,22 @@ Parser::ParseTypeNameTail(SourceLocation IILoc, IdentifierInfo *Head,
 
 /// TypeLit   = ArrayType | StructType | PointerType | FunctionType |
 ///             InterfaceType | SliceType | MapType | ChannelType .
-bool Parser::ParseTypeLit() {
+Action::OwningDeclResult Parser::ParseTypeLit() {
   switch (Tok.getKind()) {
-  case tok::l_square:     return ParseArrayOrSliceType().isInvalid();
-  case tok::kw_struct:    return ParseStructType();
-  case tok::star:         return ParsePointerType().isInvalid();
-  case tok::kw_func:      return ParseFunctionType();
-  case tok::kw_interface: return ParseInterfaceType();
-  case tok::kw_map:       return ParseMapType().isInvalid();
+  case tok::l_square:     return ParseArrayOrSliceType();
+  case tok::kw_struct:
+    // FIXME
+    return ParseStructType() ? DeclError() : DeclEmpty();
+  case tok::star:         return ParsePointerType();
+  case tok::kw_func:
+    // FIXME
+    return ParseFunctionType() ? DeclError() : DeclEmpty();
+  case tok::kw_interface:
+    // FIXME
+    return ParseInterfaceType() ? DeclError() : DeclEmpty();
+  case tok::kw_map:       return ParseMapType();
   case tok::kw_chan:
-  case tok::lessminus:    return ParseChannelType().isInvalid();
+  case tok::lessminus:    return ParseChannelType();
   default: llvm_unreachable("unexpected token kind");
   }
 }
