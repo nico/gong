@@ -27,6 +27,9 @@ type t struct {
   anontype3.qual
   *anontype4.qual
   anontype "stringlit"
+  *anontype2 "stringlit"
+  anontype3.qual "stringlit"
+  *anontype4.qual "stringlit"
   foo bar
   bar, baz *quux
   bar2, baz2 *quux2 "stringlit"
