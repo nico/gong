@@ -645,20 +645,23 @@ bool Parser::ParseStructType() {
   DeclVector Fields(Actions);
 
   while (Tok.isNot(tok::r_brace) && Tok.isNot(tok::eof)) {
+    // FIXME: clang calls ConsumeExtraSemi() here if Tok.is(tok::semi).
+    // Maybe add that (but semis aren't common in go, so maybe it's not worth
+    // it).
     if (Tok.isNot(tok::identifier) && Tok.isNot(tok::star)) {
       Diag(Tok, diag::expected_ident_or_star);
-      T.skipToEnd();
-      return true;
+      SkipUntil(tok::r_brace, /*StopAtSemi=*/true, /*DontConsume=*/true);
+      goto next;
     }
     if (ParseFieldDecl()) {
-      T.skipToEnd();
-      return true;
+      SkipUntil(tok::r_brace, /*StopAtSemi=*/true, /*DontConsume=*/true);
+      goto next;
     }
-
     if (Tok.isNot(tok::semi) && Tok.isNot(tok::r_brace)) {
       Diag(diag::expected_semi_or_r_brace);  // FIXME "...in 'struct'"
       SkipUntil(tok::r_brace, /*StopAtSemi=*/true, /*DontConsume=*/true);
     }
+next:
     if (Tok.is(tok::semi))
       ConsumeToken();
   }

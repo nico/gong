@@ -37,6 +37,20 @@ type t struct {
 }
 type t struct {
   4  // expected-diag{{expected identifier}}
+  foo int 4  // expected-diag{{expected ';' or '}'}}
+}
+type t struct {
+  4;  // expected-diag{{expected identifier}}
+  *;  // expected-diag{{expected identifier}}
+  foo int 4  // expected-diag{{expected ';' or '}'}}
+}
+type t struct {
+  foo, bar  // expected-diag{{expected type}}
+  bar int 4  // expected-diag{{expected ';' or '}'}}
+}
+type t struct {
+  foo, bar;  // expected-diag{{expected type}}
+  bar int 4  // expected-diag{{expected ';' or '}'}}
 }
 
 // TypeLit, PointerType
