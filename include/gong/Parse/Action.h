@@ -106,6 +106,7 @@ public:
   /// Multiple expressions or statements as arguments.
   typedef ASTMultiPtr<&ActionBase::DeleteExpr> MultiExprArg;
   typedef ASTMultiPtr<&ActionBase::DeleteStmt> MultiStmtArg;
+  typedef ASTMultiPtr<&ActionBase::DeleteDecl> MultiDeclArg;
 
   class FullExprArg {
   public:
@@ -397,8 +398,82 @@ public:
     return DeclEmpty();
   }
 
+  /// \brief Parsed the start of a "struct" type.
+  ///
+  /// \param StructLoc the location of the "struct" keyword.
+  ///
+  /// \param L the location of the '{'.
+  //FIXME: scope?
+  virtual OwningDeclResult ActOnStartOfStructType(SourceLocation StructLoc,
+                                                  SourceLocation L) {
+    return DeclEmpty();
+  }
+
+  /// \brief Parsed a FieldDecl while parsing a struct type.
+  ///
+  /// \brief Struct the decl returned by the corresponding
+  ///        ActOnStartOfStructType() call.
+  ///
+  /// \brief Idents the identifier list of this FieldDecl.
+  ///
+  /// \brief Type the type of this FieldDecl.
+  ///
+  /// \brief TagIILoc the location of the optional tag. Only valid if TagII is
+  ///        set.
+  ///
+  /// \brief TagII the optional tag. NULL if not present.
+  //FIXME: scope?
+  virtual OwningDeclResult ActOnFieldDecl(DeclArg Struct, // FIXME: needed?
+                                          IdentifierList &Idents,
+                                          DeclArg Type,
+                                          SourceLocation TagIILoc,
+                                          IdentifierInfo *TagII) {
+    return DeclEmpty();
+  }
+
+  /// \brief Parsed an anonymous FieldDecl while parsing a struct type.
+  ///
+  /// \brief Struct the decl returned by the corresponding
+  ///        ActOnStartOfStructType() call.
+  ///
+  /// \brief StarLoc the location of the optional '*'.
+  ///        Invalid if there was no '*'.
+  ///
+  /// \brief TypeName the TypeName of the anonymous FieldDecl.  This is an
+  ///        object returned by ActOnTypeName().
+  ///
+  /// \brief TagIILoc the location of the optional tag. Only valid if TagII is
+  ///        set.
+  ///
+  /// \brief TagII the optional tag. NULL if not present.
+  virtual OwningDeclResult ActOnAnonymousField(DeclArg Struct, // FIXME: needed?
+                                               SourceLocation StarLoc,
+                                               DeclArg TypeName,
+                                               SourceLocation TagIILoc,
+                                               IdentifierInfo *TagII) {
+    return DeclEmpty();
+  }
+
+  /// \brief Parsed the end of a "struct" type.
+  ///
+  /// \param Struct the decl returned by the corresponding
+  ///        ActOnStartOfStructType() call.
+  ///
+  /// \param R the location of the '}'.
+  ///
+  /// \param Fields the field decls that were in the struct.
+  ///
+  /// \param NumFields number of elements in the array pointed to by Fields.
+  virtual void ActOnFinishStructType(DeclArg Struct, SourceLocation R,
+                                     MultiDeclArg Fields) {
+  }
+
+  /// Invoked when there was an unrecoverable error parsing a StructType.
+  void ActOnTagDefinitionError(DeclArg Struct);
+  
+
+
   // FIXME:
-  // struct types
   // function types
   // interface types
 
@@ -440,6 +515,7 @@ public:
   virtual OwningStmtResult ActOnExprStmt(ExprArg Expr) {
     return StmtEmpty();
   }
+  // FIXME: clang has ActOnStartStmtExpr(), ActOnStmtExprError(). Needed?
 
   /// \brief Parsed an Assignment, such as "a, b[i] = c(), d[j]".
   ///

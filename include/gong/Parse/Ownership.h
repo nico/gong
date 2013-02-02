@@ -498,6 +498,9 @@ namespace gong {
   typedef ASTOwningVector<&ActionBase::DeleteStmt, 32> StmtVector;
   /// A SmallVector of expressions, with stack size 12 (the maximum used.)
   typedef ASTOwningVector<&ActionBase::DeleteExpr, 12> ExprVector;
+  /// A SmallVector of decl, with stack size 32 (as that is the only one
+  /// used.)
+  typedef ASTOwningVector<&ActionBase::DeleteDecl, 32> DeclVector;
 
   template <ASTDestroyer Destroyer, unsigned N> inline
   ASTMultiPtr<Destroyer> move_arg(ASTOwningVector<Destroyer, N> &vec) {

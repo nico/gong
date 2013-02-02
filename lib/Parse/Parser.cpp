@@ -625,7 +625,7 @@ Action::OwningDeclResult Parser::ParseSliceType(BalancedDelimiterTracker &T) {
 /// StructType     = "struct" "{" { FieldDecl ";" } "}" .
 bool Parser::ParseStructType() {
   assert(Tok.is(tok::kw_struct) && "Expected 'struct'");
-  ConsumeToken();
+  SourceLocation StructLoc = ConsumeToken();
 
   // FIXME: This is very similar to ParseInterfaceType
   if (Tok.isNot(tok::l_brace)) {
@@ -635,7 +635,14 @@ bool Parser::ParseStructType() {
     return true;
   }
   BalancedDelimiterTracker T(*this, tok::l_brace);
-  T.consumeOpen();
+  if (T.consumeOpen())
+    return true;
+
+  //ParseScope StructScope(this, Scope::ClassScope|Scope::DeclScope);  FIXME
+  OwningDeclResult Res =
+      Actions.ActOnStartOfStructType(StructLoc, T.getOpenLocation());
+
+  DeclVector Fields(Actions);
 
   while (Tok.isNot(tok::r_brace) && Tok.isNot(tok::eof)) {
     if (Tok.isNot(tok::identifier) && Tok.isNot(tok::star)) {
@@ -656,6 +663,10 @@ bool Parser::ParseStructType() {
       ConsumeToken();
   }
   T.consumeClose();
+
+  //StructScope.Exit(); FIXME
+  Actions.ActOnFinishStructType(Res, T.getCloseLocation(), move_arg(Fields));
+
   return false;
 }
 
