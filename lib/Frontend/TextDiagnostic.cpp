@@ -8,13 +8,13 @@
 //===----------------------------------------------------------------------===//
 
 #include "gong/Frontend/TextDiagnostic.h"
-#include "gong/Basic/ConvertUTF.h"
 #include "gong/Basic/DiagnosticOptions.h"
 //#include "gong/Basic/FileManager.h"
 //#include "gong/Basic/SourceManager.h"
 #include "gong/Lex/Lexer.h"
 #include "llvm/ADT/SmallString.h"
 #include "llvm/ADT/StringExtras.h"
+#include "llvm/Support/ConvertUTF.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/Locale.h"
 #include "llvm/Support/MemoryBuffer.h"
