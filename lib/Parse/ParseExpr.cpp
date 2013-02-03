@@ -524,7 +524,7 @@ Parser::ParseCompositeLitOrConversion(TypeParam *TOpt) {
   switch (Tok.getKind()) {
   default: llvm_unreachable("unexpected token kind");
   case tok::kw_struct:
-    if (ParseStructType())
+    if (ParseStructType().isInvalid())
       return ExprError();
     break;
   case tok::l_square: {

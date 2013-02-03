@@ -189,7 +189,7 @@ public:
   OwningDeclResult ParseArrayOrSliceType();
   OwningDeclResult ParseArrayType(BalancedDelimiterTracker &T);
   OwningDeclResult ParseSliceType(BalancedDelimiterTracker &T);
-  bool ParseStructType();
+  OwningDeclResult ParseStructType();
   OwningDeclResult ParseFieldDecl();
   OwningDeclResult ParseAnonymousField();
   OwningDeclResult ParseAnonymousFieldTail(SourceLocation StarLoc,

@@ -559,9 +559,7 @@ Parser::ParseTypeNameTail(SourceLocation IILoc, IdentifierInfo *Head,
 Action::OwningDeclResult Parser::ParseTypeLit() {
   switch (Tok.getKind()) {
   case tok::l_square:     return ParseArrayOrSliceType();
-  case tok::kw_struct:
-    // FIXME
-    return ParseStructType() ? DeclError() : DeclEmpty();
+  case tok::kw_struct:    return ParseStructType();
   case tok::star:         return ParsePointerType();
   case tok::kw_func:
     // FIXME
@@ -623,7 +621,7 @@ Action::OwningDeclResult Parser::ParseSliceType(BalancedDelimiterTracker &T) {
 }
 
 /// StructType     = "struct" "{" { FieldDecl ";" } "}" .
-bool Parser::ParseStructType() {
+Action::OwningDeclResult Parser::ParseStructType() {
   assert(Tok.is(tok::kw_struct) && "Expected 'struct'");
   SourceLocation StructLoc = ConsumeToken();
 
@@ -632,11 +630,11 @@ bool Parser::ParseStructType() {
     // FIXME: ...after 'struct'
     Diag(Tok, diag::expected_l_brace);
     SkipUntil(tok::semi, /*StopAtSemi=*/false, /*DontConsume=*/true);
-    return true;
+    return DeclError();
   }
   BalancedDelimiterTracker T(*this, tok::l_brace);
   if (T.consumeOpen())
-    return true;
+    return DeclError();
 
   //ParseScope StructScope(this, Scope::ClassScope|Scope::DeclScope);  FIXME
   OwningDeclResult Res =
@@ -674,7 +672,7 @@ next:
   //StructScope.Exit(); FIXME
   Actions.ActOnFinishStructType(Res, T.getCloseLocation(), move_arg(Fields));
 
-  return false;
+  return Res;
 }
 
 /// FieldDecl      = (IdentifierList Type | AnonymousField) [ Tag ] .
