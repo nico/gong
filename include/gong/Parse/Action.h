@@ -411,48 +411,33 @@ public:
 
   /// \brief Parsed a FieldDecl while parsing a struct type.
   ///
-  /// \brief Struct the decl returned by the corresponding
-  ///        ActOnStartOfStructType() call.
+  /// \param Idents the identifier list of this FieldDecl.
   ///
-  /// \brief Idents the identifier list of this FieldDecl.
-  ///
-  /// \brief Type the type of this FieldDecl.
-  ///
-  /// \brief TagIILoc the location of the optional tag. Only valid if TagII is
-  ///        set.
-  ///
-  /// \brief TagII the optional tag. NULL if not present.
+  /// \param Type the type of this FieldDecl.
   //FIXME: scope?
-  virtual OwningDeclResult ActOnFieldDecl(DeclArg Struct, // FIXME: needed?
-                                          IdentifierList &Idents,
-                                          DeclArg Type,
-                                          SourceLocation TagIILoc,
-                                          IdentifierInfo *TagII) {
+  virtual OwningDeclResult ActOnFieldDecl(IdentifierList &Idents,
+                                          DeclArg Type) {
     return DeclEmpty();
   }
 
   /// \brief Parsed an anonymous FieldDecl while parsing a struct type.
   ///
-  /// \brief Struct the decl returned by the corresponding
-  ///        ActOnStartOfStructType() call.
-  ///
-  /// \brief StarLoc the location of the optional '*'.
+  /// \param StarLoc the location of the optional '*'.
   ///        Invalid if there was no '*'.
   ///
-  /// \brief TypeName the TypeName of the anonymous FieldDecl.  This is an
+  /// \param TypeName the TypeName of the anonymous FieldDecl.  This is an
   ///        object returned by ActOnTypeName().
-  ///
-  /// \brief TagIILoc the location of the optional tag. Only valid if TagII is
-  ///        set.
-  ///
-  /// \brief TagII the optional tag. NULL if not present.
-  virtual OwningDeclResult ActOnAnonymousField(DeclArg Struct, // FIXME: needed?
-                                               SourceLocation StarLoc,
-                                               DeclArg TypeName,
-                                               SourceLocation TagIILoc,
-                                               IdentifierInfo *TagII) {
+  virtual OwningDeclResult ActOnAnonymousField(SourceLocation StarLoc,
+                                               DeclArg TypeName) {
     return DeclEmpty();
   }
+
+  /// \brief Parsed the optional tag of a FieldDecl or an AnonymousField.
+  ///
+  /// \param Field a decl returned by ActOnFieldDecl() or ActOnAnonymousField().
+  ///
+  /// \param Tag an expr returned by ActOnStringLiteral().
+  virtual void ActOnFieldDeclTag(DeclArg Field, ExprArg Tag) {}
 
   /// \brief Parsed the end of a "struct" type.
   ///
@@ -815,7 +800,6 @@ public:
   // FIXME: actions for:
   // composite literals
   // function literals
-  // operand names
   // method exprs
   // typeassertion
   //   builtin calls

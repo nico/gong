@@ -679,8 +679,9 @@ bool Parser::ParseFieldDecl() {
   assert((Tok.is(tok::identifier) || Tok.is(tok::star)) &&
       "Expected identifier or '*'");
 
+  OwningDeclResult Res(Actions);
   if (Tok.is(tok::star))
-    ParseAnonymousField();
+    Res = ParseAnonymousField().isInvalid();
   else {
     // tok::identifier
     IdentifierInfo *II = Tok.getIdentifierInfo();
@@ -690,43 +691,58 @@ bool Parser::ParseFieldDecl() {
     // ',': IdentifierListTail Type
     // IsType(): Indentifier Type
     // else: AnonymousField
-    if (Tok.is(tok::comma)) {
+    if (Tok.is(tok::comma) || IsType()) {
       IdentifierList IdentList(IILoc, II);
-      ParseIdentifierListTail(IdentList);
-      if (!IsType()) {
-        Diag(Tok, diag::expected_type);
-        return true;
+      if (Tok.is(tok::comma)) {
+        ParseIdentifierListTail(IdentList);
+        if (!IsType()) {
+          Diag(Tok, diag::expected_type);
+          return true;
+        }
       }
-      ParseType();
-    } else if (IsType()) {
-      ParseType();
+      OwningDeclResult Type = ParseType();
+      if (!Type.isInvalid())
+        Res = Actions.ActOnFieldDecl(IdentList, move(Type));
+      else
+        Res = DeclError();
     } else {
-      ParseAnonymousFieldTail(IILoc, II);
+      SourceLocation NoStarLoc;
+      Res = ParseAnonymousFieldTail(NoStarLoc, IILoc, II);
     }
   }
 
-  if (Tok.is(tok::string_literal))
+  if (Tok.is(tok::string_literal)) {
+    OwningExprResult Tag = Actions.ActOnStringLiteral(Tok);
     ConsumeStringToken();
-  return false;
+    if (!Res.isInvalid())
+      Actions.ActOnFieldDeclTag(Res, move(Tag));
+  }
+  return Res.isInvalid();
 }
 
 /// AnonymousField = [ "*" ] TypeName .
-bool Parser::ParseAnonymousField() {
+Action::OwningDeclResult Parser::ParseAnonymousField() {
   assert((Tok.is(tok::star) || Tok.is(tok::identifier)) &&
       "Expected '*' or identifier");
+  SourceLocation StarLoc;
   if (Tok.is(tok::star))
-    ConsumeToken();
+    StarLoc = ConsumeToken();
   if (Tok.isNot(tok::identifier)) {
     Diag(Tok, diag::expected_ident);
-    return true;
+    return DeclError();
   }
   IdentifierInfo* II = Tok.getIdentifierInfo();
   SourceLocation IILoc = ConsumeToken();
-  return ParseAnonymousFieldTail(IILoc, II);
+  return ParseAnonymousFieldTail(StarLoc, IILoc, II);
 }
 
-bool Parser::ParseAnonymousFieldTail(SourceLocation IILoc, IdentifierInfo* II) {
-  return ParseTypeNameTail(IILoc, II).isInvalid();
+Action::OwningDeclResult Parser::ParseAnonymousFieldTail(SourceLocation StarLoc,
+                                                         SourceLocation IILoc,
+                                                         IdentifierInfo *II) {
+  OwningDeclResult Res = ParseTypeNameTail(IILoc, II);
+  if (!Res.isInvalid())
+    Res = Actions.ActOnAnonymousField(StarLoc, move(Res));
+  return Res;
 }
 
 /// PointerType = "*" BaseType .

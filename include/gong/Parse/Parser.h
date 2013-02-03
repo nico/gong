@@ -191,8 +191,10 @@ public:
   OwningDeclResult ParseSliceType(BalancedDelimiterTracker &T);
   bool ParseStructType();
   bool ParseFieldDecl();
-  bool ParseAnonymousField();
-  bool ParseAnonymousFieldTail(SourceLocation IILoc, IdentifierInfo *II);
+  OwningDeclResult ParseAnonymousField();
+  OwningDeclResult ParseAnonymousFieldTail(SourceLocation StarLoc,
+                                           SourceLocation IILoc,
+                                           IdentifierInfo *II);
   OwningDeclResult ParsePointerType();
   bool ParseFunctionType();
   bool ParseInterfaceType();
