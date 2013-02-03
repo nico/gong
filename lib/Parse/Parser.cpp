@@ -653,7 +653,7 @@ bool Parser::ParseStructType() {
       SkipUntil(tok::r_brace, /*StopAtSemi=*/true, /*DontConsume=*/true);
       goto next;
     }
-    if (ParseFieldDecl()) {
+    if (ParseFieldDecl().isInvalid()) {
       SkipUntil(tok::r_brace, /*StopAtSemi=*/true, /*DontConsume=*/true);
       goto next;
     }
@@ -675,7 +675,7 @@ next:
 
 /// FieldDecl      = (IdentifierList Type | AnonymousField) [ Tag ] .
 /// Tag            = string_lit .
-bool Parser::ParseFieldDecl() {
+Action::OwningDeclResult Parser::ParseFieldDecl() {
   assert((Tok.is(tok::identifier) || Tok.is(tok::star)) &&
       "Expected identifier or '*'");
 
@@ -697,7 +697,7 @@ bool Parser::ParseFieldDecl() {
         ParseIdentifierListTail(IdentList);
         if (!IsType()) {
           Diag(Tok, diag::expected_type);
-          return true;
+          return DeclError();
         }
       }
       OwningDeclResult Type = ParseType();
@@ -717,7 +717,7 @@ bool Parser::ParseFieldDecl() {
     if (!Res.isInvalid())
       Actions.ActOnFieldDeclTag(Res, move(Tag));
   }
-  return Res.isInvalid();
+  return Res;
 }
 
 /// AnonymousField = [ "*" ] TypeName .
