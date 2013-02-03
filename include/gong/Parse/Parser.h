@@ -198,7 +198,7 @@ public:
   OwningDeclResult ParsePointerType();
   bool ParseFunctionType();
   bool ParseInterfaceType();
-  bool ParseMethodSpec();
+  OwningDeclResult ParseMethodSpec();
   OwningDeclResult ParseMapType();
   OwningDeclResult ParseChannelType();
   bool IsElementType() { return IsType(); }

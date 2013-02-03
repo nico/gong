@@ -801,7 +801,7 @@ bool Parser::ParseInterfaceType() {
       SkipUntil(tok::r_brace, /*StopAtSemi=*/true, /*DontConsume=*/true);
       goto next;
     }
-    if (ParseMethodSpec()) {
+    if (ParseMethodSpec().isInvalid()) {
       SkipUntil(tok::r_brace, /*StopAtSemi=*/true, /*DontConsume=*/true);
       goto next;
     }
@@ -825,7 +825,7 @@ next:
 /// MethodSpec         = MethodName Signature | InterfaceTypeName .
 /// MethodName         = identifier .
 /// InterfaceTypeName  = TypeName .
-bool Parser::ParseMethodSpec() {
+Action::OwningDeclResult Parser::ParseMethodSpec() {
   assert(Tok.is(tok::identifier) && "Expected identifier");
 
   // If next is:
@@ -835,10 +835,13 @@ bool Parser::ParseMethodSpec() {
   IdentifierInfo *II = Tok.getIdentifierInfo();
   SourceLocation IILoc = ConsumeToken();
 
-  if (Tok.is(tok::l_paren))
-    return ParseSignature();
+  if (Tok.is(tok::l_paren)) {
+    if (ParseSignature())  // FIXME: actions support
+      return DeclError();
+    return Actions.ActOnMethodSpec(IILoc, *II);
+  }
   else
-    return ParseTypeNameTail(IILoc, II).isInvalid();
+    return ParseTypeNameTail(IILoc, II);
 }
 
 /// MapType     = "map" "[" KeyType "]" ElementType .
