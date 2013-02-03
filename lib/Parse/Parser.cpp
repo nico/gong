@@ -624,7 +624,6 @@ Action::OwningDeclResult Parser::ParseSliceType(BalancedDelimiterTracker &T) {
 Action::OwningDeclResult Parser::ParseStructType() {
   assert(Tok.is(tok::kw_struct) && "Expected 'struct'");
   SourceLocation StructLoc = ConsumeToken();
-
   // FIXME: This is very similar to ParseInterfaceType
   if (Tok.isNot(tok::l_brace)) {
     // FIXME: ...after 'struct'
@@ -778,7 +777,8 @@ bool Parser::ParseFunctionType() {
 /// InterfaceType      = "interface" "{" { MethodSpec ";" } "}" .
 bool Parser::ParseInterfaceType() {
   assert(Tok.is(tok::kw_interface) && "Expected 'interface'");
-  ConsumeToken();
+  SourceLocation InterfaceLoc = ConsumeToken();
+
   if (Tok.isNot(tok::l_brace)) {
     // FIXME: ... after 'interface'
     Diag(Tok, diag::expected_l_brace);
@@ -786,7 +786,14 @@ bool Parser::ParseInterfaceType() {
     return true;
   }
   BalancedDelimiterTracker T(*this, tok::l_brace);
-  T.consumeOpen();
+  if (T.consumeOpen())
+    return true;
+
+  //ParseScope InterfaceScope(this, Scope::ClassScope|Scope::DeclScope);  FIXME
+  OwningDeclResult Res =
+      Actions.ActOnStartOfInterfaceType(InterfaceLoc, T.getOpenLocation());
+
+  DeclVector Methods(Actions);
 
   while (Tok.isNot(tok::r_brace) && Tok.isNot(tok::eof)) {
     if (Tok.isNot(tok::identifier)) {
@@ -807,6 +814,10 @@ bool Parser::ParseInterfaceType() {
       ConsumeToken();
   }
   T.consumeClose();
+
+  //InterfaceScope.Exit(); FIXME
+  Actions.ActOnFinishInterfaceType(Res, T.getCloseLocation(),
+                                   move_arg(Methods));
   return false;
 }
 
