@@ -795,16 +795,19 @@ bool Parser::ParseInterfaceType() {
 
   DeclVector Methods(Actions);
 
+  OwningDeclResult Method(Actions);
   while (Tok.isNot(tok::r_brace) && Tok.isNot(tok::eof)) {
     if (Tok.isNot(tok::identifier)) {
       Diag(Tok, diag::expected_ident);
       SkipUntil(tok::r_brace, /*StopAtSemi=*/true, /*DontConsume=*/true);
       goto next;
     }
-    if (ParseMethodSpec().isInvalid()) {
+    Method = ParseMethodSpec();
+    if (Method.isInvalid()) {
       SkipUntil(tok::r_brace, /*StopAtSemi=*/true, /*DontConsume=*/true);
       goto next;
     }
+    Methods.push_back(Method.release());
 
     if (Tok.isNot(tok::semi) && Tok.isNot(tok::r_brace)) {
       Diag(diag::expected_semi_or_r_brace);  // FIXME "...in 'interface'"
