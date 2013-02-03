@@ -453,10 +453,6 @@ public:
                                      MultiDeclArg Fields) {
   }
 
-  /// Invoked when there was an unrecoverable error parsing a StructType.
-  void ActOnTagDefinitionError(DeclArg Struct);
-  
-
 
   // FIXME:
   // function types
@@ -1134,99 +1130,6 @@ public:
   /// popped.
   virtual void ActOnEndOfTranslationUnit() {}
 
-  //===--------------------------------------------------------------------===//
-  // Type Parsing Callbacks.
-  //===--------------------------------------------------------------------===//
-
-  enum TagUseKind {
-    TUK_Reference,   // Reference to a tag:  'struct foo *X;'
-    TUK_Declaration, // Fwd decl of a tag:   'struct foo;'
-    TUK_Definition,  // Definition of a tag: 'struct foo { int X; } Y;'
-    TUK_Friend       // Friend declaration:  'friend struct foo;'
-  };
-
-  /// \brief The parser has encountered a tag (e.g., "class X") that should be
-  /// turned into a declaration by the action module.
-  ///
-  /// \param S the scope in which this tag occurs.
-  ///
-  /// \param TagSpec an instance of DeclSpec::TST, indicating what kind of tag
-  /// this is (struct/union/enum/class).
-  ///
-  /// \param TUK how the tag we have encountered is being used, which
-  /// can be a reference to a (possibly pre-existing) tag, a
-  /// declaration of that tag, or the beginning of a definition of
-  /// that tag.
-  ///
-  /// \param KWLoc the location of the "struct", "class", "union", or "enum"
-  /// keyword.
-  ///
-  /// \param SS C++ scope specifier that precedes the name of the tag, e.g.,
-  /// the "std::" in "class std::type_info".
-  ///
-  /// \param Name the name of the tag, e.g., "X" in "struct X". This parameter
-  /// may be NULL, to indicate an anonymous class/struct/union/enum type.
-  ///
-  /// \param NameLoc the location of the name of the tag.
-  ///
-  /// \param Attr the set of attributes that appertain to the tag.
-  ///
-  /// \param AS when this tag occurs within a C++ class, provides the
-  /// current access specifier (AS_public, AS_private, AS_protected).
-  /// Otherwise, it will be AS_none.
-  ///
-  /// \param OwnedDecl the callee should set this flag true when the returned
-  /// declaration is "owned" by this reference. Ownership is handled entirely
-  /// by the action module.
-  ///
-  /// \returns the declaration to which this tag refers.
-  virtual DeclPtrTy ActOnTag(Scope *S, unsigned TagSpec, TagUseKind TUK,
-                             SourceLocation KWLoc, CXXScopeSpec &SS,
-                             IdentifierInfo *Name, SourceLocation NameLoc,
-                             AttributeList *Attr, //AccessSpecifier AS,
-                             bool &OwnedDecl, bool &IsDependent) {
-    return DeclPtrTy();
-  }
-
-  virtual void ActOnFields(Scope* S, SourceLocation RecLoc, DeclPtrTy TagDecl,
-                           DeclPtrTy *Fields, unsigned NumFields,
-                           SourceLocation LBrac, SourceLocation RBrac,
-                           AttributeList *AttrList) {}
-
-  /// ActOnTagStartDefinition - Invoked when we have entered the
-  /// scope of a tag's definition (e.g., for an enumeration, class,
-  /// struct, or union).
-  virtual void ActOnTagStartDefinition(Scope *S, DeclPtrTy TagDecl) { }
-
-  /// ActOnStartCXXMemberDeclarations - Invoked when we have parsed a
-  /// C++ record definition's base-specifiers clause and are starting its
-  /// member declarations.
-  virtual void ActOnStartCXXMemberDeclarations(Scope *S, DeclPtrTy TagDecl,
-                                               SourceLocation LBraceLoc) { }
-
-  /// ActOnTagFinishDefinition - Invoked once we have finished parsing
-  /// the definition of a tag (enumeration, class, struct, or union).
-  ///
-  /// The scope is the scope of the tag definition.
-  virtual void ActOnTagFinishDefinition(Scope *S, DeclPtrTy TagDecl,
-                                        SourceLocation RBraceLoc) { }
-
-  /// ActOnTagDefinitionError - Invoked if there's an unrecoverable
-  /// error parsing the definition of a tag.
-  ///
-  /// The scope is the scope of the tag definition.
-  virtual void ActOnTagDefinitionError(Scope *S, DeclPtrTy TagDecl) { }
-
-  virtual DeclPtrTy ActOnEnumConstant(Scope *S, DeclPtrTy EnumDecl,
-                                      DeclPtrTy LastEnumConstant,
-                                      SourceLocation IdLoc, IdentifierInfo *Id,
-                                      SourceLocation EqualLoc, ExprTy *Val) {
-    return DeclPtrTy();
-  }
-  virtual void ActOnEnumBody(SourceLocation EnumLoc, SourceLocation LBraceLoc,
-                             SourceLocation RBraceLoc, DeclPtrTy EnumDecl,
-                             DeclPtrTy *Elements, unsigned NumElements,
-                             Scope *S, AttributeList *AttrList) {}
 
   //===--------------------------------------------------------------------===//
   // Statement Parsing Callbacks.
