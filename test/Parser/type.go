@@ -81,6 +81,14 @@ type t interface {
 type t interface{
   foo.
 }  // expected-diag{{expected identifier}}
+type t interface {
+  4  // expected-diag{{expected identifier}}
+  foo 4  // expected-diag{{expected ';' or '}'}}
+}
+type t interface {
+  foo. 4  // expected-diag{{expected identifier}}
+  bar 4  // expected-diag{{expected ';' or '}'}}
+}
 
 // TypeLit, SliceType
 type t []int
