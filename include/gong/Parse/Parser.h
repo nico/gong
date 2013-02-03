@@ -197,7 +197,7 @@ public:
                                            IdentifierInfo *II);
   OwningDeclResult ParsePointerType();
   bool ParseFunctionType();
-  bool ParseInterfaceType();
+  OwningDeclResult ParseInterfaceType();
   OwningDeclResult ParseMethodSpec();
   OwningDeclResult ParseMapType();
   OwningDeclResult ParseChannelType();

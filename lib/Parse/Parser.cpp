@@ -564,9 +564,7 @@ Action::OwningDeclResult Parser::ParseTypeLit() {
   case tok::kw_func:
     // FIXME
     return ParseFunctionType() ? DeclError() : DeclEmpty();
-  case tok::kw_interface:
-    // FIXME
-    return ParseInterfaceType() ? DeclError() : DeclEmpty();
+  case tok::kw_interface: return ParseInterfaceType();
   case tok::kw_map:       return ParseMapType();
   case tok::kw_chan:
   case tok::lessminus:    return ParseChannelType();
@@ -775,7 +773,7 @@ bool Parser::ParseFunctionType() {
 }
 
 /// InterfaceType      = "interface" "{" { MethodSpec ";" } "}" .
-bool Parser::ParseInterfaceType() {
+Action::OwningDeclResult Parser::ParseInterfaceType() {
   assert(Tok.is(tok::kw_interface) && "Expected 'interface'");
   SourceLocation InterfaceLoc = ConsumeToken();
 
@@ -783,11 +781,11 @@ bool Parser::ParseInterfaceType() {
     // FIXME: ... after 'interface'
     Diag(Tok, diag::expected_l_brace);
     SkipUntil(tok::semi, /*StopAtSemi=*/false, /*DontConsume=*/true);
-    return true;
+    return DeclError();
   }
   BalancedDelimiterTracker T(*this, tok::l_brace);
   if (T.consumeOpen())
-    return true;
+    return DeclError();
 
   //ParseScope InterfaceScope(this, Scope::ClassScope|Scope::DeclScope);  FIXME
   OwningDeclResult Res =
@@ -822,7 +820,7 @@ next:
   //InterfaceScope.Exit(); FIXME
   Actions.ActOnFinishInterfaceType(Res, T.getCloseLocation(),
                                    move_arg(Methods));
-  return false;
+  return Res;
 }
 
 /// MethodSpec         = MethodName Signature | InterfaceTypeName .

@@ -8,12 +8,19 @@ P0 let Sema::ActOnOperandName() pass on the type from the decl
    (done for TypeSpecDecls)
 P0 some type support (named, the pointers, then structs)
 P1 function parameter lists (and return names, and methoddecls)
+!! ParseTypeList() needs something like IdentOrExprList for types, to
+   make parameter parsing possible.
+       Parameters used in:
+          func Signature (for params and optionally for result)
+              used for FunctionType, which is used by
+                  FunctionLit
+              FunctionDecl
+              MethodDecl (also has a Receiver)
+              MethodSpec (in Interfacetype; implicit Receiver)
 P2 function literal parameter lists
 P2 typo correction for names (blocked on structs)
 P1 type checking
 
-!! ParseTypeList() needs something like IdentOrExprList for types, to
-   make parameter parsing possible.
 
 Lexer
 =====
