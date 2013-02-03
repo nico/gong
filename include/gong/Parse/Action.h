@@ -447,16 +447,56 @@ public:
   /// \param R the location of the '}'.
   ///
   /// \param Fields the field decls that were in the struct.
-  ///
-  /// \param NumFields number of elements in the array pointed to by Fields.
   virtual void ActOnFinishStructType(DeclArg Struct, SourceLocation R,
                                      MultiDeclArg Fields) {
+  }
+
+  /// \brief Parsed the start of an "interface" type.
+  ///
+  /// \param InterfaceLoc the location of the "interface" keyword.
+  ///
+  /// \param L the location of the '{'.
+  //FIXME: scope?
+  virtual OwningDeclResult ActOnStartOfInterfaceType(
+      SourceLocation InterfaceLoc, SourceLocation L) {
+    return DeclEmpty();
+  }
+
+  /// \brief Parsed a MethodSpec while parsing an interface type.
+  ///
+  /// \param IILoc the location of the MethodSpec's name.
+  //
+  /// \param II the identifier list of this MethodSpec.
+  //FIXME: scope?
+  //FIXME: parameters!
+  virtual OwningDeclResult ActOnMethodSpec(SourceLocation IILoc,
+                                           IdentifierInfo &II) {
+    return DeclEmpty();
+  }
+
+  /// \brief Parsed an InterfaceTypeName while parsing an interface type.
+  ///
+  /// \param TypeName the TypeName of the anonymous FieldDecl.  This is an
+  ///        object returned by ActOnTypeName().
+  virtual OwningDeclResult ActOnInterfaceTypeName(DeclArg TypeName) {
+    return DeclEmpty();
+  }
+
+  /// \brief Parsed the end of an "interface" type.
+  ///
+  /// \param Interface the decl returned by the corresponding
+  ///        ActOnStartOfInterfaceType() call.
+  ///
+  /// \param R the location of the '}'.
+  ///
+  /// \param Methods the field decls that were in the struct.
+  virtual void ActOnFinishInterfaceType(DeclArg Interface, SourceLocation R,
+                                        MultiDeclArg Methods) {
   }
 
 
   // FIXME:
   // function types
-  // interface types
 
   //===--------------------------------------------------------------------===//
   // Statement Parsing Callbacks.
