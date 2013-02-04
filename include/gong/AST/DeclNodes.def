@@ -91,6 +91,7 @@ ABSTRACT_DECL(Named,  Decl)
   DECL(Function, NamedDecl)
 
   ABSTRACT_DECL(Type, Decl)
+    DECL(BuiltinType, TypeDecl)
     DECL(NameType, TypeDecl)
     DECL(PointerType, TypeDecl)
     LAST_DECL(Typedef, TypeDecl)

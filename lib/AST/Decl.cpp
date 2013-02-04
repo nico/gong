@@ -584,7 +584,7 @@ void TypeSpecDecl::anchor() { }
 
 TypeSpecDecl *TypeSpecDecl::Create(ASTContext &C, DeclContext *DC,
                                    SourceLocation L, IdentifierInfo *II,
-                                   const Type *T) {
+                                   const TypeDecl *T) {
   return new (C) TypeSpecDecl(DC, L, II, T);
 }
 
@@ -3002,6 +3002,10 @@ SourceRange EnumConstantDecl::getSourceRange() const {
 
 void TypeDecl::anchor() { }
 
+BuiltinTypeDecl *
+BuiltinTypeDecl::Create(ASTContext &C, DeclContext *DC, Type *T) {
+  return new (C) BuiltinTypeDecl(DC, T);
+}
 #if 0
 TypedefDecl *TypedefDecl::Create(ASTContext &C, DeclContext *DC,
                                  SourceLocation StartLoc, SourceLocation IdLoc,

@@ -1705,8 +1705,10 @@ Sema::ActOnOperandName(SourceLocation IILoc, IdentifierInfo *II,
 
   const Type *Ty = Context.UnknownAnyTy;
   Decl *D = R.getFoundDecl();
-  if (TypeSpecDecl *TSD = dyn_cast<TypeSpecDecl>(D))
-    Ty = TSD->getType();
+  // FIXME: get type using ASTContext::getTypeDeclType
+  (void)D;
+  //if (TypeSpecDecl *TSD = dyn_cast<TypeSpecDecl>(D))
+    //Ty = TSD->getTypeDecl()->getType();
   return BuildDeclRefExpr(R.getFoundDecl(), Ty);
 }
 

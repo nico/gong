@@ -547,9 +547,11 @@ TypedefDecl *ASTContext::getUInt128Decl() const {
 
 TypeSpecDecl *ASTContext::getBoolDecl() const {
   if (!BoolDecl) {
+    TypeDecl *Bool = BuiltinTypeDecl::Create(const_cast<ASTContext &>(*this),
+                                             getTranslationUnitDecl(), BoolTy);
     BoolDecl = TypeSpecDecl::Create(const_cast<ASTContext &>(*this),
                                     getTranslationUnitDecl(), SourceLocation(),
-                                    &Idents.get("bool"), BoolTy);
+                                    &Idents.get("bool"), Bool);
   }
 
   return BoolDecl;

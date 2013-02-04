@@ -3,6 +3,7 @@ General s/llvm::SourceMgr/SourceManager/g
 
 Look at SourceMgr-based fixits! They were added r172086.
 
+
 hotlist:
 P0 let Sema::ActOnOperandName() pass on the type from the decl
    (done for TypeSpecDecls)
@@ -80,6 +81,33 @@ Actions interface
 Have nice fixit for toplevel `a := b`
 
 Have nice fixit for "func a(){}" at function scope (just remove name?)
+
+nice fixit for "import foo":
+
+  StringRef Import;
+  SourceLocation ImportLoc;
+  if (Tok.isNot(tok::string_literal)) {
+    if (II && (Tok.is(tok::semi) || Tok.is(tok::r_paren))) {
+      // The parser saw 'import foo;'.  Assume that the user meant
+      // 'import "foo";'.
+      SourceLocation EndLoc = Lexer::getLocForEndOfToken(IILoc, 0,
+                                                         L.getSourceManager());
+      Diag(diag::expected_string_literal)
+          << FixItHint::CreateInsertion(IILoc, "\"")
+          << FixItHint::CreateInsertion(EndLoc, "\"");
+      Import = II->getName();
+      ImportLoc = IILoc;
+      II = NULL;
+      IILoc = SourceLocation();
+    } else {
+      Diag(diag::expected_string_literal);
+      return true;
+    }
+  } else {
+    Import = StringRef(Tok.getLiteralData(), Tok.getLength());
+    ImportLoc = ConsumeStringToken();
+  }
+
 
 Handle https://groups.google.com/forum/#!topic/golang-nuts/Bv4GDkPRMxA well
 

@@ -32,6 +32,7 @@ namespace gong {
 class ASTContext;
 class BlockStmt;
 class IdentifierInfo;
+class TypeDecl;
 #if 0
 struct ASTTemplateArgumentListInfo;
 class CXXTemporary;
@@ -362,20 +363,20 @@ public:
 };
 
 /// Represents a TypeSpec in Go. A TypeSpec is just a name for a type.
-// FIXME: derive from TypeDecl?
+// FIXME: derive from TypeDecl? Probably not?
 class TypeSpecDecl : public NamedDecl {
   virtual void anchor();
 
-  const Type *T;
+  const TypeDecl *T;
 
   TypeSpecDecl(DeclContext *DC, SourceLocation L, IdentifierInfo *N,
-               const Type *T)
+               const TypeDecl *T)
     : NamedDecl(Decl::TypeSpec, DC, L, N), T(T) { }
 public:
   static TypeSpecDecl *Create(ASTContext &C, DeclContext *DC, SourceLocation L,
-                              IdentifierInfo *II, const Type *T);
+                              IdentifierInfo *II, const TypeDecl *T);
 
-  const Type *getType() const { return T; }
+  const TypeDecl *getType() const { return T; }
 
   // Implement isa/cast/dyncast/etc.
   static bool classof(const Decl *D) { return classofKind(D->getKind()); }
@@ -2273,6 +2274,20 @@ public:
   // Implement isa/cast/dyncast/etc.
   static bool classof(const Decl *D) { return classofKind(D->getKind()); }
   static bool classofKind(Kind K) { return K >= firstType && K <= lastType; }
+};
+
+/// One of the builtin types (the type behind bool, int, int8 etc).
+class BuiltinTypeDecl : public TypeDecl {
+  const Type *T;
+
+  BuiltinTypeDecl(DeclContext *DC, const Type *T)
+    : TypeDecl(NameType, DC, SourceLocation()), T(T) {}
+public:
+  static BuiltinTypeDecl *Create(ASTContext &C, DeclContext *DC, Type *T);
+
+  // Implement isa/cast/dyncast/etc.
+  static bool classof(const Decl *D) { return classofKind(D->getKind()); }
+  static bool classofKind(Kind K) { return K == BuiltinType; }
 };
 
 /// Refers to an existing type by name.
