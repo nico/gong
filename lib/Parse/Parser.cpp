@@ -1068,9 +1068,10 @@ bool Parser::ParseTypeSpec(Action::DeclPtrTy TypeDecl) {
     Diag(Tok, diag::expected_type);
     return true;
   }
-  // FIXME: pass type to ActOnTypeSpec(), return result from ActOnTypeSpec().
-  Actions.ActOnTypeSpec(TypeDecl, TypeNameLoc, *TypeName, getCurScope());
-  return ParseType().isInvalid();
+  OwningDeclResult T = ParseType();
+  Actions.ActOnTypeSpec(TypeDecl, TypeNameLoc, *TypeName, move(T),
+                        getCurScope());
+  return T.isInvalid();
 }
 
 /// VarDecl     = "var" ( VarSpec | "(" { VarSpec ";" } ")" ) .

@@ -246,8 +246,15 @@ public:
   ///
   /// \param Decl The Decl returned by either ActOnSingleTypeDecl() or
   ///             ActOnStartMultiDecl().
+  /// \param IILoc the location of the type spec name
+  ///
+  /// \param II the type spec name
+  ///
+  /// \param Type the type after the type spec name
+  ///
+  /// \param S the scope the type spec is in.
   virtual void ActOnTypeSpec(DeclPtrTy Decl, SourceLocation IILoc,
-                             IdentifierInfo &II, Scope *S) {}
+                             IdentifierInfo &II, DeclArg Type, Scope *S) {}
 
   /// Called after a var spec has been parsed.
   ///
@@ -1624,7 +1631,8 @@ public:
 
   /// Registers an identifier as type name.
   virtual void ActOnTypeSpec(DeclPtrTy Decl, SourceLocation IILoc,
-                             IdentifierInfo &II, Scope *S) LLVM_OVERRIDE;
+                             IdentifierInfo &II, DeclArg Type,
+                             Scope *S) LLVM_OVERRIDE;
 
   /// Registers an identifier as function name.
   virtual DeclPtrTy ActOnFunctionDecl(SourceLocation FuncLoc,

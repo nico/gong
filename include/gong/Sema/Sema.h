@@ -1463,7 +1463,7 @@ public:
   void ActOnConstSpec(DeclPtrTy Decl, IdentifierList &Idents,
                       Scope *S) LLVM_OVERRIDE;
   void ActOnTypeSpec(DeclPtrTy Decl, SourceLocation IILoc, IdentifierInfo &II,
-                     Scope *S) LLVM_OVERRIDE;
+                     DeclArg Type, Scope *S) LLVM_OVERRIDE;
   void ActOnVarSpec(DeclPtrTy Decl, IdentifierList &Idents,
                     Scope *S) LLVM_OVERRIDE;
 

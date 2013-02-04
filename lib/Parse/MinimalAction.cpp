@@ -124,7 +124,7 @@ Action::IdentifierInfoType MinimalAction::classifyIdentifier(
 
 /// Registers an identifier as type package name.
 void MinimalAction::ActOnTypeSpec(DeclPtrTy Decl, SourceLocation IILoc,
-                                  IdentifierInfo &II, Scope *S) {
+                                  IdentifierInfo &II, DeclArg Type, Scope *S) {
   getTable(TypeNameInfoTablePtr)->AddEntry(Action::IIT_Type, &II);
 
   // Remember that this needs to be removed when the scope is popped.

@@ -1404,7 +1404,7 @@ void Sema::ActOnConstSpec(DeclPtrTy Decl, IdentifierList &IdentList, Scope *S) {
 
 /// Registers an identifier as type name.
 void Sema::ActOnTypeSpec(DeclPtrTy Decl, SourceLocation IILoc,
-                         IdentifierInfo &II, Scope *S) {
+                         IdentifierInfo &II, DeclArg Type, Scope *S) {
   assert(S->getFlags() & Scope::DeclScope);  // FIXME: Is this always true?
                                              //        If so, remove DeclScope.
   DeclContext *DC = Decl.getAs<DeclarationDecl>();
