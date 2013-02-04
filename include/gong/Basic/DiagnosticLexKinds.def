@@ -80,6 +80,8 @@ DIAG(verify_no_directives, CLASS_ERROR,
 // FIXME: move to DiagnosticParseKinds
 DIAG(expected_package,             CLASS_ERROR, "expected 'package'")
 DIAG(expected_ident,               CLASS_ERROR, "expected identifier")
+DIAG(import_path_literal,          CLASS_ERROR,
+    "import path must be string literal")
 DIAG(invalid_package_name,         CLASS_ERROR, "invalid package name %0")
 DIAG(expected_semi_package, CLASS_ERROR, "expected ';' after package name")
 DIAG(expected_semi_import,  CLASS_ERROR, "expected ';' after import line")

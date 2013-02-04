@@ -204,20 +204,38 @@ bool Parser::ParseImportSpec() {
 
   bool IsDot = false;
   IdentifierInfo *II = NULL;
+  SourceLocation IILoc;
   if (Tok.is(tok::period)) {
     IsDot = true;
     ConsumeToken();
   } else if (Tok.is(tok::identifier)) {
     II = Tok.getIdentifierInfo();
-    ConsumeToken();
+    IILoc = ConsumeToken();
   }
 
+  StringRef Import;
+  SourceLocation ImportLoc;
   if (Tok.isNot(tok::string_literal)) {
-    Diag(diag::expected_string_literal);
-    return true;
+    if (II && (Tok.is(tok::semi) || Tok.is(tok::r_paren))) {
+      // The parser saw 'import foo;'.  Assume that the user meant
+      // 'import "foo";'.
+      SourceLocation EndLoc = Lexer::getLocForEndOfToken(IILoc, 0,
+                                                         L.getSourceManager());
+      Diag(IILoc, diag::import_path_literal)
+          << FixItHint::CreateInsertion(IILoc, "\"")
+          << FixItHint::CreateInsertion(EndLoc, "\"");
+      Import = II->getName();
+      ImportLoc = IILoc;
+      II = NULL;
+      IILoc = SourceLocation();
+    } else {
+      Diag(diag::expected_string_literal);
+      return true;
+    }
+  } else {
+    Import = StringRef(Tok.getLiteralData(), Tok.getLength());
+    ImportLoc = ConsumeStringToken();
   }
-  StringRef Import(Tok.getLiteralData(), Tok.getLength());
-  SourceLocation ImportLoc = ConsumeStringToken();
 
   Actions.ActOnImportSpec(ImportLoc, Import, II, IsDot);
 
