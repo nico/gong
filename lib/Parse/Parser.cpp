@@ -88,13 +88,8 @@ void Parser::ParseSourceFile() {
     ParseImportDecl();
 
     // FIXME: check if this succeeds
-    // FIXME: fixit?
-    //ExpectAndConsumeSemi(diag::expected_semi_import);
-    if (Tok.isNot(tok::semi)) {
-      Diag(diag::expected_semi_import);
+    if (ExpectAndConsumeSemi(diag::expected_semi_import))
       SkipUntil(tok::semi);
-    } else
-      ConsumeToken();
   }
 
   while (Tok.isNot(tok::eof)) {  // FIXME
@@ -102,13 +97,8 @@ void Parser::ParseSourceFile() {
     ParseTopLevelDecl();
 
     // FIXME: check if this succeeds
-    // FIXME: fixit?
-    //ExpectAndConsumeSemi(diag::expected_semi_import);
-    if (Tok.isNot(tok::semi)) {
-      Diag(diag::expected_semi);
+    if (ExpectAndConsumeSemi(diag::expected_semi))
       SkipUntil(tok::semi);
-    } else
-      ConsumeToken();
   }
 
   ExitScope();
@@ -174,14 +164,10 @@ bool Parser::ParseImportDecl() {
         break;
 
       // FIXME: check if this succeeds
-      // FIXME: fixit?
-      //ExpectAndConsumeSemi(diag::expected_semi_import);
-      if (Tok.isNot(tok::semi)) {
+      if (ExpectAndConsumeSemi(diag::expected_semi_import)) {
         Fails = true;
-        Diag(diag::expected_semi_import);
         SkipUntil(tok::semi);
-      } else
-        ConsumeToken();
+      }
     }
     T.consumeClose();
     return Fails;

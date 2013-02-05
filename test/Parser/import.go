@@ -39,5 +39,5 @@ import ( package )  // expected-diag {{expected '.' or identifier or string lite
 import fmt  // expected-diag {{import path must be string literal}}
 
 // This checks for handling of eof. Don't put anything after it.
-// expected-diag@+2 {{expected ')'}} expected-note@+1 {{to match this '('}} expected-diag@+2 {{expected ';' after import line}}
+// expected-diag@+2 {{expected ')'}} expected-note@+1 {{to match this '('}} expected-diag@+1 {{expected ';' after import line}}
 import (
