@@ -376,7 +376,7 @@ public:
   static TypeSpecDecl *Create(ASTContext &C, DeclContext *DC, SourceLocation L,
                               IdentifierInfo *II, const TypeDecl *T);
 
-  const TypeDecl *getType() const { return T; }
+  const TypeDecl *getTypeDecl() const { return T; }
 
   // Implement isa/cast/dyncast/etc.
   static bool classof(const Decl *D) { return classofKind(D->getKind()); }

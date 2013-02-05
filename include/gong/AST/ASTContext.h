@@ -664,18 +664,18 @@ public:
 #endif
   TypeSpecDecl *getBoolDecl() const;
   
-#if 0
   //===--------------------------------------------------------------------===//
   //                           Type Constructors
   //===--------------------------------------------------------------------===//
 
 private:
   /// \brief Return a type with extended qualifiers.
-  QualType getExtQualType(const Type *Base, Qualifiers Quals) const;
+  //QualType getExtQualType(const Type *Base, Qualifiers Quals) const;
 
-  QualType getTypeDeclTypeSlow(const TypeDecl *Decl) const;
+  const Type *getTypeDeclTypeSlow(const TypeDecl *Decl) const;
 
 public:
+#if 0
   /// \brief Return the uniqued reference to the type for an address space
   /// qualified type with the specified type and address space.
   ///
@@ -837,23 +837,28 @@ public:
   QualType getFunctionType(QualType ResultTy,
                            const QualType *Args, unsigned NumArgs,
                            const FunctionProtoType::ExtProtoInfo &EPI) const;
+#endif
 
   /// \brief Return the unique reference to the type for the specified type
   /// declaration.
-  QualType getTypeDeclType(const TypeDecl *Decl,
-                           const TypeDecl *PrevDecl = 0) const {
-    assert(Decl && "Passed null for Decl param");
-    if (Decl->TypeForDecl) return QualType(Decl->TypeForDecl, 0);
+  const Type * getTypeDeclType(const TypeDecl *Decl/*,
+                           const TypeDecl *PrevDecl = 0*/) const {
+    // FIXME: enable this assert
+    //assert(Decl && "Passed null for Decl param");
+    if (!Decl) return NULL;  // FIXME
+    if (Decl->TypeForDecl)
+      return Decl->TypeForDecl;
 
-    if (PrevDecl) {
-      assert(PrevDecl->TypeForDecl && "previous decl has no TypeForDecl");
-      Decl->TypeForDecl = PrevDecl->TypeForDecl;
-      return QualType(PrevDecl->TypeForDecl, 0);
-    }
+    //if (PrevDecl) {
+    //  assert(PrevDecl->TypeForDecl && "previous decl has no TypeForDecl");
+    //  Decl->TypeForDecl = PrevDecl->TypeForDecl;
+    //  return QualType(PrevDecl->TypeForDecl, 0);
+    //}
 
     return getTypeDeclTypeSlow(Decl);
   }
 
+#if 0
   /// \brief Return the unique reference to the type for the specified
   /// typedef-name decl.
   QualType getTypedefType(const TypedefNameDecl *Decl,

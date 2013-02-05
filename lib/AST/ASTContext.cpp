@@ -2230,39 +2230,43 @@ QualType ASTContext::getInjectedClassNameType(CXXRecordDecl *Decl,
   }
   return QualType(Decl->TypeForDecl, 0);
 }
+#endif
 
 /// getTypeDeclType - Return the unique reference to the type for the
 /// specified type declaration.
-QualType ASTContext::getTypeDeclTypeSlow(const TypeDecl *Decl) const {
-  assert(Decl && "Passed null for Decl param");
-  assert(!Decl->TypeForDecl && "TypeForDecl present in slow case");
+const Type *ASTContext::getTypeDeclTypeSlow(const TypeDecl *Decl) const {
+  // FIXME: Enable these:
+  //assert(Decl && "Passed null for Decl param");
+  //assert(!Decl->TypeForDecl && "TypeForDecl present in slow case");
 
-  if (const TypedefNameDecl *Typedef = dyn_cast<TypedefNameDecl>(Decl))
-    return getTypedefType(Typedef);
+  //if (const TypedefNameDecl *Typedef = dyn_cast<TypedefNameDecl>(Decl))
+  //  return getTypedefType(Typedef);
 
-  assert(!isa<TemplateTypeParmDecl>(Decl) &&
-         "Template type parameter types are always available.");
+  //assert(!isa<TemplateTypeParmDecl>(Decl) &&
+  //       "Template type parameter types are always available.");
 
-  if (const RecordDecl *Record = dyn_cast<RecordDecl>(Decl)) {
-    assert(!Record->getPreviousDecl() &&
-           "struct/union has previous declaration");
-    assert(!NeedsInjectedClassNameType(Record));
-    return getRecordType(Record);
-  } else if (const EnumDecl *Enum = dyn_cast<EnumDecl>(Decl)) {
-    assert(!Enum->getPreviousDecl() &&
-           "enum has previous declaration");
-    return getEnumType(Enum);
-  } else if (const UnresolvedUsingTypenameDecl *Using =
-               dyn_cast<UnresolvedUsingTypenameDecl>(Decl)) {
-    Type *newType = new (*this, TypeAlignment) UnresolvedUsingType(Using);
-    Decl->TypeForDecl = newType;
-    Types.push_back(newType);
-  } else
-    llvm_unreachable("TypeDecl without a type?");
+  //if (const RecordDecl *Record = dyn_cast<RecordDecl>(Decl)) {
+  //  assert(!Record->getPreviousDecl() &&
+  //         "struct/union has previous declaration");
+  //  assert(!NeedsInjectedClassNameType(Record));
+  //  return getRecordType(Record);
+  //} else if (const EnumDecl *Enum = dyn_cast<EnumDecl>(Decl)) {
+  //  assert(!Enum->getPreviousDecl() &&
+  //         "enum has previous declaration");
+  //  return getEnumType(Enum);
+  //} else if (const UnresolvedUsingTypenameDecl *Using =
+  //             dyn_cast<UnresolvedUsingTypenameDecl>(Decl)) {
+  //  Type *newType = new (*this, TypeAlignment) UnresolvedUsingType(Using);
+  //  Decl->TypeForDecl = newType;
+  //  Types.push_back(newType);
+  //} else
+  //  llvm_unreachable("TypeDecl without a type?");
 
-  return QualType(Decl->TypeForDecl, 0);
+  //return QualType(Decl->TypeForDecl, 0);
+  return NULL;  // FIXME
 }
 
+#if 0
 /// getTypedefType - Return the unique reference to the type for the
 /// specified typedef name decl.
 QualType
