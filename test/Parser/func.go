@@ -1,4 +1,5 @@
 // RUN: %gong_cc1 -verify %s
+// RUN: %gong_cc1 -fdiagnostics-parseable-fixits %s 2>&1 | FileCheck %s
 
 package p
 
@@ -65,7 +66,9 @@ func a(p1 int, p2 p.int)
 func (foo) a()
 func (foo) a() int
 
+// CHECK: fix-it:"{{.*}}":{[[@LINE+1]]:7-[[@LINE+1]]:7}:"()"
 func a {}  // expected-diag {{missing parameter list}}
+// CHECK: fix-it:"{{.*}}":{[[@LINE+1]]:13-[[@LINE+1]]:13}:"()"
 func (foo) a {}  // expected-diag {{missing parameter list}}
 
 func f() {
