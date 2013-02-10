@@ -1689,7 +1689,16 @@ Sema::ActOnTypeName(SourceLocation IILoc, IdentifierInfo &II, Scope *S) {
     //const Type *Ty = Context.getTypeDeclType(TSD->getTypeDecl());
     return Owned(D);
   } else {
-    // FIXME: diag
+    // FIXME: diag and note for ConstSpecs don't work yet.
+    //        note for var doesn't work yet.
+    Diag(IILoc, diag::does_not_refer_to_type) << &II;
+    if (VarSpecDecl *VSD = dyn_cast<VarSpecDecl>(D))
+      Diag(VSD->getLocation(), diag::note_var_declared) << &II;
+    //else if (ConstSpecDecl *CSD = dyn_cast<ConstSpecDecl>(D))
+      //Diag(CSD->getLocation(), diag::note_const_declared) << &II;
+    else if (FunctionDecl *FD = dyn_cast<FunctionDecl>(D))
+      Diag(FD->getLocation(), diag::note_func_declared) << &II;
+
     return DeclError();
   }
 }

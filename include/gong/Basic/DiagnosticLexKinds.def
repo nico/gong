@@ -147,8 +147,10 @@ DIAG(too_many_initializers,     CLASS_ERROR,
     "too many initializers, expected %0, have %1")
 DIAG(no_new_vars_in_shortvardecl,  CLASS_ERROR,
     "no new variables declared, use '=' instead of ':='")
-DIAG(note_var_declared,         CLASS_NOTE, "%0 declared here")
+DIAG(note_var_declared,         CLASS_NOTE, "var %0 declared here")
+DIAG(note_const_declared,       CLASS_NOTE, "const %0 declared here")
+DIAG(note_func_declared,        CLASS_NOTE, "func %0 declared here")
 DIAG(undeclared_var_use,        CLASS_ERROR, "use of undeclared identifier %0")
 //DIAG(undeclared_var_use_suggest,CLASS_ERROR,
     //"use of undeclared identifier %0; did you mean $1?")
-
+DIAG(does_not_refer_to_type,    CLASS_ERROR, "%0 does not name a type")
