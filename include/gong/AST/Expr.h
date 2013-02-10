@@ -1485,7 +1485,7 @@ public:
   bool containsNonAsciiOrNull() const {
     StringRef Str = getString();
     for (unsigned i = 0, e = Str.size(); i != e; ++i)
-      if (!isascii(Str[i]) || !Str[i])
+      if (!isascii(Str[i]) || !Str[i])  // FIXME: clang r174805
         return true;
     return false;
   }

@@ -5,8 +5,6 @@ Look at SourceMgr-based fixits! They were added r172086.
 
 
 hotlist:
-P0 let Sema::ActOnOperandName() pass on the type from the decl
-   (done for TypeSpecDecls)
 P0 some type support (named, the pointers, then structs)
 P1 function parameter lists (and return names, and methoddecls)
 !! ParseTypeList() needs something like IdentOrExprList for types, to
@@ -21,6 +19,7 @@ P1 function parameter lists (and return names, and methoddecls)
 P2 function literal parameter lists
 P2 typo correction for names (blocked on structs)
 P1 type checking
+P1 types for var and const
 
 
 Lexer
@@ -40,7 +39,9 @@ literal lexing and diags (078 vs 078.0, 'aa', etc. `ack FIXME test/Lex`)
 use lexer to train a n-gram token model, write a markov go generator using that
 data
 
-unify utf8 functions with the ones in Basic (used by libFrontend)
+unify utf8 functions with the ones in Basic (used by libFrontend), see also
+http://llvm.org/viewvc/llvm-project?view=revision&revision=174765
+(charinfo to own file patch)
 
 
 Parser
@@ -403,6 +404,10 @@ Type identity:
   arrays are identical if same type and len
   slices are identical if same type
 
+
+Check that everything on
+http://jordanorelli.tumblr.com/post/42369331748/function-types-in-go-golang
+works.
 
 
 Actions
