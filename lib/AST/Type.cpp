@@ -1459,10 +1459,12 @@ const char *Type::getTypeClassName() const {
 StringRef BuiltinType::getName() const {
   switch (getKind()) {
   case Bool:              return "bool";
+  case Int:               return "int";
   case Int8:              return "int8";
   case Int16:             return "int16";
   case Int32:             return "int32";
   case Int64:             return "int64";
+  case UInt:              return "uint";
   case UInt8:             return "uint8";
   case UInt16:            return "uint16";
   case UInt32:            return "uint32";

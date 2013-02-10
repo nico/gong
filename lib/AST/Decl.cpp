@@ -3006,6 +3006,12 @@ BuiltinTypeDecl *
 BuiltinTypeDecl::Create(ASTContext &C, DeclContext *DC, Type *T) {
   return new (C) BuiltinTypeDecl(DC, T);
 }
+
+NameTypeDecl *
+NameTypeDecl::Create(ASTContext &C, DeclContext *DC,
+                     SourceLocation Loc, TypeSpecDecl *D) {
+  return new (C) NameTypeDecl(DC, Loc, D);
+}
 #if 0
 TypedefDecl *TypedefDecl::Create(ASTContext &C, DeclContext *DC,
                                  SourceLocation StartLoc, SourceLocation IdLoc,

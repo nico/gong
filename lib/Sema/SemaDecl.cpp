@@ -13,6 +13,7 @@
 
 #include "gong/Sema/Sema.h"
 
+#include "gong/AST/ASTContext.h"
 #include "gong/AST/Decl.h"
 #include "gong/Parse/IdentifierList.h"
 #include "gong/Parse/Scope.h"
@@ -23,7 +24,6 @@ using namespace gong;
 
 #include "TypeLocBuilder.h"
 #include "gong/AST/ASTConsumer.h"
-#include "gong/AST/ASTContext.h"
 #include "gong/AST/CXXInheritance.h"
 #include "gong/AST/CharUnits.h"
 #include "gong/AST/CommentDiagnostic.h"
@@ -1658,6 +1658,40 @@ void Sema::ActOnFinishFunctionBody(DeclPtrTy Fun, StmtArg BodyArg) {
     DiscardCleanupsInEvaluationContext();
   }
 #endif
+}
+
+Action::OwningDeclResult
+Sema::ActOnTypeName(SourceLocation IILoc, IdentifierInfo &II, Scope *S) {
+  // FIXME: Share code with ActOnOperandName().
+  // Perform the required lookup.
+  LookupResult R(*this, &II, IILoc, LookupOrdinaryName);
+  LookupName(R, S);
+
+  // If this name wasn't predeclared and if this is not a function
+  // call, diagnose the problem.
+  if (R.empty()) {
+    //CorrectionCandidateCallback DefaultValidator;
+    if (DiagnoseEmptyLookup(S, R/*, DefaultValidator*/)) // CCC ? *CCC : DefaultValidator))
+      return DeclError();
+
+    assert(!R.empty() &&
+           "DiagnoseEmptyLookup returned false but added no results");
+  }
+
+  // This is guaranteed from this point on.
+  assert(!R.empty());
+
+  Decl *D = R.getFoundDecl();
+  if (TypeSpecDecl *TSD = dyn_cast<TypeSpecDecl>(D)) {
+    NameTypeDecl *D = NameTypeDecl::Create(Context, CurContext, IILoc, TSD);
+    //MarkDeclRefReferenced(E);  // FIXME: warn on unreferenced private types?
+    // FIXME: Set type on D?
+    //const Type *Ty = Context.getTypeDeclType(TSD->getTypeDecl());
+    return Owned(D);
+  } else {
+    // FIXME: diag
+    return DeclError();
+  }
 }
 
 void Sema::ActOnPopScope(SourceLocation Loc, Scope *S) {

@@ -2293,13 +2293,13 @@ public:
 /// Refers to an existing type by name.
 class NameTypeDecl : public TypeDecl {
   /// The Decl this refers to.
-  TypeDecl *D;
+  TypeSpecDecl *D;
 
-  NameTypeDecl(DeclContext *DC, SourceLocation Loc, TypeDecl *D)
+  NameTypeDecl(DeclContext *DC, SourceLocation Loc, TypeSpecDecl *D)
     : TypeDecl(NameType, DC, Loc), D(D) {}
 public:
   static NameTypeDecl *Create(ASTContext &C, DeclContext *DC,
-                              SourceLocation Loc, TypeDecl, TypeDecl *D);
+                              SourceLocation Loc, TypeSpecDecl *D);
 
   // Implement isa/cast/dyncast/etc.
   static bool classof(const Decl *D) { return classofKind(D->getKind()); }

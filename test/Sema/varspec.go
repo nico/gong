@@ -4,7 +4,7 @@ package p
 
 func noInitializers() {
   var vA int  // expected-note {{previous definition is here}}
-  var vB v
+  var vB int
 
   var vA float32  // expected-diag {{redefinition of 'vA'}}
 
@@ -16,7 +16,7 @@ func noInitializers() {
 
 func withInitializers() {
   var vA int = 4  // expected-note {{previous definition is here}}
-  var vB v = 4
+  var vB int = 4
 
   var vA float32 = 4  // expected-diag {{redefinition of 'vA'}}
 

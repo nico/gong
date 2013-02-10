@@ -403,7 +403,7 @@ ASTContext::ASTContext(/*LangOptions& LOpts, SourceManager &SM,
     FirstLocalImport(), LastLocalImport(),
     SourceMgr(SM), LangOpts(LOpts), 
     AddrSpaceMap(0), Target(t), PrintingPolicy(LOpts),*/
-    BoolDecl(0), Idents(idents)/*, Selectors(sels),
+    IntDecl(0), BoolDecl(0), Float32Decl(0), Idents(idents)/*, Selectors(sels),
     BuiltinInfo(builtins),
     DeclarationNames(*this),
     ExternalSource(0), Listener(0),
@@ -545,6 +545,18 @@ TypedefDecl *ASTContext::getUInt128Decl() const {
 }
 #endif
 
+TypeSpecDecl *ASTContext::getIntDecl() const {
+  if (!IntDecl) {
+    TypeDecl *Int = BuiltinTypeDecl::Create(const_cast<ASTContext &>(*this),
+                                             getTranslationUnitDecl(), IntTy);
+    IntDecl = TypeSpecDecl::Create(const_cast<ASTContext &>(*this),
+                                    getTranslationUnitDecl(), SourceLocation(),
+                                    &Idents.get("int"), Int);
+  }
+
+  return IntDecl;
+}
+
 TypeSpecDecl *ASTContext::getBoolDecl() const {
   if (!BoolDecl) {
     TypeDecl *Bool = BuiltinTypeDecl::Create(const_cast<ASTContext &>(*this),
@@ -555,6 +567,18 @@ TypeSpecDecl *ASTContext::getBoolDecl() const {
   }
 
   return BoolDecl;
+}
+
+TypeSpecDecl *ASTContext::getFloat32Decl() const {
+  if (!Float32Decl) {
+    TypeDecl *Float32 = BuiltinTypeDecl::Create(const_cast<ASTContext &>(*this),
+                                           getTranslationUnitDecl(), Float32Ty);
+    Float32Decl = TypeSpecDecl::Create(const_cast<ASTContext &>(*this),
+                                    getTranslationUnitDecl(), SourceLocation(),
+                                    &Idents.get("float32"), Float32);
+  }
+
+  return Float32Decl;
 }
 
 //void ASTContext::InitBuiltinType(CanQualType &R, BuiltinType::Kind K) {
@@ -568,6 +592,8 @@ void ASTContext::InitBuiltinType(Type *&R, BuiltinType::Kind K) {
 //void ASTContext::InitBuiltinTypes(const TargetInfo &Target) {
 void ASTContext::InitBuiltinTypes() {
   InitBuiltinType(BoolTy,          BuiltinType::Bool);
+
+  InitBuiltinType(IntTy,           BuiltinType::Int);
 
   InitBuiltinType(Int8Ty,          BuiltinType::Int8);
   InitBuiltinType(Int16Ty,         BuiltinType::Int16);

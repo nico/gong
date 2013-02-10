@@ -181,9 +181,15 @@ class ASTContext : public RefCountedBase<ASTContext> {
   mutable TypedefDecl *UInt128Decl;
 #endif
 
+  /// \brief The int type.
+  mutable TypeSpecDecl *IntDecl;
+
   /// \brief The bool type.
   mutable TypeSpecDecl *BoolDecl;
   
+  /// \brief The float32 type.
+  mutable TypeSpecDecl *Float32Decl;
+
 #if 0
   /// \brief The typedef for the target specific predefined
   /// __builtin_va_list type.
@@ -590,6 +596,7 @@ public:
   TranslationUnitDecl *getTranslationUnitDecl() const { return TUDecl; }
 
   Type *BoolTy;
+  Type *IntTy;
   Type *Int8Ty, *Int16Ty, *Int32Ty, *Int64Ty;
   Type *UInt8Ty, *UInt16Ty, *UInt32Ty, *UInt64Ty;
   Type *Float32Ty, *Float64Ty;
@@ -662,7 +669,9 @@ public:
   /// \brief Retrieve the declaration for the 128-bit unsigned integer type.
   TypedefDecl *getUInt128Decl() const;
 #endif
+  TypeSpecDecl *getIntDecl() const;
   TypeSpecDecl *getBoolDecl() const;
+  TypeSpecDecl *getFloat32Decl() const;
   
   //===--------------------------------------------------------------------===//
   //                           Type Constructors

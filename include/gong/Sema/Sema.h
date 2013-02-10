@@ -865,6 +865,10 @@ public:
     //assert(!S || S->isRetained());
     return OwningStmtResult(*this, S);
   }
+  OwningDeclResult Owned(Decl* D) {
+    //assert(!S || S->isRetained());
+    return OwningDeclResult(*this, D);
+  }
 #if 0
 
   /// \brief Emit a partial diagnostic.
@@ -1476,6 +1480,9 @@ public:
 
   void ActOnStartOfFunctionDef(DeclPtrTy Fun, Scope *FnBodyScope) LLVM_OVERRIDE;
   void ActOnFinishFunctionBody(DeclPtrTy Decl, StmtArg Body) LLVM_OVERRIDE;
+
+  OwningDeclResult ActOnTypeName(SourceLocation IILoc, IdentifierInfo &II,
+                                 Scope *CurScope) LLVM_OVERRIDE;
 
   /// Scope actions.
   void ActOnPopScope(SourceLocation Loc, Scope *S) LLVM_OVERRIDE;

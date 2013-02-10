@@ -150,8 +150,14 @@ void Sema::Initialize() {
   //  PushOnScopeChains(Context.getBuiltinVaListDecl(), TUScope);
 
   // FIXME: These should all be in the universe block.
+  assert(IdResolver.begin(Context.Idents.get("int")) == IdResolver.end());
+  PushOnScopeChains(Context.getIntDecl(), TUScope);
+
   assert(IdResolver.begin(Context.Idents.get("bool")) == IdResolver.end());
   PushOnScopeChains(Context.getBoolDecl(), TUScope);
+
+  assert(IdResolver.begin(Context.Idents.get("float32")) == IdResolver.end());
+  PushOnScopeChains(Context.getFloat32Decl(), TUScope);
 }
 
 Sema::~Sema() {

@@ -53,6 +53,9 @@ UNSIGNED_TYPE(Bool, BoolTy)
 
 //===- Unsigned Types -----------------------------------------------------===//
 
+// 'uint'
+SIGNED_TYPE(UInt, UIntTy)
+
 // 'uint8'
 UNSIGNED_TYPE(UInt8, UInt8Ty)
 
@@ -66,6 +69,9 @@ UNSIGNED_TYPE(UInt32, UInt32Ty)
 UNSIGNED_TYPE(UInt64, UInt64Ty)
 
 //===- Signed Types -------------------------------------------------------===//
+
+// 'int'
+SIGNED_TYPE(Int, IntTy)
 
 // 'int8'
 SIGNED_TYPE(Int8, Int8Ty)
