@@ -21,4 +21,8 @@ func f() {  // expected-note {{func 'f' declared here}}
   type cbar cfoo
 
   type fbar f  // expected-diag {{'f' does not name a type}}
+
+  // FIXME: `type pbar pfoo` with pfoo a parameter decl,
+  //                                   a method object,
+  //                                   a return value name
 }
