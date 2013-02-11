@@ -13,7 +13,7 @@ type (
 )
 
 func f() {  // expected-note {{func 'f' declared here}}
-  var vfoo int  // FIXME: Needs a {{var 'vfoo' declared here}}
+  var vfoo int  // expected-note {{var 'vfoo' declared here}}
   type vbar vfoo  // expected-diag {{'vfoo' does not name a type}}
 
   // FIXME: Needs both note and diag

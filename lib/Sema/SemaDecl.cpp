@@ -1692,8 +1692,8 @@ Sema::ActOnTypeName(SourceLocation IILoc, IdentifierInfo &II, Scope *S) {
     // FIXME: diag and note for ConstSpecs don't work yet.
     //        note for var doesn't work yet.
     Diag(IILoc, diag::does_not_refer_to_type) << &II;
-    if (VarSpecDecl *VSD = dyn_cast<VarSpecDecl>(D))
-      Diag(VSD->getLocation(), diag::note_var_declared) << &II;
+    if (VarDecl *VD = dyn_cast<VarDecl>(D))
+      Diag(VD->getLocation(), diag::note_var_declared) << &II;
     //else if (ConstSpecDecl *CSD = dyn_cast<ConstSpecDecl>(D))
       //Diag(CSD->getLocation(), diag::note_const_declared) << &II;
     else if (FunctionDecl *FD = dyn_cast<FunctionDecl>(D))
