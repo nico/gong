@@ -5,7 +5,10 @@ Look at SourceMgr-based fixits! They were added r172086.
 
 
 hotlist:
-P0 some type support (named, the pointers, then structs)
+P0 some type support (pointers, then structs)
+P0 isAssignable() checks
+P0 basic expression type checking (unary, binary ops)
+P0 maps, chans, slices, arrays
 P1 function parameter lists (and return names, and methoddecls)
 !! ParseTypeList() needs something like IdentOrExprList for types, to
    make parameter parsing possible.
