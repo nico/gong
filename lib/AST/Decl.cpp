@@ -3012,6 +3012,13 @@ NameTypeDecl::Create(ASTContext &C, DeclContext *DC,
                      SourceLocation Loc, TypeSpecDecl *D) {
   return new (C) NameTypeDecl(DC, Loc, D);
 }
+
+PointerTypeDecl *
+PointerTypeDecl::Create(ASTContext &C, DeclContext *DC,
+                        SourceLocation Loc, TypeDecl *PointeeType) {
+  return new (C) PointerTypeDecl(DC, Loc, PointeeType);
+}
+
 #if 0
 TypedefDecl *TypedefDecl::Create(ASTContext &C, DeclContext *DC,
                                  SourceLocation StartLoc, SourceLocation IdLoc,

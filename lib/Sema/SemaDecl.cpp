@@ -1703,6 +1703,12 @@ Sema::ActOnTypeName(SourceLocation IILoc, IdentifierInfo &II, Scope *S) {
   }
 }
 
+Action::OwningDeclResult
+Sema::ActOnPointerType(SourceLocation StarLoc, DeclArg PointeeType) {
+  return Owned(PointerTypeDecl::Create(Context, CurContext, StarLoc,
+                                       PointeeType.takeAs<TypeDecl>()));
+}
+
 void Sema::ActOnPopScope(SourceLocation Loc, Scope *S) {
   if (S->decl_empty()) return;
   assert((S->getFlags() & Scope::DeclScope) &&

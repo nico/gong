@@ -26,3 +26,5 @@ func f() {  // expected-note {{func 'f' declared here}}
   //                                   a method object,
   //                                   a return value name
 }
+
+type pint *int

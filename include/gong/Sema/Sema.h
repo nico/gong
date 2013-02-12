@@ -1483,6 +1483,8 @@ public:
 
   OwningDeclResult ActOnTypeName(SourceLocation IILoc, IdentifierInfo &II,
                                  Scope *CurScope) LLVM_OVERRIDE;
+  OwningDeclResult ActOnPointerType(SourceLocation StarLoc,
+                                    Action::DeclArg PointeeType) LLVM_OVERRIDE;
 
   /// Scope actions.
   void ActOnPopScope(SourceLocation Loc, Scope *S) LLVM_OVERRIDE;
