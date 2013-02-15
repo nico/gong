@@ -637,7 +637,7 @@ Action::OwningDeclResult Parser::ParseStructType() {
   if (T.consumeOpen())
     return DeclError();
 
-  //ParseScope StructScope(this, Scope::ClassScope|Scope::DeclScope);  FIXME
+  ParseScope StructScope(this, Scope::ClassScope|Scope::DeclScope);
   OwningDeclResult Res = Actions.ActOnStartOfStructType(
       StructLoc, T.getOpenLocation(), getCurScope());
 

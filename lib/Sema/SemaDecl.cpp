@@ -1712,13 +1712,34 @@ Sema::ActOnPointerType(SourceLocation StarLoc, DeclArg PointeeType) {
 Action::OwningDeclResult Sema::ActOnStartOfStructType(
     SourceLocation StructLoc, SourceLocation L, Scope *S) {
   // FIXME
+
+  //FIXME: Once there's a StructTypeDecl node:
+  // Enter the struct context.
+  //PushDeclContext(S, Tag);
+
   return DeclEmpty();
 }
 
 Action::OwningDeclResult
-Sema::ActOnFieldDecl(IdentifierList &Idents, DeclArg Type, Scope *S) {
-  // FIXME
-  return DeclEmpty();
+Sema::ActOnFieldDecl(IdentifierList &IdentList, DeclArg Type, Scope *S) {
+  // FIXME: This is currently identical to ActOnVarSpec.  Move the interesting
+  // bits of VarSpecDecl into a base class and have a subclass FieldSpecDecl
+  // (or FieldDecl), make that optionally represent anonymous fields, and
+  // implement ActOnAnonymousField() below.
+  assert(S->getFlags() & Scope::DeclScope);
+
+  ArrayRef<IdentifierInfo*> Idents = IdentList.getIdents();
+  ArrayRef<SourceLocation> IdentLocs = IdentList.getIdentLocs();
+  assert(Idents.size() >= 1);
+
+  VarSpecDecl *VarSpec = VarSpecDecl::Create(Context, CurContext, IdentLocs[0]);
+  VarSpec->setIdents(Idents, IdentLocs);
+
+  for (unsigned i = 0; i < Idents.size(); ++i) {
+    VarDecl *New = VarDecl::Create(Context, VarSpec, i);
+    CheckRedefinitionAndPushOnScope(*this, VarSpec, S, New);
+  }
+  return Owned(VarSpec);
 }
 
 Action::OwningDeclResult
@@ -1734,6 +1755,10 @@ void Sema::ActOnFieldDeclTag(DeclArg Field, ExprArg Tag) {
 void Sema::ActOnFinishStructType(DeclArg Struct, SourceLocation R,
                                  MultiDeclArg Fields) {
   // FIXME
+
+  //FIXME: Once ActOnStartOfStructType() pushes:
+  // Exit this scope of this struct definition.
+  //PopDeclContext();
 }
 
 void Sema::ActOnPopScope(SourceLocation Loc, Scope *S) {
