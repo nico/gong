@@ -649,7 +649,7 @@ Action::OwningDeclResult Parser::ParseStructType() {
     // Maybe add that (but semis aren't common in go, so maybe it's not worth
     // it).
     if (Tok.isNot(tok::identifier) && Tok.isNot(tok::star)) {
-      Diag(Tok, diag::expected_ident_or_star);
+      Diag(Tok, diag::expected_ident_star_or_r_brace);
       SkipUntil(tok::r_brace, /*StopAtSemi=*/true, /*DontConsume=*/true);
       goto next;
     }
@@ -800,7 +800,7 @@ Action::OwningDeclResult Parser::ParseInterfaceType() {
   OwningDeclResult Method(Actions);
   while (Tok.isNot(tok::r_brace) && Tok.isNot(tok::eof)) {
     if (Tok.isNot(tok::identifier)) {
-      Diag(Tok, diag::expected_ident);
+      Diag(Tok, diag::expected_ident_or_r_brace);
       SkipUntil(tok::r_brace, /*StopAtSemi=*/true, /*DontConsume=*/true);
       goto next;
     }

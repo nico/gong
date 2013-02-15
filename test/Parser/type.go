@@ -40,7 +40,7 @@ type t struct {
   *anon5000 []int  // expected-diag{{expected ';' or '}'}}
 }
 type t struct {
-  4  // expected-diag{{expected identifier}}
+  4  // expected-diag{{expected identifier, '*', or '}' in 'struct'}}
   foo int 4  // expected-diag{{expected ';' or '}'}}
 }
 type t struct {
@@ -70,7 +70,7 @@ type t func() int
 type t interface{}
 type t interface { foo }
 type t interface {
-  4 // expected-diag{{expected identifier}}
+  4 // expected-diag{{expected identifier or '}'}}
 }
 type t interface {
   foo
