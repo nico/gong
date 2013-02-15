@@ -1485,6 +1485,16 @@ public:
                                  Scope *CurScope) LLVM_OVERRIDE;
   OwningDeclResult ActOnPointerType(SourceLocation StarLoc,
                                     Action::DeclArg PointeeType) LLVM_OVERRIDE;
+  OwningDeclResult ActOnStartOfStructType(SourceLocation StructLoc,
+                                          SourceLocation L,
+                                          Scope *S) LLVM_OVERRIDE;
+  OwningDeclResult ActOnFieldDecl(IdentifierList &Idents, DeclArg Type,
+                                  Scope *S) LLVM_OVERRIDE;
+  OwningDeclResult ActOnAnonymousField(SourceLocation StarLoc,
+                                       DeclArg TypeName) LLVM_OVERRIDE;
+  void ActOnFieldDeclTag(DeclArg Field, ExprArg Tag) LLVM_OVERRIDE;
+  void ActOnFinishStructType(DeclArg Struct, SourceLocation R,
+                             MultiDeclArg Fields) LLVM_OVERRIDE;
 
   /// Scope actions.
   void ActOnPopScope(SourceLocation Loc, Scope *S) LLVM_OVERRIDE;

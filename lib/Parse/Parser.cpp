@@ -638,8 +638,8 @@ Action::OwningDeclResult Parser::ParseStructType() {
     return DeclError();
 
   //ParseScope StructScope(this, Scope::ClassScope|Scope::DeclScope);  FIXME
-  OwningDeclResult Res =
-      Actions.ActOnStartOfStructType(StructLoc, T.getOpenLocation());
+  OwningDeclResult Res = Actions.ActOnStartOfStructType(
+      StructLoc, T.getOpenLocation(), getCurScope());
 
   DeclVector Fields(Actions);
 
@@ -705,7 +705,7 @@ Action::OwningDeclResult Parser::ParseFieldDecl() {
       }
       OwningDeclResult Type = ParseType();
       if (!Type.isInvalid())
-        Res = Actions.ActOnFieldDecl(IdentList, move(Type));
+        Res = Actions.ActOnFieldDecl(IdentList, move(Type), getCurScope());
       else
         Res = DeclError();
     } else {

@@ -410,9 +410,10 @@ public:
   /// \param StructLoc the location of the "struct" keyword.
   ///
   /// \param L the location of the '{'.
-  //FIXME: scope?
+  ///
+  /// \param S the struct's scope.
   virtual OwningDeclResult ActOnStartOfStructType(SourceLocation StructLoc,
-                                                  SourceLocation L) {
+                                                  SourceLocation L, Scope *S) {
     return DeclEmpty();
   }
 
@@ -421,9 +422,10 @@ public:
   /// \param Idents the identifier list of this FieldDecl.
   ///
   /// \param Type the type of this FieldDecl.
-  //FIXME: scope?
+  ///
+  /// \param S the struct's scope.
   virtual OwningDeclResult ActOnFieldDecl(IdentifierList &Idents,
-                                          DeclArg Type) {
+                                          DeclArg Type, Scope *S) {
     return DeclEmpty();
   }
 

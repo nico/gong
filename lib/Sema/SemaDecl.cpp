@@ -1709,6 +1709,33 @@ Sema::ActOnPointerType(SourceLocation StarLoc, DeclArg PointeeType) {
                                        PointeeType.takeAs<TypeDecl>()));
 }
 
+Action::OwningDeclResult Sema::ActOnStartOfStructType(
+    SourceLocation StructLoc, SourceLocation L, Scope *S) {
+  // FIXME
+  return DeclEmpty();
+}
+
+Action::OwningDeclResult
+Sema::ActOnFieldDecl(IdentifierList &Idents, DeclArg Type, Scope *S) {
+  // FIXME
+  return DeclEmpty();
+}
+
+Action::OwningDeclResult
+Sema::ActOnAnonymousField(SourceLocation StarLoc, DeclArg TypeName) {
+  // FIXME
+  return DeclEmpty();
+}
+
+void Sema::ActOnFieldDeclTag(DeclArg Field, ExprArg Tag) {
+  // FIXME
+}
+
+void Sema::ActOnFinishStructType(DeclArg Struct, SourceLocation R,
+                                 MultiDeclArg Fields) {
+  // FIXME
+}
+
 void Sema::ActOnPopScope(SourceLocation Loc, Scope *S) {
   if (S->decl_empty()) return;
   assert((S->getFlags() & Scope::DeclScope) &&
