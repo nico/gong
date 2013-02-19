@@ -16,9 +16,8 @@ func f() {  // expected-note {{func 'f' declared here}}
   var vfoo int  // expected-note {{var 'vfoo' declared here}}
   type vbar vfoo  // expected-diag {{'vfoo' does not name a type}}
 
-  // FIXME: Needs both note and diag
-  const cfoo = 4
-  type cbar cfoo
+  const cfoo = 4  // expected-note {{const 'cfoo' declared here}}
+  type cbar cfoo  // expected-diag {{'cfoo' does not name a type}}
 
   type fbar f  // expected-diag {{'f' does not name a type}}
 

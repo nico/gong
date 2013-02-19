@@ -1394,10 +1394,13 @@ void Sema::ActOnConstSpec(DeclPtrTy Decl, IdentifierList &IdentList, Scope *S) {
 
   ArrayRef<IdentifierInfo*> Idents = IdentList.getIdents();
   ArrayRef<SourceLocation> IdentLocs = IdentList.getIdentLocs();
+  assert(Idents.size() >= 1);
+
+  ConstSpecDecl *ConstSpec = ConstSpecDecl::Create(Context, DC, IdentLocs[0]);
+  ConstSpec->setIdents(Idents, IdentLocs);
+
   for (unsigned i = 0; i < Idents.size(); ++i) {
-    // FIXME: Have dedicated AST nodes for this.
-    TypeSpecDecl *New = TypeSpecDecl::Create(Context, DC, IdentLocs[i],
-                                             Idents[i], /*Type=*/ NULL);
+    ConstDecl *New = ConstDecl::Create(Context, ConstSpec, i);
     CheckRedefinitionAndPushOnScope(*this, DC, S, New);
   }
 }
@@ -1694,8 +1697,8 @@ Sema::ActOnTypeName(SourceLocation IILoc, IdentifierInfo &II, Scope *S) {
     Diag(IILoc, diag::does_not_refer_to_type) << &II;
     if (VarDecl *VD = dyn_cast<VarDecl>(D))
       Diag(VD->getLocation(), diag::note_var_declared) << &II;
-    //else if (ConstSpecDecl *CSD = dyn_cast<ConstSpecDecl>(D))
-      //Diag(CSD->getLocation(), diag::note_const_declared) << &II;
+    else if (ConstDecl *CD = dyn_cast<ConstDecl>(D))
+      Diag(CD->getLocation(), diag::note_const_declared) << &II;
     else if (FunctionDecl *FD = dyn_cast<FunctionDecl>(D))
       Diag(FD->getLocation(), diag::note_func_declared) << &II;
 

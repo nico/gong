@@ -13,8 +13,8 @@ func noInitializers() {
 }
 
 func withInitializers() {
-  const cA int = 4  // expected-note {{previous definition is here}}
-  const cB cA = 4
+  const cA int = 4  // expected-note {{previous definition is here}} expected-note {{const 'cA' declared here}}
+  const cB cA = 4  // expected-diag {{'cA' does not name a type}}
 
   const cA float32 = 3  // expected-diag {{redefinition of 'cA'}}
 

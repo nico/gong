@@ -588,11 +588,12 @@ TypeSpecDecl *TypeSpecDecl::Create(ASTContext &C, DeclContext *DC,
   return new (C) TypeSpecDecl(DC, L, II, T);
 }
 
-void VarSpecDecl::anchor() { }
+void TypedIdentListDecl::anchor() { }
 
-void VarSpecDecl::setIdents(ASTContext &C,
-                            llvm::ArrayRef<IdentifierInfo *> IdentInfo,
-                            llvm::ArrayRef<SourceLocation> IdentLocInfo) {
+void TypedIdentListDecl::setIdents(
+    ASTContext &C,
+    llvm::ArrayRef<IdentifierInfo *> IdentInfo,
+    llvm::ArrayRef<SourceLocation> IdentLocInfo) {
   assert(Idents == 0 && "Already has param info!");
   assert(IdentInfo.size() && "VarSpecs cannot be empty");
 
@@ -602,6 +603,24 @@ void VarSpecDecl::setIdents(ASTContext &C,
   IdentLocs = new (C) SourceLocation[NumIdents];
   std::copy(IdentLocInfo.begin(), IdentLocInfo.end(), IdentLocs);
 }
+
+void TypedIdentEntryDecl::anchor() { }
+
+void ConstSpecDecl::anchor() { }
+
+ConstSpecDecl *ConstSpecDecl::Create(ASTContext &C, DeclContext *DC,
+                                 SourceLocation L) {
+  return new (C) ConstSpecDecl(DC, L);
+}
+
+void ConstDecl::anchor() { }
+
+ConstDecl *
+ConstDecl::Create(ASTContext &C, ConstSpecDecl *Parent, unsigned Index) {
+  return new (C) ConstDecl(Parent, Index);
+}
+
+void VarSpecDecl::anchor() { }
 
 VarSpecDecl *VarSpecDecl::Create(ASTContext &C, DeclContext *DC,
                                  SourceLocation L) {

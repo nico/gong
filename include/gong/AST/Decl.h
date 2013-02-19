@@ -383,9 +383,9 @@ public:
   static bool classofKind(Kind K) { return K == Decl::TypeSpec; }
 };
 
-/// Represents a VarSpec in Go. A VarSpec is a collection of identifiers and
-/// an optional list of initializer expressions.
-class VarSpecDecl : public Decl, public DeclContext {
+/// Superclass for ast constructs having a list of idents sharing a single
+/// TypeDecl.
+class TypedIdentListDecl : public Decl, public DeclContext {
   virtual void anchor();
 
   /// new[]'d array of pointers to IdentifierInfos for the names in this spec.
@@ -397,14 +397,14 @@ class VarSpecDecl : public Decl, public DeclContext {
   /// Number of variables declared by this VarSpec.
   unsigned NumIdents;
 
-  VarSpecDecl(DeclContext *DC, SourceLocation L)
-    : Decl(Decl::VarSpec, DC, L), DeclContext(Decl::VarSpec), NumIdents(0) { }
-
   void setIdents(ASTContext &C, llvm::ArrayRef<IdentifierInfo *> IdentInfo,
                  llvm::ArrayRef<SourceLocation> IdentLocs);
-public:
-  static VarSpecDecl *Create(ASTContext &C, DeclContext *DC, SourceLocation L);
 
+protected:
+  TypedIdentListDecl(Kind DK, DeclContext *DC, SourceLocation L)
+    : Decl(DK, DC, L), DeclContext(Decl::VarSpec), NumIdents(0) { }
+
+public:
   const IdentifierInfo *getIdent(unsigned i) const {
     assert(i < NumIdents && "Illegal ident #");
     return Idents[i];
@@ -424,16 +424,75 @@ public:
 
   // Implement isa/cast/dyncast/etc.
   static bool classof(const Decl *D) { return classofKind(D->getKind()); }
+  static bool classofKind(Kind K) {
+    return K >= firstTypedIdentList && K <= lastTypedIdentList;
+  }
+};
+
+/// Represents one ident in a TypedIdentListDecl.
+class TypedIdentEntryDecl : public NamedDecl {
+  virtual void anchor();
+protected:
+  TypedIdentEntryDecl(Kind DK, TypedIdentListDecl *Parent, unsigned Index)
+    : NamedDecl(DK, Parent, Parent->getIdentLoc(Index),
+                Parent->getIdent(Index)) {}
+public:
+  // Implement isa/cast/dyncast/etc.
+  static bool classof(const Decl *D) { return classofKind(D->getKind()); }
+  static bool classofKind(Kind K) {
+    return K >= firstTypedIdentEntry && K <= lastTypedIdentEntry;
+  }
+};
+
+/// Represents a ConstSpec in Go. A ConstSpec is a collection of identifiers and
+/// an optional list of initializer expressions.
+class ConstSpecDecl : public TypedIdentListDecl {
+  virtual void anchor();
+  ConstSpecDecl(DeclContext *DC, SourceLocation L)
+    : TypedIdentListDecl(Decl::ConstSpec, DC, L) { }
+public:
+  static ConstSpecDecl *
+  Create(ASTContext &C, DeclContext *DC, SourceLocation L);
+
+  // Implement isa/cast/dyncast/etc.
+  static bool classof(const Decl *D) { return classofKind(D->getKind()); }
+  static bool classofKind(Kind K) { return K == Decl::ConstSpec; }
+};
+
+// Represents a variable declaration in Go.
+class ConstDecl : public TypedIdentEntryDecl {
+  virtual void anchor();
+  ConstDecl(ConstSpecDecl *Parent, unsigned Index)
+    : TypedIdentEntryDecl(Decl::Const, Parent, Index) {}
+public:
+  static ConstDecl *
+  Create(ASTContext &C, ConstSpecDecl *Parent, unsigned Index);
+
+  // Implement isa/cast/dyncast/etc.
+  static bool classof(const Decl *D) { return classofKind(D->getKind()); }
+  static bool classofKind(Kind K) { return K == Decl::Const; }
+};
+
+/// Represents a VarSpec in Go. A VarSpec is a collection of identifiers and
+/// an optional list of initializer expressions. Either a type or an initializer
+/// expression must be present.
+class VarSpecDecl : public TypedIdentListDecl {
+  virtual void anchor();
+  VarSpecDecl(DeclContext *DC, SourceLocation L)
+    : TypedIdentListDecl(Decl::VarSpec, DC, L) { }
+public:
+  static VarSpecDecl *Create(ASTContext &C, DeclContext *DC, SourceLocation L);
+
+  // Implement isa/cast/dyncast/etc.
+  static bool classof(const Decl *D) { return classofKind(D->getKind()); }
   static bool classofKind(Kind K) { return K == Decl::VarSpec; }
 };
 
 // Represents a variable declaration in Go.
-class VarDecl : public NamedDecl {
+class VarDecl : public TypedIdentEntryDecl {
   virtual void anchor();
-
   VarDecl(VarSpecDecl *Parent, unsigned Index)
-    : NamedDecl(Decl::Var, Parent, Parent->getIdentLoc(Index),
-                Parent->getIdent(Index)) {}
+    : TypedIdentEntryDecl(Decl::Var, Parent, Index) {}
 public:
   static VarDecl *Create(ASTContext &C, VarSpecDecl *Parent, unsigned Index);
 

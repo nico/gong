@@ -3,9 +3,100 @@ General s/llvm::SourceMgr/SourceManager/g
 
 Look at SourceMgr-based fixits! They were added r172086.
 
+New base class TypedIdentListDecl for:
+* VarSpecDecl
+* ConstSpecDecl
+* FieldSpecDecl (for structs)
+  (anonymous field decls can have ident lists that are 0 long)
+* Parameter lists for func and methods and interfaces and function literals
+* TypeSpecDecl? Always has a single name; possibly not?
+  => Common super class TopLevelDecl for TypedIdentListDecl, TypeSpecDecl,
+     FunctionDecls?
+
+VarSpecDecl has an optional rhs list. ConstSpecDecl too.
+FieldSpecDecl has an optional star sourceloc (wasteful, could have a subclass
+with a different type that adds on the storage, for free-ish).
+
+function parameter list entry lists can have an optional '...'.
+
+Every entry is a TypedIdentDecl (with a hopefully shorter name), which
+is just an index into the storage of a TypedIdentListDecl. Specs with a single
+name could embed the data.
+=> Or always embed the data and have a bit that stores if the class is embedded?
+   And in that case, the type isn't stored locally?
+   OTOH, NamedDecls store all that junk anyways so might as well store it
+   always in TypedIdentDecl for now. Costs an extra 4 byte per object
+   for the type decl shared by all entries in the typed ident list.
+   => also stores all idents and sourcelocs twice; once in NamedDecl, once
+      in the spec. Probably want to remove that storage from NamedDecl (and
+      kill NamedDecl? Or have inline storage; that'd be good for typespecs too).
+
+
+memory layout of a TypedIdentListDecl:
+- count
+- type decl
+- 'count' times (this is a subclass)
+  - ident
+  - sourceloc
+(comma locs?)
+- subclass data such as rhs, star loc, ellipsis loc, etc
+
+how to get the type from an entry object in that scheme? steal bits from the
+ident pointer as index, have a 3rd field that stores an explicit index in the
+rare case that doesn't suffice?
+
+if the subclass can be optionally standalone, need one bit to save that too.
+it looks like the ast allocator aligns nodes on 8-byte-boundaries, so there
+are 3 bits. (class Decl has 3 bits to spare too; possibly more.)
+1 bit: standalone?
+2 bits: offset. 0-2: index 0-2. 3: 4 byte offset in subclass.
+
+
+=> Looks like there's room to optimize AST space efficiency; go for simple
+   and tweak stuff later once it's clear it'll work out.
+   (Need AST stats dumping for that anyhow.)
+=> named decls can be either TypedIdentListDecls or TypedIdentDecl, client needs
+   to handle both. or have a virtual method? blech. TypedIdentListDecls could
+   have a custom allocator packing additional stuff before and after the class
+   (hairy with subclasses that need custom data) and derive from TypedIdentDecl?
+
+were it not for funcs and methods, every NamedDecl could just be list pointer
+and index. NamedDecl could steal a bit from the list pointer to make it a
+union {
+  struct {
+    TypedIdentList*;
+    index;  (get all data from the TypedIdentList at that index)
+  }
+  struct {
+    Kind;
+    IdentifierInfo;
+    SourceLocation;
+    Type; (?)
+  }
+}
+
+Or make the storage not a Decl and make only the entries decls? doesn't save
+all that much for long ident lists, but most are short.
+
+* var, const: name, source loc, typedecl, inferred type
+  (possibly rhs; comma loc, = loc)
+* type: name, source loc, typedecl
+  (possibly rhs; comma loc, = loc)
+* function parameter: name, source loc, typedecl)
+  somewhere: optional ellipsis loc
+* function name: name, source loc, maybe computed type (but this class is part
+  of the functiondecl and doesn't need to refer to a decl -- though I suppose
+  this could be modelled as a name with a functype)
+* struct field: name, sourceloc, typedecl
+  somewhere: optional star loc
+
+
+make sure that the solution prints only one error for each unknown identifier!
+
 
 hotlist:
 P0 some more type support (structs)
+   - need real ast for field decls
 P0 check types for identity, assignability
 P0 basic expression type checking (unary, binary ops)
 P0 maps (needs comparison op checking), chans, slices, arrays
