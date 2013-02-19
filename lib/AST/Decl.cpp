@@ -3038,6 +3038,12 @@ PointerTypeDecl::Create(ASTContext &C, DeclContext *DC,
   return new (C) PointerTypeDecl(DC, Loc, PointeeType);
 }
 
+StructTypeDecl *
+StructTypeDecl::Create(ASTContext &C, DeclContext *DC,
+                        SourceLocation LLoc) {
+  return new (C) StructTypeDecl(DC, LLoc);
+}
+
 #if 0
 TypedefDecl *TypedefDecl::Create(ASTContext &C, DeclContext *DC,
                                  SourceLocation StartLoc, SourceLocation IdLoc,

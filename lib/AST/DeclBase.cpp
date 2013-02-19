@@ -780,7 +780,9 @@ DeclContext *DeclContext::getPrimaryContext() {
   //case Decl::Block:
   case Decl::SingleDeclaration:
   case Decl::MultiDeclaration:
+  case Decl::ConstSpec:
   case Decl::VarSpec:
+  case Decl::StructType:
     // There is only one DeclContext for these entities.
     return this;
 

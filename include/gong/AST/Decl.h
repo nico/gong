@@ -2384,6 +2384,25 @@ public:
   static bool classofKind(Kind K) { return K == PointerType; }
 };
 
+/// Represents a StructType.
+class StructTypeDecl : public TypeDecl, public DeclContext {
+  TypeDecl *PointeeType;
+
+  StructTypeDecl(DeclContext *DC, SourceLocation LLoc)
+    : TypeDecl(StructType, DC, LLoc), DeclContext(StructType) {}
+
+public:
+  static StructTypeDecl *Create(ASTContext &C, DeclContext *DC,
+                                SourceLocation LLoc);
+  //static StructTypeDecl *CreateDeserialized(ASTContext &C, unsigned ID);
+  
+  //SourceRange getSourceRange() const LLVM_READONLY;
+
+  // Implement isa/cast/dyncast/etc.
+  static bool classof(const Decl *D) { return classofKind(D->getKind()); }
+  static bool classofKind(Kind K) { return K == StructType; }
+};
+
 #if 0
 /// Base class for declarations which introduce a typedef-name.
 class TypedefNameDecl : public TypeDecl, public Redeclarable<TypedefNameDecl> {

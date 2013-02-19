@@ -1714,13 +1714,12 @@ Sema::ActOnPointerType(SourceLocation StarLoc, DeclArg PointeeType) {
 
 Action::OwningDeclResult Sema::ActOnStartOfStructType(
     SourceLocation StructLoc, SourceLocation L, Scope *S) {
-  // FIXME
+  StructTypeDecl *Struct = StructTypeDecl::Create(Context, CurContext, L);
 
-  //FIXME: Once there's a StructTypeDecl node:
   // Enter the struct context.
-  //PushDeclContext(S, Tag);
+  PushDeclContext(S, Struct);
 
-  return DeclEmpty();
+  return Owned(Struct);
 }
 
 Action::OwningDeclResult
@@ -1759,9 +1758,8 @@ void Sema::ActOnFinishStructType(DeclArg Struct, SourceLocation R,
                                  MultiDeclArg Fields) {
   // FIXME
 
-  //FIXME: Once ActOnStartOfStructType() pushes:
   // Exit this scope of this struct definition.
-  //PopDeclContext();
+  PopDeclContext();
 }
 
 void Sema::ActOnPopScope(SourceLocation Loc, Scope *S) {
