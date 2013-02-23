@@ -403,7 +403,8 @@ class TypedIdentListDecl : public Decl, public DeclContext {
 
 protected:
   TypedIdentListDecl(Kind DK, DeclContext *DC, SourceLocation L)
-    : Decl(DK, DC, L), DeclContext(Decl::VarSpec), NumIdents(0) { }
+    : Decl(DK, DC, L), DeclContext(Decl::VarSpec), Idents(0), IdentLocs(0),
+      NumIdents(0) {}
 
 public:
   const IdentifierInfo *getIdent(unsigned i) const {

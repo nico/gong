@@ -595,7 +595,8 @@ void TypedIdentListDecl::setIdents(
     llvm::ArrayRef<IdentifierInfo *> IdentInfo,
     llvm::ArrayRef<SourceLocation> IdentLocInfo) {
   assert(Idents == 0 && "Already has param info!");
-  assert(IdentInfo.size() && "VarSpecs cannot be empty");
+  assert(IdentLocs == 0 && "Already has param loc info!");
+  assert(IdentInfo.size() && "TypedIdentListDecls cannot be empty");
 
   NumIdents = IdentInfo.size();
   Idents = new (C) IdentifierInfo*[NumIdents];
