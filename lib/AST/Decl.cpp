@@ -622,8 +622,8 @@ ConstDecl::Create(ASTContext &C, ConstSpecDecl *Parent, unsigned Index) {
 
 void VarSpecDecl::anchor() { }
 
-VarSpecDecl *VarSpecDecl::Create(ASTContext &C, DeclContext *DC,
-                                 SourceLocation L) {
+VarSpecDecl *
+VarSpecDecl::Create(ASTContext &C, DeclContext *DC, SourceLocation L) {
   return new (C) VarSpecDecl(DC, L);
 }
 
@@ -631,6 +631,27 @@ void VarDecl::anchor() { }
 
 VarDecl *VarDecl::Create(ASTContext &C, VarSpecDecl *Parent, unsigned Index) {
   return new (C) VarDecl(Parent, Index);
+}
+
+void FieldSpecDecl::anchor() { }
+
+FieldSpecDecl *
+FieldSpecDecl::Create(ASTContext &C, DeclContext *DC, SourceLocation L) {
+  return new (C) FieldSpecDecl(DC, L);
+}
+
+void FieldDecl::anchor() { }
+
+FieldDecl *
+FieldDecl::Create(ASTContext &C, FieldSpecDecl *Parent, unsigned Index) {
+  return new (C) FieldDecl(Decl::Field, Parent, Index);
+}
+
+void AnonFieldDecl::anchor() { }
+
+AnonFieldDecl *AnonFieldDecl::Create(ASTContext &C, FieldSpecDecl *Parent,
+                                     SourceLocation StarLoc) {
+  return new (C) AnonFieldDecl(Parent, StarLoc);
 }
 
 void DeclarationDecl::anchor() { }

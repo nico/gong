@@ -501,6 +501,53 @@ public:
   static bool classofKind(Kind K) { return K == Decl::Var; }
 };
 
+/// Represents a FieldDecl in Go. A FieldDecl is a collection of identifiers
+/// sharing a type, or just a type and an optional '*' for an
+/// AnonymousFieldDecl.
+class FieldSpecDecl : public TypedIdentListDecl {
+  virtual void anchor();
+  FieldSpecDecl(DeclContext *DC, SourceLocation L)
+    : TypedIdentListDecl(Decl::FieldSpec, DC, L) { }
+public:
+  static FieldSpecDecl *
+  Create(ASTContext &C, DeclContext *DC, SourceLocation L);
+  static FieldSpecDecl *
+  CreateAnon(ASTContext &C, DeclContext *DC);
+
+  // Implement isa/cast/dyncast/etc.
+  static bool classof(const Decl *D) { return classofKind(D->getKind()); }
+  static bool classofKind(Kind K) { return K == Decl::FieldSpec; }
+};
+
+// Represents a FieldDecl entry in Go.
+class FieldDecl : public TypedIdentEntryDecl {
+  virtual void anchor();
+protected:
+  FieldDecl(Kind DK, FieldSpecDecl *Parent, unsigned Index)
+    : TypedIdentEntryDecl(DK, Parent, Index) {}
+public:
+  static FieldDecl *
+  Create(ASTContext &C, FieldSpecDecl *Parent, unsigned Index);
+
+  // Implement isa/cast/dyncast/etc.
+  static bool classof(const Decl *D) { return classofKind(D->getKind()); }
+  static bool classofKind(Kind K) { return K >= firstField && K <= lastField; }
+};
+
+// Represents an AnonymousFieldDecl in Go.
+class AnonFieldDecl : public FieldDecl {
+  virtual void anchor();
+  AnonFieldDecl(FieldSpecDecl *Parent, SourceLocation StarLoc)
+    : FieldDecl(Decl::AnonField, Parent, ~0) {}
+public:
+  static AnonFieldDecl *
+  Create(ASTContext &C, FieldSpecDecl *Parent, SourceLocation StarLoc);
+
+  // Implement isa/cast/dyncast/etc.
+  static bool classof(const Decl *D) { return classofKind(D->getKind()); }
+  static bool classofKind(Kind K) { return K == Decl::AnonField; }
+};
+
 /// Represents a Declaration in Go.  This is an abstract class.
 class DeclarationDecl : public Decl, public DeclContext {
   virtual void anchor();

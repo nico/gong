@@ -233,6 +233,16 @@ audit and test QualifiedIdent handling once classifyIdentifier() is gone
 ident and expr lists for forranges and commcases:
 https://code.google.com/p/go/source/detail?r=ef1ce4503d85
 
+nice diag for:
+package main
+
+var (
+  foo = 4
+
+type apple int
+
+(maybe: if kw_* is seen in group, say "probably missing closing parentheses"?)
+
 
 
 Sema / AST

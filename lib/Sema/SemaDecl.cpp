@@ -1724,24 +1724,21 @@ Action::OwningDeclResult Sema::ActOnStartOfStructType(
 
 Action::OwningDeclResult
 Sema::ActOnFieldDecl(IdentifierList &IdentList, DeclArg Type, Scope *S) {
-  // FIXME: This is currently identical to ActOnVarSpec.  Move the interesting
-  // bits of VarSpecDecl into a base class and have a subclass FieldSpecDecl
-  // (or FieldDecl), make that optionally represent anonymous fields, and
-  // implement ActOnAnonymousField() below.
   assert(S->getFlags() & Scope::DeclScope);
 
   ArrayRef<IdentifierInfo*> Idents = IdentList.getIdents();
   ArrayRef<SourceLocation> IdentLocs = IdentList.getIdentLocs();
   assert(Idents.size() >= 1);
 
-  VarSpecDecl *VarSpec = VarSpecDecl::Create(Context, CurContext, IdentLocs[0]);
-  VarSpec->setIdents(Idents, IdentLocs);
+  FieldSpecDecl *FieldSpec =
+      FieldSpecDecl::Create(Context, CurContext, IdentLocs[0]);
+  FieldSpec->setIdents(Idents, IdentLocs);
 
   for (unsigned i = 0; i < Idents.size(); ++i) {
-    VarDecl *New = VarDecl::Create(Context, VarSpec, i);
-    CheckRedefinitionAndPushOnScope(*this, VarSpec, S, New);
+    FieldDecl *New = FieldDecl::Create(Context, FieldSpec, i);
+    CheckRedefinitionAndPushOnScope(*this, FieldSpec, S, New);
   }
-  return Owned(VarSpec);
+  return Owned(FieldSpec);
 }
 
 Action::OwningDeclResult
