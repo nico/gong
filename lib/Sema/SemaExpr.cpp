@@ -2057,62 +2057,6 @@ Sema::PerformObjectMemberConversion(Expr *From,
                            VK, &BasePath);
 }
 
-bool Sema::UseArgumentDependentLookup(const CXXScopeSpec &SS,
-                                      const LookupResult &R,
-                                      bool HasTrailingLParen) {
-  // Only when used directly as the postfix-expression of a call.
-  if (!HasTrailingLParen)
-    return false;
-
-  // Never if a scope specifier was provided.
-  if (SS.isSet())
-    return false;
-
-  // Only in C++ or ObjC++.
-  if (!getLangOpts().CPlusPlus)
-    return false;
-
-  // Turn off ADL when we find certain kinds of declarations during
-  // normal lookup:
-  for (LookupResult::iterator I = R.begin(), E = R.end(); I != E; ++I) {
-    NamedDecl *D = *I;
-
-    // C++0x [basic.lookup.argdep]p3:
-    //     -- a declaration of a class member
-    // Since using decls preserve this property, we check this on the
-    // original decl.
-    if (D->isCXXClassMember())
-      return false;
-
-    // C++0x [basic.lookup.argdep]p3:
-    //     -- a block-scope function declaration that is not a
-    //        using-declaration
-    // NOTE: we also trigger this for function templates (in fact, we
-    // don't check the decl type at all, since all other decl types
-    // turn off ADL anyway).
-    if (isa<UsingShadowDecl>(D))
-      D = cast<UsingShadowDecl>(D)->getTargetDecl();
-    else if (D->getDeclContext()->isFunctionOrMethod())
-      return false;
-
-    // C++0x [basic.lookup.argdep]p3:
-    //     -- a declaration that is neither a function or a function
-    //        template
-    // And also for builtin functions.
-    if (isa<FunctionDecl>(D)) {
-      FunctionDecl *FDecl = cast<FunctionDecl>(D);
-
-      // But also builtin functions.
-      if (FDecl->getBuiltinID() && FDecl->isImplicit())
-        return false;
-    } else if (!isa<FunctionTemplateDecl>(D))
-      return false;
-  }
-
-  return true;
-}
-
-
 /// Diagnoses obvious problems with the use of the given declaration
 /// as an expression.  This is only actually called for lookups that
 /// were not overloaded, and it doesn't promise that the declaration
@@ -8477,12 +8421,6 @@ static ExprResult BuildOverloadedBinOp(Sema &S, Scope *Sc, SourceLocation OpLoc,
   // scope and an argument-dependent lookup based on the types of
   // the arguments.
   UnresolvedSet<16> Functions;
-  OverloadedOperatorKind OverOp
-    = BinaryOperator::getOverloadedOperator(Opc);
-  if (Sc && OverOp != OO_None)
-    S.LookupOverloadedOperatorName(OverOp, Sc, LHS->getType(),
-                                   RHS->getType(), Functions);
-
   // Build the (potentially-overloaded, potentially-dependent)
   // binary operation.
   return S.CreateOverloadedBinOp(OpLoc, Opc, Functions, LHS, RHS);

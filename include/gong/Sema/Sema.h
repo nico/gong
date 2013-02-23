@@ -2229,10 +2229,6 @@ public:
                         bool AllowBuiltinCreation = false,
                         bool EnteringContext = false);
 
-  void LookupOverloadedOperatorName(OverloadedOperatorKind Op, Scope *S,
-                                    QualType T1, QualType T2,
-                                    UnresolvedSetImpl &Functions);
-
   LabelDecl *LookupOrCreateLabel(IdentifierInfo *II, SourceLocation IdentLoc,
                                  SourceLocation GnuLabelLoc = SourceLocation());
 
@@ -2240,23 +2236,14 @@ public:
   CXXConstructorDecl *LookupDefaultConstructor(CXXRecordDecl *Class);
   CXXConstructorDecl *LookupCopyingConstructor(CXXRecordDecl *Class,
                                                unsigned Quals);
-  CXXMethodDecl *LookupCopyingAssignment(CXXRecordDecl *Class, unsigned Quals,
-                                         bool RValueThis, unsigned ThisQuals);
   CXXConstructorDecl *LookupMovingConstructor(CXXRecordDecl *Class,
                                               unsigned Quals);
-  CXXMethodDecl *LookupMovingAssignment(CXXRecordDecl *Class, unsigned Quals,
-                                        bool RValueThis, unsigned ThisQuals);
   CXXDestructorDecl *LookupDestructor(CXXRecordDecl *Class);
 
   LiteralOperatorLookupResult LookupLiteralOperator(Scope *S, LookupResult &R,
                                                     ArrayRef<QualType> ArgTys,
                                                     bool AllowRawAndTemplate);
   bool isKnownName(StringRef name);
-
-  void ArgumentDependentLookup(DeclarationName Name, bool Operator,
-                               SourceLocation Loc,
-                               llvm::ArrayRef<Expr *> Args,
-                               ADLResult &Functions);
 
   void LookupVisibleDecls(Scope *S, LookupNameKind Kind,
                           VisibleDeclConsumer &Consumer,
@@ -2890,10 +2877,6 @@ public:
                                      LookupResult &R,
                                 const TemplateArgumentListInfo *TemplateArgs,
                                      bool IsDefiniteInstance);
-  bool UseArgumentDependentLookup(const CXXScopeSpec &SS,
-                                  const LookupResult &R,
-                                  bool HasTrailingLParen);
-
   ExprResult BuildQualifiedDeclarationNameExpr(CXXScopeSpec &SS,
                                          const DeclarationNameInfo &NameInfo,
                                                bool IsAddressOfOperand);

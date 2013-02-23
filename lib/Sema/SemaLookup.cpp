@@ -1421,47 +1421,6 @@ NamedDecl *Sema::LookupSingleName(Scope *S, DeclarationName Name,
   return R.getAsSingle<NamedDecl>();
 }
 
-void Sema::LookupOverloadedOperatorName(OverloadedOperatorKind Op, Scope *S,
-                                        QualType T1, QualType T2,
-                                        UnresolvedSetImpl &Functions) {
-  // C++ [over.match.oper]p3:
-  //     -- The set of non-member candidates is the result of the
-  //        unqualified lookup of operator@ in the context of the
-  //        expression according to the usual rules for name lookup in
-  //        unqualified function calls (3.4.2) except that all member
-  //        functions are ignored. However, if no operand has a class
-  //        type, only those non-member functions in the lookup set
-  //        that have a first parameter of type T1 or "reference to
-  //        (possibly cv-qualified) T1", when T1 is an enumeration
-  //        type, or (if there is a right operand) a second parameter
-  //        of type T2 or "reference to (possibly cv-qualified) T2",
-  //        when T2 is an enumeration type, are candidate functions.
-  DeclarationName OpName = Context.DeclarationNames.getCXXOperatorName(Op);
-  LookupResult Operators(*this, OpName, SourceLocation(), LookupOperatorName);
-  LookupName(Operators, S);
-
-  assert(!Operators.isAmbiguous() && "Operator lookup cannot be ambiguous");
-
-  if (Operators.empty())
-    return;
-
-  for (LookupResult::iterator Op = Operators.begin(), OpEnd = Operators.end();
-       Op != OpEnd; ++Op) {
-    NamedDecl *Found = (*Op)->getUnderlyingDecl();
-    if (FunctionDecl *FD = dyn_cast<FunctionDecl>(Found)) {
-      if (IsAcceptableNonMemberOperatorCandidate(FD, T1, T2, Context))
-        Functions.addDecl(*Op, Op.getAccess()); // FIXME: canonical FD
-    } else if (FunctionTemplateDecl *FunTmpl
-                 = dyn_cast<FunctionTemplateDecl>(Found)) {
-      // FIXME: friend operators?
-      // FIXME: do we need to check IsAcceptableNonMemberOperatorCandidate,
-      // later?
-      if (!FunTmpl->getDeclContext()->isRecord())
-        Functions.addDecl(*Op, Op.getAccess());
-    }
-  }
-}
-
 Sema::SpecialMemberOverloadResult *Sema::LookupSpecialMember(CXXRecordDecl *RD,
                                                             CXXSpecialMember SM,
                                                             bool ConstArg,
@@ -1700,39 +1659,6 @@ DeclContext::lookup_result Sema::LookupConstructors(CXXRecordDecl *Class) {
   return Class->lookup(Name);
 }
 
-/// \brief Look up the copying assignment operator for the given class.
-CXXMethodDecl *Sema::LookupCopyingAssignment(CXXRecordDecl *Class,
-                                             unsigned Quals, bool RValueThis,
-                                             unsigned ThisQuals) {
-  assert(!(Quals & ~(Qualifiers::Const | Qualifiers::Volatile)) &&
-         "non-const, non-volatile qualifiers for copy assignment arg");
-  assert(!(ThisQuals & ~(Qualifiers::Const | Qualifiers::Volatile)) &&
-         "non-const, non-volatile qualifiers for copy assignment this");
-  SpecialMemberOverloadResult *Result =
-    LookupSpecialMember(Class, CXXCopyAssignment, Quals & Qualifiers::Const,
-                        Quals & Qualifiers::Volatile, RValueThis,
-                        ThisQuals & Qualifiers::Const,
-                        ThisQuals & Qualifiers::Volatile);
-
-  return Result->getMethod();
-}
-
-/// \brief Look up the moving assignment operator for the given class.
-CXXMethodDecl *Sema::LookupMovingAssignment(CXXRecordDecl *Class,
-                                            unsigned Quals,
-                                            bool RValueThis,
-                                            unsigned ThisQuals) {
-  assert(!(ThisQuals & ~(Qualifiers::Const | Qualifiers::Volatile)) &&
-         "non-const, non-volatile qualifiers for copy assignment this");
-  SpecialMemberOverloadResult *Result =
-    LookupSpecialMember(Class, CXXMoveAssignment, Quals & Qualifiers::Const,
-                        Quals & Qualifiers::Volatile, RValueThis,
-                        ThisQuals & Qualifiers::Const,
-                        ThisQuals & Qualifiers::Volatile);
-
-  return Result->getMethod();
-}
-
 /// \brief Look for the destructor of the given class.
 ///
 /// During semantic analysis, this routine should be used in lieu of
@@ -1879,78 +1805,6 @@ void ADLResult::insert(NamedDecl *New) {
   }
 
   Old = New;
-}
-
-void Sema::ArgumentDependentLookup(DeclarationName Name, bool Operator,
-                                   SourceLocation Loc,
-                                   llvm::ArrayRef<Expr *> Args,
-                                   ADLResult &Result) {
-  // Find all of the associated namespaces and classes based on the
-  // arguments we have.
-  AssociatedNamespaceSet AssociatedNamespaces;
-  AssociatedClassSet AssociatedClasses;
-  FindAssociatedClassesAndNamespaces(Loc, Args,
-                                     AssociatedNamespaces,
-                                     AssociatedClasses);
-
-  QualType T1, T2;
-  if (Operator) {
-    T1 = Args[0]->getType();
-    if (Args.size() >= 2)
-      T2 = Args[1]->getType();
-  }
-
-  // C++ [basic.lookup.argdep]p3:
-  //   Let X be the lookup set produced by unqualified lookup (3.4.1)
-  //   and let Y be the lookup set produced by argument dependent
-  //   lookup (defined as follows). If X contains [...] then Y is
-  //   empty. Otherwise Y is the set of declarations found in the
-  //   namespaces associated with the argument types as described
-  //   below. The set of declarations found by the lookup of the name
-  //   is the union of X and Y.
-  //
-  // Here, we compute Y and add its members to the overloaded
-  // candidate set.
-  for (AssociatedNamespaceSet::iterator NS = AssociatedNamespaces.begin(),
-                                     NSEnd = AssociatedNamespaces.end();
-       NS != NSEnd; ++NS) {
-    //   When considering an associated namespace, the lookup is the
-    //   same as the lookup performed when the associated namespace is
-    //   used as a qualifier (3.4.3.2) except that:
-    //
-    //     -- Any using-directives in the associated namespace are
-    //        ignored.
-    //
-    //     -- Any namespace-scope friend functions declared in
-    //        associated classes are visible within their respective
-    //        namespaces even if they are not visible during an ordinary
-    //        lookup (11.4).
-    DeclContext::lookup_result R = (*NS)->lookup(Name);
-    for (DeclContext::lookup_iterator I = R.begin(), E = R.end(); I != E;
-         ++I) {
-      NamedDecl *D = *I;
-      // If the only declaration here is an ordinary friend, consider
-      // it only if it was declared in an associated classes.
-      if (D->getIdentifierNamespace() == Decl::IDNS_OrdinaryFriend) {
-        DeclContext *LexDC = D->getLexicalDeclContext();
-        if (!AssociatedClasses.count(cast<CXXRecordDecl>(LexDC)))
-          continue;
-      }
-
-      if (isa<UsingShadowDecl>(D))
-        D = cast<UsingShadowDecl>(D)->getTargetDecl();
-
-      if (isa<FunctionDecl>(D)) {
-        if (Operator &&
-            !IsAcceptableNonMemberOperatorCandidate(cast<FunctionDecl>(D),
-                                                    T1, T2, Context))
-          continue;
-      } else if (!isa<FunctionTemplateDecl>(D))
-        continue;
-
-      Result.insert(D);
-    }
-  }
 }
 
 //----------------------------------------------------------------------------
