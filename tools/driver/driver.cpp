@@ -158,8 +158,11 @@ int main(int argc_, const char **argv_) {
           Sema ParseActions(L, Context);
           Parser P(L, ParseActions);
           P.ParseSourceFile();
-          if (stats)
+          if (stats) {
+            L.getIdentifierTable().PrintStats();
             Decl::PrintStats();
+            // FIXME: stats for sema, stmt, expr, astcontext
+          }
         } else {
           MinimalAction ParseActions(L);
           Parser P(L, ParseActions);
