@@ -72,7 +72,6 @@ class ASTContext;
 class LookupResult;
 class Type;
 #if 0
-  class ADLResult;
   class ASTConsumer;
   class ASTMutationListener;
   class ASTReader;
@@ -2172,30 +2171,6 @@ public:
   };
 
 #if 0
-  /// \brief The possible outcomes of name lookup for a literal operator.
-  enum LiteralOperatorLookupResult {
-    /// \brief The lookup resulted in an error.
-    LOLR_Error,
-    /// \brief The lookup found a single 'cooked' literal operator, which
-    /// expects a normal literal to be built and passed to it.
-    LOLR_Cooked,
-    /// \brief The lookup found a single 'raw' literal operator, which expects
-    /// a string literal containing the spelling of the literal token.
-    LOLR_Raw,
-    /// \brief The lookup found an overload set of literal operator templates,
-    /// which expect the characters of the spelling of the literal token to be
-    /// passed as a non-type template argument pack.
-    LOLR_Template
-  };
-
-  SpecialMemberOverloadResult *LookupSpecialMember(CXXRecordDecl *D,
-                                                   CXXSpecialMember SM,
-                                                   bool ConstArg,
-                                                   bool VolatileArg,
-                                                   bool RValueThis,
-                                                   bool ConstThis,
-                                                   bool VolatileThis);
-
 private:
   // \brief The set of known/encountered (unique, canonicalized) NamespaceDecls.
   //
@@ -2232,17 +2207,6 @@ public:
   LabelDecl *LookupOrCreateLabel(IdentifierInfo *II, SourceLocation IdentLoc,
                                  SourceLocation GnuLabelLoc = SourceLocation());
 
-  DeclContextLookupResult LookupConstructors(CXXRecordDecl *Class);
-  CXXConstructorDecl *LookupDefaultConstructor(CXXRecordDecl *Class);
-  CXXConstructorDecl *LookupCopyingConstructor(CXXRecordDecl *Class,
-                                               unsigned Quals);
-  CXXConstructorDecl *LookupMovingConstructor(CXXRecordDecl *Class,
-                                              unsigned Quals);
-  CXXDestructorDecl *LookupDestructor(CXXRecordDecl *Class);
-
-  LiteralOperatorLookupResult LookupLiteralOperator(Scope *S, LookupResult &R,
-                                                    ArrayRef<QualType> ArgTys,
-                                                    bool AllowRawAndTemplate);
   bool isKnownName(StringRef name);
 
   void LookupVisibleDecls(Scope *S, LookupNameKind Kind,
@@ -3457,33 +3421,6 @@ public:
   bool ShouldDeleteSpecialMember(CXXMethodDecl *MD, CXXSpecialMember CSM,
                                  bool Diagnose = false);
 
-  /// \brief Declare the implicit default constructor for the given class.
-  ///
-  /// \param ClassDecl The class declaration into which the implicit
-  /// default constructor will be added.
-  ///
-  /// \returns The implicitly-declared default constructor.
-  CXXConstructorDecl *DeclareImplicitDefaultConstructor(
-                                                     CXXRecordDecl *ClassDecl);
-
-  /// DefineImplicitDefaultConstructor - Checks for feasibility of
-  /// defining this constructor as the default constructor.
-  void DefineImplicitDefaultConstructor(SourceLocation CurrentLocation,
-                                        CXXConstructorDecl *Constructor);
-
-  /// \brief Declare the implicit destructor for the given class.
-  ///
-  /// \param ClassDecl The class declaration into which the implicit
-  /// destructor will be added.
-  ///
-  /// \returns The implicitly-declared destructor.
-  CXXDestructorDecl *DeclareImplicitDestructor(CXXRecordDecl *ClassDecl);
-
-  /// DefineImplicitDestructor - Checks for feasibility of
-  /// defining this destructor as the default destructor.
-  void DefineImplicitDestructor(SourceLocation CurrentLocation,
-                                CXXDestructorDecl *Destructor);
-
   /// \brief Build an exception spec for destructors that don't have one.
   ///
   /// C++11 says that user-defined destructors with no exception spec get one
@@ -3535,23 +3472,6 @@ public:
   /// \brief Defines an implicitly-declared copy assignment operator.
   void DefineImplicitCopyAssignment(SourceLocation CurrentLocation,
                                     CXXMethodDecl *MethodDecl);
-
-  /// \brief Declare the implicit move assignment operator for the given class.
-  ///
-  /// \param ClassDecl The Class declaration into which the implicit
-  /// move assignment operator will be added.
-  ///
-  /// \returns The implicitly-declared move assignment operator, or NULL if it
-  /// wasn't declared.
-  CXXMethodDecl *DeclareImplicitMoveAssignment(CXXRecordDecl *ClassDecl);
-
-  /// \brief Defines an implicitly-declared move assignment operator.
-  void DefineImplicitMoveAssignment(SourceLocation CurrentLocation,
-                                    CXXMethodDecl *MethodDecl);
-
-  /// \brief Force the declaration of any implicitly-declared members of this
-  /// class.
-  void ForceDeclarationOfImplicitMembers(CXXRecordDecl *Class);
 
   /// \brief Determine whether the given function is an implicitly-deleted
   /// special member function.
