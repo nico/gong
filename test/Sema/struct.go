@@ -46,6 +46,12 @@ type t3_pointer struct {
   *t3_pointer  // expected-diag {{use of undeclared identifier 't3_pointer'}}
 }
 
+var myvar int  // expected-note 2 {{var 'myvar' declared here}}
+type anon_var struct {
+  myvar  // expected-diag {{'myvar' does not name a type}}
+  *myvar  // expected-diag {{'myvar' does not name a type}}
+}
+
 // FIXME:
 // field lookup
 // promoted embedded fields
