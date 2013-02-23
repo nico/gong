@@ -1490,8 +1490,8 @@ public:
                                           Scope *S) LLVM_OVERRIDE;
   OwningDeclResult ActOnFieldDecl(IdentifierList &Idents, DeclArg Type,
                                   Scope *S) LLVM_OVERRIDE;
-  OwningDeclResult ActOnAnonymousField(SourceLocation StarLoc,
-                                       DeclArg TypeName) LLVM_OVERRIDE;
+  OwningDeclResult ActOnAnonymousField(SourceLocation StarLoc, DeclArg TypeName,
+                                       Scope *S) LLVM_OVERRIDE;
   void ActOnFieldDeclTag(DeclArg Field, ExprArg Tag) LLVM_OVERRIDE;
   void ActOnFinishStructType(DeclArg Struct, SourceLocation R,
                              MultiDeclArg Fields) LLVM_OVERRIDE;

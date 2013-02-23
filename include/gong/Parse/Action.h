@@ -437,7 +437,7 @@ public:
   /// \param TypeName the TypeName of the anonymous FieldDecl.  This is an
   ///        object returned by ActOnTypeName().
   virtual OwningDeclResult ActOnAnonymousField(SourceLocation StarLoc,
-                                               DeclArg TypeName) {
+                                               DeclArg TypeName, Scope *S) {
     return DeclEmpty();
   }
 

@@ -24,8 +24,29 @@ type d struct {
   x int  // expected-diag {{redefinition of 'x'}}
 }
 
+type anon_foo struct {
+  foo  // expected-note {{previous definition is here}}
+  foo int  // expected-diag {{redefinition of 'foo'}}
+}
+
+type anon_pointer_foo struct {
+  *foo  // expected-note {{previous definition is here}}
+  foo int  // expected-diag {{redefinition of 'foo'}}
+}
+
+// FIXME: support recursive pointer types (but diag on recursive non-pointers):
+type t3 struct {
+  // FIXME: the next 2 lines should-diag {{recursive type 't3'}}
+  x t3  // expected-diag {{use of undeclared identifier 't3'}}
+  t3  // expected-diag {{use of undeclared identifier 't3'}}
+}
+type t3_pointer struct {
+  // FIXME: the next 2 lines shouldn't diag.
+  x *t3_pointer  // expected-diag {{use of undeclared identifier 't3_pointer'}}
+  *t3_pointer  // expected-diag {{use of undeclared identifier 't3_pointer'}}
+}
+
 // FIXME:
-// anonymous fields
 // field lookup
 // promoted embedded fields
 // recursive struct types (over multiple levels, too)

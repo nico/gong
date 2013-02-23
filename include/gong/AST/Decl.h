@@ -32,6 +32,7 @@ namespace gong {
 class ASTContext;
 class BlockStmt;
 class IdentifierInfo;
+class NameTypeDecl;
 class TypeDecl;
 #if 0
 struct ASTTemplateArgumentListInfo;
@@ -436,6 +437,9 @@ protected:
   TypedIdentEntryDecl(Kind DK, TypedIdentListDecl *Parent, unsigned Index)
     : NamedDecl(DK, Parent, Parent->getIdentLoc(Index),
                 Parent->getIdent(Index)) {}
+  TypedIdentEntryDecl(Kind DK, TypedIdentListDecl *Parent,
+                      SourceLocation NameLoc, IdentifierInfo *Name)
+    : NamedDecl(DK, Parent, NameLoc, Name) {}
 public:
   // Implement isa/cast/dyncast/etc.
   static bool classof(const Decl *D) { return classofKind(D->getKind()); }
@@ -523,8 +527,11 @@ public:
 class FieldDecl : public TypedIdentEntryDecl {
   virtual void anchor();
 protected:
-  FieldDecl(Kind DK, FieldSpecDecl *Parent, unsigned Index)
-    : TypedIdentEntryDecl(DK, Parent, Index) {}
+  FieldDecl(FieldSpecDecl *Parent, unsigned Index)
+    : TypedIdentEntryDecl(Decl::Field, Parent, Index) {}
+  FieldDecl(Kind DK, FieldSpecDecl *Parent, SourceLocation NameLoc,
+            IdentifierInfo *Name)
+    : TypedIdentEntryDecl(DK, Parent, NameLoc, Name) {}
 public:
   static FieldDecl *
   Create(ASTContext &C, FieldSpecDecl *Parent, unsigned Index);
@@ -537,11 +544,11 @@ public:
 // Represents an AnonymousFieldDecl in Go.
 class AnonFieldDecl : public FieldDecl {
   virtual void anchor();
-  AnonFieldDecl(FieldSpecDecl *Parent, SourceLocation StarLoc)
-    : FieldDecl(Decl::AnonField, Parent, ~0) {}
+  AnonFieldDecl(FieldSpecDecl *Parent, SourceLocation StarLoc,
+                NameTypeDecl *TypeName);
 public:
-  static AnonFieldDecl *
-  Create(ASTContext &C, FieldSpecDecl *Parent, SourceLocation StarLoc);
+  static AnonFieldDecl *Create(ASTContext &C, FieldSpecDecl *Parent,
+                               SourceLocation StarLoc, NameTypeDecl *TypeName);
 
   // Implement isa/cast/dyncast/etc.
   static bool classof(const Decl *D) { return classofKind(D->getKind()); }
@@ -2406,6 +2413,8 @@ class NameTypeDecl : public TypeDecl {
 public:
   static NameTypeDecl *Create(ASTContext &C, DeclContext *DC,
                               SourceLocation Loc, TypeSpecDecl *D);
+
+  IdentifierInfo &getName() const { return D->getDeclName(); }
 
   // Implement isa/cast/dyncast/etc.
   static bool classof(const Decl *D) { return classofKind(D->getKind()); }

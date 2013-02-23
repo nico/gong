@@ -1742,9 +1742,26 @@ Sema::ActOnFieldDecl(IdentifierList &IdentList, DeclArg Type, Scope *S) {
 }
 
 Action::OwningDeclResult
-Sema::ActOnAnonymousField(SourceLocation StarLoc, DeclArg TypeName) {
-  // FIXME
-  return DeclEmpty();
+Sema::ActOnAnonymousField(SourceLocation StarLoc, DeclArg TypeArg, Scope *S) {
+  assert(S->getFlags() & Scope::DeclScope);
+
+  // FIXME: Handle recursive pointer types better.
+  NameTypeDecl *TypeName = TypeArg.takeAs<NameTypeDecl>();
+
+  SourceLocation StartLoc =
+      StarLoc.isValid() ? StarLoc : TypeName->getLocation();
+
+  FieldSpecDecl *FieldSpec =
+      FieldSpecDecl::Create(Context, CurContext, StartLoc);
+
+  // FIXME: If StarLoc is valid, call ActOnPointerType() to compute the right
+  // type for the AnonFieldDecl.
+
+  AnonFieldDecl *New =
+      AnonFieldDecl::Create(Context, FieldSpec, StarLoc, TypeName);
+  CheckRedefinitionAndPushOnScope(*this, FieldSpec, S, New);
+
+  return Owned(FieldSpec);
 }
 
 void Sema::ActOnFieldDeclTag(DeclArg Field, ExprArg Tag) {

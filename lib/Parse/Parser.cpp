@@ -744,7 +744,7 @@ Action::OwningDeclResult Parser::ParseAnonymousFieldTail(SourceLocation StarLoc,
                                                          IdentifierInfo *II) {
   OwningDeclResult Res = ParseTypeNameTail(IILoc, II);
   if (!Res.isInvalid())
-    Res = Actions.ActOnAnonymousField(StarLoc, move(Res));
+    Res = Actions.ActOnAnonymousField(StarLoc, move(Res), getCurScope());
   return Res;
 }
 

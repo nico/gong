@@ -644,14 +644,20 @@ void FieldDecl::anchor() { }
 
 FieldDecl *
 FieldDecl::Create(ASTContext &C, FieldSpecDecl *Parent, unsigned Index) {
-  return new (C) FieldDecl(Decl::Field, Parent, Index);
+  return new (C) FieldDecl(Parent, Index);
 }
 
 void AnonFieldDecl::anchor() { }
 
-AnonFieldDecl *AnonFieldDecl::Create(ASTContext &C, FieldSpecDecl *Parent,
-                                     SourceLocation StarLoc) {
-  return new (C) AnonFieldDecl(Parent, StarLoc);
+AnonFieldDecl::AnonFieldDecl(FieldSpecDecl *Parent, SourceLocation StarLoc,
+                             NameTypeDecl *TypeName)
+  : FieldDecl(Decl::AnonField, Parent, TypeName->getLocation(),
+              &TypeName->getName()) {}
+
+AnonFieldDecl *
+AnonFieldDecl::Create(ASTContext &C, FieldSpecDecl *Parent,
+                      SourceLocation StarLoc, NameTypeDecl *TypeName) {
+  return new (C) AnonFieldDecl(Parent, StarLoc, TypeName);
 }
 
 void DeclarationDecl::anchor() { }
