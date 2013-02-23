@@ -1,3 +1,29 @@
+hotlist:
+P0 finish struct type support
+   - field lookup
+     - for embedded fields too
+   - recursive struct types (P2)
+P0 check types for identity, assignability
+P0 basic expression type checking (unary, binary ops)
+P0 support for number and string literals
+   - implement support for fielddecl tags once that's done
+P0 maps (needs comparison op checking), chans, slices, arrays
+P1 function parameter lists (and return names, and methoddecls)
+!! ParseTypeList() needs something like IdentOrExprList for types, to
+   make parameter parsing possible.
+       Parameters used in:
+          func Signature (for params and optionally for result)
+              used for FunctionType, which is used by
+                  FunctionLit
+              FunctionDecl
+              MethodDecl (also has a Receiver)
+              MethodSpec (in Interfacetype; implicit Receiver)
+P2 function literal parameter lists
+P2 typo correction for names (blocked on structs)
+P2 interface types
+P1 type checking
+P1 types for var and const
+
 
 General s/llvm::SourceMgr/SourceManager/g
 
@@ -93,32 +119,6 @@ all that much for long ident lists, but most are short.
 
 make sure that the solution prints only one error for each unknown identifier!
 
-
-hotlist:
-P0 finish struct type support
-   - field lookup
-     - for embedded fields
-   - recursive struct types (P2)
-P0 check types for identity, assignability
-P0 basic expression type checking (unary, binary ops)
-P0 maps (needs comparison op checking), chans, slices, arrays
-P1 function parameter lists (and return names, and methoddecls)
-!! ParseTypeList() needs something like IdentOrExprList for types, to
-   make parameter parsing possible.
-       Parameters used in:
-          func Signature (for params and optionally for result)
-              used for FunctionType, which is used by
-                  FunctionLit
-              FunctionDecl
-              MethodDecl (also has a Receiver)
-              MethodSpec (in Interfacetype; implicit Receiver)
-P2 function literal parameter lists
-P2 typo correction for names (blocked on structs)
-P2 interface types
-P1 type checking
-P1 types for var and const
-P2 support for number and string literals
-   - implement support for fielddecl tags once that's done
 
 
 Lexer
