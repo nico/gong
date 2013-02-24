@@ -3326,9 +3326,7 @@ Sema::VariadicCallType
 Sema::getVariadicCallType(FunctionDecl *FDecl, const FunctionProtoType *Proto,
                           Expr *Fn) {
   if (Proto && Proto->isVariadic()) {
-    if (dyn_cast_or_null<CXXConstructorDecl>(FDecl))
-      return VariadicConstructor;
-    else if (Fn && Fn->getType()->isBlockPointerType())
+    if (Fn && Fn->getType()->isBlockPointerType())
       return VariadicBlock;
     else if (FDecl) {
       if (CXXMethodDecl *Method = dyn_cast_or_null<CXXMethodDecl>(FDecl))
@@ -10126,31 +10124,7 @@ void Sema::MarkFunctionReferenced(SourceLocation Loc, FunctionDecl *Func) {
   }
 
   // Note that this declaration has been used.
-  if (CXXConstructorDecl *Constructor = dyn_cast<CXXConstructorDecl>(Func)) {
-    if (Constructor->isDefaulted() && !Constructor->isDeleted()) {
-      if (Constructor->isDefaultConstructor()) {
-        if (Constructor->isTrivial())
-          return;
-        if (!Constructor->isUsed(false))
-          DefineImplicitDefaultConstructor(Loc, Constructor);
-      } else if (Constructor->isCopyConstructor()) {
-        if (!Constructor->isUsed(false))
-          DefineImplicitCopyConstructor(Loc, Constructor);
-      } else if (Constructor->isMoveConstructor()) {
-        if (!Constructor->isUsed(false))
-          DefineImplicitMoveConstructor(Loc, Constructor);
-      }
-    }
-
-    MarkVTableUsed(Loc, Constructor->getParent());
-  } else if (CXXDestructorDecl *Destructor =
-                 dyn_cast<CXXDestructorDecl>(Func)) {
-    if (Destructor->isDefaulted() && !Destructor->isDeleted() &&
-        !Destructor->isUsed(false))
-      DefineImplicitDestructor(Loc, Destructor);
-    if (Destructor->isVirtual())
-      MarkVTableUsed(Loc, Destructor->getParent());
-  } else if (CXXMethodDecl *MethodDecl = dyn_cast<CXXMethodDecl>(Func)) {
+  if (CXXMethodDecl *MethodDecl = dyn_cast<CXXMethodDecl>(Func)) {
     if (MethodDecl->isDefaulted() && !MethodDecl->isDeleted() &&
         MethodDecl->isOverloadedOperator() &&
         MethodDecl->getOverloadedOperator() == OO_Equal) {
