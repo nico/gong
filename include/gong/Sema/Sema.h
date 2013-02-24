@@ -2197,9 +2197,9 @@ public:
                                 = NotForRedeclaration);
 #endif
   bool LookupName(LookupResult &R, Scope *S, bool AllowBuiltinCreation = false);
-#if 0
   bool LookupQualifiedName(LookupResult &R, DeclContext *LookupCtx,
                            bool InUnqualifiedLookup = false);
+#if 0
   bool LookupParsedName(LookupResult &R, Scope *S, CXXScopeSpec *SS,
                         bool AllowBuiltinCreation = false,
                         bool EnteringContext = false);

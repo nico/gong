@@ -1095,23 +1095,20 @@ void DeclContext::buildLookupImpl(DeclContext *DCtx) {
   }
 }
 
-#if 0
 DeclContext::lookup_result
-DeclContext::lookup(DeclarationName Name) {
-  assert(DeclKind != Decl::LinkageSpec &&
-         "Should not perform lookups into linkage specs!");
-
+DeclContext::lookup(IdentifierInfo &Name) {
   DeclContext *PrimaryContext = getPrimaryContext();
-  if (PrimaryContext != this)
+  if (PrimaryContext != this)  // FIXME: not needed?
     return PrimaryContext->lookup(Name);
 
+#if 0  // FIXME: modules. eventually. resync this part from clang.
   if (hasExternalVisibleStorage()) {
     // If a PCH has a result for this name, and we have a local declaration, we
     // will have imported the PCH result when adding the local declaration.
     // FIXME: For modules, we could have had more declarations added by module
     // imoprts since we saw the declaration of the local name.
     if (StoredDeclsMap *Map = LookupPtr.getPointer()) {
-      StoredDeclsMap::iterator I = Map->find(Name);
+      StoredDeclsMap::iterator I = Map->find(&Name);
       if (I != Map->end())
         return I->second.getLookupResult();
     }
@@ -1119,6 +1116,7 @@ DeclContext::lookup(DeclarationName Name) {
     ExternalASTSource *Source = getParentASTContext().getExternalSource();
     return Source->FindExternalVisibleDeclsByName(this, Name);
   }
+#endif
 
   StoredDeclsMap *Map = LookupPtr.getPointer();
   if (LookupPtr.getInt())
@@ -1127,13 +1125,14 @@ DeclContext::lookup(DeclarationName Name) {
   if (!Map)
     return lookup_result(lookup_iterator(0), lookup_iterator(0));
 
-  StoredDeclsMap::iterator I = Map->find(Name);
+  StoredDeclsMap::iterator I = Map->find(&Name);
   if (I == Map->end())
     return lookup_result(lookup_iterator(0), lookup_iterator(0));
 
   return I->second.getLookupResult();
 }
 
+#if 0
 void DeclContext::localUncachedLookup(DeclarationName Name, 
                                   llvm::SmallVectorImpl<NamedDecl *> &Results) {
   Results.clear();

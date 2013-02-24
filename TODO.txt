@@ -179,7 +179,6 @@ Nicer diag for function literal in struct ("unexpected function body",
 Actions interface
   Create ExprList
   Ensmarten expr parser to hand out right stuff for ForStmt action methods
-  Actions for Types
 
 Have nice fixit for toplevel `a := b`
 

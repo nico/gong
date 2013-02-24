@@ -510,17 +510,7 @@ static bool LookupBuiltin(Sema &S, LookupResult &R) {
 
   return false;
 }
-
-/// \brief Determine whether we can declare a special member function within
-/// the class at this point.
-static bool CanDeclareSpecialMemberFunction(const CXXRecordDecl *Class) {
-  // We need to have a definition for the class.
-  if (!Class->getDefinition() || Class->isDependentContext())
-    return false;
-
-  // We can't be in the middle of defining the class.
-  return !Class->isBeingDefined();
-}
+#endif
 
 // Adds all qualifying matches for a name within a decl context to the
 // given lookup result.  Returns true if any matches were found.
@@ -528,90 +518,92 @@ static bool LookupDirect(Sema &S, LookupResult &R, const DeclContext *DC) {
   bool Found = false;
 
   // Perform lookup into this declaration context.
-  DeclContext::lookup_const_result DR = DC->lookup(R.getLookupName());
+  DeclContext::lookup_const_result DR = DC->lookup(*R.getLookupName());
   for (DeclContext::lookup_const_iterator I = DR.begin(), E = DR.end(); I != E;
        ++I) {
     NamedDecl *D = *I;
-    if ((D = R.getAcceptableDecl(D))) {
+    //if ((D = R.getAcceptableDecl(D))) {  // FIXME: needed?
       R.addDecl(D);
-      Found = true;
-    }
+      //Found = true;
+    //}
   }
 
-  if (!Found && DC->isTranslationUnit() && LookupBuiltin(S, R))
-    return true;
+  // FIXME?
+  //if (!Found && DC->isTranslationUnit() && LookupBuiltin(S, R))
+    //return true;
 
-  if (R.getLookupName().getNameKind()
-        != DeclarationName::CXXConversionFunctionName ||
-      R.getLookupName().getCXXNameType()->isDependentType() ||
-      !isa<CXXRecordDecl>(DC))
-    return Found;
+  //if (R.getLookupName().getNameKind()
+  //      != DeclarationName::CXXConversionFunctionName ||
+  //    R.getLookupName().getCXXNameType()->isDependentType() ||
+  //    !isa<CXXRecordDecl>(DC))
+  //  return Found;
 
-  // C++ [temp.mem]p6:
-  //   A specialization of a conversion function template is not found by
-  //   name lookup. Instead, any conversion function templates visible in the
-  //   context of the use are considered. [...]
-  const CXXRecordDecl *Record = cast<CXXRecordDecl>(DC);
-  if (!Record->isCompleteDefinition())
-    return Found;
+  //// C++ [temp.mem]p6:
+  ////   A specialization of a conversion function template is not found by
+  ////   name lookup. Instead, any conversion function templates visible in the
+  ////   context of the use are considered. [...]
+  //const CXXRecordDecl *Record = cast<CXXRecordDecl>(DC);
+  //if (!Record->isCompleteDefinition())
+  //  return Found;
 
-  for (CXXRecordDecl::conversion_iterator U = Record->conversion_begin(),
-         UEnd = Record->conversion_end(); U != UEnd; ++U) {
-    FunctionTemplateDecl *ConvTemplate = dyn_cast<FunctionTemplateDecl>(*U);
-    if (!ConvTemplate)
-      continue;
+  //for (CXXRecordDecl::conversion_iterator U = Record->conversion_begin(),
+  //       UEnd = Record->conversion_end(); U != UEnd; ++U) {
+  //  FunctionTemplateDecl *ConvTemplate = dyn_cast<FunctionTemplateDecl>(*U);
+  //  if (!ConvTemplate)
+  //    continue;
 
-    // When we're performing lookup for the purposes of redeclaration, just
-    // add the conversion function template. When we deduce template
-    // arguments for specializations, we'll end up unifying the return
-    // type of the new declaration with the type of the function template.
-    if (R.isForRedeclaration()) {
-      R.addDecl(ConvTemplate);
-      Found = true;
-      continue;
-    }
+  //  // When we're performing lookup for the purposes of redeclaration, just
+  //  // add the conversion function template. When we deduce template
+  //  // arguments for specializations, we'll end up unifying the return
+  //  // type of the new declaration with the type of the function template.
+  //  if (R.isForRedeclaration()) {
+  //    R.addDecl(ConvTemplate);
+  //    Found = true;
+  //    continue;
+  //  }
 
-    // C++ [temp.mem]p6:
-    //   [...] For each such operator, if argument deduction succeeds
-    //   (14.9.2.3), the resulting specialization is used as if found by
-    //   name lookup.
-    //
-    // When referencing a conversion function for any purpose other than
-    // a redeclaration (such that we'll be building an expression with the
-    // result), perform template argument deduction and place the
-    // specialization into the result set. We do this to avoid forcing all
-    // callers to perform special deduction for conversion functions.
-    TemplateDeductionInfo Info(R.getNameLoc());
-    FunctionDecl *Specialization = 0;
+  //  // C++ [temp.mem]p6:
+  //  //   [...] For each such operator, if argument deduction succeeds
+  //  //   (14.9.2.3), the resulting specialization is used as if found by
+  //  //   name lookup.
+  //  //
+  //  // When referencing a conversion function for any purpose other than
+  //  // a redeclaration (such that we'll be building an expression with the
+  //  // result), perform template argument deduction and place the
+  //  // specialization into the result set. We do this to avoid forcing all
+  //  // callers to perform special deduction for conversion functions.
+  //  TemplateDeductionInfo Info(R.getNameLoc());
+  //  FunctionDecl *Specialization = 0;
 
-    const FunctionProtoType *ConvProto
-      = ConvTemplate->getTemplatedDecl()->getType()->getAs<FunctionProtoType>();
-    assert(ConvProto && "Nonsensical conversion function template type");
+  //  const FunctionProtoType *ConvProto
+  //    = ConvTemplate->getTemplatedDecl()->getType()->getAs<FunctionProtoType>();
+  //  assert(ConvProto && "Nonsensical conversion function template type");
 
-    // Compute the type of the function that we would expect the conversion
-    // function to have, if it were to match the name given.
-    // FIXME: Calling convention!
-    FunctionProtoType::ExtProtoInfo EPI = ConvProto->getExtProtoInfo();
-    EPI.ExtInfo = EPI.ExtInfo.withCallingConv(CC_Default);
-    EPI.ExceptionSpecType = EST_None;
-    EPI.NumExceptions = 0;
-    QualType ExpectedType
-      = R.getSema().Context.getFunctionType(R.getLookupName().getCXXNameType(),
-                                            0, 0, EPI);
+  //  // Compute the type of the function that we would expect the conversion
+  //  // function to have, if it were to match the name given.
+  //  // FIXME: Calling convention!
+  //  FunctionProtoType::ExtProtoInfo EPI = ConvProto->getExtProtoInfo();
+  //  EPI.ExtInfo = EPI.ExtInfo.withCallingConv(CC_Default);
+  //  EPI.ExceptionSpecType = EST_None;
+  //  EPI.NumExceptions = 0;
+  //  QualType ExpectedType
+  //    = R.getSema().Context.getFunctionType(R.getLookupName().getCXXNameType(),
+  //                                          0, 0, EPI);
 
-    // Perform template argument deduction against the type that we would
-    // expect the function to have.
-    if (R.getSema().DeduceTemplateArguments(ConvTemplate, 0, ExpectedType,
-                                            Specialization, Info)
-          == Sema::TDK_Success) {
-      R.addDecl(Specialization);
-      Found = true;
-    }
-  }
+  //  // Perform template argument deduction against the type that we would
+  //  // expect the function to have.
+  //  if (R.getSema().DeduceTemplateArguments(ConvTemplate, 0, ExpectedType,
+  //                                          Specialization, Info)
+  //        == Sema::TDK_Success) {
+  //    R.addDecl(Specialization);
+  //    Found = true;
+  //  }
+  //}
 
   return Found;
 }
 
+#if 0
 static bool isNamespaceOrTranslationUnitScope(Scope *S) {
   if (DeclContext *Ctx = static_cast<DeclContext*>(S->getEntity()))
     return Ctx->isFileContext();
@@ -711,7 +703,6 @@ static NamedDecl *getVisibleDecl(NamedDecl *D) {
   return 0;
 }
 
-#if 0
 /// @brief Perform unqualified name lookup starting from a given
 /// scope.
 ///
@@ -740,7 +731,6 @@ static NamedDecl *getVisibleDecl(NamedDecl *D) {
 /// used to diagnose ambiguities.
 ///
 /// @returns \c true if lookup succeeded and false otherwise.
-#endif
 bool Sema::LookupName(LookupResult &R, Scope *S, bool AllowBuiltinCreation) {
   IdentifierInfo *Name = R.getLookupName();
   if (!Name) return false;
@@ -999,6 +989,7 @@ static bool HasOnlyStaticMembers(InputIterator First, InputIterator Last) {
 
   return false;
 }
+#endif
 
 /// \brief Perform qualified name lookup into a given context.
 ///
@@ -1029,21 +1020,24 @@ bool Sema::LookupQualifiedName(LookupResult &R, DeclContext *LookupCtx,
   if (!R.getLookupName())
     return false;
 
-  // Make sure that the declaration context is complete.
-  assert((!isa<TagDecl>(LookupCtx) ||
-          LookupCtx->isDependentContext() ||
-          cast<TagDecl>(LookupCtx)->isCompleteDefinition() ||
-          cast<TagDecl>(LookupCtx)->isBeingDefined()) &&
-         "Declaration context must already be complete!");
+  //// Make sure that the declaration context is complete.
+  //assert((!isa<TagDecl>(LookupCtx) ||
+  //        LookupCtx->isDependentContext() ||
+  //        cast<TagDecl>(LookupCtx)->isCompleteDefinition() ||
+  //        cast<TagDecl>(LookupCtx)->isBeingDefined()) &&
+  //       "Declaration context must already be complete!");
 
   // Perform qualified name lookup into the LookupCtx.
   if (LookupDirect(*this, R, LookupCtx)) {
     R.resolveKind();
-    if (isa<CXXRecordDecl>(LookupCtx))
-      R.setNamingClass(cast<CXXRecordDecl>(LookupCtx));
+    //if (isa<CXXRecordDecl>(LookupCtx))
+      //R.setNamingClass(cast<CXXRecordDecl>(LookupCtx));
     return true;
   }
 
+  // FIXME: embedded fields / methods
+  return false;
+#if 0
   // Don't descend into implied contexts for redeclarations.
   // C++98 [namespace.qual]p6:
   //   In a declaration for a namespace member in which the
@@ -1203,8 +1197,10 @@ bool Sema::LookupQualifiedName(LookupResult &R, DeclContext *LookupCtx,
   }
   R.resolveKind();
   return true;
+#endif
 }
 
+#if 0
 /// @brief Performs name lookup for a name that was parsed in the
 /// source code, and may contain a C++ scope specifier.
 ///
