@@ -3,7 +3,8 @@ P0 finish struct type support
    - field lookup (clang: SemaExprMember.cpp,
                    ActOnStartCXXMemberReference, ActOnMemberAccessExpr
                    => LookupMemberExpr -> LookupMemberExprInRecord ->
-                      LookupQualifiedName: 1. LookupDirect 2.lookupInBases)
+                      LookupQualifiedName: 1. LookupDirect 2.lookupInBases.
+                      Builds MemberExpr.)
      - for embedded fields too
    - recursive struct types (P2)
 P0 check types for identity, assignability

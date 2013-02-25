@@ -2672,6 +2672,9 @@ public:
   // Expression Parsing Callbacks: SemaExpr.cpp.
   OwningExprResult ActOnOperandName(SourceLocation IILoc, IdentifierInfo *II,
                                     Scope *CurScope) LLVM_OVERRIDE;
+  OwningExprResult ActOnSelectorExpr(ExprArg Base, SourceLocation OpLoc,
+                                     SourceLocation IILoc, IdentifierInfo *II)
+                                     LLVM_OVERRIDE;
 
 #if 0
   bool CanUseDecl(NamedDecl *D);

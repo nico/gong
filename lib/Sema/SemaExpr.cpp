@@ -1707,6 +1707,13 @@ Sema::ActOnOperandName(SourceLocation IILoc, IdentifierInfo *II,
   return BuildDeclRefExpr(R.getFoundDecl(), Ty);
 }
 
+Action::OwningExprResult
+Sema::ActOnSelectorExpr(ExprArg Base, SourceLocation OpLoc,
+                        SourceLocation IILoc, IdentifierInfo *II) {
+  // FIXME
+  return ExprEmpty();
+}
+
 #if 0
 /// BuildQualifiedDeclarationNameExpr - Build a C++ qualified
 /// declaration name, generally during template instantiation.
