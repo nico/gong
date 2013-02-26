@@ -1615,7 +1615,6 @@ class MinimalAction : public Action {
   /// For example, user-defined classes, built-in "id" type, etc.
   Scope *TUScope;
   IdentifierTable &Idents;
-  Lexer &L;
   void *TypeNameInfoTablePtr;
 public:
   MinimalAction(Lexer &l);

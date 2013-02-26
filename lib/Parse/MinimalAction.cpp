@@ -75,7 +75,7 @@ static TypeNameInfoTable *getTable(void *TP) {
 }
 
 MinimalAction::MinimalAction(Lexer &l)
-  : Idents(l.getIdentifierTable()), L(l) {
+  : Idents(l.getIdentifierTable()) {
   TypeNameInfoTablePtr = new TypeNameInfoTable();
 }
 
