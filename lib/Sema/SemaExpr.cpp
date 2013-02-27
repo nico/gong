@@ -1710,7 +1710,7 @@ Sema::ActOnOperandName(SourceLocation IILoc, IdentifierInfo *II,
 Action::OwningExprResult
 Sema::ActOnSelectorExpr(ExprArg Base, SourceLocation OpLoc,
                         SourceLocation IILoc, IdentifierInfo *II) {
-  // FIXME
+  // FIXME: ActOnMemberAccessExpr() in SemaExprMember.
   return ExprEmpty();
 }
 
