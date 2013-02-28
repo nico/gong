@@ -1710,7 +1710,20 @@ Sema::ActOnOperandName(SourceLocation IILoc, IdentifierInfo *II,
 Action::OwningExprResult
 Sema::ActOnSelectorExpr(ExprArg Base, SourceLocation OpLoc,
                         SourceLocation IILoc, IdentifierInfo *II) {
+  // If base is a var, this is a lookup into its type (struct or interface)
+  // If base is a type, this could be a MethodExpr.
+
+  Expr *BaseExpr = Base.takeAs<Expr>();
+
+  // Note: This will fail for all ExprEmpty()s getting passed in (atm for all
+  // numeric literals etc)
+  assert(BaseExpr && "no base expression");
+
+  const Type *BaseType = BaseExpr->getType();
+  assert(BaseType);
+
   // FIXME: ActOnMemberAccessExpr() in SemaExprMember.
+
   return ExprEmpty();
 }
 

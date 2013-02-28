@@ -1,4 +1,5 @@
 hotlist:
+P0 give all exprs types (needed for struct lookup support)
 P0 finish struct type support
    - field lookup (clang: SemaExprMember.cpp,
                    ActOnStartCXXMemberReference, ActOnMemberAccessExpr
