@@ -34,8 +34,16 @@ func happy() {
   //a.s.a  // FIXME: should work, not crash
   //a.s.b  // FIXME: should-diag, not crash
 
+  const c foo = foo{}
+  c.a
+
   (a).a
   ((((((a)))))).a
+
+  // FIXME: should work, not crash
+  //struct { a int }{}.a
+  // FIXME: should-diag, not crash
+  //struct{}{}.a
 }
 
 func happy_pointer() {
@@ -54,6 +62,9 @@ func happy_pointer() {
 
   (a).a
   ((((((a)))))).a
+
+  // FIXME: should work, not crash
+  //(&struct { a int }{}).a
 }
 
 func pointer_pointer() {
@@ -73,9 +84,13 @@ func pointer_pointer() {
 
   (a).a
   ((((((a)))))).a
+
+  // FIXME: should diag, not crash
+  //(& &struct { a int }{}).a
 }
 
 // FIXME: embedded fields
+// FIXME: ignore blank identifiers
 
 func types() {
   // FIXME: These should all diag instead of crash.
@@ -83,4 +98,7 @@ func types() {
   //[]int{}.ho
   //map[int]int{}.ho
   //(map[int]int).ho
+
+  type foo int
+  //foo.bar
 }
