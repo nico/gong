@@ -23,49 +23,6 @@
 using namespace gong;
 using namespace sema;
 
-typedef llvm::SmallPtrSet<const CXXRecordDecl*, 4> BaseSet;
-static bool BaseIsNotInSet(const CXXRecordDecl *Base, void *BasesPtr) {
-  const BaseSet &Bases = *reinterpret_cast<const BaseSet*>(BasesPtr);
-  return !Bases.count(Base->getCanonicalDecl());
-}
-
-/// Determines if the given class is provably not derived from all of
-/// the prospective base classes.
-static bool isProvablyNotDerivedFrom(Sema &SemaRef, CXXRecordDecl *Record,
-                                     const BaseSet &Bases) {
-  void *BasesPtr = const_cast<void*>(reinterpret_cast<const void*>(&Bases));
-  return BaseIsNotInSet(Record, BasesPtr) &&
-         Record->forallBases(BaseIsNotInSet, BasesPtr);
-}
-
-/// Diagnose a reference to a field with no object available.
-static void diagnoseInstanceReference(Sema &SemaRef,
-                                      NamedDecl *Rep,
-                                      const DeclarationNameInfo &nameInfo) {
-  SourceLocation Loc = nameInfo.getLoc();
-  SourceRange Range(Loc);
-
-  DeclContext *FunctionLevelDC = SemaRef.getFunctionLevelDeclContext();
-  CXXMethodDecl *Method = dyn_cast<CXXMethodDecl>(FunctionLevelDC);
-  CXXRecordDecl *ContextClass = Method ? Method->getParent() : 0;
-  CXXRecordDecl *RepClass = dyn_cast<CXXRecordDecl>(Rep->getDeclContext());
-
-  bool IsField = isa<FieldDecl>(Rep) || isa<IndirectFieldDecl>(Rep);
-
-  if (ContextClass && RepClass &&
-           !RepClass->Equals(ContextClass) && RepClass->Encloses(ContextClass))
-    // Unqualified lookup in a non-static member function found a member of an
-    // enclosing class.
-    SemaRef.Diag(Loc, diag::err_nested_non_static_member_use)
-      << IsField << RepClass << nameInfo.getName() << ContextClass << Range;
-  else if (IsField)
-    SemaRef.Diag(Loc, diag::err_invalid_non_static_member_use)
-      << nameInfo.getName() << Range;
-  else
-    SemaRef.Diag(Loc, diag::err_member_call_without_object)
-      << Range;
-}
-
 namespace {
 
 // Callback to only accept typo corrections that are a ValueDecl
@@ -84,12 +41,6 @@ LookupMemberExprInRecord(Sema &SemaRef, LookupResult &R,
                          SourceRange BaseRange, const RecordType *RTy,
                          SourceLocation OpLoc) {
   RecordDecl *RDecl = RTy->getDecl();
-  if (!SemaRef.isThisOutsideMemberFunctionBody(QualType(RTy, 0)) &&
-      SemaRef.RequireCompleteType(OpLoc, QualType(RTy, 0),
-                                  diag::err_typecheck_incomplete_tag,
-                                  BaseRange))
-    return true;
-
   DeclContext *DC = RDecl;
 
   // The record definition is complete, now look up the member.
@@ -285,54 +236,11 @@ Sema::BuildMemberReferenceExpr(Expr *BaseExpr, QualType BaseExprType,
     return ExprError();
 
   if (R.empty()) {
-    // Rederive where we looked up.
     DeclContext *DC = BaseType->getAs<RecordType>()->getDecl();
-
-    if (ExtraArgs) {
-      ExprResult RetryExpr;
-      if (!IsArrow && BaseExpr) {
-        SFINAETrap Trap(*this, true);
-        ParsedType ObjectType;
-        bool MayBePseudoDestructor = false;
-        RetryExpr = ActOnStartCXXMemberReference(getCurScope(), BaseExpr,
-                                                 OpLoc, tok::arrow, ObjectType,
-                                                 MayBePseudoDestructor);
-        if (RetryExpr.isUsable() && !Trap.hasErrorOccurred()) {
-          RetryExpr = ActOnMemberAccessExpr(
-              ExtraArgs->S, RetryExpr.get(), OpLoc, tok::arrow, ExtraArgs->Id);
-        }
-        if (Trap.hasErrorOccurred())
-          RetryExpr = ExprError();
-      }
-      if (RetryExpr.isUsable()) {
-        Diag(OpLoc, diag::err_no_member_overloaded_arrow)
-          << MemberName << DC << FixItHint::CreateReplacement(OpLoc, "->");
-        return RetryExpr;
-      }
-    }
-
     Diag(R.getNameLoc(), diag::err_no_member)
       << MemberName << DC
       << (BaseExpr ? BaseExpr->getSourceRange() : SourceRange());
     return ExprError();
-  }
-
-  // Construct an unresolved result if we in fact got an unresolved
-  // result.
-  if (R.isOverloadedResult() || R.isUnresolvableResult()) {
-    // Suppress any lookup-related diagnostics; we'll do these when we
-    // pick a member.
-    R.suppressDiagnostics();
-
-    UnresolvedMemberExpr *MemExpr
-      = UnresolvedMemberExpr::Create(Context, R.isUnresolvableResult(),
-                                     BaseExpr, BaseExprType,
-                                     IsArrow, OpLoc,
-                                     SS.getWithLocInContext(Context),
-                                     MemberNameInfo,
-                                     R.begin(), R.end());
-
-    return Owned(MemExpr);
   }
 
   assert(R.isSingleResult());
