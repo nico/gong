@@ -1,5 +1,6 @@
 hotlist:
-P0 give all exprs types (needed for struct lookup support)
+P0 hand type and / or initializer to VarSpec (and ConstSpec while at it)
+P0 use that to give VarDecls and ConstDecls a type
 P0 finish struct type support
    - need StructType in addition to StructTypeDecl => done
    - need to add StructType support to getTypeDeclTypeSlow
@@ -15,6 +16,7 @@ P0 check types for identity, assignability
 P0 basic expression type checking (unary, binary ops)
 P0 support for number and string literals
    - implement support for fielddecl tags once that's done
+P0 give all exprs types, implement some sema for them
 P0 maps (needs comparison op checking), chans, slices, arrays
 P1 function parameter lists (and return names, and methoddecls)
 !! ParseTypeList() needs something like IdentOrExprList for types, to
