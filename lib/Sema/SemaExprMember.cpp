@@ -11,6 +11,14 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include "gong/Sema/Sema.h"
+
+#include "gong/AST/Expr.h"
+#include "gong/Sema/Lookup.h"
+
+using namespace gong;
+using namespace sema;
+
 #if 0
 #include "gong/Sema/SemaInternal.h"
 #include "gong/AST/DeclCXX.h"
@@ -20,8 +28,6 @@
 #include "gong/Sema/Scope.h"
 #include "gong/Sema/ScopeInfo.h"
 
-using namespace gong;
-using namespace sema;
 
 namespace {
 
@@ -341,6 +347,7 @@ Sema::PerformMemberExprBaseConversion(Expr *Base, bool IsArrow) {
 
   return CheckPlaceholderExpr(Base);
 }
+#endif
 
 /// Look up the given member of the given non-type-dependent
 /// expression.  This can return in one of two ways:
@@ -349,19 +356,13 @@ Sema::PerformMemberExprBaseConversion(Expr *Base, bool IsArrow) {
 ///    the provided structure.  It will take over from there.
 ///  * Otherwise, the returned expression will be produced in place of
 ///    an ordinary member expression.
-ExprResult
-Sema::LookupMemberExpr(LookupResult &R, ExprResult &BaseExpr,
-                       bool &IsArrow, SourceLocation OpLoc) {
-  assert(BaseExpr.get() && "no base expression");
+Action::OwningExprResult
+Sema::LookupMemberExpr(LookupResult &R, Expr &BaseExpr,
+                       SourceLocation OpLoc) {
 
-  // Perform default conversions.
-  BaseExpr = PerformMemberExprBaseConversion(BaseExpr.take(), IsArrow);
-  if (BaseExpr.isInvalid())
-    return ExprError();
-
-  QualType BaseType = BaseExpr.get()->getType();
-  assert(!BaseType->isDependentType());
-
+  const Type *BaseType = BaseExpr.getType();
+  assert(BaseType);
+#if 0
   DeclarationName MemberName = R.getLookupName();
   SourceLocation MemberLoc = R.getNameLoc();
 
@@ -391,18 +392,21 @@ Sema::LookupMemberExpr(LookupResult &R, ExprResult &BaseExpr,
       return ExprError();
     }
   }
+#endif
 
   // Handle field access to simple records.
-  if (const RecordType *RTy = BaseType->getAs<RecordType>()) {
-    if (LookupMemberExprInRecord(*this, R, BaseExpr.get()->getSourceRange(),
-                                 RTy, OpLoc))
-      return ExprError();
+    // FIXME:
+  //if (const RecordType *RTy = BaseType->getAs<RecordType>()) {
+    //if (LookupMemberExprInRecord(*this, R, BaseExpr.get()->getSourceRange(),
+                                 //RTy, OpLoc))
+      //return ExprError();
 
     // Returning valid-but-null is how we indicate to the caller that
     // the lookup result was filled in.
-    return Owned((Expr*) 0);
-  }
+    //return Owned((Expr*) 0);
+  //}
 
+#if 0
   // Failure cases.
  fail:
 
@@ -440,10 +444,12 @@ Sema::LookupMemberExpr(LookupResult &R, ExprResult &BaseExpr,
 
   Diag(OpLoc, diag::err_typecheck_member_reference_struct_union)
     << BaseType << BaseExpr.get()->getSourceRange() << MemberLoc;
+#endif
 
   return ExprError();
 }
 
+#if 0
 /// The main callback when the parser finds something like
 ///   expression . [nested-name-specifier] identifier
 ///   expression -> [nested-name-specifier] identifier
@@ -489,7 +495,45 @@ ExprResult Sema::ActOnMemberAccessExpr(Scope *S, Expr *Base,
 
   return Result;
 }
+#endif
 
+Action::OwningExprResult
+Sema::ActOnSelectorExpr(ExprArg BaseExpr, SourceLocation OpLoc,
+                        SourceLocation IILoc, IdentifierInfo *II) {
+  Expr *Base = BaseExpr.takeAs<Expr>();
+  // Note: This will fail for all ExprEmpty()s getting passed in (atm for all
+  // numeric literals etc)
+  assert(Base && "no base expression");
+
+  // If base is a var, this is a lookup into its type (struct or interface)
+  // If base is a type, this could be a MethodExpr.
+
+  LookupResult R(*this, II, IILoc, LookupMemberName);
+  OwningExprResult BaseResult = Owned(Base);
+  OwningExprResult Result = LookupMemberExpr(R, *Base, OpLoc);
+  if (BaseResult.isInvalid())
+    return ExprError();
+  Base = BaseResult.takeAs<Expr>();
+
+  if (Result.isInvalid()) {
+    Owned(Base);
+    return ExprError();
+  }
+
+  if (Result.get()) {
+    return Result;
+  }
+
+  // FIXME:
+  //ActOnMemberAccessExtraArgs ExtraArgs = {S, Id};
+  //Result = BuildMemberReferenceExpr(Base, Base->getType(),
+                                    //OpLoc, IsArrow, R, false, &ExtraArgs);
+
+  return Result;
+}
+
+
+#if 0
 static ExprResult
 BuildFieldReferenceExpr(Sema &S, Expr *BaseExpr, bool IsArrow,
                         const CXXScopeSpec &SS, FieldDecl *Field,

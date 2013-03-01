@@ -2964,23 +2964,14 @@ public:
                                      ActOnMemberAccessExtraArgs *ExtraArgs = 0);
 
   ExprResult PerformMemberExprBaseConversion(Expr *Base, bool IsArrow);
-  ExprResult LookupMemberExpr(LookupResult &R, ExprResult &Base,
-                              bool &IsArrow, SourceLocation OpLoc,
-                              CXXScopeSpec &SS,
-                              Decl *ObjCImpDecl,
-                              bool HasTemplateArgs);
+#endif
+  OwningExprResult LookupMemberExpr(LookupResult &R, Expr &Base,
+                                    SourceLocation OpLoc);
 
+#if 0
   bool CheckQualifiedMemberReference(Expr *BaseExpr, QualType BaseType,
                                      const CXXScopeSpec &SS,
                                      const LookupResult &R);
-
-  ExprResult ActOnDependentMemberExpr(Expr *Base, QualType BaseType,
-                                      bool IsArrow, SourceLocation OpLoc,
-                                      const CXXScopeSpec &SS,
-                                      SourceLocation TemplateKWLoc,
-                                      NamedDecl *FirstQualifierInScope,
-                               const DeclarationNameInfo &NameInfo,
-                               const TemplateArgumentListInfo *TemplateArgs);
 
   ExprResult ActOnMemberAccessExpr(Scope *S, Expr *Base,
                                    SourceLocation OpLoc,
