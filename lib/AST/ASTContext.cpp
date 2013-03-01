@@ -2261,9 +2261,8 @@ QualType ASTContext::getInjectedClassNameType(CXXRecordDecl *Decl,
 /// getTypeDeclType - Return the unique reference to the type for the
 /// specified type declaration.
 const Type *ASTContext::getTypeDeclTypeSlow(const TypeDecl *Decl) const {
-  // FIXME: Enable these:
-  //assert(Decl && "Passed null for Decl param");
-  //assert(!Decl->TypeForDecl && "TypeForDecl present in slow case");
+  assert(Decl && "Passed null for Decl param");
+  assert(!Decl->TypeForDecl && "TypeForDecl present in slow case");
 
   //if (const TypedefNameDecl *Typedef = dyn_cast<TypedefNameDecl>(Decl))
   //  return getTypedefType(Typedef);
@@ -2271,6 +2270,9 @@ const Type *ASTContext::getTypeDeclTypeSlow(const TypeDecl *Decl) const {
   //assert(!isa<TemplateTypeParmDecl>(Decl) &&
   //       "Template type parameter types are always available.");
 
+  if (const StructTypeDecl *Struct = dyn_cast<StructTypeDecl>(Decl)) {
+    return getStructType(Struct);
+  }
   //if (const RecordDecl *Record = dyn_cast<RecordDecl>(Decl)) {
   //  assert(!Record->getPreviousDecl() &&
   //         "struct/union has previous declaration");
@@ -2308,20 +2310,22 @@ ASTContext::getTypedefType(const TypedefNameDecl *Decl,
   Types.push_back(newType);
   return QualType(newType, 0);
 }
+#endif
 
-QualType ASTContext::getRecordType(const RecordDecl *Decl) const {
-  if (Decl->TypeForDecl) return QualType(Decl->TypeForDecl, 0);
+const Type *ASTContext::getStructType(const StructTypeDecl *Decl) const {
+  if (Decl->TypeForDecl) return Decl->TypeForDecl;
 
-  if (const RecordDecl *PrevDecl = Decl->getPreviousDecl())
-    if (PrevDecl->TypeForDecl)
-      return QualType(Decl->TypeForDecl = PrevDecl->TypeForDecl, 0); 
+  //if (const RecordDecl *PrevDecl = Decl->getPreviousDecl())
+    //if (PrevDecl->TypeForDecl)
+      //return QualType(Decl->TypeForDecl = PrevDecl->TypeForDecl, 0); 
 
-  RecordType *newType = new (*this, TypeAlignment) RecordType(Decl);
+  StructType *newType = new (*this, TypeAlignment) StructType(Decl);
   Decl->TypeForDecl = newType;
   Types.push_back(newType);
-  return QualType(newType, 0);
+  return newType;
 }
 
+#if 0
 QualType ASTContext::getEnumType(const EnumDecl *Decl) const {
   if (Decl->TypeForDecl) return QualType(Decl->TypeForDecl, 0);
 

@@ -61,6 +61,7 @@ namespace llvm {
 }
 
 namespace gong {
+class StructTypeDecl;
 #if 0
   class ASTContext;
   class TypedefNameDecl;
@@ -738,10 +739,8 @@ public:
 class PointerType : public Type, public llvm::FoldingSetNode {
   Type *PointeeType;
 
-  PointerType(Type *Pointee,  Type *CanonicalPtr) :
-    Type(Pointer, CanonicalPtr),
-    PointeeType(Pointee) {
-  }
+  PointerType(Type *Pointee, Type *CanonicalPtr)
+    : Type(Pointer, CanonicalPtr), PointeeType(Pointee) {}
   friend class ASTContext;  // ASTContext creates these.
 
 public:
@@ -1856,7 +1855,23 @@ public:
     return T->getTypeClass() == UnaryTransform;
   }
 };
+#endif
 
+class StructType : public Type {
+  /// Stores the StructTypeDecl associated with this type.
+  StructTypeDecl *decl;
+
+  explicit StructType(const StructTypeDecl *D)
+    : Type(Struct, /*CanonicalTy=*/0), decl(const_cast<StructTypeDecl*>(D)) {}
+  friend class ASTContext;   // ASTContext creates these.
+
+public:
+  StructTypeDecl *getDecl() const { return decl; }
+
+  static bool classof(const Type *T) { return T->getTypeClass() == Struct; }
+};
+
+#if 0
 class TagType : public Type {
   /// Stores the TagDecl associated with this type. The decl may point to any
   /// TagDecl that declares the entity.

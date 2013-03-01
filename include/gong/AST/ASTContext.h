@@ -872,9 +872,11 @@ public:
   /// typedef-name decl.
   QualType getTypedefType(const TypedefNameDecl *Decl,
                           QualType Canon = QualType()) const;
+#endif
 
-  QualType getRecordType(const RecordDecl *Decl) const;
+  const Type *getStructType(const StructTypeDecl *Decl) const;
 
+#if 0
   QualType getEnumType(const EnumDecl *Decl) const;
 
   QualType getInjectedClassNameType(CXXRecordDecl *Decl, QualType TST) const;
