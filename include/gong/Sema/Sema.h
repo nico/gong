@@ -1467,8 +1467,9 @@ public:
                       Scope *S) LLVM_OVERRIDE;
   void ActOnTypeSpec(DeclPtrTy Decl, SourceLocation IILoc, IdentifierInfo &II,
                      DeclArg Type, Scope *S) LLVM_OVERRIDE;
-  void ActOnVarSpec(DeclPtrTy Decl, IdentifierList &Idents,
-                    Scope *S) LLVM_OVERRIDE;
+  void ActOnVarSpec(DeclPtrTy Decl, IdentifierList &Idents, DeclArg Type,
+                    SourceLocation OpLoc, MultiExprArg RHSs, Scope *S)
+                    LLVM_OVERRIDE;
 
   OwningStmtResult ActOnShortVarDeclStmt(IdentifierList &Idents,
                                          SourceLocation OpLoc,

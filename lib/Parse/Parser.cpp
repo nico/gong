@@ -1034,8 +1034,9 @@ bool Parser::ParseConstSpec(Action::DeclPtrTy ConstDecl) {
     SkipUntil(tok::semi, /*ConsumeSemi=*/false, /*DontConsume=*/true);
     return true;
   }
+  OwningDeclResult Type(Actions);
   if (Tok.isNot(tok::equal))
-    ParseType();
+    Type = ParseType();
   if (Tok.isNot(tok::equal))
     Diag(Tok, diag::expected_equal);
   else
@@ -1107,20 +1108,36 @@ bool Parser::ParseVarSpec(Action::DeclPtrTy VarDecl) {
               /*ConsumeSemi=*/false, /*DontConsume=*/true);
     return true;
   }
+
+  OwningDeclResult Type(Actions);
+  SourceLocation OpLoc;
+  ExprVector Exprs(Actions);
+
   if (Tok.isNot(tok::equal))
-    ParseType();
+    Type = ParseType();
 
-  // FIXME: call this later; pass equalloc, rhs
-  Actions.ActOnVarSpec(VarDecl, IdentList, getCurScope());
 
-  if (Tok.is(tok::semi) || Tok.is(tok::r_paren) || Tok.is(tok::r_brace))
+  if (Tok.is(tok::semi) || Tok.is(tok::r_paren) || Tok.is(tok::r_brace)) {
+    Actions.ActOnVarSpec(VarDecl, IdentList, Type, OpLoc, move_arg(Exprs),
+                         getCurScope());
     return false;
-  if (Tok.isNot(tok::equal))
+  }
+
+  bool Fail = false;
+  if (Tok.isNot(tok::equal)) {
     Diag(Tok, diag::expected_equal);
-  else
-    ConsumeToken();  // Eat '='.
-  ExprVector Exprs(Actions);  // FIXME: use
-  return ParseExpressionList(Exprs);
+    Fail = true;
+  } else
+    OpLoc = ConsumeToken();  // Eat '='.
+
+  if (ParseExpressionList(Exprs))
+    Fail = true;
+
+  // Call this even on invalid code, so that sema can register the idents in
+  // IdentList as vars.  This will likely lead to better diagnostics.
+  Actions.ActOnVarSpec(VarDecl, IdentList, Type, OpLoc, move_arg(Exprs),
+                       getCurScope());
+  return Fail;
 }
 
 Action::DeclPtrTy Parser::ParseDeclGroup(DeclGroupKind Kind,

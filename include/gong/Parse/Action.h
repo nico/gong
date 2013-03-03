@@ -260,9 +260,22 @@ public:
   ///
   /// \param Decl The Decl returned by either ActOnSingleTypeDecl() or
   ///             ActOnStartMultiDecl().
-  // FIXME: Pass rhs, type once types are figured out
-  virtual void ActOnVarSpec(DeclPtrTy Decl, IdentifierList &Idents, Scope *S) {}
-
+  ///
+  /// \param Idents The variable names being declared.
+  ///
+  /// \param Type The explicit type of the variables, if present.  If this is
+  ///             omitted, OpLoc and RHSs must be passed.
+  ///
+  /// \param OpLoc The location of the '=', if present. If Type is set, this is
+  ///              optional.
+  ///
+  /// \param RHSs The right-hand side expressions, if present. If Type is set,
+  ///             this is optional.
+  ///
+  /// \param S the scope the var spec is in.
+  virtual void ActOnVarSpec(DeclPtrTy Decl, IdentifierList &Idents,
+                            DeclArg Type, SourceLocation OpLoc,
+                            MultiExprArg RHSs, Scope *S) {}
 
   /// Registers an identifier as function name.
   ///
@@ -984,7 +997,7 @@ public:
   ///
   /// Note that this is also called for conversion expressions, such as
   /// "int(4.4)". FIXME: Rename to ActOnCallOrConversionExpr()?
-  /// FIXME: Decide if this hsould also be called for BuiltinCalls (probably).
+  /// FIXME: Decide if this should also be called for BuiltinCalls (probably).
   ///
   /// \param Base the expression that is being called.
   ///

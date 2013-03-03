@@ -1420,7 +1420,8 @@ void Sema::ActOnTypeSpec(DeclPtrTy Decl, SourceLocation IILoc,
 }
 
 /// Registers identifiers as var names.
-void Sema::ActOnVarSpec(DeclPtrTy Decl, IdentifierList &IdentList, Scope *S) {
+void Sema::ActOnVarSpec(DeclPtrTy Decl, IdentifierList &IdentList, DeclArg Type,
+                        SourceLocation OpLoc, MultiExprArg RHSs, Scope *S) {
   assert(S->getFlags() & Scope::DeclScope);
   DeclContext *DC = Decl.getAs<DeclarationDecl>();
 
