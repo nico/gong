@@ -389,6 +389,10 @@ public:
 class TypedIdentListDecl : public Decl, public DeclContext {
   virtual void anchor();
 
+  /// May be NULL, for example for a VarSpecDecl without an explicitly
+  /// mentioned type: The RHS could be `= 1, "str"`.
+  TypeDecl *Type;
+
   /// new[]'d array of pointers to IdentifierInfos for the names in this spec.
   IdentifierInfo **Idents;
 
@@ -403,8 +407,8 @@ class TypedIdentListDecl : public Decl, public DeclContext {
 
 protected:
   TypedIdentListDecl(Kind DK, DeclContext *DC, SourceLocation L)
-    : Decl(DK, DC, L), DeclContext(Decl::VarSpec), Idents(0), IdentLocs(0),
-      NumIdents(0) {}
+    : Decl(DK, DC, L), DeclContext(Decl::VarSpec), Type(0), Idents(0),
+      IdentLocs(0), NumIdents(0) {}
 
 public:
   const IdentifierInfo *getIdent(unsigned i) const {
@@ -424,6 +428,9 @@ public:
     setIdents(getASTContext(), IdentInfo, IdentLocs);
   }
 
+  void setTypeDecl(TypeDecl *T) { Type = T; }
+  TypeDecl *getTypeDecl() const { return Type; }
+
   // Implement isa/cast/dyncast/etc.
   static bool classof(const Decl *D) { return classofKind(D->getKind()); }
   static bool classofKind(Kind K) {
@@ -434,14 +441,22 @@ public:
 /// Represents one ident in a TypedIdentListDecl.
 class TypedIdentEntryDecl : public NamedDecl {
   virtual void anchor();
+
+  /// The type of this entry.
+  const Type *T;
+
 protected:
   TypedIdentEntryDecl(Kind DK, TypedIdentListDecl *Parent, unsigned Index)
     : NamedDecl(DK, Parent, Parent->getIdentLoc(Index),
-                Parent->getIdent(Index)) {}
+                Parent->getIdent(Index)), T(0) {}
   TypedIdentEntryDecl(Kind DK, TypedIdentListDecl *Parent,
                       SourceLocation NameLoc, IdentifierInfo *Name)
-    : NamedDecl(DK, Parent, NameLoc, Name) {}
+    : NamedDecl(DK, Parent, NameLoc, Name), T(0) {}
 public:
+
+  void setType(const Type *t) { T = t; }
+  const Type *getType() const { return T; }
+
   // Implement isa/cast/dyncast/etc.
   static bool classof(const Decl *D) { return classofKind(D->getKind()); }
   static bool classofKind(Kind K) {

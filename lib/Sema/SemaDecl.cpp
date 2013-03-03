@@ -1432,8 +1432,18 @@ void Sema::ActOnVarSpec(DeclPtrTy Decl, IdentifierList &IdentList, DeclArg Type,
   VarSpecDecl *VarSpec = VarSpecDecl::Create(Context, DC, IdentLocs[0]);
   VarSpec->setIdents(Idents, IdentLocs);
 
+  if (Type.get())
+    VarSpec->setTypeDecl(Type.takeAs<TypeDecl>());
+
   for (unsigned i = 0; i < Idents.size(); ++i) {
     VarDecl *New = VarDecl::Create(Context, VarSpec, i);
+
+    if (VarSpec->getTypeDecl())
+      New->setType(Context.getTypeDeclType(VarSpec->getTypeDecl()));
+
+    // FIXME: If has rhs, get type from rhs
+    // check for assignability
+
     CheckRedefinitionAndPushOnScope(*this, VarSpec, S, New);
   }
 }
@@ -1442,7 +1452,7 @@ Action::OwningStmtResult
 Sema::ActOnShortVarDeclStmt(IdentifierList &IdentList,
                             SourceLocation OpLoc,
                             MultiExprArg RHSs) {
-  // FIXME: Own AST type, fixit to change := to = if no variables are new.
+  // FIXME: Own AST type. fixit to change := to = if no variables are new?
   ArrayRef<IdentifierInfo*> Idents = IdentList.getIdents();
   ArrayRef<SourceLocation> IdentLocs = IdentList.getIdentLocs();
   assert(Idents.size() >= 1);
@@ -1489,7 +1499,7 @@ Sema::ActOnShortVarDeclStmt(IdentifierList &IdentList,
          I != E; ++I)
       Diag((*I)->getLocation(), diag::note_var_declared)
           << &(*I)->getDeclName();
-    // FIXME: Recover by calling ActOnAssignment()
+    // FIXME: Recover by calling ActOnAssignment() (only when types match?)
     return StmtError();
   }
 
