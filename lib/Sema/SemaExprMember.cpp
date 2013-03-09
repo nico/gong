@@ -87,34 +87,6 @@ LookupMemberExprInRecord(Sema &SemaRef, LookupResult &R,
 }
 
 #if 0
-ExprResult
-Sema::BuildMemberReferenceExpr(Expr *Base, QualType BaseType,
-                               SourceLocation OpLoc, bool IsArrow,
-                               const DeclarationNameInfo &NameInfo) {
-  LookupResult R(*this, NameInfo, LookupMemberName);
-
-  // Explicit member accesses.
-  ExprResult BaseResult = Owned(Base);
-  ExprResult Result = LookupMemberExpr(R, BaseResult, IsArrow, OpLoc);
-
-  if (BaseResult.isInvalid())
-    return ExprError();
-  Base = BaseResult.take();
-
-  if (Result.isInvalid()) {
-    Owned(Base);
-    return ExprError();
-  }
-
-  if (Result.get())
-    return Result;
-
-  // LookupMemberExpr can modify Base, and thus change BaseType
-  BaseType = Base->getType();
-
-  return BuildMemberReferenceExpr(Base, BaseType, OpLoc, IsArrow, R);
-}
-
 static ExprResult
 BuildFieldReferenceExpr(Sema &S, Expr *BaseExpr, bool IsArrow,
                         FieldDecl *Field, DeclAccessPair FoundDecl,
@@ -227,35 +199,40 @@ static MemberExpr *BuildMemberExpr(Sema &SemaRef,
   SemaRef.MarkMemberReferenced(E);
   return E;
 }
+#endif
 
-ExprResult
-Sema::BuildMemberReferenceExpr(Expr *BaseExpr, QualType BaseExprType,
-                               SourceLocation OpLoc, bool IsArrow,
-                               LookupResult &R,
-                               ActOnMemberAccessExtraArgs *ExtraArgs) {
-  QualType BaseType = BaseExprType;
-  if (IsArrow) {
-    assert(BaseType->isPointerType());
-    BaseType = BaseType->castAs<PointerType>()->getPointeeType();
-  }
-  R.setBaseObjectType(BaseType);
+Action::OwningExprResult
+Sema::BuildMemberReferenceExpr(Expr *BaseExpr, const Type *BaseExprType,
+                               SourceLocation OpLoc, LookupResult &R) {
+  const Type* BaseType = BaseExprType;
+  //if (IsArrow) {
+    //assert(BaseType->isPointerType());
+    //BaseType = BaseType->castAs<PointerType>()->getPointeeType();
+  //}
+  //R.setBaseObjectType(BaseType);
 
-  const DeclarationNameInfo &MemberNameInfo = R.getLookupNameInfo();
-  DeclarationName MemberName = MemberNameInfo.getName();
-  SourceLocation MemberLoc = MemberNameInfo.getLoc();
+  //const DeclarationNameInfo &MemberNameInfo = R.getLookupNameInfo();
+  //DeclarationName MemberName = MemberNameInfo.getName();
+  //SourceLocation MemberLoc = MemberNameInfo.getLoc();
+  IdentifierInfo *II = R.getLookupName();
 
   if (R.isAmbiguous())
     return ExprError();
 
+  // FIXME: add "in <type>"
+  // FIXME: embedded fields
+  // FIXME: make this work for typenames for structs too
   if (R.empty()) {
-    DeclContext *DC = BaseType->getAs<RecordType>()->getDecl();
-    Diag(R.getNameLoc(), diag::err_no_member)
-      << MemberName << DC
-      << (BaseExpr ? BaseExpr->getSourceRange() : SourceRange());
+    //DeclContext *DC = BaseType->getAs<RecordType>()->getDecl();
+    Diag(R.getNameLoc(), diag::no_field) << II;
+    //Diag(R.getNameLoc(), diag::err_no_member)
+      //<< MemberName << DC
+      //<< (BaseExpr ? BaseExpr->getSourceRange() : SourceRange());
     return ExprError();
   }
 
   assert(R.isSingleResult());
+#if 0
   DeclAccessPair FoundDecl = R.begin().getPair();
   NamedDecl *MemberDecl = R.getFoundDecl();
 
@@ -333,9 +310,11 @@ Sema::BuildMemberReferenceExpr(Expr *BaseExpr, QualType BaseExprType,
   Diag(MemberDecl->getLocation(), diag::note_member_declared_here)
     << MemberName;
   R.suppressDiagnostics();
+#endif
   return ExprError();
 }
 
+#if 0
 static bool isRecordType(QualType T) {
   return T->isRecordType();
 }
@@ -455,54 +434,6 @@ Sema::LookupMemberExpr(LookupResult &R, Expr &BaseExpr,
   return ExprError();
 }
 
-#if 0
-/// The main callback when the parser finds something like
-///   expression . [nested-name-specifier] identifier
-///   expression -> [nested-name-specifier] identifier
-/// where 'identifier' encompasses a fairly broad spectrum of
-/// possibilities, including destructor and operator references.
-///
-/// \param OpKind either tok::arrow or tok::period
-ExprResult Sema::ActOnMemberAccessExpr(Scope *S, Expr *Base,
-                                       SourceLocation OpLoc,
-                                       tok::TokenKind OpKind,
-                                       UnqualifiedId &Id) {
-  // Decompose the name into its component parts.
-  DeclarationNameInfo NameInfo;
-  DecomposeUnqualifiedId(Id, NameInfo);
-
-  DeclarationName Name = NameInfo.getName();
-  bool IsArrow = (OpKind == tok::arrow);
-
-  // This is a postfix expression, so get rid of ParenListExprs.
-  ExprResult Result = MaybeConvertParenListExprToParenExpr(S, Base);
-  if (Result.isInvalid()) return ExprError();
-  Base = Result.take();
-
-  LookupResult R(*this, NameInfo, LookupMemberName);
-  ExprResult BaseResult = Owned(Base);
-  Result = LookupMemberExpr(R, BaseResult, IsArrow, OpLoc);
-  if (BaseResult.isInvalid())
-    return ExprError();
-  Base = BaseResult.take();
-
-  if (Result.isInvalid()) {
-    Owned(Base);
-    return ExprError();
-  }
-
-  if (Result.get()) {
-    return Result;
-  }
-
-  ActOnMemberAccessExtraArgs ExtraArgs = {S, Id};
-  Result = BuildMemberReferenceExpr(Base, Base->getType(),
-                                    OpLoc, IsArrow, R, false, &ExtraArgs);
-
-  return Result;
-}
-#endif
-
 Action::OwningExprResult
 Sema::ActOnSelectorExpr(ExprArg BaseExpr, SourceLocation OpLoc,
                         SourceLocation IILoc, IdentifierInfo *II) {
@@ -530,20 +461,7 @@ Sema::ActOnSelectorExpr(ExprArg BaseExpr, SourceLocation OpLoc,
     return Result;
   }
 
-  // FIXME: this should happen in BuildMemberReferenceExpr()
-  // FIXME: add "in <type>"
-  // FIXME: embedded fields
-  // FIXME: make this work for typenames for structs too
-  if (R.empty()) {
-    //DeclContext *DC = BaseType->getAs<RecordType>()->getDecl();
-    Diag(R.getNameLoc(), diag::no_field) << II;
-    return ExprError();
-  }
-  // FIXME:
-  //ActOnMemberAccessExtraArgs ExtraArgs = {S, Id};
-  //Result = BuildMemberReferenceExpr(Base, Base->getType(),
-                                    //OpLoc, IsArrow, R, false, &ExtraArgs);
-
+  Result = BuildMemberReferenceExpr(Base, Base->getType(), OpLoc, R);
   return Result;
 }
 

@@ -2953,17 +2953,11 @@ public:
     Decl *ObjCImpDecl;
     bool HasTrailingLParen;
   };
+#endif
 
-  ExprResult BuildMemberReferenceExpr(Expr *Base, QualType BaseType,
-                                      SourceLocation OpLoc, bool IsArrow,
-                                      const CXXScopeSpec &SS,
-                                      SourceLocation TemplateKWLoc,
-                                      NamedDecl *FirstQualifierInScope,
-                                      LookupResult &R,
-                                 const TemplateArgumentListInfo *TemplateArgs,
-                                      bool SuppressQualifierCheck = false,
-                                     ActOnMemberAccessExtraArgs *ExtraArgs = 0);
-
+  OwningExprResult BuildMemberReferenceExpr(
+      Expr *Base, const Type *BaseType, SourceLocation OpLoc, LookupResult &R);
+#if 0
   ExprResult PerformMemberExprBaseConversion(Expr *Base, bool IsArrow);
 #endif
   OwningExprResult LookupMemberExpr(LookupResult &R, Expr &Base,
