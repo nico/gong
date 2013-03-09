@@ -503,6 +503,7 @@ public:
   /// an initializer of this type. This looks through declarators like pointer
   /// types, but not through decltype or typedefs.
   AutoType *getContainedAutoType() const;
+#endif
 
   /// Member-template getAs<specific type>'.  Look through sugar for
   /// an instance of \<specific type>.   This scheme will eventually
@@ -512,6 +513,7 @@ public:
   /// immediately following this class.
   template <typename T> const T *getAs() const;
 
+#if 0
   /// A variant of getAs<> for array types which silently discards
   /// qualifiers from the outermost type.
   const ArrayType *getAsArrayTypeUnsafe() const;
@@ -2536,6 +2538,7 @@ inline const PartialDiagnostic &operator<<(const PartialDiagnostic &PD,
                   DiagnosticsEngine::ak_qualtype);
   return PD;
 }
+#endif
 
 // Helper class template that is used by Type::getAs to ensure that one does
 // not try to look through a qualified type to get to an array type.
@@ -2556,15 +2559,17 @@ template <typename T> const T *Type::getAs() const {
   if (const T *Ty = dyn_cast<T>(this))
     return Ty;
 
+  return 0; // FIXME: instead do the below once nametypes work.
   // If the canonical form of this type isn't the right kind, reject it.
-  if (!isa<T>(CanonicalType))
-    return 0;
+  //if (!isa<T>(CanonicalType))
+    //return 0;
 
   // If this is a typedef for the type, strip the typedef off without
   // losing all typedef information.
-  return cast<T>(getUnqualifiedDesugaredType());
+  //return cast<T>(getUnqualifiedDesugaredType());
 }
 
+#if 0
 inline const ArrayType *Type::getAsArrayTypeUnsafe() const {
   // If this is directly an array type, return it.
   if (const ArrayType *arr = dyn_cast<ArrayType>(this))

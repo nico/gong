@@ -380,8 +380,7 @@ Sema::LookupMemberExpr(LookupResult &R, Expr &BaseExpr,
 #endif
 
   // Handle field access to simple records.
-  // FIXME: Use BaseType->getAs<>() instead
-  if (const StructType *STy = dyn_cast<StructType>(BaseType)) {
+  if (const StructType *STy = BaseType->getAs<StructType>()) {
     if (LookupMemberExprInRecord(*this, R, //BaseExpr.get()->getSourceRange(),
                                  STy, OpLoc))
       return ExprError();
