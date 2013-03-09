@@ -37,7 +37,9 @@ func happy() {
   c.a
 
   (a).a
+  (a).b  // FIXME: should-diag
   ((((((a)))))).a
+  ((((((a)))))).b  // FIXME: should-diag
 
   // FIXME: should work, not crash
   //struct { a int }{}.a
@@ -58,7 +60,9 @@ func happy_direct_type() {
   //a.s.b  // FIXME: should-diag, not crash
 
   (a).a
+  (a).b  // FIXME: should-diag
   ((((((a)))))).a
+  ((((((a)))))).b  // FIXME: should-diag
 }
 
 func happy_pointer() {
@@ -76,7 +80,9 @@ func happy_pointer() {
   //a.s.b  // FIXME: should-diag, not crash
 
   (a).a
+  (a).b  // FIXME: should-diag
   ((((((a)))))).a
+  ((((((a)))))).b  // FIXME: should-diag
 
   // FIXME: should work, not crash
   //(&struct { a int }{}).a
@@ -98,7 +104,9 @@ func pointer_pointer() {
   //a.s.b
 
   (a).a
+  (a).b
   ((((((a)))))).a
+  ((((((a)))))).b
 
   // FIXME: should diag, not crash
   //(& &struct { a int }{}).a
