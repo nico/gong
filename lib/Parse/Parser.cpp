@@ -704,9 +704,10 @@ Action::OwningDeclResult Parser::ParseFieldDecl() {
         }
       }
       OwningDeclResult Type = ParseType();
-      if (!Type.isInvalid())
+      if (!Type.isInvalid()) {
+        ParseScope FieldScope(this, Scope::DeclScope);
         Res = Actions.ActOnFieldDecl(IdentList, move(Type), getCurScope());
-      else
+      } else
         Res = DeclError();
     } else {
       SourceLocation NoStarLoc;

@@ -1745,10 +1745,14 @@ Sema::ActOnFieldDecl(IdentifierList &IdentList, DeclArg Type, Scope *S) {
       FieldSpecDecl::Create(Context, CurContext, IdentLocs[0]);
   FieldSpec->setIdents(Idents, IdentLocs);
 
+  CurContext->addDecl(FieldSpec);
+  PushDeclContext(S, FieldSpec);
   for (unsigned i = 0; i < Idents.size(); ++i) {
     FieldDecl *New = FieldDecl::Create(Context, FieldSpec, i);
     CheckRedefinitionAndPushOnScope(*this, FieldSpec, S, New);
   }
+  PopDeclContext();
+
   return Owned(FieldSpec);
 }
 

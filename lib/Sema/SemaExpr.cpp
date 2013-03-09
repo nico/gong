@@ -1702,9 +1702,12 @@ Sema::ActOnOperandName(SourceLocation IILoc, IdentifierInfo *II,
 
   const Type *Ty = Context.UnknownAnyTy;
   Decl *D = R.getFoundDecl();
-  // FIXME: checking for TSD looks confused
-  if (TypeSpecDecl *TSD = dyn_cast<TypeSpecDecl>(D))
-    Ty = Context.getTypeDeclType(TSD->getTypeDecl());
+  // FIXME: consts, types, functions...
+  if (VarDecl *VD = dyn_cast<VarDecl>(D)) {
+    Ty = VD->getType();
+    // FIXME: remove this once all exprs have a type.
+    if (!Ty) Ty = Context.UnknownAnyTy;
+  }
   return BuildDeclRefExpr(R.getFoundDecl(), Ty);
 }
 

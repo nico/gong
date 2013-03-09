@@ -41,13 +41,15 @@ class RecordMemberExprValidatorCCC : public CorrectionCandidateCallback {
 };
 
 }
+#endif
 
 static bool
 LookupMemberExprInRecord(Sema &SemaRef, LookupResult &R, 
-                         SourceRange BaseRange, const RecordType *RTy,
+                         //SourceRange BaseRange,
+                         const StructType *STy,
                          SourceLocation OpLoc) {
-  RecordDecl *RDecl = RTy->getDecl();
-  DeclContext *DC = RDecl;
+  StructTypeDecl *SDecl = STy->getDecl();
+  DeclContext *DC = SDecl;
 
   // The record definition is complete, now look up the member.
   SemaRef.LookupQualifiedName(R, DC);
@@ -55,6 +57,7 @@ LookupMemberExprInRecord(Sema &SemaRef, LookupResult &R,
   if (!R.empty())
     return false;
 
+#if 0
   // We didn't find anything with the given name, so try to correct
   // for typos.
   DeclarationName Name = R.getLookupName();
@@ -77,10 +80,13 @@ LookupMemberExprInRecord(Sema &SemaRef, LookupResult &R,
     SemaRef.Diag(ND->getLocation(), diag::note_previous_decl)
       << ND->getDeclName();
   }
+#endif
 
+  // FIXME: Is this right? (also in clang)
   return false;
 }
 
+#if 0
 ExprResult
 Sema::BuildMemberReferenceExpr(Expr *Base, QualType BaseType,
                                SourceLocation OpLoc, bool IsArrow,
@@ -395,16 +401,16 @@ Sema::LookupMemberExpr(LookupResult &R, Expr &BaseExpr,
 #endif
 
   // Handle field access to simple records.
-    // FIXME:
-  //if (const RecordType *RTy = BaseType->getAs<RecordType>()) {
-    //if (LookupMemberExprInRecord(*this, R, BaseExpr.get()->getSourceRange(),
-                                 //RTy, OpLoc))
-      //return ExprError();
+  // FIXME: Use BaseType->getAs<>() instead
+  if (const StructType *STy = dyn_cast<StructType>(BaseType)) {
+    if (LookupMemberExprInRecord(*this, R, //BaseExpr.get()->getSourceRange(),
+                                 STy, OpLoc))
+      return ExprError();
 
     // Returning valid-but-null is how we indicate to the caller that
     // the lookup result was filled in.
-    //return Owned((Expr*) 0);
-  //}
+    return Owned((Expr *)0);
+  }
 
 #if 0
   // Failure cases.
@@ -524,6 +530,15 @@ Sema::ActOnSelectorExpr(ExprArg BaseExpr, SourceLocation OpLoc,
     return Result;
   }
 
+  // FIXME: this should happen in BuildMemberReferenceExpr()
+  // FIXME: add "in <type>"
+  // FIXME: embedded fields
+  // FIXME: make this work for typenames for structs too
+  if (R.empty()) {
+    //DeclContext *DC = BaseType->getAs<RecordType>()->getDecl();
+    Diag(R.getNameLoc(), diag::no_field) << II;
+    return ExprError();
+  }
   // FIXME:
   //ActOnMemberAccessExtraArgs ExtraArgs = {S, Id};
   //Result = BuildMemberReferenceExpr(Base, Base->getType(),

@@ -746,6 +746,8 @@ bool DeclContext::isTransparentContext() const {
     return true;
   else if (DeclKind == Decl::VarSpec)
     return true;
+  else if (DeclKind == Decl::FieldSpec)
+    return true;
 
   return false;
 }

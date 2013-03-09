@@ -1,5 +1,4 @@
 // RUN: %gong_cc1 -verify %s -sema
-//expected-no-diagnostics
 
 package p
 
@@ -44,6 +43,22 @@ func happy() {
   //struct { a int }{}.a
   // FIXME: should-diag, not crash
   //struct{}{}.a
+}
+
+func happy_direct_type() {
+  var a struct {
+    a, b, c int
+    s struct { a int }
+  }
+  a.a
+  a.b
+  a.c
+  a.d  // expected-diag{{no field 'd'}}
+  //a.s.a  // FIXME: should work, not crash
+  //a.s.b  // FIXME: should-diag, not crash
+
+  (a).a
+  ((((((a)))))).a
 }
 
 func happy_pointer() {

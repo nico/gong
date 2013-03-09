@@ -1,5 +1,7 @@
 hotlist:
 P0 varspec type checking
+   - let actonoperandname give types to at least operands referring to vars
+   - then let actonvarspec check for assignability
 P0 use that to give VarDecls and ConstDecls a type
 P0 finish struct type support
    - need StructType in addition to StructTypeDecl => done
