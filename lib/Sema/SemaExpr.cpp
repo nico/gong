@@ -507,12 +507,6 @@ ExprResult Sema::DefaultLvalueConversion(Expr *E) {
 
   UpdateMarkingForLValueToRValue(E);
   
-  // Loading a __weak object implicitly retains the value, so we need a cleanup to 
-  // balance that.
-  if (getLangOpts().ObjCAutoRefCount &&
-      E->getType().getObjCLifetime() == Qualifiers::OCL_Weak)
-    ExprNeedsCleanups = true;
-
   ExprResult Res = Owned(ImplicitCastExpr::Create(Context, T, CK_LValueToRValue,
                                                   E, 0, VK_RValue));
 
@@ -655,8 +649,6 @@ Sema::VarArgKind Sema::isValidVarArgType(const QualType &Ty) {
           !Record->hasNonTrivialDestructor())
         return VAK_ValidInCXX11;
 
-  if (getLangOpts().ObjCAutoRefCount && Ty->isObjCLifetimeType())
-    return VAK_Valid;
   return VAK_Invalid;
 }
 
@@ -693,19 +685,10 @@ bool Sema::variadicArgumentPODCheck(const Expr *E, VariadicCallType CT) {
 ExprResult Sema::DefaultVariadicArgumentPromotion(Expr *E, VariadicCallType CT,
                                                   FunctionDecl *FDecl) {
   if (const BuiltinType *PlaceholderTy = E->getType()->getAsPlaceholderType()) {
-    // Strip the unbridged-cast placeholder expression off, if applicable.
-    if (PlaceholderTy->getKind() == BuiltinType::ARCUnbridgedCast &&
-        (CT == VariadicMethod ||
-         (FDecl && FDecl->hasAttr<CFAuditedTransferAttr>()))) {
-      E = stripARCUnbridgedCast(E);
-
-    // Otherwise, do normal placeholder checking.
-    } else {
-      ExprResult ExprRes = CheckPlaceholderExpr(E);
-      if (ExprRes.isInvalid())
-        return ExprError();
-      E = ExprRes.take();
-    }
+    ExprResult ExprRes = CheckPlaceholderExpr(E);
+    if (ExprRes.isInvalid())
+      return ExprError();
+    E = ExprRes.take();
   }
   
   ExprResult ExprRes = DefaultArgumentPromotion(E);
@@ -3276,12 +3259,6 @@ bool Sema::GatherArgumentsForCall(SourceLocation CallLoc,
       if (FDecl && i < FDecl->getNumParams())
         Param = FDecl->getParamDecl(i);
 
-      // Strip the unbridged-cast placeholder expression off, if applicable.
-      if (Arg->getType() == Context.ARCUnbridgedCastTy &&
-          FDecl && FDecl->hasAttr<CFAuditedTransferAttr>() &&
-          (!Param || !Param->hasAttr<CFConsumedAttr>()))
-        Arg = stripARCUnbridgedCast(Arg);
-
       InitializedEntity Entity = Param ?
           InitializedEntity::InitializeParameter(Context, Param, ProtoArgType)
         : InitializedEntity::InitializeParameter(Context, ProtoArgType,
@@ -5152,10 +5129,6 @@ Sema::CheckSingleAssignmentConstraints(QualType LHSType, ExprResult &RHS,
       if (Res.isInvalid())
         return Incompatible;
       Sema::AssignConvertType result = Compatible;
-      if (getLangOpts().ObjCAutoRefCount &&
-          !CheckObjCARCUnavailableWeakConversion(LHSType,
-                                                 RHS.get()->getType()))
-        result = IncompatibleObjCWeakRef;
       RHS = Res;
       return result;
     }
@@ -6515,42 +6488,6 @@ static bool CheckForModifiableLvalue(Expr *E, SourceLocation Loc, Sema &S) {
         Diag = diag::err_lambda_decl_ref_not_modifiable_lvalue;
       break;
     }
-
-    // In ARC, use some specialized diagnostics for occasions where we
-    // infer 'const'.  These are always pseudo-strong variables.
-    if (S.getLangOpts().ObjCAutoRefCount) {
-      DeclRefExpr *declRef = dyn_cast<DeclRefExpr>(E->IgnoreParenCasts());
-      if (declRef && isa<VarDecl>(declRef->getDecl())) {
-        VarDecl *var = cast<VarDecl>(declRef->getDecl());
-
-        // Use the normal diagnostic if it's pseudo-__strong but the
-        // user actually wrote 'const'.
-        if (var->isARCPseudoStrong() &&
-            (!var->getTypeSourceInfo() ||
-             !var->getTypeSourceInfo()->getType().isConstQualified())) {
-          // There are two pseudo-strong cases:
-          //  - self
-          ObjCMethodDecl *method = S.getCurMethodDecl();
-          if (method && var == method->getSelfDecl())
-            Diag = method->isClassMethod()
-              ? diag::err_typecheck_arc_assign_self_class_method
-              : diag::err_typecheck_arc_assign_self;
-
-          //  - fast enumeration variables
-          else
-            Diag = diag::err_typecheck_arr_assign_enumeration;
-
-          SourceRange Assign;
-          if (Loc != OrigLoc)
-            Assign = SourceRange(OrigLoc, OrigLoc);
-          S.Diag(Loc, Diag) << E->getSourceRange() << Assign;
-          // We need to preserve the AST regardless, so migration tool 
-          // can do its job.
-          return false;
-        }
-      }
-    }
-
     break;
   case Expr::MLV_ArrayType:
   case Expr::MLV_ArrayTemporary:
@@ -6698,8 +6635,6 @@ QualType Sema::CheckAssignmentOperands(Expr *LHSExpr, ExprResult &RHS,
         if (Level != DiagnosticsEngine::Ignored)
           getCurFunction()->markSafeWeakUse(RHS.get());
 
-      } else if (getLangOpts().ObjCAutoRefCount) {
-        checkUnsafeExprAssigns(Loc, LHSExpr, RHS.get());
       }
     }
   } else {
@@ -7887,29 +7822,6 @@ ExprResult Sema::ActOnAddrLabel(SourceLocation OpLoc, SourceLocation LabLoc,
                                        Context.getPointerType(Context.VoidTy)));
 }
 
-/// Given the last statement in a statement-expression, check whether
-/// the result is a producing expression (like a call to an
-/// ns_returns_retained function) and, if so, rebuild it to hoist the
-/// release out of the full-expression.  Otherwise, return null.
-/// Cannot fail.
-static Expr *maybeRebuildARCConsumingStmt(Stmt *Statement) {
-  // Should always be wrapped with one of these.
-  ExprWithCleanups *cleanups = dyn_cast<ExprWithCleanups>(Statement);
-  if (!cleanups) return 0;
-
-  ImplicitCastExpr *cast = dyn_cast<ImplicitCastExpr>(cleanups->getSubExpr());
-  if (!cast || cast->getCastKind() != CK_ARCConsumeObject)
-    return 0;
-
-  // Splice out the cast.  This shouldn't modify any interesting
-  // features of the statement.
-  Expr *producer = cast->getSubExpr();
-  assert(producer->getType() == cast->getType());
-  assert(producer->getValueKind() == cast->getValueKind());
-  cleanups->setSubExpr(producer);
-  return cleanups;
-}
-
 void Sema::ActOnStartStmtExpr() {
   PushExpressionEvaluationContext(ExprEvalContexts.back().Context);
 }
@@ -7964,23 +7876,12 @@ Sema::ActOnStmtExpr(SourceLocation LPLoc, Stmt *SubStmt,
       Ty = LastExpr.get()->getType().getUnqualifiedType();
 
       if (!Ty->isDependentType() && !LastExpr.get()->isTypeDependent()) {
-        // In ARC, if the final expression ends in a consume, splice
-        // the consume out and bind it later.  In the alternate case
-        // (when dealing with a retainable type), the result
-        // initialization will create a produce.  In both cases the
-        // result will be +1, and we'll need to balance that out with
-        // a bind.
-        if (Expr *rebuiltLastStmt
-              = maybeRebuildARCConsumingStmt(LastExpr.get())) {
-          LastExpr = rebuiltLastStmt;
-        } else {
-          LastExpr = PerformCopyInitialization(
-                            InitializedEntity::InitializeResult(LPLoc, 
-                                                                Ty,
-                                                                false),
-                                                   SourceLocation(),
-                                               LastExpr);
-        }
+        LastExpr = PerformCopyInitialization(
+                          InitializedEntity::InitializeResult(LPLoc, 
+                                                              Ty,
+                                                              false),
+                                                 SourceLocation(),
+                                             LastExpr);
 
         if (LastExpr.isInvalid())
           return ExprError();
@@ -10747,13 +10648,6 @@ ExprResult Sema::CheckPlaceholderExpr(Expr *E) {
     tryToRecoverWithCall(result, PDiag(diag::err_bound_member_function),
                          /*complain*/ true);
     return result;
-  }
-
-  // ARC unbridged casts.
-  case BuiltinType::ARCUnbridgedCast: {
-    Expr *realCast = stripARCUnbridgedCast(E);
-    diagnoseARCUnbridgedCast(realCast);
-    return Owned(realCast);
   }
 
   // Expressions of unknown type.
