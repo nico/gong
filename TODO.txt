@@ -8,7 +8,6 @@ P0 finish struct type support
      - named structs
      - mention struct name in diag
      - embedded fields
-     - ast nodes for member accesses
      - spelling
    - recursive struct types (P2)
 P0 check types for identity, assignability

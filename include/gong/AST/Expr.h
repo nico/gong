@@ -2201,221 +2201,57 @@ public:
                        &SubExprs[0]+NumArgs+getNumPreArgs()+PREARGS_START);
   }
 };
+#endif
 
 /// MemberExpr - [C99 6.5.2.3] Structure and Union Members.  X->F and X.F.
 ///
 class MemberExpr : public Expr {
-  /// Extra data stored in some member expressions.
-  struct MemberNameQualifier {
-    /// \brief The nested-name-specifier that qualifies the name, including
-    /// source-location information.
-    NestedNameSpecifierLoc QualifierLoc;
-
-    /// \brief The DeclAccessPair through which the MemberDecl was found due to
-    /// name qualifiers.
-    DeclAccessPair FoundDecl;
-  };
-
-  /// Base - the expression for the base pointer or structure references.  In
+  ///The expression for the base pointer or structure references.  In
   /// X.F, this is "X".
-  Stmt *Base;
+  Expr *Base;
 
-  /// MemberDecl - This is the decl being referenced by the field/member name.
+  /// This is the decl being referenced by the field/member name.
   /// In X.F, this is the decl referenced by F.
-  ValueDecl *MemberDecl;
-
-  /// MemberDNLoc - Provides source/type location info for the
-  /// declaration name embedded in MemberDecl.
-  DeclarationNameLoc MemberDNLoc;
+  NamedDecl *MemberDecl;
 
   /// MemberLoc - This is the location of the member name.
   SourceLocation MemberLoc;
-
-  /// IsArrow - True if this is "X->F", false if this is "X.F".
-  bool IsArrow : 1;
-
-  /// \brief True if this member expression used a nested-name-specifier to
-  /// refer to the member, e.g., "x->Base::f", or found its member via a using
-  /// declaration.  When true, a MemberNameQualifier
-  /// structure is allocated immediately after the MemberExpr.
-  bool HasQualifierOrFoundDecl : 1;
 
   /// \brief True if this member expression refers to a method that
   /// was resolved from an overloaded set having size greater than 1.
   bool HadMultipleCandidates : 1;
 
-  /// \brief Retrieve the qualifier that preceded the member name, if any.
-  MemberNameQualifier *getMemberQualifier() {
-    assert(HasQualifierOrFoundDecl);
-    return reinterpret_cast<MemberNameQualifier *> (this + 1);
-  }
-
-  /// \brief Retrieve the qualifier that preceded the member name, if any.
-  const MemberNameQualifier *getMemberQualifier() const {
-    return const_cast<MemberExpr *>(this)->getMemberQualifier();
-  }
-
 public:
-  MemberExpr(Expr *base, bool isarrow, ValueDecl *memberdecl,
-             const DeclarationNameInfo &NameInfo, QualType ty,
-             ExprValueKind VK, ExprObjectKind OK)
-    : Expr(MemberExprClass, ty, VK, OK,
-           base->isTypeDependent(),
-           base->isValueDependent(),
-           base->isInstantiationDependent(),
-           base->containsUnexpandedParameterPack()),
-      Base(base), MemberDecl(memberdecl), MemberDNLoc(NameInfo.getInfo()),
-      MemberLoc(NameInfo.getLoc()), IsArrow(isarrow),
-      HasQualifierOrFoundDecl(false),
-      HadMultipleCandidates(false) {
-    assert(memberdecl->getDeclName() == NameInfo.getName());
+  MemberExpr(Expr *base, NamedDecl *memberdecl,
+             SourceLocation memberloc, const Type *ty)
+             //ExprValueKind VK, ExprObjectKind OK)
+    : Expr(MemberExprClass, ty),
+      Base(base), MemberDecl(memberdecl), MemberLoc(memberloc) {
   }
 
-  // NOTE: this constructor should be used only when it is known that
-  // the member name can not provide additional syntactic info
-  // (i.e., source locations for C++ operator names or type source info
-  // for constructors, destructors and conversion operators).
-  MemberExpr(Expr *base, bool isarrow, ValueDecl *memberdecl,
-             SourceLocation l, QualType ty,
-             ExprValueKind VK, ExprObjectKind OK)
-    : Expr(MemberExprClass, ty, VK, OK,
-           base->isTypeDependent(), base->isValueDependent(),
-           base->isInstantiationDependent(),
-           base->containsUnexpandedParameterPack()),
-      Base(base), MemberDecl(memberdecl), MemberDNLoc(), MemberLoc(l),
-      IsArrow(isarrow),
-      HasQualifierOrFoundDecl(false),
-      HadMultipleCandidates(false) {}
-
-  static MemberExpr *Create(ASTContext &C, Expr *base, bool isarrow,
-                            NestedNameSpecifierLoc QualifierLoc,
-                            SourceLocation TemplateKWLoc,
-                            ValueDecl *memberdecl, DeclAccessPair founddecl,
-                            DeclarationNameInfo MemberNameInfo,
-                            const TemplateArgumentListInfo *targs,
-                            QualType ty, ExprValueKind VK, ExprObjectKind OK);
+  static MemberExpr *Create(ASTContext &C, Expr *base,
+                            NamedDecl *memberdecl,
+                            SourceLocation memberloc,
+                            const Type *ty);
 
   void setBase(Expr *E) { Base = E; }
-  Expr *getBase() const { return cast<Expr>(Base); }
+  Expr *getBase() const { return Base; }
 
   /// \brief Retrieve the member declaration to which this expression refers.
   ///
   /// The returned declaration will either be a FieldDecl or (in C++)
   /// a CXXMethodDecl.
-  ValueDecl *getMemberDecl() const { return MemberDecl; }
-  void setMemberDecl(ValueDecl *D) { MemberDecl = D; }
+  NamedDecl *getMemberDecl() const { return MemberDecl; }
+  void setMemberDecl(NamedDecl *D) { MemberDecl = D; }
 
-  /// \brief Retrieves the declaration found by lookup.
-  DeclAccessPair getFoundDecl() const {
-    if (!HasQualifierOrFoundDecl)
-      return DeclAccessPair::make(getMemberDecl(),
-                                  getMemberDecl()->getAccess());
-    return getMemberQualifier()->FoundDecl;
-  }
-
-  /// \brief Determines whether this member expression actually had
-  /// a C++ nested-name-specifier prior to the name of the member, e.g.,
-  /// x->Base::foo.
-  bool hasQualifier() const { return getQualifier() != 0; }
-
-  /// \brief If the member name was qualified, retrieves the
-  /// nested-name-specifier that precedes the member name. Otherwise, returns
-  /// NULL.
-  NestedNameSpecifier *getQualifier() const {
-    if (!HasQualifierOrFoundDecl)
-      return 0;
-
-    return getMemberQualifier()->QualifierLoc.getNestedNameSpecifier();
-  }
-
-  /// \brief If the member name was qualified, retrieves the
-  /// nested-name-specifier that precedes the member name, with source-location
-  /// information.
-  NestedNameSpecifierLoc getQualifierLoc() const {
-    if (!hasQualifier())
-      return NestedNameSpecifierLoc();
-
-    return getMemberQualifier()->QualifierLoc;
-  }
-
-  /// Determines whether the member name was preceded by the template keyword.
-  bool hasTemplateKeyword() const { return getTemplateKeywordLoc().isValid(); }
-
-  /// \brief Determines whether the member name was followed by an
-  /// explicit template argument list.
-  bool hasExplicitTemplateArgs() const { return getLAngleLoc().isValid(); }
-
-  /// \brief Copies the template arguments (if present) into the given
-  /// structure.
-  void copyTemplateArgumentsInto(TemplateArgumentListInfo &List) const {
-    if (hasExplicitTemplateArgs())
-      getExplicitTemplateArgs().copyInto(List);
-  }
-
-  /// \brief Retrieve the explicit template argument list that
-  /// follow the member template name.  This must only be called on an
-  /// expression with explicit template arguments.
-  ASTTemplateArgumentListInfo &getExplicitTemplateArgs() {
-    assert(hasExplicitTemplateArgs());
-    return *getTemplateKWAndArgsInfo();
-  }
-
-  /// \brief Retrieve the explicit template argument list that
-  /// followed the member template name.  This must only be called on
-  /// an expression with explicit template arguments.
-  const ASTTemplateArgumentListInfo &getExplicitTemplateArgs() const {
-    return const_cast<MemberExpr *>(this)->getExplicitTemplateArgs();
-  }
-
-  /// \brief Retrieves the optional explicit template arguments.
-  /// This points to the same data as getExplicitTemplateArgs(), but
-  /// returns null if there are no explicit template arguments.
-  const ASTTemplateArgumentListInfo *getOptionalExplicitTemplateArgs() const {
-    if (!hasExplicitTemplateArgs()) return 0;
-    return &getExplicitTemplateArgs();
-  }
-
-  /// \brief Retrieve the template arguments provided as part of this
-  /// template-id.
-  const TemplateArgumentLoc *getTemplateArgs() const {
-    if (!hasExplicitTemplateArgs())
-      return 0;
-
-    return getExplicitTemplateArgs().getTemplateArgs();
-  }
-
-  /// \brief Retrieve the number of template arguments provided as part of this
-  /// template-id.
-  unsigned getNumTemplateArgs() const {
-    if (!hasExplicitTemplateArgs())
-      return 0;
-
-    return getExplicitTemplateArgs().NumTemplateArgs;
-  }
-
-  /// \brief Retrieve the member declaration name info.
-  DeclarationNameInfo getMemberNameInfo() const {
-    return DeclarationNameInfo(MemberDecl->getDeclName(),
-                               MemberLoc, MemberDNLoc);
-  }
-
-  bool isArrow() const { return IsArrow; }
-  void setArrow(bool A) { IsArrow = A; }
-
-  /// getMemberLoc - Return the location of the "member", in X->F, it is the
-  /// location of 'F'.
+  /// Return the location of the "member", in X.F, it is the location of 'F'.
   SourceLocation getMemberLoc() const { return MemberLoc; }
   void setMemberLoc(SourceLocation L) { MemberLoc = L; }
 
-  SourceLocation getLocStart() const LLVM_READONLY;
-  SourceLocation getLocEnd() const LLVM_READONLY;
+  //SourceLocation getLocStart() const LLVM_READONLY;
+  //SourceLocation getLocEnd() const LLVM_READONLY;
 
-  SourceLocation getExprLoc() const LLVM_READONLY { return MemberLoc; }
-
-  /// \brief Determine whether the base of this explicit is implicit.
-  bool isImplicitAccess() const {
-    return getBase() && getBase()->isImplicitCXXThis();
-  }
+  //SourceLocation getExprLoc() const LLVM_READONLY { return MemberLoc; }
 
   /// \brief Returns true if this member expression refers to a method that
   /// was resolved from an overloaded set having size greater than 1.
@@ -2429,17 +2265,18 @@ public:
     HadMultipleCandidates = V;
   }
 
-  static bool classof(const Stmt *T) {
-    return T->getStmtClass() == MemberExprClass;
+  static bool classof(const Expr *T) {
+    return T->getExprClass() == MemberExprClass;
   }
 
   // Iterators
-  child_range children() { return child_range(&Base, &Base+1); }
+  //child_range children() { return child_range(&Base, &Base+1); }
 
   friend class ASTReader;
   friend class ASTStmtWriter;
 };
 
+#if 0
 /// CompoundLiteralExpr - [C99 6.5.2.5]
 ///
 class CompoundLiteralExpr : public Expr {

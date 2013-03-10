@@ -38,6 +38,17 @@
 
 using namespace gong;
 
+void *Expr::operator new(size_t bytes, ASTContext& C,
+                         unsigned alignment) throw() {
+  return ::operator new(bytes, C, alignment);
+}
+
+void *Expr::operator new(size_t bytes, ASTContext* C,
+                         unsigned alignment) throw() {
+  return ::operator new(bytes, *C, alignment);
+}
+
+
 #if 0
 const CXXRecordDecl *Expr::getBestDynamicClassType() const {
   const Expr *E = ignoreParenBaseCasts();
@@ -1250,71 +1261,16 @@ IdentifierInfo *OffsetOfExpr::OffsetOfNode::getFieldName() const {
   
   return reinterpret_cast<IdentifierInfo *> (Data & ~(uintptr_t)Mask);
 }
+#endif
 
-MemberExpr *MemberExpr::Create(ASTContext &C, Expr *base, bool isarrow,
-                               NestedNameSpecifierLoc QualifierLoc,
-                               SourceLocation TemplateKWLoc,
-                               ValueDecl *memberdecl,
-                               DeclAccessPair founddecl,
-                               DeclarationNameInfo nameinfo,
-                               const TemplateArgumentListInfo *targs,
-                               QualType ty,
-                               ExprValueKind vk,
-                               ExprObjectKind ok) {
-  std::size_t Size = sizeof(MemberExpr);
-
-  bool hasQualOrFound = (QualifierLoc ||
-                         founddecl.getDecl() != memberdecl ||
-                         founddecl.getAccess() != memberdecl->getAccess());
-  if (hasQualOrFound)
-    Size += sizeof(MemberNameQualifier);
-
-  if (targs)
-    Size += ASTTemplateKWAndArgsInfo::sizeFor(targs->size());
-  else if (TemplateKWLoc.isValid())
-    Size += ASTTemplateKWAndArgsInfo::sizeFor(0);
-
-  void *Mem = C.Allocate(Size, llvm::alignOf<MemberExpr>());
-  MemberExpr *E = new (Mem) MemberExpr(base, isarrow, memberdecl, nameinfo,
-                                       ty, vk, ok);
-
-  if (hasQualOrFound) {
-    // FIXME: Wrong. We should be looking at the member declaration we found.
-    if (QualifierLoc && QualifierLoc.getNestedNameSpecifier()->isDependent()) {
-      E->setValueDependent(true);
-      E->setTypeDependent(true);
-      E->setInstantiationDependent(true);
-    } 
-    else if (QualifierLoc && 
-             QualifierLoc.getNestedNameSpecifier()->isInstantiationDependent()) 
-      E->setInstantiationDependent(true);
-    
-    E->HasQualifierOrFoundDecl = true;
-
-    MemberNameQualifier *NQ = E->getMemberQualifier();
-    NQ->QualifierLoc = QualifierLoc;
-    NQ->FoundDecl = founddecl;
-  }
-
-  E->HasTemplateKWAndArgsInfo = (targs || TemplateKWLoc.isValid());
-
-  if (targs) {
-    bool Dependent = false;
-    bool InstantiationDependent = false;
-    bool ContainsUnexpandedParameterPack = false;
-    E->getTemplateKWAndArgsInfo()->initializeFrom(TemplateKWLoc, *targs,
-                                                  Dependent,
-                                                  InstantiationDependent,
-                                             ContainsUnexpandedParameterPack);
-    if (InstantiationDependent)
-      E->setInstantiationDependent(true);
-  } else if (TemplateKWLoc.isValid()) {
-    E->getTemplateKWAndArgsInfo()->initializeFrom(TemplateKWLoc);
-  }
-
-  return E;
+MemberExpr *MemberExpr::Create(ASTContext &C, Expr *base,
+                               NamedDecl *memberdecl,
+                               SourceLocation loc,
+                               const Type *ty) {
+  return new (C) MemberExpr(base, memberdecl, loc, ty);
 }
 
+#if 0
 SourceLocation MemberExpr::getLocStart() const {
   if (isImplicitAccess()) {
     if (hasQualifier())

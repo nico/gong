@@ -183,23 +183,18 @@ Sema::BuildAnonymousStructUnionMemberReference(SourceLocation loc,
   
   return Owned(result);
 }
+#endif
 
 /// \brief Build a MemberExpr AST node.
 static MemberExpr *BuildMemberExpr(Sema &SemaRef,
-                                   ASTContext &C, Expr *Base, bool isArrow,
-                                   ValueDecl *Member,
-                                   DeclAccessPair FoundDecl,
-                                   const DeclarationNameInfo &MemberNameInfo,
-                                   QualType Ty,
-                                   ExprValueKind VK, ExprObjectKind OK) {
-  assert((!isArrow || Base->isRValue()) && "-> base must be a pointer rvalue");
-  MemberExpr *E =
-      MemberExpr::Create(C, Base, isArrow,
-                         Member, FoundDecl, MemberNameInfo, Ty, VK, OK);
-  SemaRef.MarkMemberReferenced(E);
+                                   ASTContext &C, Expr *Base,
+                                   NamedDecl *Member,
+                                   SourceLocation loc,
+                                   const Type *Ty) {
+  MemberExpr *E = MemberExpr::Create(C, Base, Member, loc, Ty);
+  //SemaRef.MarkMemberReferenced(E);
   return E;
 }
-#endif
 
 Action::OwningExprResult
 Sema::BuildMemberReferenceExpr(Expr *BaseExpr, const Type *BaseExprType,
@@ -231,9 +226,9 @@ Sema::BuildMemberReferenceExpr(Expr *BaseExpr, const Type *BaseExprType,
   }
 
   assert(R.isSingleResult());
+  NamedDecl *MemberDecl = R.getFoundDecl();
 #if 0
   DeclAccessPair FoundDecl = R.begin().getPair();
-  NamedDecl *MemberDecl = R.getFoundDecl();
 
   // If the decl being referenced had an error, return an error for this
   // sub-expr without emitting another error, in order to avoid cascading
@@ -254,11 +249,16 @@ Sema::BuildMemberReferenceExpr(Expr *BaseExpr, const Type *BaseExprType,
     Owned(BaseExpr);
     return ExprError();
   }
+#endif
 
-  if (FieldDecl *FD = dyn_cast<FieldDecl>(MemberDecl))
-    return BuildFieldReferenceExpr(*this, BaseExpr, IsArrow,
-                                   FD, FoundDecl, MemberNameInfo);
+  if (FieldDecl *FD = dyn_cast<FieldDecl>(MemberDecl)) {
+    //return BuildFieldReferenceExpr(*this, BaseExpr, IsArrow,
+                                   //FD, FoundDecl, MemberNameInfo);
+    return Owned(BuildMemberExpr(*this, Context, BaseExpr, FD,
+                                 R.getNameLoc(), FD->getType()));
+  }
 
+#if 0
   if (IndirectFieldDecl *FD = dyn_cast<IndirectFieldDecl>(MemberDecl))
     // We may have found a field within an anonymous union or struct
     // (C++ [class.union]).

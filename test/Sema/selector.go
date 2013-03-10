@@ -56,8 +56,8 @@ func happy_direct_type() {
   a.b
   a.c
   a.d  // expected-diag{{no field 'd'}}
-  //a.s.a  // FIXME: should work, not crash
-  //a.s.b  // FIXME: should-diag, not crash
+  a.s.a
+  a.s.b  // expected-diag{{no field 'b'}}
 
   (a).a
   (a).b  // FIXME: should-diag

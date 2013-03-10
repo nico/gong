@@ -1749,6 +1749,7 @@ Sema::ActOnFieldDecl(IdentifierList &IdentList, DeclArg Type, Scope *S) {
   PushDeclContext(S, FieldSpec);
   for (unsigned i = 0; i < Idents.size(); ++i) {
     FieldDecl *New = FieldDecl::Create(Context, FieldSpec, i);
+    New->setType(Context.getTypeDeclType(Type.takeAs<TypeDecl>()));
     CheckRedefinitionAndPushOnScope(*this, FieldSpec, S, New);
   }
   PopDeclContext();
