@@ -229,11 +229,6 @@ ConvertTypeToDiagnosticString(ASTContext &Context, QualType Ty,
   return S;
 }
 
-static bool FormatTemplateTypeDiff(ASTContext &Context, QualType FromType,
-                                   QualType ToType, bool PrintTree,
-                                   bool PrintFromType, bool ElideType,
-                                   bool ShowColors, raw_ostream &OS);
-
 void gong::FormatASTNodeDiagnosticArgument(
     DiagnosticsEngine::ArgumentKind Kind,
     intptr_t Val,
@@ -254,76 +249,6 @@ void gong::FormatASTNodeDiagnosticArgument(
   
   switch (Kind) {
     default: llvm_unreachable("unknown ArgumentKind");
-    case DiagnosticsEngine::ak_qualtype_pair: {
-      TemplateDiffTypes &TDT = *reinterpret_cast<TemplateDiffTypes*>(Val);
-      QualType FromType =
-          QualType::getFromOpaquePtr(reinterpret_cast<void*>(TDT.FromType));
-      QualType ToType =
-          QualType::getFromOpaquePtr(reinterpret_cast<void*>(TDT.ToType));
-
-      if (FormatTemplateTypeDiff(Context, FromType, ToType, TDT.PrintTree,
-                                 TDT.PrintFromType, TDT.ElideType,
-                                 TDT.ShowColors, OS)) {
-        NeedQuotes = !TDT.PrintTree;
-        TDT.TemplateDiffUsed = true;
-        break;
-      }
-
-      // Don't fall-back during tree printing.  The caller will handle
-      // this case.
-      if (TDT.PrintTree)
-        return;
-
-      // Attempting to do a template diff on non-templates.  Set the variables
-      // and continue with regular type printing of the appropriate type.
-      Val = TDT.PrintFromType ? TDT.FromType : TDT.ToType;
-      ModLen = 0;
-      ArgLen = 0;
-      // Fall through
-    }
-    case DiagnosticsEngine::ak_qualtype: {
-      assert(ModLen == 0 && ArgLen == 0 &&
-             "Invalid modifier for QualType argument");
-      
-      QualType Ty(QualType::getFromOpaquePtr(reinterpret_cast<void*>(Val)));
-      OS << ConvertTypeToDiagnosticString(Context, Ty, PrevArgs, NumPrevArgs,
-                                          QualTypeVals);
-      NeedQuotes = false;
-      break;
-    }
-    case DiagnosticsEngine::ak_declarationname: {
-      if (ModLen == 9 && !memcmp(Modifier, "objcclass", 9) && ArgLen == 0)
-        OS << '+';
-      else if (ModLen == 12 && !memcmp(Modifier, "objcinstance", 12)
-                && ArgLen==0)
-        OS << '-';
-      else
-        assert(ModLen == 0 && ArgLen == 0 &&
-               "Invalid modifier for DeclarationName argument");
-
-      DeclarationName N = DeclarationName::getFromOpaqueInteger(Val);
-      N.printName(OS);
-      break;
-    }
-    case DiagnosticsEngine::ak_nameddecl: {
-      bool Qualified;
-      if (ModLen == 1 && Modifier[0] == 'q' && ArgLen == 0)
-        Qualified = true;
-      else {
-        assert(ModLen == 0 && ArgLen == 0 &&
-               "Invalid modifier for NamedDecl* argument");
-        Qualified = false;
-      }
-      const NamedDecl *ND = reinterpret_cast<const NamedDecl*>(Val);
-      ND->getNameForDiagnostic(OS, Context.getPrintingPolicy(), Qualified);
-      break;
-    }
-    case DiagnosticsEngine::ak_nestednamespec: {
-      NestedNameSpecifier *NNS = reinterpret_cast<NestedNameSpecifier*>(Val);
-      NNS->print(OS, Context.getPrintingPolicy());
-      NeedQuotes = false;
-      break;
-    }
     case DiagnosticsEngine::ak_declcontext: {
       DeclContext *DC = reinterpret_cast<DeclContext *> (Val);
       assert(DC && "Should never have a null declaration context");
