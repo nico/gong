@@ -10,8 +10,10 @@
 // This file implements a diagnostic formatting hook for AST elements.
 //
 //===----------------------------------------------------------------------===//
-#if 0
+
 #include "gong/AST/ASTDiagnostic.h"
+
+#if 0
 #include "gong/AST/ASTContext.h"
 #include "gong/AST/DeclObjC.h"
 #include "gong/AST/DeclTemplate.h"
