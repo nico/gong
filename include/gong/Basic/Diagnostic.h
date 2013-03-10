@@ -36,6 +36,8 @@ class DiagnosticBuilder;
 class DiagnosticConsumer;
 class IdentifierInfo;
 
+class DeclContext;
+
 /// \brief Annotates a diagnostic with some code that should be
 /// inserted, removed, or replaced to fix the problem.
 ///
@@ -142,7 +144,9 @@ public:
     ak_c_string,        ///< const char *
     ak_sint,            ///< int
     ak_uint,            ///< unsigned
-    ak_identifierinfo   ///< IdentifierInfo
+    ak_identifierinfo,  ///< IdentifierInfo
+
+    ak_declcontext      ///< DeclContext *
   };
 
   /// \brief Represents on argument value, which is a union discriminated
@@ -172,6 +176,28 @@ private:
   unsigned TrapNumUnrecoverableErrorsOccurred;
 
   unsigned NumDiags;         ///< Number of diags reported
+
+  /// \brief A function pointer that converts an opaque diagnostic
+  /// argument to a strings.
+  ///
+  /// This takes the modifiers and argument that was present in the diagnostic.
+  ///
+  /// The PrevArgs array (whose length is NumPrevArgs) indicates the previous
+  /// arguments formatted for this diagnostic.  Implementations of this function
+  /// can use this information to avoid redundancy across arguments.
+  ///
+  /// This is a hack to avoid a layering violation between libbasic and libsema.
+  typedef void (*ArgToStringFnTy)(
+      ArgumentKind Kind, intptr_t Val,
+      const char *Modifier, unsigned ModifierLen,
+      const char *Argument, unsigned ArgumentLen,
+      const ArgumentValue *PrevArgs,
+      unsigned NumPrevArgs,
+      SmallVectorImpl<char> &Output,
+      void *Cookie,
+      ArrayRef<intptr_t> QualTypeVals);
+  void *ArgToStringCookie;
+  ArgToStringFnTy ArgToStringFn;
 
 public:
   explicit DiagnosticsEngine(
@@ -240,6 +266,24 @@ public:
   /// created, otherwise the existing ID is returned.
   unsigned getCustomDiagID(Level L, StringRef Message) {
     return Diags->getCustomDiagID((DiagnosticIDs::Level)L, Message);
+  }
+
+  /// \brief Converts a diagnostic argument (as an intptr_t) into the string
+  /// that represents it.
+  void ConvertArgToString(ArgumentKind Kind, intptr_t Val,
+                          const char *Modifier, unsigned ModLen,
+                          const char *Argument, unsigned ArgLen,
+                          const ArgumentValue *PrevArgs, unsigned NumPrevArgs,
+                          SmallVectorImpl<char> &Output,
+                          ArrayRef<intptr_t> QualTypeVals) const {
+    ArgToStringFn(Kind, Val, Modifier, ModLen, Argument, ArgLen,
+                  PrevArgs, NumPrevArgs, Output, ArgToStringCookie,
+                  QualTypeVals);
+  }
+
+  void SetArgToStringFn(ArgToStringFnTy Fn, void *Cookie) {
+    ArgToStringFn = Fn;
+    ArgToStringCookie = Cookie;
   }
 
   /// \brief Reset the state of the diagnostic object to its initial 
@@ -519,6 +563,20 @@ inline const DiagnosticBuilder &operator<<(const DiagnosticBuilder &DB,
                                            const IdentifierInfo *II) {
   DB.AddTaggedVal(reinterpret_cast<intptr_t>(II),
                   DiagnosticsEngine::ak_identifierinfo);
+  return DB;
+}
+
+// Adds a DeclContext to the diagnostic. The enable_if template magic is here
+// so that we only match those arguments that are (statically) DeclContexts;
+// other arguments that derive from DeclContext (e.g., RecordDecls) will not
+// match.
+template<typename T>
+inline
+typename llvm::enable_if<llvm::is_same<T, DeclContext>, 
+                         const DiagnosticBuilder &>::type
+operator<<(const DiagnosticBuilder &DB, T *DC) {
+  DB.AddTaggedVal(reinterpret_cast<intptr_t>(DC),
+                  DiagnosticsEngine::ak_declcontext);
   return DB;
 }
 

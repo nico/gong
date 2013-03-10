@@ -21,11 +21,26 @@
 
 using namespace gong;
 
+static void DummyArgToStringFn(DiagnosticsEngine::ArgumentKind AK, intptr_t QT,
+                               const char *Modifier, unsigned ML,
+                               const char *Argument, unsigned ArgLen,
+                               const DiagnosticsEngine::ArgumentValue *PrevArgs,
+                               unsigned NumPrevArgs,
+                               SmallVectorImpl<char> &Output,
+                               void *Cookie,
+                               ArrayRef<intptr_t> QualTypeVals) {
+  const char *Str = "<can't format argument>";
+  Output.append(Str, Str+strlen(Str));
+}
+
 DiagnosticsEngine::DiagnosticsEngine(
                        const IntrusiveRefCntPtr<DiagnosticIDs> &diags,
                        DiagnosticConsumer *client, bool ShouldOwnClient)
   : Diags(diags), Client(client),
     OwnsDiagClient(ShouldOwnClient), SourceMgr(0) {
+  ArgToStringFn = DummyArgToStringFn;
+  ArgToStringCookie = 0;
+
   ShowColors = false;
   ErrorLimit = 0;
   Reset();
@@ -428,6 +443,13 @@ FormatDiagnostic(const char *DiagStr, const char *DiagEnd,
       llvm::raw_svector_ostream(OutStr) << '\'' << II->getName() << '\'';
       break;
     }
+    case DiagnosticsEngine::ak_declcontext:
+      getDiags()->ConvertArgToString(Kind, getRawArg(ArgNo),
+                                     Modifier, ModifierLen,
+                                     Argument, ArgumentLen,
+                                     FormattedArgs.data(), FormattedArgs.size(),
+                                     OutStr, QualTypeVals);
+      break;
     }
     
     // Remember this argument info for subsequent formatting operations.  Turn
