@@ -1756,141 +1756,6 @@ Sema::BuildQualifiedDeclarationNameExpr(CXXScopeSpec &SS,
   return BuildDeclarationNameExpr(SS, R, /* ADL */ false);
 }
 
-/// LookupInObjCMethod - The parser has read a name in, and Sema has
-/// detected that we're currently inside an ObjC method.  Perform some
-/// additional lookup.
-///
-/// Ideally, most of this would be done by lookup, but there's
-/// actually quite a lot of extra work involved.
-///
-/// Returns a null sentinel to indicate trivial success.
-ExprResult
-Sema::LookupInObjCMethod(LookupResult &Lookup, Scope *S,
-                         IdentifierInfo *II, bool AllowBuiltinCreation) {
-  SourceLocation Loc = Lookup.getNameLoc();
-  ObjCMethodDecl *CurMethod = getCurMethodDecl();
-
-  // There are two cases to handle here.  1) scoped lookup could have failed,
-  // in which case we should look for an ivar.  2) scoped lookup could have
-  // found a decl, but that decl is outside the current instance method (i.e.
-  // a global variable).  In these two cases, we do a lookup for an ivar with
-  // this name, if the lookup sucedes, we replace it our current decl.
-
-  // If we're in a class method, we don't normally want to look for
-  // ivars.  But if we don't find anything else, and there's an
-  // ivar, that's an error.
-  bool IsClassMethod = CurMethod->isClassMethod();
-
-  bool LookForIvars;
-  if (Lookup.empty())
-    LookForIvars = true;
-  else if (IsClassMethod)
-    LookForIvars = false;
-  else
-    LookForIvars = (Lookup.isSingleResult() &&
-                    Lookup.getFoundDecl()->isDefinedOutsideFunctionOrMethod());
-  ObjCInterfaceDecl *IFace = 0;
-  if (LookForIvars) {
-    IFace = CurMethod->getClassInterface();
-    ObjCInterfaceDecl *ClassDeclared;
-    ObjCIvarDecl *IV = 0;
-    if (IFace && (IV = IFace->lookupInstanceVariable(II, ClassDeclared))) {
-      // Diagnose using an ivar in a class method.
-      if (IsClassMethod)
-        return ExprError(Diag(Loc, diag::error_ivar_use_in_class_method)
-                         << IV->getDeclName());
-
-      // If we're referencing an invalid decl, just return this as a silent
-      // error node.  The error diagnostic was already emitted on the decl.
-      if (IV->isInvalidDecl())
-        return ExprError();
-
-      // Check if referencing a field with __attribute__((deprecated)).
-      if (DiagnoseUseOfDecl(IV, Loc))
-        return ExprError();
-
-      // Diagnose the use of an ivar outside of the declaring class.
-      if (IV->getAccessControl() == ObjCIvarDecl::Private &&
-          !declaresSameEntity(ClassDeclared, IFace) &&
-          !getLangOpts().DebuggerSupport)
-        Diag(Loc, diag::error_private_ivar_access) << IV->getDeclName();
-
-      // FIXME: This should use a new expr for a direct reference, don't
-      // turn this into Self->ivar, just return a BareIVarExpr or something.
-      IdentifierInfo &II = Context.Idents.get("self");
-      UnqualifiedId SelfName;
-      SelfName.setIdentifier(&II, SourceLocation());
-      SelfName.setKind(UnqualifiedId::IK_ImplicitSelfParam);
-      CXXScopeSpec SelfScopeSpec;
-      SourceLocation TemplateKWLoc;
-      ExprResult SelfExpr = ActOnIdExpression(S, SelfScopeSpec, TemplateKWLoc,
-                                              SelfName, false, false);
-      if (SelfExpr.isInvalid())
-        return ExprError();
-
-      SelfExpr = DefaultLvalueConversion(SelfExpr.take());
-      if (SelfExpr.isInvalid())
-        return ExprError();
-
-      MarkAnyDeclReferenced(Loc, IV);
-      
-      ObjCMethodFamily MF = CurMethod->getMethodFamily();
-      if (MF != OMF_init && MF != OMF_dealloc && MF != OMF_finalize)
-        Diag(Loc, diag::warn_direct_ivar_access) << IV->getDeclName();
-
-      ObjCIvarRefExpr *Result = new (Context) ObjCIvarRefExpr(IV, IV->getType(),
-                                                              Loc,
-                                                              SelfExpr.take(),
-                                                              true, true);
-
-      if (getLangOpts().ObjCAutoRefCount) {
-        if (IV->getType().getObjCLifetime() == Qualifiers::OCL_Weak) {
-          DiagnosticsEngine::Level Level =
-            Diags.getDiagnosticLevel(diag::warn_arc_repeated_use_of_weak, Loc);
-          if (Level != DiagnosticsEngine::Ignored)
-            getCurFunction()->recordUseOfWeak(Result);
-        }
-        if (CurContext->isClosure())
-          Diag(Loc, diag::warn_implicitly_retains_self)
-            << FixItHint::CreateInsertion(Loc, "self->");
-      }
-      
-      return Owned(Result);
-    }
-  } else if (CurMethod->isInstanceMethod()) {
-    // We should warn if a local variable hides an ivar.
-    if (ObjCInterfaceDecl *IFace = CurMethod->getClassInterface()) {
-      ObjCInterfaceDecl *ClassDeclared;
-      if (ObjCIvarDecl *IV = IFace->lookupInstanceVariable(II, ClassDeclared)) {
-        if (IV->getAccessControl() != ObjCIvarDecl::Private ||
-            declaresSameEntity(IFace, ClassDeclared))
-          Diag(Loc, diag::warn_ivar_use_hidden) << IV->getDeclName();
-      }
-    }
-  } else if (Lookup.isSingleResult() &&
-             Lookup.getFoundDecl()->isDefinedOutsideFunctionOrMethod()) {
-    // If accessing a stand-alone ivar in a class method, this is an error.
-    if (const ObjCIvarDecl *IV = dyn_cast<ObjCIvarDecl>(Lookup.getFoundDecl()))
-      return ExprError(Diag(Loc, diag::error_ivar_use_in_class_method)
-                       << IV->getDeclName());
-  }
-
-  if (Lookup.empty() && II && AllowBuiltinCreation) {
-    // FIXME. Consolidate this with similar code in LookupName.
-    if (unsigned BuiltinID = II->getBuiltinID()) {
-      if (!(getLangOpts().CPlusPlus &&
-            Context.BuiltinInfo.isPredefinedLibFunction(BuiltinID))) {
-        NamedDecl *D = LazilyCreateBuiltin((IdentifierInfo *)II, BuiltinID,
-                                           S, Lookup.isForRedeclaration(),
-                                           Lookup.getNameLoc());
-        if (D) Lookup.addDecl(D);
-      }
-    }
-  }
-  // Sentinel value saying that we didn't do anything special.
-  return Owned((Expr*) 0);
-}
-
 /// \brief Cast a base object to a member's actual type.
 ///
 /// Logically this happens in three phases:
@@ -3582,15 +3447,9 @@ Sema::ActOnCallExpr(Scope *S, Expr *Fn, SourceLocation LParenLoc,
       Dependent = true;
 
     if (Dependent) {
-      if (ExecConfig) {
-        return Owned(new (Context) CUDAKernelCallExpr(
-            Context, Fn, cast<CallExpr>(ExecConfig), ArgExprs,
-            Context.DependentTy, VK_RValue, RParenLoc));
-      } else {
-        return Owned(new (Context) CallExpr(Context, Fn, ArgExprs,
-                                            Context.DependentTy, VK_RValue,
-                                            RParenLoc));
-      }
+      return Owned(new (Context) CallExpr(Context, Fn, ArgExprs,
+                                          Context.DependentTy, VK_RValue,
+                                          RParenLoc));
     }
 
     // Determine whether this is a call to an object (C++ [over.call.object]).
@@ -3653,23 +3512,6 @@ Sema::ActOnCallExpr(Scope *S, Expr *Fn, SourceLocation LParenLoc,
                                IsExecConfig);
 }
 
-ExprResult
-Sema::ActOnCUDAExecConfigExpr(Scope *S, SourceLocation LLLLoc,
-                              MultiExprArg ExecConfig, SourceLocation GGGLoc) {
-  FunctionDecl *ConfigDecl = Context.getcudaConfigureCallDecl();
-  if (!ConfigDecl)
-    return ExprError(Diag(LLLLoc, diag::err_undeclared_var_use)
-                          << "cudaConfigureCall");
-  QualType ConfigQTy = ConfigDecl->getType();
-
-  DeclRefExpr *ConfigDR = new (Context) DeclRefExpr(
-      ConfigDecl, false, ConfigQTy, VK_LValue, LLLLoc);
-  MarkFunctionReferenced(LLLLoc, ConfigDecl);
-
-  return ActOnCallExpr(S, ConfigDR, LLLLoc, ExecConfig, GGGLoc, 0,
-                       /*IsExecConfig=*/true);
-}
-
 /// ActOnAsTypeExpr - create a new asType (bitcast) from the arguments.
 ///
 /// __builtin_astype( value, dst type )
@@ -3724,19 +3566,11 @@ Sema::BuildResolvedCallExpr(Expr *Fn, NamedDecl *NDecl,
   // Make the call expr early, before semantic checks.  This guarantees cleanup
   // of arguments and function on error.
   CallExpr *TheCall;
-  if (Config)
-    TheCall = new (Context) CUDAKernelCallExpr(Context, Fn,
-                                               cast<CallExpr>(Config),
-                                               llvm::makeArrayRef(Args,NumArgs),
-                                               Context.BoolTy,
-                                               VK_RValue,
-                                               RParenLoc);
-  else
-    TheCall = new (Context) CallExpr(Context, Fn,
-                                     llvm::makeArrayRef(Args, NumArgs),
-                                     Context.BoolTy,
-                                     VK_RValue,
-                                     RParenLoc);
+  TheCall = new (Context) CallExpr(Context, Fn,
+                                   llvm::makeArrayRef(Args, NumArgs),
+                                   Context.BoolTy,
+                                   VK_RValue,
+                                   RParenLoc);
 
   // Bail out early if calling a builtin with custom typechecking.
   if (BuiltinID && Context.BuiltinInfo.hasCustomTypechecking(BuiltinID))
@@ -3766,25 +3600,6 @@ Sema::BuildResolvedCallExpr(Expr *Fn, NamedDecl *NDecl,
 
     return ExprError(Diag(LParenLoc, diag::err_typecheck_call_not_function)
       << Fn->getType() << Fn->getSourceRange());
-  }
-
-  if (getLangOpts().CUDA) {
-    if (Config) {
-      // CUDA: Kernel calls must be to global functions
-      if (FDecl && !FDecl->hasAttr<CUDAGlobalAttr>())
-        return ExprError(Diag(LParenLoc,diag::err_kern_call_not_global_function)
-            << FDecl->getName() << Fn->getSourceRange());
-
-      // CUDA: Kernel function must have 'void' return type
-      if (!FuncT->getResultType()->isVoidType())
-        return ExprError(Diag(LParenLoc, diag::err_kern_type_not_void_return)
-            << Fn->getType() << Fn->getSourceRange());
-    } else {
-      // CUDA: Calls to global functions must be configured
-      if (FDecl && FDecl->hasAttr<CUDAGlobalAttr>())
-        return ExprError(Diag(LParenLoc, diag::err_global_call_not_config)
-            << FDecl->getName() << Fn->getSourceRange());
-    }
   }
 
   // Check for a valid return type
@@ -6466,42 +6281,6 @@ QualType Sema::CheckCompareOperands(ExprResult &LHS, ExprResult &RHS,
     return ResultTy;
   }
 
-  if (LHSType->isObjCObjectPointerType() ||
-      RHSType->isObjCObjectPointerType()) {
-    const PointerType *LPT = LHSType->getAs<PointerType>();
-    const PointerType *RPT = RHSType->getAs<PointerType>();
-    if (LPT || RPT) {
-      bool LPtrToVoid = LPT ? LPT->getPointeeType()->isVoidType() : false;
-      bool RPtrToVoid = RPT ? RPT->getPointeeType()->isVoidType() : false;
-
-      if (!LPtrToVoid && !RPtrToVoid &&
-          !Context.typesAreCompatible(LHSType, RHSType)) {
-        diagnoseDistinctPointerComparison(*this, Loc, LHS, RHS,
-                                          /*isError*/false);
-      }
-      if (LHSIsNull && !RHSIsNull)
-        LHS = ImpCastExprToType(LHS.take(), RHSType,
-                                RPT ? CK_BitCast :CK_CPointerToObjCPointerCast);
-      else
-        RHS = ImpCastExprToType(RHS.take(), LHSType,
-                                LPT ? CK_BitCast :CK_CPointerToObjCPointerCast);
-      return ResultTy;
-    }
-    if (LHSType->isObjCObjectPointerType() &&
-        RHSType->isObjCObjectPointerType()) {
-      if (!Context.areComparableObjCPointerTypes(LHSType, RHSType))
-        diagnoseDistinctPointerComparison(*this, Loc, LHS, RHS,
-                                          /*isError*/false);
-      if (isObjCObjectLiteral(LHS) || isObjCObjectLiteral(RHS))
-        diagnoseObjCLiteralComparison(*this, Loc, LHS, RHS, Opc);
-
-      if (LHSIsNull && !RHSIsNull)
-        LHS = ImpCastExprToType(LHS.take(), RHSType, CK_BitCast);
-      else
-        RHS = ImpCastExprToType(RHS.take(), LHSType, CK_BitCast);
-      return ResultTy;
-    }
-  }
   if ((LHSType->isAnyPointerType() && RHSType->isIntegerType()) ||
       (LHSType->isIntegerType() && RHSType->isAnyPointerType())) {
     unsigned DiagID = 0;
@@ -8855,38 +8634,6 @@ ExprResult Sema::ActOnGNUNullExpr(SourceLocation TokenLoc) {
   return Owned(new (Context) GNUNullExpr(Ty, TokenLoc));
 }
 
-static void MakeObjCStringLiteralFixItHint(Sema& SemaRef, QualType DstType,
-                                           Expr *SrcExpr, FixItHint &Hint) {
-  if (!SemaRef.getLangOpts().ObjC1)
-    return;
-
-  const ObjCObjectPointerType *PT = DstType->getAs<ObjCObjectPointerType>();
-  if (!PT)
-    return;
-
-  // Check if the destination is of type 'id'.
-  if (!PT->isObjCIdType()) {
-    // Check if the destination is the 'NSString' interface.
-    const ObjCInterfaceDecl *ID = PT->getInterfaceDecl();
-    if (!ID || !ID->getIdentifier()->isStr("NSString"))
-      return;
-  }
-
-  // Ignore any parens, implicit casts (should only be
-  // array-to-pointer decays), and not-so-opaque values.  The last is
-  // important for making this trigger for property assignments.
-  SrcExpr = SrcExpr->IgnoreParenImpCasts();
-  if (OpaqueValueExpr *OV = dyn_cast<OpaqueValueExpr>(SrcExpr))
-    if (OV->getSourceExpr())
-      SrcExpr = OV->getSourceExpr()->IgnoreParenImpCasts();
-
-  StringLiteral *SL = dyn_cast<StringLiteral>(SrcExpr);
-  if (!SL || !SL->isAscii())
-    return;
-
-  Hint = FixItHint::CreateInsertion(SL->getLocStart(), "@");
-}
-
 bool Sema::DiagnoseAssignmentResult(AssignConvertType ConvTy,
                                     SourceLocation Loc,
                                     QualType DstType, QualType SrcType,
@@ -8920,7 +8667,6 @@ bool Sema::DiagnoseAssignmentResult(AssignConvertType ConvTy,
     MayHaveConvFixit = true;
     break;
   case IncompatiblePointer:
-    MakeObjCStringLiteralFixItHint(*this, DstType, SrcExpr, Hint);
     DiagKind = diag::ext_typecheck_convert_incompatible_pointer;
     CheckInferredResultType = DstType->isObjCObjectPointerType() &&
       SrcType->isObjCObjectPointerType();
@@ -10671,8 +10417,6 @@ namespace {
     }
 
     ExprResult VisitCallExpr(CallExpr *E);
-    ExprResult VisitObjCMessageExpr(ObjCMessageExpr *E);
-
     /// Rebuild an expression which simply semantically wraps another
     /// expression which it shares the type and value kind of.
     template <class T> ExprResult rebuildSugarExpr(T *E) {
@@ -10799,27 +10543,6 @@ ExprResult RebuildUnknownAnyExpr::VisitCallExpr(CallExpr *E) {
   E->setCallee(CalleeResult.take());
 
   // Bind a temporary if necessary.
-  return S.MaybeBindToTemporary(E);
-}
-
-ExprResult RebuildUnknownAnyExpr::VisitObjCMessageExpr(ObjCMessageExpr *E) {
-  // Verify that this is a legal result type of a call.
-  if (DestType->isArrayType() || DestType->isFunctionType()) {
-    S.Diag(E->getExprLoc(), diag::err_func_returning_array_function)
-      << DestType->isFunctionType() << DestType;
-    return ExprError();
-  }
-
-  // Rewrite the method result type if available.
-  if (ObjCMethodDecl *Method = E->getMethodDecl()) {
-    assert(Method->getResultType() == S.Context.UnknownAnyTy);
-    Method->setResultType(DestType);
-  }
-
-  // Change the type of the message.
-  E->setType(DestType.getNonReferenceType());
-  E->setValueKind(Expr::getValueKindForType(DestType));
-
   return S.MaybeBindToTemporary(E);
 }
 
@@ -11062,26 +10785,5 @@ bool Sema::CheckCaseExpression(Expr *E) {
   if (E->isValueDependent() || E->isIntegerConstantExpr(Context))
     return E->getType()->isIntegralOrEnumerationType();
   return false;
-}
-
-/// ActOnObjCBoolLiteral - Parse {__objc_yes,__objc_no} literals.
-ExprResult
-Sema::ActOnObjCBoolLiteral(SourceLocation OpLoc, tok::TokenKind Kind) {
-  assert((Kind == tok::kw___objc_yes || Kind == tok::kw___objc_no) &&
-         "Unknown Objective-C Boolean value!");
-  QualType BoolT = Context.ObjCBuiltinBoolTy;
-  if (!Context.getBOOLDecl()) {
-    LookupResult Result(*this, &Context.Idents.get("BOOL"), OpLoc,
-                        Sema::LookupOrdinaryName);
-    if (LookupName(Result, getCurScope()) && Result.isSingleResult()) {
-      NamedDecl *ND = Result.getFoundDecl();
-      if (TypedefDecl *TD = dyn_cast<TypedefDecl>(ND)) 
-        Context.setBOOLDecl(TD);
-    }
-  }
-  if (Context.getBOOLDecl())
-    BoolT = Context.getBOOLType();
-  return Owned(new (Context) ObjCBoolLiteralExpr(Kind == tok::kw___objc_yes,
-                                        BoolT, OpLoc));
 }
 #endif
