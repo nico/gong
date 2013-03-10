@@ -15,6 +15,7 @@
 #include "gong/Sema/Sema.h"
 
 #include "gong/AST/ASTContext.h"
+#include "gong/AST/ASTDiagnostic.h"
 #include "gong/Lex/Lexer.h"
 
 using namespace gong;
@@ -23,7 +24,6 @@ using namespace sema;
 #if 0
 
 #include "TargetAttributesSema.h"
-#include "gong/AST/ASTDiagnostic.h"
 #include "gong/AST/DeclCXX.h"
 #include "gong/AST/DeclFriend.h"
 #include "gong/AST/Expr.h"
@@ -107,9 +107,8 @@ Sema::Sema(Lexer &L, /*Preprocessor &pp,*/ ASTContext &ctxt
   //if (getLangOpts().CPlusPlus)
   //  FieldCollector.reset(new CXXFieldCollector());
 
-  //// Tell diagnostics how to render things from the AST library.
-  //PP.getDiagnostics().SetArgToStringFn(&FormatASTNodeDiagnosticArgument, 
-  //                                     &Context);
+  // Tell diagnostics how to render things from the AST library.
+  Diags.SetArgToStringFn(&FormatASTNodeDiagnosticArgument, &Context);
 
   //ExprEvalContexts.push_back(
   //      ExpressionEvaluationContextRecord(PotentiallyEvaluated, 0,

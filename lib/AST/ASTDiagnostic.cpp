@@ -13,15 +13,17 @@
 
 #include "gong/AST/ASTDiagnostic.h"
 
-#if 0
 #include "gong/AST/ASTContext.h"
+#include "llvm/Support/ErrorHandling.h"
+#include "llvm/Support/raw_ostream.h"
+
+#if 0
 #include "gong/AST/DeclObjC.h"
 #include "gong/AST/DeclTemplate.h"
 #include "gong/AST/ExprCXX.h"
 #include "gong/AST/TemplateBase.h"
 #include "gong/AST/Type.h"
 #include "llvm/ADT/SmallString.h"
-#include "llvm/Support/raw_ostream.h"
 
 using namespace gong;
 
@@ -230,6 +232,7 @@ ConvertTypeToDiagnosticString(ASTContext &Context, QualType Ty,
   S = "'" + S + "'";
   return S;
 }
+#endif
 
 void gong::FormatASTNodeDiagnosticArgument(
     DiagnosticsEngine::ArgumentKind Kind,
@@ -256,28 +259,25 @@ void gong::FormatASTNodeDiagnosticArgument(
       assert(DC && "Should never have a null declaration context");
       
       if (DC->isTranslationUnit()) {
+        // FIXME: universe and package block instead of translation unit.
         // FIXME: Get these strings from some localized place
-        if (Context.getLangOpts().CPlusPlus)
-          OS << "the global namespace";
-        else
-          OS << "the global scope";
+        OS << "the global scope";
       } else if (TypeDecl *Type = dyn_cast<TypeDecl>(DC)) {
-        OS << ConvertTypeToDiagnosticString(Context,
-                                            Context.getTypeDeclType(Type),
-                                            PrevArgs, NumPrevArgs,
-                                            QualTypeVals);
+        OS << "<type>"; // FIXME
+        //OS << ConvertTypeToDiagnosticString(Context,
+        //                                    Context.getTypeDeclType(Type),
+        //                                    PrevArgs, NumPrevArgs,
+        //                                    QualTypeVals);
       } else {
         // FIXME: Get these strings from some localized place
         NamedDecl *ND = cast<NamedDecl>(DC);
-        if (isa<NamespaceDecl>(ND))
-          OS << "namespace ";
-        else if (isa<ObjCMethodDecl>(ND))
-          OS << "method ";
-        else if (isa<FunctionDecl>(ND))
+        if (isa<FunctionDecl>(ND))
           OS << "function ";
+        // FIXME: methods.
 
         OS << '\'';
-        ND->getNameForDiagnostic(OS, Context.getPrintingPolicy(), true);
+        //ND->getNameForDiagnostic(OS, Context.getPrintingPolicy(), true);
+        OS << "<name>"; // FIXME
         OS << '\'';
       }
       NeedQuotes = false;
@@ -292,4 +292,3 @@ void gong::FormatASTNodeDiagnosticArgument(
     Output.push_back('\'');
   }
 }
-#endif
