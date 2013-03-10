@@ -5,9 +5,9 @@ P0 varspec type checking
 P0 use that to give VarDecls and ConstDecls a type
 P0 finish struct type support
    - field lookup
-     - named structs
-     - mention struct name in diag
+     - named structs (once type checking / named types are done)
      - embedded fields
+     - mention struct name in diag
      - spelling
    - recursive struct types (P2)
 P0 check types for identity, assignability

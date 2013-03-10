@@ -2708,24 +2708,6 @@ ExprResult Sema::ActOnParenExpr(SourceLocation L, SourceLocation R, Expr *E) {
   return Owned(new (Context) ParenExpr(L, R, E));
 }
 
-static bool CheckVecStepTraitOperandType(Sema &S, QualType T,
-                                         SourceLocation Loc,
-                                         SourceRange ArgRange) {
-  // [OpenCL 1.1 6.11.12] "The vec_step built-in function takes a built-in
-  // scalar or vector data type argument..."
-  // Every built-in scalar type (OpenCL 1.1 6.1.1) is either an arithmetic
-  // type (C99 6.2.5p18) or void.
-  if (!(T->isArithmeticType() || T->isVoidType() || T->isVectorType())) {
-    S.Diag(Loc, diag::err_vecstep_non_scalar_vector_type)
-      << T << ArgRange;
-    return true;
-  }
-
-  assert((T->isVoidType() || !T->isIncompleteType()) &&
-         "Scalar types should always be complete");
-  return false;
-}
-
 static bool CheckExtensionTraitOperandType(Sema &S, QualType T,
                                            SourceLocation Loc,
                                            SourceRange ArgRange,
@@ -2780,10 +2762,6 @@ bool Sema::CheckUnaryExprOrTypeTraitOperand(Expr *E,
   //   result shall be the alignment of the referenced type."
   if (const ReferenceType *Ref = ExprTy->getAs<ReferenceType>())
     ExprTy = Ref->getPointeeType();
-
-  if (ExprKind == UETT_VecStep)
-    return CheckVecStepTraitOperandType(*this, ExprTy, E->getExprLoc(),
-                                        E->getSourceRange());
 
   // Whitelist some types as extensions
   if (!CheckExtensionTraitOperandType(*this, ExprTy, E->getExprLoc(),
@@ -2849,9 +2827,6 @@ bool Sema::CheckUnaryExprOrTypeTraitOperand(QualType ExprType,
   //   result shall be the alignment of the referenced type."
   if (const ReferenceType *Ref = ExprType->getAs<ReferenceType>())
     ExprType = Ref->getPointeeType();
-
-  if (ExprKind == UETT_VecStep)
-    return CheckVecStepTraitOperandType(*this, ExprType, OpLoc, ExprRange);
 
   // Whitelist some types as extensions
   if (!CheckExtensionTraitOperandType(*this, ExprType, OpLoc, ExprRange,
@@ -4449,29 +4424,6 @@ static bool checkCondition(Sema &S, Expr *Cond) {
   return true;
 }
 
-/// \brief Return false if the two expressions can be converted to a vector,
-/// true otherwise
-static bool checkConditionalConvertScalarsToVectors(Sema &S, ExprResult &LHS,
-                                                    ExprResult &RHS,
-                                                    QualType CondTy) {
-  // Both operands should be of scalar type.
-  if (!LHS.get()->getType()->isScalarType()) {
-    S.Diag(LHS.get()->getLocStart(), diag::err_typecheck_cond_expect_scalar)
-      << CondTy;
-    return true;
-  }
-  if (!RHS.get()->getType()->isScalarType()) {
-    S.Diag(RHS.get()->getLocStart(), diag::err_typecheck_cond_expect_scalar)
-      << CondTy;
-    return true;
-  }
-
-  // Implicity convert these scalars to the type of the condition.
-  LHS = S.ImpCastExprToType(LHS.take(), CondTy, CK_IntegralCast);
-  RHS = S.ImpCastExprToType(RHS.take(), CondTy, CK_IntegralCast);
-  return false;
-}
-
 /// \brief Handle when one or both operands are void type.
 static QualType checkConditionalVoidType(Sema &S, ExprResult &LHS,
                                          ExprResult &RHS) {
@@ -4695,16 +4647,7 @@ QualType Sema::CheckConditionalOperands(ExprResult &Cond, ExprResult &LHS,
     return QualType();
 
   // Now check the two expressions.
-  if (LHSTy->isVectorType() || RHSTy->isVectorType())
-    return CheckVectorOperands(LHS, RHS, QuestionLoc, /*isCompAssign*/false);
 
-  // OpenCL: If the condition is a vector, and both operands are scalar,
-  // attempt to implicity convert them to the vector type to act like the
-  // built in select.
-  if (getLangOpts().OpenCL && CondTy->isVectorType())
-    if (checkConditionalConvertScalarsToVectors(*this, LHS, RHS, CondTy))
-      return QualType();
-  
   // If both operands have arithmetic type, do the usual arithmetic conversions
   // to find a common type: C99 6.5.15p3,5.
   if (LHSTy->isArithmeticType() && RHSTy->isArithmeticType()) {
@@ -5180,46 +5123,6 @@ Sema::CheckAssignmentConstraints(QualType LHSType, ExprResult &RHS,
     return Incompatible;
   }
 
-  // Allow scalar to ExtVector assignments, and assignments of an ExtVector type
-  // to the same ExtVector type.
-  if (LHSType->isExtVectorType()) {
-    if (RHSType->isExtVectorType())
-      return Incompatible;
-    if (RHSType->isArithmeticType()) {
-      // CK_VectorSplat does T -> vector T, so first cast to the
-      // element type.
-      QualType elType = cast<ExtVectorType>(LHSType)->getElementType();
-      if (elType != RHSType) {
-        Kind = PrepareScalarCast(RHS, elType);
-        RHS = ImpCastExprToType(RHS.take(), elType, Kind);
-      }
-      Kind = CK_VectorSplat;
-      return Compatible;
-    }
-  }
-
-  // Conversions to or from vector type.
-  if (LHSType->isVectorType() || RHSType->isVectorType()) {
-    if (LHSType->isVectorType() && RHSType->isVectorType()) {
-      // Allow assignments of an AltiVec vector type to an equivalent GCC
-      // vector type and vice versa
-      if (Context.areCompatibleVectorTypes(LHSType, RHSType)) {
-        Kind = CK_BitCast;
-        return Compatible;
-      }
-
-      // If we are allowing lax vector conversions, and LHS and RHS are both
-      // vectors, the total size only needs to be the same. This is a bitcast;
-      // no bits are changed but the result type is different.
-      if (getLangOpts().LaxVectorConversions &&
-          (Context.getTypeSize(LHSType) == Context.getTypeSize(RHSType))) {
-        Kind = CK_BitCast;
-        return IncompatibleVectors;
-      }
-    }
-    return Incompatible;
-  }
-
   // Arithmetic conversions.
   if (LHSType->isArithmeticType() && RHSType->isArithmeticType() &&
       !(getLangOpts().CPlusPlus && LHSType->isEnumeralType())) {
@@ -5495,94 +5398,6 @@ QualType Sema::InvalidOperands(SourceLocation Loc, ExprResult &LHS,
   return QualType();
 }
 
-QualType Sema::CheckVectorOperands(ExprResult &LHS, ExprResult &RHS,
-                                   SourceLocation Loc, bool IsCompAssign) {
-  if (!IsCompAssign) {
-    LHS = DefaultFunctionArrayLvalueConversion(LHS.take());
-    if (LHS.isInvalid())
-      return QualType();
-  }
-  RHS = DefaultFunctionArrayLvalueConversion(RHS.take());
-  if (RHS.isInvalid())
-    return QualType();
-
-  // For conversion purposes, we ignore any qualifiers.
-  // For example, "const float" and "float" are equivalent.
-  QualType LHSType =
-    Context.getCanonicalType(LHS.get()->getType()).getUnqualifiedType();
-  QualType RHSType =
-    Context.getCanonicalType(RHS.get()->getType()).getUnqualifiedType();
-
-  // If the vector types are identical, return.
-  if (LHSType == RHSType)
-    return LHSType;
-
-  // Handle the case of equivalent AltiVec and GCC vector types
-  if (LHSType->isVectorType() && RHSType->isVectorType() &&
-      Context.areCompatibleVectorTypes(LHSType, RHSType)) {
-    if (LHSType->isExtVectorType()) {
-      RHS = ImpCastExprToType(RHS.take(), LHSType, CK_BitCast);
-      return LHSType;
-    }
-
-    if (!IsCompAssign)
-      LHS = ImpCastExprToType(LHS.take(), RHSType, CK_BitCast);
-    return RHSType;
-  }
-
-  if (getLangOpts().LaxVectorConversions &&
-      Context.getTypeSize(LHSType) == Context.getTypeSize(RHSType)) {
-    // If we are allowing lax vector conversions, and LHS and RHS are both
-    // vectors, the total size only needs to be the same. This is a
-    // bitcast; no bits are changed but the result type is different.
-    // FIXME: Should we really be allowing this?
-    RHS = ImpCastExprToType(RHS.take(), LHSType, CK_BitCast);
-    return LHSType;
-  }
-
-  // Canonicalize the ExtVector to the LHS, remember if we swapped so we can
-  // swap back (so that we don't reverse the inputs to a subtract, for instance.
-  bool swapped = false;
-  if (RHSType->isExtVectorType() && !IsCompAssign) {
-    swapped = true;
-    std::swap(RHS, LHS);
-    std::swap(RHSType, LHSType);
-  }
-
-  // Handle the case of an ext vector and scalar.
-  if (const ExtVectorType *LV = LHSType->getAs<ExtVectorType>()) {
-    QualType EltTy = LV->getElementType();
-    if (EltTy->isIntegralType(Context) && RHSType->isIntegralType(Context)) {
-      int order = Context.getIntegerTypeOrder(EltTy, RHSType);
-      if (order > 0)
-        RHS = ImpCastExprToType(RHS.take(), EltTy, CK_IntegralCast);
-      if (order >= 0) {
-        RHS = ImpCastExprToType(RHS.take(), LHSType, CK_VectorSplat);
-        if (swapped) std::swap(RHS, LHS);
-        return LHSType;
-      }
-    }
-    if (EltTy->isRealFloatingType() && RHSType->isScalarType() &&
-        RHSType->isRealFloatingType()) {
-      int order = Context.getFloatingTypeOrder(EltTy, RHSType);
-      if (order > 0)
-        RHS = ImpCastExprToType(RHS.take(), EltTy, CK_FloatingCast);
-      if (order >= 0) {
-        RHS = ImpCastExprToType(RHS.take(), LHSType, CK_VectorSplat);
-        if (swapped) std::swap(RHS, LHS);
-        return LHSType;
-      }
-    }
-  }
-
-  // Vectors of different size or scalar and non-ext-vector are errors.
-  if (swapped) std::swap(RHS, LHS);
-  Diag(Loc, diag::err_typecheck_vector_not_convertable)
-    << LHS.get()->getType() << RHS.get()->getType()
-    << LHS.get()->getSourceRange() << RHS.get()->getSourceRange();
-  return QualType();
-}
-
 // checkArithmeticNull - Detect when a NULL constant is used improperly in an
 // expression.  These are mainly cases where the null pointer is used as an
 // integer instead of a pointer.
@@ -5627,10 +5442,6 @@ QualType Sema::CheckMultiplyDivideOperands(ExprResult &LHS, ExprResult &RHS,
                                            bool IsCompAssign, bool IsDiv) {
   checkArithmeticNull(*this, LHS, RHS, Loc, /*isCompare=*/false);
 
-  if (LHS.get()->getType()->isVectorType() ||
-      RHS.get()->getType()->isVectorType())
-    return CheckVectorOperands(LHS, RHS, Loc, IsCompAssign);
-
   QualType compType = UsualArithmeticConversions(LHS, RHS, IsCompAssign);
   if (LHS.isInvalid() || RHS.isInvalid())
     return QualType();
@@ -5652,14 +5463,6 @@ QualType Sema::CheckMultiplyDivideOperands(ExprResult &LHS, ExprResult &RHS,
 QualType Sema::CheckRemainderOperands(
   ExprResult &LHS, ExprResult &RHS, SourceLocation Loc, bool IsCompAssign) {
   checkArithmeticNull(*this, LHS, RHS, Loc, /*isCompare=*/false);
-
-  if (LHS.get()->getType()->isVectorType() ||
-      RHS.get()->getType()->isVectorType()) {
-    if (LHS.get()->getType()->hasIntegerRepresentation() && 
-        RHS.get()->getType()->hasIntegerRepresentation())
-      return CheckVectorOperands(LHS, RHS, Loc, IsCompAssign);
-    return InvalidOperands(Loc, LHS, RHS);
-  }
 
   QualType compType = UsualArithmeticConversions(LHS, RHS, IsCompAssign);
   if (LHS.isInvalid() || RHS.isInvalid())
@@ -5868,13 +5671,6 @@ QualType Sema::CheckAdditionOperands( // C99 6.5.6
     QualType* CompLHSTy) {
   checkArithmeticNull(*this, LHS, RHS, Loc, /*isCompare=*/false);
 
-  if (LHS.get()->getType()->isVectorType() ||
-      RHS.get()->getType()->isVectorType()) {
-    QualType compType = CheckVectorOperands(LHS, RHS, Loc, CompLHSTy);
-    if (CompLHSTy) *CompLHSTy = compType;
-    return compType;
-  }
-
   QualType compType = UsualArithmeticConversions(LHS, RHS, CompLHSTy);
   if (LHS.isInvalid() || RHS.isInvalid())
     return QualType();
@@ -5940,13 +5736,6 @@ QualType Sema::CheckSubtractionOperands(ExprResult &LHS, ExprResult &RHS,
                                         SourceLocation Loc,
                                         QualType* CompLHSTy) {
   checkArithmeticNull(*this, LHS, RHS, Loc, /*isCompare=*/false);
-
-  if (LHS.get()->getType()->isVectorType() ||
-      RHS.get()->getType()->isVectorType()) {
-    QualType compType = CheckVectorOperands(LHS, RHS, Loc, CompLHSTy);
-    if (CompLHSTy) *CompLHSTy = compType;
-    return compType;
-  }
 
   QualType compType = UsualArithmeticConversions(LHS, RHS, CompLHSTy);
   if (LHS.isInvalid() || RHS.isInvalid())
@@ -6101,11 +5890,6 @@ QualType Sema::CheckShiftOperands(ExprResult &LHS, ExprResult &RHS,
       isScopedEnumerationType(RHS.get()->getType())) {
     return InvalidOperands(Loc, LHS, RHS);
   }
-
-  // Vector shifts promote their scalar inputs to vector type.
-  if (LHS.get()->getType()->isVectorType() ||
-      RHS.get()->getType()->isVectorType())
-    return CheckVectorOperands(LHS, RHS, Loc, IsCompAssign);
 
   // Shifts don't perform usual arithmetic conversions, they just do integer
   // promotions on each operand. C99 6.5.7p3
@@ -6396,11 +6180,6 @@ QualType Sema::CheckCompareOperands(ExprResult &LHS, ExprResult &RHS,
   checkArithmeticNull(*this, LHS, RHS, Loc, /*isCompare=*/true);
 
   BinaryOperatorKind Opc = (BinaryOperatorKind) OpaqueOpc;
-
-  // Handle vector comparisons separately.
-  if (LHS.get()->getType()->isVectorType() ||
-      RHS.get()->getType()->isVectorType())
-    return CheckVectorCompareOperands(LHS, RHS, Loc, IsRelational);
 
   QualType LHSType = LHS.get()->getType();
   QualType RHSType = RHS.get()->getType();
@@ -6774,95 +6553,9 @@ QualType Sema::CheckCompareOperands(ExprResult &LHS, ExprResult &RHS,
   return InvalidOperands(Loc, LHS, RHS);
 }
 
-
-// Return a signed type that is of identical size and number of elements.
-// For floating point vectors, return an integer type of identical size 
-// and number of elements.
-QualType Sema::GetSignedVectorType(QualType V) {
-  const VectorType *VTy = V->getAs<VectorType>();
-  unsigned TypeSize = Context.getTypeSize(VTy->getElementType());
-  if (TypeSize == Context.getTypeSize(Context.CharTy))
-    return Context.getExtVectorType(Context.CharTy, VTy->getNumElements());
-  else if (TypeSize == Context.getTypeSize(Context.ShortTy))
-    return Context.getExtVectorType(Context.ShortTy, VTy->getNumElements());
-  else if (TypeSize == Context.getTypeSize(Context.IntTy))
-    return Context.getExtVectorType(Context.IntTy, VTy->getNumElements());
-  else if (TypeSize == Context.getTypeSize(Context.LongTy))
-    return Context.getExtVectorType(Context.LongTy, VTy->getNumElements());
-  assert(TypeSize == Context.getTypeSize(Context.LongLongTy) &&
-         "Unhandled vector element size in vector compare");
-  return Context.getExtVectorType(Context.LongLongTy, VTy->getNumElements());
-}
-
-/// CheckVectorCompareOperands - vector comparisons are a gong extension that
-/// operates on extended vector types.  Instead of producing an IntTy result,
-/// like a scalar comparison, a vector comparison produces a vector of integer
-/// types.
-QualType Sema::CheckVectorCompareOperands(ExprResult &LHS, ExprResult &RHS,
-                                          SourceLocation Loc,
-                                          bool IsRelational) {
-  // Check to make sure we're operating on vectors of the same type and width,
-  // Allowing one side to be a scalar of element type.
-  QualType vType = CheckVectorOperands(LHS, RHS, Loc, /*isCompAssign*/false);
-  if (vType.isNull())
-    return vType;
-
-  QualType LHSType = LHS.get()->getType();
-
-  // If AltiVec, the comparison results in a numeric type, i.e.
-  // bool for C++, int for C
-  if (vType->getAs<VectorType>()->getVectorKind() == VectorType::AltiVecVector)
-    return Context.getLogicalOperationType();
-
-  // For non-floating point types, check for self-comparisons of the form
-  // x == x, x != x, x < x, etc.  These always evaluate to a constant, and
-  // often indicate logic errors in the program.
-  if (!LHSType->hasFloatingRepresentation()) {
-    if (DeclRefExpr* DRL
-          = dyn_cast<DeclRefExpr>(LHS.get()->IgnoreParenImpCasts()))
-      if (DeclRefExpr* DRR
-            = dyn_cast<DeclRefExpr>(RHS.get()->IgnoreParenImpCasts()))
-        if (DRL->getDecl() == DRR->getDecl())
-          DiagRuntimeBehavior(Loc, 0,
-                              PDiag(diag::warn_comparison_always)
-                                << 0 // self-
-                                << 2 // "a constant"
-                              );
-  }
-
-  // Check for comparisons of floating point operands using != and ==.
-  if (!IsRelational && LHSType->hasFloatingRepresentation()) {
-    assert (RHS.get()->getType()->hasFloatingRepresentation());
-    CheckFloatComparison(Loc, LHS.get(), RHS.get());
-  }
-  
-  // Return a signed type for the vector.
-  return GetSignedVectorType(LHSType);
-}
-
-QualType Sema::CheckVectorLogicalOperands(ExprResult &LHS, ExprResult &RHS,
-                                          SourceLocation Loc) {
-  // Ensure that either both operands are of the same vector type, or
-  // one operand is of a vector type and the other is of its element type.
-  QualType vType = CheckVectorOperands(LHS, RHS, Loc, false);
-  if (vType.isNull() || vType->isFloatingType())
-    return InvalidOperands(Loc, LHS, RHS);
-  
-  return GetSignedVectorType(LHS.get()->getType());
-}
-
 inline QualType Sema::CheckBitwiseOperands(
   ExprResult &LHS, ExprResult &RHS, SourceLocation Loc, bool IsCompAssign) {
   checkArithmeticNull(*this, LHS, RHS, Loc, /*isCompare=*/false);
-
-  if (LHS.get()->getType()->isVectorType() ||
-      RHS.get()->getType()->isVectorType()) {
-    if (LHS.get()->getType()->hasIntegerRepresentation() &&
-        RHS.get()->getType()->hasIntegerRepresentation())
-      return CheckVectorOperands(LHS, RHS, Loc, IsCompAssign);
-    
-    return InvalidOperands(Loc, LHS, RHS);
-  }
 
   ExprResult LHSResult = Owned(LHS), RHSResult = Owned(RHS);
   QualType compType = UsualArithmeticConversions(LHSResult, RHSResult,
@@ -6879,10 +6572,6 @@ inline QualType Sema::CheckBitwiseOperands(
 
 inline QualType Sema::CheckLogicalOperands( // C99 6.5.[13,14]
   ExprResult &LHS, ExprResult &RHS, SourceLocation Loc, unsigned Opc) {
-  
-  // Check vector operands differently.
-  if (LHS.get()->getType()->isVectorType() || RHS.get()->getType()->isVectorType())
-    return CheckVectorLogicalOperands(LHS, RHS, Loc);
   
   // Diagnose cases where the user write a logical and/or but probably meant a
   // bitwise one.  We do this when the LHS is a non-bool integer and the RHS
@@ -7107,9 +6796,6 @@ static bool CheckForModifiableLvalue(Expr *E, SourceLocation Loc, Sema &S) {
   case Expr::MLV_IncompleteVoidType:
     return S.RequireCompleteType(Loc, E->getType(),
              diag::err_typecheck_incomplete_type_not_modifiable_lvalue, E);
-  case Expr::MLV_DuplicateVectorComponents:
-    Diag = diag::err_typecheck_duplicate_vector_components_not_mlvalue;
-    break;
   case Expr::MLV_ReadonlyProperty:
   case Expr::MLV_NoSetterProperty:
     llvm_unreachable("readonly properties should be processed differently");
@@ -7338,8 +7024,6 @@ static QualType CheckIncrementDecrementOperand(Sema &S, Expr *Op,
     if (PR.isInvalid()) return QualType();
     return CheckIncrementDecrementOperand(S, PR.take(), VK, OpLoc,
                                           IsInc, IsPrefix);
-  } else if (S.getLangOpts().AltiVec && ResType->isVectorType()) {
-    // OK! ( C/C++ Language Extensions for CBEA(Version 2.6) 10.3 )
   } else {
     S.Diag(OpLoc, diag::err_typecheck_illegal_increment_decrement)
       << ResType << int(IsInc) << Op->getSourceRange();
@@ -7552,9 +7236,6 @@ static QualType CheckAddressOfOperand(Sema &S, ExprResult &OrigOp,
   } else if (op->getObjectKind() == OK_BitField) { // C99 6.5.3.2p1
     // The operand cannot be a bit-field
     AddressOfError = AO_Bit_Field;
-  } else if (op->getObjectKind() == OK_VectorComponent) {
-    // The operand cannot be an element of a vector
-    AddressOfError = AO_Vector_Element;
   } else if (dcl) { // C99 6.5.3.2p1
     // We have an lvalue with a decl. Make sure the decl is not declared
     // with the register storage-class specifier.
@@ -8225,8 +7906,7 @@ ExprResult Sema::CreateBuiltinUnaryOp(SourceLocation OpLoc,
     resultType = Input.get()->getType();
     if (resultType->isDependentType())
       break;
-    if (resultType->isArithmeticType() || // C99 6.5.3.3p1
-        resultType->isVectorType()) 
+    if (resultType->isArithmeticType()) // C99 6.5.3.3p1
       break;
     else if (getLangOpts().CPlusPlus && // C++ [expr.unary.op]p6-7
              resultType->isEnumeralType())
@@ -8280,10 +7960,6 @@ ExprResult Sema::CreateBuiltinUnaryOp(SourceLocation OpLoc,
         Input = ImpCastExprToType(Input.take(), Context.BoolTy,
                                   ScalarTypeToBooleanCastKind(resultType));
       }
-    } else if (resultType->isExtVectorType()) {
-      // Vector logical not returns the signed variant of the operand type.
-      resultType = GetSignedVectorType(resultType);
-      break;
     } else {
       return ExprError(Diag(OpLoc, diag::err_typecheck_unary_expr)
         << resultType << Input.get()->getSourceRange());
@@ -9306,9 +8982,6 @@ bool Sema::DiagnoseAssignmentResult(AssignConvertType ConvTy,
     // FIXME: Diagnose the problem in ObjCQualifiedIdTypesAreCompatible, since
     // it can give a more specific diagnostic.
     DiagKind = diag::warn_incompatible_qualified_id;
-    break;
-  case IncompatibleVectors:
-    DiagKind = diag::warn_incompatible_vectors;
     break;
   case IncompatibleObjCWeakRef:
     DiagKind = diag::err_arc_weak_unavailable_assign;
