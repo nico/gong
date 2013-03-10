@@ -155,4 +155,4 @@ DIAG(undeclared_var_use,        CLASS_ERROR, "use of undeclared identifier %0")
 //DIAG(undeclared_var_use_suggest,CLASS_ERROR,
     //"use of undeclared identifier %0; did you mean $1?")
 DIAG(does_not_refer_to_type,    CLASS_ERROR, "%0 does not name a type")
-DIAG(no_field,                  CLASS_ERROR, "no field %0")
+DIAG(no_field,                  CLASS_ERROR, "no field %0 in %1")

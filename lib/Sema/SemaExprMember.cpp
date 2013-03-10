@@ -219,12 +219,11 @@ Sema::BuildMemberReferenceExpr(Expr *BaseExpr, const Type *BaseExprType,
   if (R.isAmbiguous())
     return ExprError();
 
-  // FIXME: add "in <type>"
   // FIXME: embedded fields
   // FIXME: make this work for typenames for structs too
   if (R.empty()) {
-    //DeclContext *DC = BaseType->getAs<RecordType>()->getDecl();
-    Diag(R.getNameLoc(), diag::no_field) << II;
+    DeclContext *DC = BaseType->getAs<StructType>()->getDecl();
+    Diag(R.getNameLoc(), diag::no_field) << II << DC;
     //Diag(R.getNameLoc(), diag::err_no_member)
       //<< MemberName << DC
       //<< (BaseExpr ? BaseExpr->getSourceRange() : SourceRange());
