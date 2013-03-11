@@ -1412,9 +1412,9 @@ void Sema::ActOnTypeSpec(DeclPtrTy Decl, SourceLocation IILoc,
                                              //        If so, remove DeclScope.
   DeclContext *DC = Decl.getAs<DeclarationDecl>();
 
-  // FIXME: ownership, pass type
+  // FIXME: ownership
   TypeSpecDecl *New =
-      TypeSpecDecl::Create(Context, DC, IILoc, &II, /*Type=*/ NULL);
+      TypeSpecDecl::Create(Context, DC, IILoc, &II, Type.takeAs<TypeDecl>());
   CheckRedefinitionAndPushOnScope(*this, DC, S, New);
   //return New;
 }
