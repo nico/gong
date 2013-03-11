@@ -2434,7 +2434,7 @@ public:
 
   // Implement isa/cast/dyncast/etc.
   static bool classof(const Decl *D) { return classofKind(D->getKind()); }
-  static bool classofKind(Kind K) { return K == PointerType; }
+  static bool classofKind(Kind K) { return K == NameType; }
 };
 
 /// Represents a pointer to another type.
