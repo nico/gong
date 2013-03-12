@@ -2458,8 +2458,6 @@ public:
 
 /// Represents a StructType.
 class StructTypeDecl : public TypeDecl, public DeclContext {
-  TypeDecl *PointeeType;
-
   StructTypeDecl(DeclContext *DC, SourceLocation LLoc)
     : TypeDecl(StructType, DC, LLoc), DeclContext(StructType) {}
 
