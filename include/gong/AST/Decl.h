@@ -2410,7 +2410,7 @@ class BuiltinTypeDecl : public TypeDecl {
   const Type *T;
 
   BuiltinTypeDecl(DeclContext *DC, const Type *T)
-    : TypeDecl(NameType, DC, SourceLocation()), T(T) {}
+    : TypeDecl(BuiltinType, DC, SourceLocation()), T(T) {}
 public:
   static BuiltinTypeDecl *Create(ASTContext &C, DeclContext *DC, Type *T);
 
