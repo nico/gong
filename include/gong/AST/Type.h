@@ -756,15 +756,15 @@ public:
 /// PointerType - C99 6.7.5.1 - Pointer Declarators.
 ///
 class PointerType : public Type, public llvm::FoldingSetNode {
-  Type *PointeeType;
+  const Type *PointeeType;
 
-  PointerType(Type *Pointee, Type *CanonicalType)
+  PointerType(const Type *Pointee, const Type *CanonicalType)
     : Type(Pointer, this, CanonicalType), PointeeType(Pointee) {}
   friend class ASTContext;  // ASTContext creates these.
 
 public:
 
-  Type *getPointeeType() const { return PointeeType; }
+  const Type *getPointeeType() const { return PointeeType; }
 
   bool isSugared() const { return false; }
   //QualType desugar() const { return QualType(this, 0); }
@@ -773,7 +773,7 @@ public:
   void Profile(llvm::FoldingSetNodeID &ID) {
     Profile(ID, getPointeeType());
   }
-  static void Profile(llvm::FoldingSetNodeID &ID, Type *Pointee) {
+  static void Profile(llvm::FoldingSetNodeID &ID, const Type *Pointee) {
     ID.AddPointer(Pointee);
   }
 

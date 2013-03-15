@@ -2449,6 +2449,9 @@ public:
   static PointerTypeDecl *Create(ASTContext &C, DeclContext *DC,
                                  SourceLocation Loc, TypeDecl *PointeeType);
   //static PointerTypeDecl *CreateDeserialized(ASTContext &C, unsigned ID);
+
+  TypeDecl *getPointeeTypeDecl() { return PointeeType; }
+  const TypeDecl *getPointeeTypeDecl() const { return PointeeType; }
   
   //SourceRange getSourceRange() const LLVM_READONLY;
 

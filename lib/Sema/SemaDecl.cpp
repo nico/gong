@@ -1719,8 +1719,13 @@ Sema::ActOnTypeName(SourceLocation IILoc, IdentifierInfo &II, Scope *S) {
 
 Action::OwningDeclResult
 Sema::ActOnPointerType(SourceLocation StarLoc, DeclArg PointeeType) {
-  return Owned(PointerTypeDecl::Create(Context, CurContext, StarLoc,
-                                       PointeeType.takeAs<TypeDecl>()));
+  PointerTypeDecl* T = PointerTypeDecl::Create(
+      Context, CurContext, StarLoc, PointeeType.takeAs<TypeDecl>());
+
+  // This sets the TypeForDecl field of T.
+  Context.getPointerType(Context.getTypeDeclType(T->getPointeeTypeDecl()));
+
+  return Owned(T);
 }
 
 Action::OwningDeclResult Sema::ActOnStartOfStructType(

@@ -1522,10 +1522,11 @@ QualType ASTContext::getComplexType(QualType T) const {
   ComplexTypes.InsertNode(New, InsertPos);
   return QualType(New, 0);
 }
+#endif
 
-/// getPointerType - Return the uniqued reference to the type for a pointer to
+/// Return the uniqued reference to the type for a pointer to
 /// the specified type.
-QualType ASTContext::getPointerType(QualType T) const {
+const Type *ASTContext::getPointerType(const Type *T) const {
   // Unique pointers, to guarantee there is only one pointer of a particular
   // structure.
   llvm::FoldingSetNodeID ID;
@@ -1533,24 +1534,22 @@ QualType ASTContext::getPointerType(QualType T) const {
 
   void *InsertPos = 0;
   if (PointerType *PT = PointerTypes.FindNodeOrInsertPos(ID, InsertPos))
-    return QualType(PT, 0);
+    return PT;
 
+  // FIXME: This is likely not required.
   // If the pointee type isn't canonical, this won't be a canonical type either,
   // so fill in the canonical type field.
-  QualType Canonical;
-  if (!T.isCanonical()) {
-    Canonical = getPointerType(getCanonicalType(T));
+  const Type *Canonical = 0;
+  //if (!T.isCanonical())
+    //Canonical = getPointerType(getCanonicalType(T));
 
-    // Get the new insert position for the node we care about.
-    PointerType *NewIP = PointerTypes.FindNodeOrInsertPos(ID, InsertPos);
-    assert(NewIP == 0 && "Shouldn't be in the map!"); (void)NewIP;
-  }
   PointerType *New = new (*this, TypeAlignment) PointerType(T, Canonical);
   Types.push_back(New);
   PointerTypes.InsertNode(New, InsertPos);
-  return QualType(New, 0);
+  return New;
 }
 
+#if 0
 /// getBlockPointerType - Return the uniqued reference to the type for
 /// a pointer to the specified block.
 QualType ASTContext::getBlockPointerType(QualType T) const {
