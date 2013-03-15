@@ -868,13 +868,6 @@ public:
     return getTypeDeclTypeSlow(Decl);
   }
 
-#if 0
-  /// \brief Return the unique reference to the type for the specified
-  /// typedef-name decl.
-  QualType getTypedefType(const TypedefNameDecl *Decl,
-                          QualType Canon = QualType()) const;
-#endif
-
   const Type *getNameType(const NameTypeDecl *Decl) const;
   const Type *getStructType(const StructTypeDecl *Decl) const;
 

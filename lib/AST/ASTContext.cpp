@@ -14,6 +14,7 @@
 #include "gong/AST/ASTContext.h"
 
 #include "gong/Basic/IdentifierTable.h"
+#include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/raw_ostream.h"
 using namespace gong;
 
@@ -2268,11 +2269,8 @@ const Type *ASTContext::getTypeDeclTypeSlow(const TypeDecl *Decl) const {
   assert(Decl && "Passed null for Decl param");
   assert(!Decl->TypeForDecl && "TypeForDecl present in slow case");
 
-  //if (const TypedefNameDecl *Typedef = dyn_cast<TypedefNameDecl>(Decl))
-  //  return getTypedefType(Typedef);
-  if (const NameTypeDecl *Name = dyn_cast<NameTypeDecl>(Decl)) {
+  if (const NameTypeDecl *Name = dyn_cast<NameTypeDecl>(Decl))
     return getNameType(Name);
-  }
 
   //assert(!isa<TemplateTypeParmDecl>(Decl) &&
   //       "Template type parameter types are always available.");
@@ -2295,29 +2293,10 @@ const Type *ASTContext::getTypeDeclTypeSlow(const TypeDecl *Decl) const {
   //  Decl->TypeForDecl = newType;
   //  Types.push_back(newType);
   //} else
-  //  llvm_unreachable("TypeDecl without a type?");
+    //llvm_unreachable("TypeDecl without a type?");
 
-  //return QualType(Decl->TypeForDecl, 0);
-  return NULL;  // FIXME
+  return Decl->TypeForDecl;
 }
-
-#if 0
-/// getTypedefType - Return the unique reference to the type for the
-/// specified typedef name decl.
-QualType
-ASTContext::getTypedefType(const TypedefNameDecl *Decl,
-                           QualType Canonical) const {
-  if (Decl->TypeForDecl) return QualType(Decl->TypeForDecl, 0);
-
-  if (Canonical.isNull())
-    Canonical = getCanonicalType(Decl->getUnderlyingType());
-  TypedefType *newType = new(*this, TypeAlignment)
-    TypedefType(Type::Typedef, Decl, Canonical);
-  Decl->TypeForDecl = newType;
-  Types.push_back(newType);
-  return QualType(newType, 0);
-}
-#endif
 
 /// Return the unique reference to the type for the specified typespec name
 /// decl.
