@@ -45,6 +45,7 @@ type t3_pointer struct {
   x *t3_pointer  // expected-diag {{use of undeclared identifier 't3_pointer'}}
   *t3_pointer  // expected-diag {{use of undeclared identifier 't3_pointer'}}
 }
+// FIXME: over multiple levels, too
 
 var myvar int  // expected-note 2 {{var 'myvar' declared here}}
 type anon_var struct {
@@ -52,7 +53,7 @@ type anon_var struct {
   *myvar  // expected-diag {{'myvar' does not name a type}}
 }
 
+// Field lookup is tested in selector.go.
+
 // FIXME:
-// field lookup
 // promoted embedded fields
-// recursive struct types (over multiple levels, too)
