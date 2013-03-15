@@ -15,6 +15,7 @@ P0 support for number and string literals
    - implement support for fielddecl tags once that's done
 P0 give all exprs types, implement some sema for them
 P0 maps (needs comparison op checking), chans, slices, arrays
+P1 give two distinct NameTypeDecls the same NameType.
 P1 function parameter lists (and return names, and methoddecls)
 !! ParseTypeList() needs something like IdentOrExprList for types, to
    make parameter parsing possible.
