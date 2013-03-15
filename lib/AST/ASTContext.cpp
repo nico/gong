@@ -2266,6 +2266,9 @@ const Type *ASTContext::getTypeDeclTypeSlow(const TypeDecl *Decl) const {
 
   //if (const TypedefNameDecl *Typedef = dyn_cast<TypedefNameDecl>(Decl))
   //  return getTypedefType(Typedef);
+  if (const NameTypeDecl *Name = dyn_cast<NameTypeDecl>(Decl)) {
+    return getNameType(Name);
+  }
 
   //assert(!isa<TemplateTypeParmDecl>(Decl) &&
   //       "Template type parameter types are always available.");
@@ -2311,6 +2314,28 @@ ASTContext::getTypedefType(const TypedefNameDecl *Decl,
   return QualType(newType, 0);
 }
 #endif
+
+/// Return the unique reference to the type for the specified typespec name
+/// decl.
+const Type*
+ASTContext::getNameType(const NameTypeDecl *Decl) const {
+  if (Decl->TypeForDecl) return Decl->TypeForDecl;
+
+  // Named types are only identical if they originate in the same typespec,
+  // so there's no need to store them in a hash map.
+  TypeSpecDecl *TSD = Decl->getTypeDecl();
+  const Type *Named = getTypeDeclType(TSD->getTypeDecl());
+
+  const Type *Canonical = Named;
+  if (const NameType *Inner = dyn_cast_or_null<NameType>(Named))
+    Canonical = Inner->getCanonicalType();
+
+  NameType *newType = new (*this, TypeAlignment)
+      NameType(TSD, Named, Canonical);
+  Decl->TypeForDecl = newType;
+  Types.push_back(newType);
+  return newType;
+}
 
 const Type *ASTContext::getStructType(const StructTypeDecl *Decl) const {
   if (Decl->TypeForDecl) return Decl->TypeForDecl;

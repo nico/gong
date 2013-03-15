@@ -2431,6 +2431,7 @@ public:
                               SourceLocation Loc, TypeSpecDecl *D);
 
   IdentifierInfo &getName() const { return D->getDeclName(); }
+  TypeSpecDecl *getTypeDecl() const { return D; }
 
   // Implement isa/cast/dyncast/etc.
   static bool classof(const Decl *D) { return classofKind(D->getKind()); }

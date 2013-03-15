@@ -62,6 +62,7 @@ namespace llvm {
 
 namespace gong {
 class StructTypeDecl;
+class TypeSpecDecl;
 #if 0
   class ASTContext;
   class TypedefNameDecl;
@@ -82,7 +83,6 @@ class StructTypeDecl;
   class TemplateArgumentLoc;
   class TemplateArgumentListInfo;
   class ElaboratedType;
-  class ExtQualsTypeCommonBase;
   struct PrintingPolicy;
 
   template <typename> class CanQual;
@@ -98,19 +98,25 @@ class StructTypeDecl;
 /// two.
 ///
 class ExtQualsTypeCommonBase {
-  ExtQualsTypeCommonBase(const Type *baseType, const Type *canon)
-    : BaseType(baseType), CanonicalType(canon) {}
+  ExtQualsTypeCommonBase(const Type *UnderlyingType, const Type *canon)
+    : UnderlyingType(UnderlyingType), CanonicalType(canon) {}
 
-  /// \brief A self-referential pointer (for \c Type).
+  /// \brief The type's underlying type.
   ///
-  /// This pointer allows an efficient mapping from a QualType to its
-  /// underlying type pointer.
-  const Type *const BaseType;
+  /// Only != this for NameTypes.
+  // FIXME: Consider storing this only in NameType.
+  const Type *const UnderlyingType;
 
-  /// \brief The canonical type of this type.  A QualType.
+  /// \brief The canonical type of this type.
+  ///
+  /// Only used for NameTypes. Note that this is used to implement type
+  /// identity checks in clang. In Go, new type names act more like new types
+  /// and not just as type aliases like in C. Hence, this pointer is currently
+  /// only used to quickly find the base type of a type name list.
+  // FIXME: Consider storing this only in NameType.
   const Type *CanonicalType;
 
-  friend class QualType;
+  friend class NameType;
   friend class Type;
 };
 
@@ -140,13 +146,14 @@ class ExtQualsTypeCommonBase {
 /// Types, once created, are immutable.
 ///
 class Type : public ExtQualsTypeCommonBase {
+
 public:
   enum TypeClass {
 #define TYPE(Class, Base) Class,
-#define LAST_TYPE(Class) TypeLast = Class,
+#define LAST_TYPE(Class) TypeLast = Class
 #define ABSTRACT_TYPE(Class, Base)
 #include "gong/AST/TypeNodes.def"
-    TagFirst = Record, TagLast = Enum
+    //TagFirst = Record, TagLast = Enum
   };
 
 private:
@@ -269,8 +276,8 @@ private:
 protected:
   // silence VC++ warning C4355: 'this' : used in base member initializer list
   Type *this_() { return this; }
-  Type(TypeClass tc, const Type *canon)
-    : ExtQualsTypeCommonBase(this, canon) {
+  Type(TypeClass tc, const Type *UnderlyingType, const Type *Canon)
+    : ExtQualsTypeCommonBase(UnderlyingType, Canon == NULL ? this_() : Canon) {
     TypeBits.TC = tc;
     //TypeBits.VariablyModified = VariablyModified;
     //TypeBits.CacheValidAndVisibility = 0;
@@ -283,6 +290,8 @@ protected:
 
 public:
   TypeClass getTypeClass() const { return static_cast<TypeClass>(TypeBits.TC); }
+
+  const Type* getUnderlyingType() const { return UnderlyingType; }
 
   /// \brief Whether this type comes from an AST file.
   bool isFromAST() const { return TypeBits.FromAST; }
@@ -543,12 +552,14 @@ public:
   /// getPointeeType - If this is a pointer, or block
   /// pointer, this returns the respective pointee.
   QualType getPointeeType() const;
+#endif
 
   /// getUnqualifiedDesugaredType() - Return the specified type with
   /// any "sugar" removed from the type, removing any typedefs,
   /// typeofs, etc., as well as any qualifiers.
   const Type *getUnqualifiedDesugaredType() const;
 
+#if 0
   /// More type predicates useful for type checking/promotion
   bool isPromotableIntegerType() const; // C99 6.3.1.1p2
 
@@ -599,6 +610,11 @@ public:
   QualType getCanonicalTypeInternal() const {
     return CanonicalType;
   }
+#endif
+  const Type *getCanonicalType() const {
+    return CanonicalType;
+  }
+#if 0
   CanQualType getCanonicalTypeUnqualified() const; // in CanonicalType.h
   LLVM_ATTRIBUTE_USED void dump() const;
 
@@ -638,7 +654,7 @@ public:
 
 public:
   BuiltinType(Kind K)
-    : Type(Builtin, /*canon=*/0 /* FIXME: why not |this|?*/) {
+    : Type(Builtin, this, /*canon=*/0) {
     BuiltinTypeBits.Kind = K;
   }
 
@@ -653,6 +669,7 @@ public:
 
   bool isSugared() const { return false; }
   //QualType desugar() const { return QualType(this, 0); }
+  const Type *desugar() const { return this; }
 
   bool isInteger() const {
     return getKind() >= UInt8 && getKind() <= Int64;
@@ -741,8 +758,8 @@ public:
 class PointerType : public Type, public llvm::FoldingSetNode {
   Type *PointeeType;
 
-  PointerType(Type *Pointee, Type *CanonicalPtr)
-    : Type(Pointer, CanonicalPtr), PointeeType(Pointee) {}
+  PointerType(Type *Pointee, Type *CanonicalType)
+    : Type(Pointer, this, CanonicalType), PointeeType(Pointee) {}
   friend class ASTContext;  // ASTContext creates these.
 
 public:
@@ -751,6 +768,7 @@ public:
 
   bool isSugared() const { return false; }
   //QualType desugar() const { return QualType(this, 0); }
+  const Type *desugar() const { return this; }
 
   void Profile(llvm::FoldingSetNodeID &ID) {
     Profile(ID, getPointeeType());
@@ -1697,7 +1715,27 @@ public:
                       arg_type_iterator ArgTys, unsigned NumArgs,
                       const ExtProtoInfo &EPI, const ASTContext &Context);
 };
+#endif
 
+class NameType : public Type {
+  TypeSpecDecl *Decl;
+protected:
+  NameType(const TypeSpecDecl *D, const Type *Underlying, const Type *Canon)
+    : Type(Type::Name, Underlying, Canon),
+      Decl(const_cast<TypeSpecDecl*>(D)) {
+  }
+  friend class ASTContext;  // ASTContext creates these.
+public:
+
+  TypeSpecDecl *getDecl() const { return Decl; }
+
+  bool isSugared() const { return true; }
+  const Type *desugar() const { return UnderlyingType; }
+
+  static bool classof(const Type *T) { return T->getTypeClass() == Name; }
+};
+
+#if 0
 class TypedefType : public Type {
   TypedefNameDecl *Decl;
 protected:
@@ -1864,10 +1902,13 @@ class StructType : public Type {
   StructTypeDecl *decl;
 
   explicit StructType(const StructTypeDecl *D)
-    : Type(Struct, /*CanonicalTy=*/0), decl(const_cast<StructTypeDecl*>(D)) {}
+    : Type(Struct, this, 0), decl(const_cast<StructTypeDecl*>(D)) {}
   friend class ASTContext;   // ASTContext creates these.
 
 public:
+  bool isSugared() const { return false; }
+  const Type *desugar() const { return this; }
+
   StructTypeDecl *getDecl() const { return decl; }
 
   static bool classof(const Type *T) { return T->getTypeClass() == Struct; }
@@ -2542,31 +2583,38 @@ inline const PartialDiagnostic &operator<<(const PartialDiagnostic &PD,
 
 // Helper class template that is used by Type::getAs to ensure that one does
 // not try to look through a qualified type to get to an array type.
-template<typename T,
-         bool isArrayType = (llvm::is_same<T, ArrayType>::value ||
-                             llvm::is_base_of<ArrayType, T>::value)>
-struct ArrayType_cannot_be_used_with_getAs { };
+//template<typename T,
+//         bool isArrayType = (llvm::is_same<T, ArrayType>::value ||
+//                             llvm::is_base_of<ArrayType, T>::value)>
+//struct ArrayType_cannot_be_used_with_getAs { };
 
-template<typename T>
-struct ArrayType_cannot_be_used_with_getAs<T, true>;
+//template<typename T>
+//struct ArrayType_cannot_be_used_with_getAs<T, true>;
 
 // Member-template getAs<specific type>'.
 template <typename T> const T *Type::getAs() const {
-  ArrayType_cannot_be_used_with_getAs<T> at;
-  (void)at;
+  //ArrayType_cannot_be_used_with_getAs<T> at;
+  //(void)at;
 
   // If this is directly a T type, return it.
   if (const T *Ty = dyn_cast<T>(this))
     return Ty;
 
-  return 0; // FIXME: instead do the below once nametypes work.
+#if 0
+  // XXX: probably want to keep the Canonical pointer so this doesn't need
+  // to O(n) recurse
+  if (isa<NameType>(this))
+    return UnderlyingType->getAs<T>();
+  return dyn_cast<T>(UnderlyingType);
+#else
   // If the canonical form of this type isn't the right kind, reject it.
-  //if (!isa<T>(CanonicalType))
-    //return 0;
+  if (!isa<T>(CanonicalType))
+    return 0;
 
   // If this is a typedef for the type, strip the typedef off without
   // losing all typedef information.
-  //return cast<T>(getUnqualifiedDesugaredType());
+  return cast<T>(getUnqualifiedDesugaredType());
+#endif
 }
 
 #if 0

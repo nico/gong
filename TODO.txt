@@ -33,6 +33,18 @@ P1 type checking
 P2 hand type and / or initializer to ConstSpec
 P1 types for var and const
 
+Types:
+- let ASTContext unify types on type identity. Types are identical if and
+  exactly if they are the same object.
+- every type stores its underlying type. for non-named types, it's the type
+  itself.
+- to make Type->getAs<>() constant-time, every type stores its canonical type.
+  In
+    type foo int
+    type bar (foo)
+    type baz bar
+  the canonical type of `foo`, `bar`, and `baz` is `int`.
+
 
 General s/llvm::SourceMgr/SourceManager/g
 

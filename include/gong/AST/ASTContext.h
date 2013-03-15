@@ -874,6 +874,7 @@ public:
                           QualType Canon = QualType()) const;
 #endif
 
+  const Type *getNameType(const NameTypeDecl *Decl) const;
   const Type *getStructType(const StructTypeDecl *Decl) const;
 
 #if 0

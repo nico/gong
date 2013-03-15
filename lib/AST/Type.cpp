@@ -297,6 +297,7 @@ template <> const TypedefType *Type::getAs() const {
 template <> const TemplateSpecializationType *Type::getAs() const {
   return getAsSugar<TemplateSpecializationType>(this);
 }
+#endif
 
 /// getUnqualifiedDesugaredType - Pull any qualifiers and syntactic
 /// sugar off the given type.  This should produce an object of the
@@ -311,7 +312,7 @@ const Type *Type::getUnqualifiedDesugaredType() const {
     case Class: { \
       const Class##Type *Ty = cast<Class##Type>(Cur); \
       if (!Ty->isSugared()) return Cur; \
-      Cur = Ty->desugar().getTypePtr(); \
+      Cur = Ty->desugar(); \
       break; \
     }
 #include "gong/AST/TypeNodes.def"
@@ -319,6 +320,7 @@ const Type *Type::getUnqualifiedDesugaredType() const {
   }
 }
 
+#if 0
 bool Type::isDerivedType() const {
   switch (CanonicalType->getTypeClass()) {
   case Pointer:

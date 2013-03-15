@@ -29,9 +29,17 @@ func happy() {
   a.a
   a.b
   a.c
-  a.d  // should-diag FIXME
-  //a.s.a  // FIXME: should work, not crash
-  //a.s.b  // FIXME: should-diag, not crash
+  a.d  // expected-diag{{no field 'd'}}
+  a.s.a
+  a.s.b  // expected-diag{{no field 'b'}}
+
+  type bar foo
+  type baz bar
+  var abaz baz
+  abaz.a
+  abaz.b
+  abaz.c
+  abaz.d  // expected-diag{{no field 'd'}}
 
   const c foo = foo{}
   c.a
