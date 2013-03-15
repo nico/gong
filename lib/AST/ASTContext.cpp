@@ -14,6 +14,7 @@
 #include "gong/AST/ASTContext.h"
 
 #include "gong/Basic/IdentifierTable.h"
+#include "llvm/Support/raw_ostream.h"
 using namespace gong;
 
 #if 0
@@ -40,7 +41,6 @@ using namespace gong;
 #include "llvm/ADT/StringExtras.h"
 #include "llvm/Support/Capacity.h"
 #include "llvm/Support/MathExtras.h"
-#include "llvm/Support/raw_ostream.h"
 #include <map>
 
 unsigned ASTContext::NumImplicitDefaultConstructors;
@@ -456,6 +456,7 @@ void
 ASTContext::setExternalSource(OwningPtr<ExternalASTSource> &Source) {
   ExternalSource.reset(Source.take());
 }
+#endif
 
 void ASTContext::PrintStats() const {
   llvm::errs() << "\n*** AST Context Stats:\n";
@@ -486,6 +487,7 @@ void ASTContext::PrintStats() const {
 
   llvm::errs() << "Total bytes = " << TotalBytes << "\n";
 
+#if 0
   // Implicit special member functions.
   llvm::errs() << NumImplicitDefaultConstructorsDeclared << "/"
                << NumImplicitDefaultConstructors
@@ -512,10 +514,12 @@ void ASTContext::PrintStats() const {
     llvm::errs() << "\n";
     ExternalSource->PrintStats();
   }
+#endif
 
   BumpAlloc.PrintStats();
 }
 
+#if 0
 TypedefDecl *ASTContext::getInt128Decl() const {
   if (!Int128Decl) {
     TypeSourceInfo *TInfo = getTrivialTypeSourceInfo(Int128Ty);

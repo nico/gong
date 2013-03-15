@@ -159,9 +159,10 @@ int main(int argc_, const char **argv_) {
           Parser P(L, ParseActions);
           P.ParseSourceFile();
           if (stats) {
-            L.getIdentifierTable().PrintStats();
+            Context.PrintStats();
             Decl::PrintStats();
-            // FIXME: stats for sema, stmt, expr, astcontext
+            L.getIdentifierTable().PrintStats();
+            // FIXME: stats for sema, stmt, expr
           }
         } else {
           MinimalAction ParseActions(L);

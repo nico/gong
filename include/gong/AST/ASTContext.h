@@ -659,8 +659,9 @@ public:
   /// \brief Retrieve a pointer to the AST mutation listener associated
   /// with this AST context, if any.
   ASTMutationListener *getASTMutationListener() const { return Listener; }
-
+#endif
   void PrintStats() const;
+#if 0
   const std::vector<Type*>& getTypes() const { return Types; }
 
   /// \brief Retrieve the declaration for the 128-bit signed integer type.
