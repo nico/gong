@@ -14,15 +14,15 @@
 #ifndef LLVM_GONG_AST_TYPE_H
 #define LLVM_GONG_AST_TYPE_H
 
+#include "gong/Basic/Diagnostic.h"
+#include "gong/Basic/LLVM.h"
 #include "llvm/ADT/FoldingSet.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/Support/Compiler.h"
-#include "gong/Basic/LLVM.h"
 
 #if 0
 #include "gong/AST/NestedNameSpecifier.h"
 #include "gong/AST/TemplateName.h"
-#include "gong/Basic/Diagnostic.h"
 #include "gong/Basic/ExceptionSpecificationType.h"
 #include "gong/Basic/IdentifierTable.h"
 #include "gong/Basic/Linkage.h"
@@ -2561,16 +2561,17 @@ inline const Type *Type::getBaseElementTypeUnsafe() const {
     type = arrayType->getElementType().getTypePtr();
   return type;
 }
+#endif
 
-/// Insertion operator for diagnostics.  This allows sending QualType's into a
+/// Insertion operator for diagnostics.  This allows sending Type's into a
 /// diagnostic with <<.
 inline const DiagnosticBuilder &operator<<(const DiagnosticBuilder &DB,
-                                           QualType T) {
-  DB.AddTaggedVal(reinterpret_cast<intptr_t>(T.getAsOpaquePtr()),
-                  DiagnosticsEngine::ak_qualtype);
+                                           const Type *T) {
+  DB.AddTaggedVal(reinterpret_cast<intptr_t>(T), DiagnosticsEngine::ak_type);
   return DB;
 }
 
+#if 0
 /// Insertion operator for partial diagnostics.  This allows sending QualType's
 /// into a diagnostic with <<.
 inline const PartialDiagnostic &operator<<(const PartialDiagnostic &PD,

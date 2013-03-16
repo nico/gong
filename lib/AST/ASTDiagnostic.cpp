@@ -254,6 +254,17 @@ void gong::FormatASTNodeDiagnosticArgument(
   
   switch (Kind) {
     default: llvm_unreachable("unknown ArgumentKind");
+    case DiagnosticsEngine::ak_type: {
+      assert(ModLen == 0 && ArgLen == 0 &&
+             "Invalid modifier for Type argument");
+      
+      const Type *Ty(reinterpret_cast<Type*>(Val));
+      //OS << ConvertTypeToDiagnosticString(Context, Ty, PrevArgs, NumPrevArgs,
+      //                                    QualTypeVals);
+      OS << "<name>"; // FIXME
+      NeedQuotes = false;
+      break;
+    }
     case DiagnosticsEngine::ak_declcontext: {
       DeclContext *DC = reinterpret_cast<DeclContext *> (Val);
       assert(DC && "Should never have a null declaration context");

@@ -146,6 +146,7 @@ public:
     ak_uint,            ///< unsigned
     ak_identifierinfo,  ///< IdentifierInfo
 
+    ak_type,            ///< Type *
     ak_declcontext      ///< DeclContext *
   };
 

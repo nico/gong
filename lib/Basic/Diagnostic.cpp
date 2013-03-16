@@ -443,6 +443,7 @@ FormatDiagnostic(const char *DiagStr, const char *DiagEnd,
       llvm::raw_svector_ostream(OutStr) << '\'' << II->getName() << '\'';
       break;
     }
+    case DiagnosticsEngine::ak_type:
     case DiagnosticsEngine::ak_declcontext:
       getDiags()->ConvertArgToString(Kind, getRawArg(ArgNo),
                                      Modifier, ModifierLen,
