@@ -200,10 +200,9 @@ Action::OwningExprResult
 Sema::BuildMemberReferenceExpr(Expr *BaseExpr, const Type *BaseExprType,
                                SourceLocation OpLoc, LookupResult &R) {
   const Type* BaseType = BaseExprType;
-  //if (IsArrow) {
-    //assert(BaseType->isPointerType());
-    //BaseType = BaseType->castAs<PointerType>()->getPointeeType();
-  //}
+
+  if (const PointerType *P = dyn_cast<PointerType>(BaseType))
+    BaseType = P->getPointeeType();
   //R.setBaseObjectType(BaseType);
 
   //const DeclarationNameInfo &MemberNameInfo = R.getLookupNameInfo();
@@ -215,8 +214,8 @@ Sema::BuildMemberReferenceExpr(Expr *BaseExpr, const Type *BaseExprType,
     return ExprError();
 
   // FIXME: embedded fields
-  // FIXME: make this work for typenames for structs too
   if (R.empty()) {
+    // FIXME: make sure this prints the '*' for pointer-to-struct types (?)
     DeclContext *DC = BaseType->getAs<StructType>()->getDecl();
     Diag(R.getNameLoc(), diag::no_field) << II << DC;
     //Diag(R.getNameLoc(), diag::err_no_member)
@@ -377,6 +376,9 @@ Sema::LookupMemberExpr(LookupResult &R, Expr &BaseExpr,
     }
   }
 #endif
+  // spec#Selector: "If x is a pointer to a struct, x.y is shorthand for (*x).y"
+  if (const PointerType *P = dyn_cast<PointerType>(BaseType))
+    BaseType = P->getPointeeType();
 
   // Handle field access to simple records.
   if (const StructType *STy = BaseType->getAs<StructType>()) {

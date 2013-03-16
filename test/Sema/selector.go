@@ -76,16 +76,16 @@ func happy_direct_type() {
 func happy_pointer() {
   type foo struct {
     a, b, c int
-    s struct { a int }
+    s *struct { a int }
   }
 
   var a *foo
   a.a
   a.b
   a.c
-  a.d  // should-diag FIXME
-  //a.s.a  // FIXME: should work, not crash
-  //a.s.b  // FIXME: should-diag, not crash
+  a.d  // expected-diag{{no field 'd'}}
+  a.s.a
+  a.s.b  // expected-diag{{no field 'b'}}
 
   (a).a
   (a).b  // FIXME: should-diag
