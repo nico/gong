@@ -31,9 +31,9 @@ func happy() {
   a.a
   a.b
   a.c
-  a.d  // expected-diag{{no field 'd'}}
+  a.d  // expected-diag{{no field 'd' in <type>}}
   a.s.a
-  a.s.b  // expected-diag{{no field 'b'}}
+  a.s.b  // expected-diag{{no field 'b' in <type>}}
 
   type bar foo
   type baz bar
@@ -41,7 +41,7 @@ func happy() {
   abaz.a
   abaz.b
   abaz.c
-  abaz.d  // expected-diag{{no field 'd'}}
+  abaz.d  // expected-diag{{no field 'd' in <type>}}
 
   const c foo = foo{}
   // FIXME: this should work, not diag
@@ -66,9 +66,9 @@ func happy_direct_type() {
   a.a
   a.b
   a.c
-  a.d  // expected-diag{{no field 'd'}}
+  a.d  // expected-diag{{no field 'd' in <type>}}
   a.s.a
-  a.s.b  // expected-diag{{no field 'b'}}
+  a.s.b  // expected-diag{{no field 'b' in <type>}}
 
   (a).a
   (a).b  // FIXME: should-diag
@@ -86,9 +86,9 @@ func happy_pointer() {
   a.a
   a.b
   a.c
-  a.d  // expected-diag{{no field 'd'}}
+  a.d  // expected-diag{{no field 'd' in <type>}}
   a.s.a
-  a.s.b  // expected-diag{{no field 'b'}}
+  a.s.b  // expected-diag{{no field 'b' in <type>}}
 
   (a).a
   (a).b  // FIXME: should-diag
