@@ -5,13 +5,14 @@ package p
 // FIXME: instead of <name>, print real type descriptions in diags.
 
 func err() {
+  undefined.asdf  // expected-diag {{use of undeclared identifier 'undefined'}}
+
   // FIXME: These currently all cause crashes
   //'a'.b
   //"a".c
   //`a`.d
   //4 .a  // space so this isn't lexed as float
   //4.05c4 .a
-  //undefined.asdf
 
   //(4 + 5).asdf
 }
@@ -110,8 +111,8 @@ func pointer_pointer() {
   a.b  // expected-diag {{selector base type <name> is not a struct}}
   a.c  // expected-diag {{selector base type <name> is not a struct}}
   a.d  // expected-diag {{selector base type <name> is not a struct}}
-  //a.s.a  FIXME: should-diag, not crash
-  //a.s.b  FIXME: should-diag, not crash
+  a.s.a  // expected-diag {{selector base type <name> is not a struct}}
+  a.s.b  // expected-diag {{selector base type <name> is not a struct}}
 
   (a).a  // expected-diag {{selector base type <name> is not a struct}}
   (a).b  // expected-diag {{selector base type <name> is not a struct}}

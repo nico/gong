@@ -386,7 +386,9 @@ Parser::ParseSelectorOrTypeAssertionOrTypeSwitchGuardSuffix(
   if (Tok.is(tok::identifier)) {
     IdentifierInfo *II = Tok.getIdentifierInfo();
     SourceLocation IILoc = ConsumeToken();
-    return Actions.ActOnSelectorExpr(move(LHS), PeriodLoc, IILoc, II);
+    if (!LHS.isInvalid())
+      LHS = Actions.ActOnSelectorExpr(move(LHS), PeriodLoc, IILoc, II);
+    return LHS;
   }
 
   // TypeAssertion or TypeSwitchGuard
