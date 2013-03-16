@@ -2276,7 +2276,6 @@ const Type *ASTContext::getTypeDeclTypeSlow(const TypeDecl *Decl) const {
 
   if (const StructTypeDecl *Struct = dyn_cast<StructTypeDecl>(Decl)) {
     return getStructType(Struct);
-  }
   //if (const RecordDecl *Record = dyn_cast<RecordDecl>(Decl)) {
   //  assert(!Record->getPreviousDecl() &&
   //         "struct/union has previous declaration");
@@ -2291,8 +2290,8 @@ const Type *ASTContext::getTypeDeclTypeSlow(const TypeDecl *Decl) const {
   //  Type *newType = new (*this, TypeAlignment) UnresolvedUsingType(Using);
   //  Decl->TypeForDecl = newType;
   //  Types.push_back(newType);
-  //} else
-    //llvm_unreachable("TypeDecl without a type?");
+  } else
+    llvm_unreachable("TypeDecl without a type?");
 
   return Decl->TypeForDecl;
 }

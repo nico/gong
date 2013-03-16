@@ -2407,10 +2407,10 @@ public:
 
 /// One of the builtin types (the type behind bool, int, int8 etc).
 class BuiltinTypeDecl : public TypeDecl {
-  const Type *T;
-
   BuiltinTypeDecl(DeclContext *DC, const Type *T)
-    : TypeDecl(BuiltinType, DC, SourceLocation()), T(T) {}
+    : TypeDecl(BuiltinType, DC, SourceLocation()) {
+    setTypeForDecl(T);
+  }
 public:
   static BuiltinTypeDecl *Create(ASTContext &C, DeclContext *DC, Type *T);
 
