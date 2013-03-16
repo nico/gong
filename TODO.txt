@@ -5,7 +5,6 @@ P0 varspec type checking
 P0 use that to give VarDecls and ConstDecls a type
 P0 finish struct type support
    - field lookup
-     - auto-convert pointers-to-struct types to struct types for lookup
      - embedded fields
      - mention struct name in diag
      - spelling

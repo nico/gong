@@ -140,19 +140,24 @@ DIAG(missing_parameter_list,       CLASS_ERROR, "missing parameter list")
 
 // FIXME: move to DiagnosticSemaKinds
 DIAG(unimplemented_package_import, CLASS_ERROR, "sema cannot handle import yet")
-DIAG(redefinition,              CLASS_ERROR, "redefinition of %0")
-DIAG(note_previous_definition,  CLASS_NOTE, "previous definition is here")
-DIAG(too_few_initializers,      CLASS_ERROR,
+DIAG(redefinition,                 CLASS_ERROR, "redefinition of %0")
+DIAG(note_previous_definition,     CLASS_NOTE, "previous definition is here")
+DIAG(too_few_initializers,         CLASS_ERROR,
     "too few initializers, expected %0, have %1")
-DIAG(too_many_initializers,     CLASS_ERROR,
+DIAG(too_many_initializers,        CLASS_ERROR,
     "too many initializers, expected %0, have %1")
 DIAG(no_new_vars_in_shortvardecl,  CLASS_ERROR,
     "no new variables declared, use '=' instead of ':='")
-DIAG(note_var_declared,         CLASS_NOTE, "var %0 declared here")
-DIAG(note_const_declared,       CLASS_NOTE, "const %0 declared here")
-DIAG(note_func_declared,        CLASS_NOTE, "func %0 declared here")
-DIAG(undeclared_var_use,        CLASS_ERROR, "use of undeclared identifier %0")
-//DIAG(undeclared_var_use_suggest,CLASS_ERROR,
+DIAG(note_var_declared,            CLASS_NOTE, "var %0 declared here")
+DIAG(note_const_declared,          CLASS_NOTE, "const %0 declared here")
+DIAG(note_func_declared,           CLASS_NOTE, "func %0 declared here")
+DIAG(undeclared_var_use,           CLASS_ERROR,
+    "use of undeclared identifier %0")
+//DIAG(undeclared_var_use_suggest, CLASS_ERROR,
     //"use of undeclared identifier %0; did you mean $1?")
-DIAG(does_not_refer_to_type,    CLASS_ERROR, "%0 does not name a type")
-DIAG(no_field,                  CLASS_ERROR, "no field %0 in %1")
+DIAG(does_not_refer_to_type,       CLASS_ERROR, "%0 does not name a type")
+DIAG(no_field,                     CLASS_ERROR, "no field %0 in %1")
+DIAG(typecheck_field_reference_struct,
+                                   CLASS_ERROR,
+    "selector base type %0 is not a struct")
+

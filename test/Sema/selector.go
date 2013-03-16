@@ -2,6 +2,8 @@
 
 package p
 
+// FIXME: instead of <name>, print real type descriptions in diags.
+
 func err() {
   // FIXME: These currently all cause crashes
   //'a'.b
@@ -15,8 +17,7 @@ func err() {
 }
 
 func f() {
-  // FIXME
-  f.a  // should-diag
+  f.a  // expected-diag {{selector base type <name> is not a struct}}
 }
 
 func happy() {
@@ -42,7 +43,8 @@ func happy() {
   abaz.d  // expected-diag{{no field 'd'}}
 
   const c foo = foo{}
-  c.a
+  // FIXME: this should work, not diag
+  c.a  // expected-diag {{selector base type <name> is not a struct}}
 
   (a).a
   (a).b  // FIXME: should-diag
@@ -97,24 +99,24 @@ func happy_pointer() {
 }
 
 func pointer_pointer() {
-  // FIXME: These should all diag.
+  // Check that lookups in pointer-to-pointer-to-struct diags.
   type foo struct {
     a, b, c int
     s struct { a int }
   }
 
   var a **foo
-  a.a
-  a.b
-  a.c
-  a.d
-  //a.s.a
-  //a.s.b
+  a.a  // expected-diag {{selector base type <name> is not a struct}}
+  a.b  // expected-diag {{selector base type <name> is not a struct}}
+  a.c  // expected-diag {{selector base type <name> is not a struct}}
+  a.d  // expected-diag {{selector base type <name> is not a struct}}
+  //a.s.a  FIXME: should-diag, not crash
+  //a.s.b  FIXME: should-diag, not crash
 
-  (a).a
-  (a).b
-  ((((((a)))))).a
-  ((((((a)))))).b
+  (a).a  // expected-diag {{selector base type <name> is not a struct}}
+  (a).b  // expected-diag {{selector base type <name> is not a struct}}
+  ((((((a)))))).a  // expected-diag {{selector base type <name> is not a struct}}
+  ((((((a)))))).b  // expected-diag {{selector base type <name> is not a struct}}
 
   // FIXME: should diag, not crash
   //(& &struct { a int }{}).a
@@ -131,5 +133,5 @@ func types() {
   //(map[int]int).ho
 
   type foo int
-  //foo.bar
+  foo.bar  // expected-diag {{selector base type <name> is not a struct}}
 }

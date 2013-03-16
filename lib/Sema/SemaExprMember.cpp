@@ -345,9 +345,10 @@ Sema::LookupMemberExpr(LookupResult &R, Expr &BaseExpr,
 
   const Type *BaseType = BaseExpr.getType();
   assert(BaseType);
+
+  SourceLocation MemberLoc = R.getNameLoc();
 #if 0
   DeclarationName MemberName = R.getLookupName();
-  SourceLocation MemberLoc = R.getNameLoc();
 
   // For later type-checking purposes, turn arrow accesses into dot
   // accesses.  The only access type we support that doesn't follow
@@ -395,27 +396,7 @@ Sema::LookupMemberExpr(LookupResult &R, Expr &BaseExpr,
   // Failure cases.
  fail:
 
-  // Recover from dot accesses to pointers, e.g.:
-  //   type *foo;
-  //   foo.bar
-  // This is actually well-formed in two cases:
-  //   - 'type' is an Objective C type
-  //   - 'bar' is a pseudo-destructor name which happens to refer to
-  //     the appropriate pointer type
-  if (const PointerType *Ptr = BaseType->getAs<PointerType>()) {
-    if (!IsArrow && Ptr->getPointeeType()->isRecordType() &&
-        MemberName.getNameKind() != DeclarationName::CXXDestructorName) {
-      Diag(OpLoc, diag::err_typecheck_member_reference_suggestion)
-        << BaseType << int(IsArrow) << BaseExpr.get()->getSourceRange()
-          << FixItHint::CreateReplacement(OpLoc, "->");
-
-      // Recurse as an -> access.
-      IsArrow = true;
-      return LookupMemberExpr(R, BaseExpr, IsArrow, OpLoc);
-    }
-  }
-
-  // If the user is trying to apply -> or . to a function name, it's probably
+  // If the user is trying to apply . to a function name, it's probably
   // because they forgot parentheses to call that function.
   if (tryToRecoverWithCall(BaseExpr,
                            PDiag(diag::err_member_reference_needs_call),
@@ -426,10 +407,11 @@ Sema::LookupMemberExpr(LookupResult &R, Expr &BaseExpr,
     BaseExpr = DefaultFunctionArrayConversion(BaseExpr.take());
     return LookupMemberExpr(R, BaseExpr, IsArrow, OpLoc);
   }
-
-  Diag(OpLoc, diag::err_typecheck_member_reference_struct_union)
-    << BaseType << BaseExpr.get()->getSourceRange() << MemberLoc;
 #endif
+
+  Diag(OpLoc, diag::typecheck_field_reference_struct)
+    //<< BaseType << BaseExpr.get()->getSourceRange() << MemberLoc;
+    << BaseType << SourceRange(MemberLoc, MemberLoc);
 
   return ExprError();
 }
