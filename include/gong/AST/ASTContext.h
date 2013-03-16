@@ -857,8 +857,7 @@ public:
   /// declaration.
   const Type * getTypeDeclType(const TypeDecl *Decl/*,
                            const TypeDecl *PrevDecl = 0*/) const {
-    // FIXME: enable this assert
-    //assert(Decl && "Passed null for Decl param");
+    assert(Decl && "Passed null for Decl param");
     if (!Decl) return NULL;  // FIXME
     if (Decl->TypeForDecl)
       return Decl->TypeForDecl;
