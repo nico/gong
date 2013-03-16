@@ -1723,7 +1723,8 @@ Sema::ActOnPointerType(SourceLocation StarLoc, DeclArg PointeeType) {
       Context, CurContext, StarLoc, PointeeType.takeAs<TypeDecl>());
 
   // This sets the TypeForDecl field of T.
-  Context.getPointerType(Context.getTypeDeclType(T->getPointeeTypeDecl()));
+  T->setTypeForDecl(
+      Context.getPointerType(Context.getTypeDeclType(T->getPointeeTypeDecl())));
 
   return Owned(T);
 }
