@@ -305,8 +305,8 @@ void LookupResult::sanityImpl() const {
 }
 
 #if 0
-// Necessary because CXXBasePaths is not complete in Sema.h
-void LookupResult::deletePaths(CXXBasePaths *Paths) {
+// Necessary because PromotedFieldPaths is not complete in Sema.h
+void LookupResult::deletePaths(PromotedFieldPaths *Paths) {
   delete Paths;
 }
 
@@ -434,24 +434,24 @@ void LookupResult::resolveKind() {
 }
 
 #if 0
-void LookupResult::addDeclsFromBasePaths(const CXXBasePaths &P) {
-  CXXBasePaths::const_paths_iterator I, E;
+void LookupResult::addDeclsFromBasePaths(const PromotedFieldPaths &P) {
+  PromotedFieldPaths::const_paths_iterator I, E;
   for (I = P.begin(), E = P.end(); I != E; ++I)
     for (DeclContext::lookup_iterator DI = I->Decls.begin(),
          DE = I->Decls.end(); DI != DE; ++DI)
       addDecl(*DI);
 }
 
-void LookupResult::setAmbiguousBaseSubobjects(CXXBasePaths &P) {
-  Paths = new CXXBasePaths;
+void LookupResult::setAmbiguousBaseSubobjects(PromotedFieldPaths &P) {
+  Paths = new PromotedFieldPaths;
   Paths->swap(P);
   addDeclsFromBasePaths(*Paths);
   resolveKind();
   setAmbiguous(AmbiguousBaseSubobjects);
 }
 
-void LookupResult::setAmbiguousBaseSubobjectTypes(CXXBasePaths &P) {
-  Paths = new CXXBasePaths;
+void LookupResult::setAmbiguousBaseSubobjectTypes(PromotedFieldPaths &P) {
+  Paths = new PromotedFieldPaths;
   Paths->swap(P);
   addDeclsFromBasePaths(*Paths);
   resolveKind();
@@ -949,7 +949,7 @@ static bool LookupQualifiedNameInUsingDirectives(Sema &S, LookupResult &R,
 
 /// \brief Callback that looks for any member of a class with the given name.
 static bool LookupAnyMember(const CXXBaseSpecifier *Specifier,
-                            CXXBasePath &Path,
+                            PromotedFieldPath &Path,
                             void *Name) {
   RecordDecl *BaseRecord = Specifier->getType()->getAs<RecordType>()->getDecl();
 
@@ -1072,7 +1072,7 @@ bool Sema::LookupQualifiedName(LookupResult &R, DeclContext *LookupCtx,
   }
 
   // Perform lookup into our base classes.
-  CXXBasePaths Paths;
+  PromotedFieldPaths Paths;
   Paths.setOrigin(LookupRec);
 
   // Look for this member in our base classes
@@ -1124,9 +1124,9 @@ bool Sema::LookupQualifiedName(LookupResult &R, DeclContext *LookupCtx,
   int SubobjectNumber = 0;
   AccessSpecifier SubobjectAccess = AS_none;
 
-  for (CXXBasePaths::paths_iterator Path = Paths.begin(), PathEnd = Paths.end();
+  for (PromotedFieldPaths::paths_iterator Path = Paths.begin(), PathEnd = Paths.end();
        Path != PathEnd; ++Path) {
-    const CXXBasePathElement &PathElement = Path->back();
+    const PromotedFieldPathElement &PathElement = Path->back();
 
     // Pick the best (i.e. most permissive i.e. numerically lowest) access
     // across all paths.
@@ -1146,15 +1146,15 @@ bool Sema::LookupQualifiedName(LookupResult &R, DeclContext *LookupCtx,
       // different types. If the declaration sets aren't the same, this
       // this lookup is ambiguous.
       if (HasOnlyStaticMembers(Path->Decls.begin(), Path->Decls.end())) {
-        CXXBasePaths::paths_iterator FirstPath = Paths.begin();
+        PromotedFieldPaths::paths_iterator FirstPath = Paths.begin();
         DeclContext::lookup_iterator FirstD = FirstPath->Decls.begin();
         DeclContext::lookup_iterator CurrentD = Path->Decls.begin();
 
         while (FirstD != FirstPath->Decls.end() &&
                CurrentD != Path->Decls.end()) {
-         if ((*FirstD)->getUnderlyingDecl()->getCanonicalDecl() !=
-             (*CurrentD)->getUnderlyingDecl()->getCanonicalDecl())
-           break;
+          if ((*FirstD)->getUnderlyingDecl()->getCanonicalDecl() !=
+              (*CurrentD)->getUnderlyingDecl()->getCanonicalDecl())
+            break;
 
           ++FirstD;
           ++CurrentD;
@@ -1266,7 +1266,7 @@ bool Sema::DiagnoseAmbiguousLookup(LookupResult &Result) {
 
   switch (Result.getAmbiguityKind()) {
   case LookupResult::AmbiguousBaseSubobjects: {
-    CXXBasePaths *Paths = Result.getBasePaths();
+    PromotedFieldPaths *Paths = Result.getBasePaths();
     QualType SubobjectType = Paths->front().back().Base->getType();
     Diag(NameLoc, diag::err_ambiguous_member_multiple_subobjects)
       << Name << SubobjectType << getAmbiguousPathsDisplayString(*Paths)
@@ -1286,9 +1286,9 @@ bool Sema::DiagnoseAmbiguousLookup(LookupResult &Result) {
     Diag(NameLoc, diag::err_ambiguous_member_multiple_subobject_types)
       << Name << LookupRange;
 
-    CXXBasePaths *Paths = Result.getBasePaths();
+    PromotedFieldPaths *Paths = Result.getBasePaths();
     std::set<Decl *> DeclsPrinted;
-    for (CXXBasePaths::paths_iterator Path = Paths->begin(),
+    for (PromotedFieldPaths::paths_iterator Path = Paths->begin(),
                                       PathEnd = Paths->end();
          Path != PathEnd; ++Path) {
       Decl *D = Path->Decls.front();

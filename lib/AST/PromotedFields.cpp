@@ -13,19 +13,21 @@
 
 #include "gong/AST/PromotedFields.h"
 
+#include "gong/AST/Decl.h"
+
+using namespace gong;
+
 #if 0
 #include "gong/AST/ASTContext.h"
-#include "gong/AST/DeclCXX.h"
 #include "gong/AST/RecordLayout.h"
 #include "llvm/ADT/SetVector.h"
 #include <algorithm>
 #include <set>
 
-using namespace gong;
 
 /// \brief Computes the set of declarations referenced by these base
 /// paths.
-void CXXBasePaths::ComputeDeclsFound() {
+void PromotedFieldPaths::ComputeDeclsFound() {
   assert(NumDeclsFound == 0 && !DeclsFound &&
          "Already computed the set of declarations");
 
@@ -38,13 +40,13 @@ void CXXBasePaths::ComputeDeclsFound() {
   std::copy(Decls.begin(), Decls.end(), DeclsFound);
 }
 
-CXXBasePaths::decl_iterator CXXBasePaths::found_decls_begin() {
+PromotedFieldPaths::decl_iterator PromotedFieldPaths::found_decls_begin() {
   if (NumDeclsFound == 0)
     ComputeDeclsFound();
   return DeclsFound;
 }
 
-CXXBasePaths::decl_iterator CXXBasePaths::found_decls_end() {
+PromotedFieldPaths::decl_iterator PromotedFieldPaths::found_decls_end() {
   if (NumDeclsFound == 0)
     ComputeDeclsFound();
   return DeclsFound + NumDeclsFound;
@@ -54,23 +56,23 @@ CXXBasePaths::decl_iterator CXXBasePaths::found_decls_end() {
 /// ambiguous, i.e., there are two or more paths that refer to
 /// different base class subobjects of the same type. BaseType must be
 /// an unqualified, canonical class type.
-bool CXXBasePaths::isAmbiguous(CanQualType BaseType) {
+bool PromotedFieldPaths::isAmbiguous(CanQualType BaseType) {
   BaseType = BaseType.getUnqualifiedType();
   std::pair<bool, unsigned>& Subobjects = ClassSubobjects[BaseType];
   return Subobjects.second + (Subobjects.first? 1 : 0) > 1;
 }
 
 /// clear - Clear out all prior path information.
-void CXXBasePaths::clear() {
+void PromotedFieldPaths::clear() {
   Paths.clear();
   ClassSubobjects.clear();
   ScratchPath.clear();
   DetectedVirtual = 0;
 }
 
-/// @brief Swaps the contents of this CXXBasePaths structure with the
+/// @brief Swaps the contents of this PromotedFieldPaths structure with the
 /// contents of Other.
-void CXXBasePaths::swap(CXXBasePaths &Other) {
+void PromotedFieldPaths::swap(PromotedFieldPaths &Other) {
   std::swap(Origin, Other.Origin);
   Paths.swap(Other.Paths);
   ClassSubobjects.swap(Other.ClassSubobjects);
@@ -81,13 +83,13 @@ void CXXBasePaths::swap(CXXBasePaths &Other) {
 }
 
 bool CXXRecordDecl::isDerivedFrom(const CXXRecordDecl *Base) const {
-  CXXBasePaths Paths(/*FindAmbiguities=*/false, /*RecordPaths=*/false,
+  PromotedFieldPaths Paths(/*FindAmbiguities=*/false, /*RecordPaths=*/false,
                      /*DetectVirtual=*/false);
   return isDerivedFrom(Base, Paths);
 }
 
 bool CXXRecordDecl::isDerivedFrom(const CXXRecordDecl *Base,
-                                  CXXBasePaths &Paths) const {
+                                  PromotedFieldPaths &Paths) const {
   if (getCanonicalDecl() == Base->getCanonicalDecl())
     return false;
   
@@ -101,7 +103,7 @@ bool CXXRecordDecl::isVirtuallyDerivedFrom(const CXXRecordDecl *Base) const {
   if (!getNumVBases())
     return false;
 
-  CXXBasePaths Paths(/*FindAmbiguities=*/false, /*RecordPaths=*/false,
+  PromotedFieldPaths Paths(/*FindAmbiguities=*/false, /*RecordPaths=*/false,
                      /*DetectVirtual=*/false);
 
   if (getCanonicalDecl() == Base->getCanonicalDecl())
@@ -179,7 +181,7 @@ bool CXXRecordDecl::forallBases(ForallBasesCallback *BaseMatches,
   return AllMatches;
 }
 
-bool CXXBasePaths::lookupInBases(ASTContext &Context,
+bool PromotedFieldPaths::lookupInBases(ASTContext &Context,
                                  const CXXRecordDecl *Record,
                                CXXRecordDecl::BaseMatchesCallback *BaseMatches, 
                                  void *UserData) {
@@ -225,7 +227,7 @@ bool CXXBasePaths::lookupInBases(ASTContext &Context,
     
     if (isRecordingPaths()) {
       // Add this base specifier to the current path.
-      CXXBasePathElement Element;
+      PromotedFieldPathElement Element;
       Element.Base = &*BaseSpec;
       Element.Class = Record;
       if (BaseSpec->isVirtual())
@@ -306,10 +308,12 @@ bool CXXBasePaths::lookupInBases(ASTContext &Context,
   
   return FoundPath;
 }
+#endif
 
-bool CXXRecordDecl::lookupInBases(BaseMatchesCallback *BaseMatches,
-                                  void *UserData,
-                                  CXXBasePaths &Paths) const {
+bool StructTypeDecl::lookupInBases(//BaseMatchesCallback *BaseMatches,
+                                   //void *UserData,
+                                   PromotedFieldPaths &Paths) const {
+#if 0
   // If we didn't find anything, report that.
   if (!Paths.lookupInBases(getASTContext(), this, BaseMatches, UserData))
     return false;
@@ -329,11 +333,11 @@ bool CXXRecordDecl::lookupInBases(BaseMatchesCallback *BaseMatches,
   //
   // FIXME: This is an O(N^2) algorithm, but DPG doesn't see an easy
   // way to make it any faster.
-  for (CXXBasePaths::paths_iterator P = Paths.begin(), PEnd = Paths.end();
+  for (PromotedFieldPaths::paths_iterator P = Paths.begin(), PEnd = Paths.end();
        P != PEnd; /* increment in loop */) {
     bool Hidden = false;
 
-    for (CXXBasePath::iterator PE = P->begin(), PEEnd = P->end();
+    for (PromotedFieldPath::iterator PE = P->begin(), PEEnd = P->end();
          PE != PEEnd && !Hidden; ++PE) {
       if (PE->Base->isVirtual()) {
         CXXRecordDecl *VBase = 0;
@@ -346,7 +350,7 @@ bool CXXRecordDecl::lookupInBases(BaseMatchesCallback *BaseMatches,
         // subobject of a virtual base. Check whether this virtual
         // base is a subobject of any other path; if so, then the
         // declaration in this path are hidden by that patch.
-        for (CXXBasePaths::paths_iterator HidingP = Paths.begin(),
+        for (PromotedFieldPaths::paths_iterator HidingP = Paths.begin(),
                                        HidingPEnd = Paths.end();
              HidingP != HidingPEnd;
              ++HidingP) {
@@ -371,11 +375,13 @@ bool CXXRecordDecl::lookupInBases(BaseMatchesCallback *BaseMatches,
       ++P;
   }
   
+#endif
   return true;
 }
 
+#if 0
 bool CXXRecordDecl::FindBaseClass(const CXXBaseSpecifier *Specifier, 
-                                  CXXBasePath &Path,
+                                  PromotedFieldPath &Path,
                                   void *BaseRecord) {
   assert(((Decl *)BaseRecord)->getCanonicalDecl() == BaseRecord &&
          "User data for FindBaseClass is not canonical!");
@@ -384,7 +390,7 @@ bool CXXRecordDecl::FindBaseClass(const CXXBaseSpecifier *Specifier,
 }
 
 bool CXXRecordDecl::FindVirtualBaseClass(const CXXBaseSpecifier *Specifier, 
-                                         CXXBasePath &Path,
+                                         PromotedFieldPath &Path,
                                          void *BaseRecord) {
   assert(((Decl *)BaseRecord)->getCanonicalDecl() == BaseRecord &&
          "User data for FindBaseClass is not canonical!");
@@ -394,7 +400,7 @@ bool CXXRecordDecl::FindVirtualBaseClass(const CXXBaseSpecifier *Specifier,
 }
 
 bool CXXRecordDecl::FindTagMember(const CXXBaseSpecifier *Specifier, 
-                                  CXXBasePath &Path,
+                                  PromotedFieldPath &Path,
                                   void *Name) {
   RecordDecl *BaseRecord =
     Specifier->getType()->castAs<RecordType>()->getDecl();
@@ -411,7 +417,7 @@ bool CXXRecordDecl::FindTagMember(const CXXBaseSpecifier *Specifier,
 }
 
 bool CXXRecordDecl::FindOrdinaryMember(const CXXBaseSpecifier *Specifier, 
-                                       CXXBasePath &Path,
+                                       PromotedFieldPath &Path,
                                        void *Name) {
   RecordDecl *BaseRecord =
     Specifier->getType()->castAs<RecordType>()->getDecl();
@@ -430,7 +436,7 @@ bool CXXRecordDecl::FindOrdinaryMember(const CXXBaseSpecifier *Specifier,
 
 bool CXXRecordDecl::
 FindNestedNameSpecifierMember(const CXXBaseSpecifier *Specifier, 
-                              CXXBasePath &Path,
+                              PromotedFieldPath &Path,
                               void *Name) {
   RecordDecl *BaseRecord =
     Specifier->getType()->castAs<RecordType>()->getDecl();

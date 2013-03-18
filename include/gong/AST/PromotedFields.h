@@ -14,6 +14,9 @@
 #ifndef LLVM_GONG_AST_PROMOTEDFIELDS_H
 #define LLVM_GONG_AST_PROMOTEDFIELDS_H
 
+#include "gong/Basic/LLVM.h"
+#include "llvm/ADT/SmallVector.h"
+
 #if 0
 #include "gong/AST/DeclBase.h"
 #include "gong/AST/DeclCXX.h"
@@ -22,17 +25,19 @@
 #include "gong/AST/TypeOrdering.h"
 #include "llvm/ADT/MapVector.h"
 #include "llvm/ADT/SmallSet.h"
-#include "llvm/ADT/SmallVector.h"
 #include <cassert>
 #include <list>
 #include <map>
+#endif
 
 namespace gong {
   
+#if 0
 class CXXBaseSpecifier;
 class CXXMethodDecl;
 class CXXRecordDecl;
 class NamedDecl;
+#endif
   
 /// \brief Represents an element in a path from a derived class to a
 /// base class. 
@@ -41,7 +46,8 @@ class NamedDecl;
 /// derived class to one of its direct base classes, along with a
 /// base "number" that identifies which base subobject of the
 /// original derived class we are referencing.
-struct CXXBasePathElement {
+struct PromotedFieldPathElement {
+#if 0
   /// \brief The base specifier that states the link from a derived
   /// class to a base class, which will be followed by this base
   /// path element.
@@ -57,8 +63,10 @@ struct CXXBasePathElement {
   /// is no base numbering for the zero or one virtual bases of a
   /// given type.
   int SubobjectNumber;
+#endif
 };
 
+#if 0
 /// \brief Represents a path from a specific derived class
 /// (which is not represented as part of the path) to a particular
 /// (direct or indirect) base class subobject.
@@ -67,9 +75,11 @@ struct CXXBasePathElement {
 /// structure, which captures both the link from a derived class to one of its
 /// direct bases and identification describing which base class
 /// subobject is being used.
-class CXXBasePath : public SmallVector<CXXBasePathElement, 4> {
+#endif
+class PromotedFieldPath : public SmallVector<PromotedFieldPathElement, 4> {
 public:
-  CXXBasePath() : Access(AS_public) {}
+#if 0
+  PromotedFieldPath() : Access(AS_public) {}
 
   /// \brief The access along this inheritance path.  This is only
   /// calculated when recording paths.  AS_none is a special value
@@ -84,8 +94,10 @@ public:
     SmallVectorImpl<CXXBasePathElement>::clear();
     Access = AS_public;
   }
+#endif
 };
 
+#if 0
 /// BasePaths - Represents the set of paths from a derived class to
 /// one of its (direct or indirect) bases. For example, given the
 /// following class hierarchy:
@@ -115,13 +127,15 @@ public:
 /// -> (A,v) and (D, 0) -> (C, 0) -> (A, v), but since both of them
 /// refer to the same base class subobject of type A (the virtual
 /// one), there is no ambiguity.
-class CXXBasePaths {
+#endif
+class PromotedFieldPaths {
+#if 0
   /// \brief The type from which this search originated.
   CXXRecordDecl *Origin;
   
   /// Paths - The actual set of paths that can be taken from the
   /// derived class to the same base class.
-  std::list<CXXBasePath> Paths;
+  std::list<PromotedFieldPath> Paths;
   
   /// ClassSubobjects - Records the class subobjects for each class
   /// type that we've seen. The first element in the pair says
@@ -148,7 +162,7 @@ class CXXBasePaths {
   
   /// ScratchPath - A BasePath that is used by Sema::lookupInBases
   /// to help build the set of paths.
-  CXXBasePath ScratchPath;
+  PromotedFieldPath ScratchPath;
 
   /// DetectedVirtual - The base class that is virtual.
   const RecordType *DetectedVirtual;
@@ -168,29 +182,29 @@ class CXXBasePaths {
                      CXXRecordDecl::BaseMatchesCallback *BaseMatches, 
                      void *UserData);
 public:
-  typedef std::list<CXXBasePath>::iterator paths_iterator;
-  typedef std::list<CXXBasePath>::const_iterator const_paths_iterator;
+  typedef std::list<PromotedFieldPath>::iterator paths_iterator;
+  typedef std::list<PromotedFieldPath>::const_iterator const_paths_iterator;
   typedef NamedDecl **decl_iterator;
   
   /// BasePaths - Construct a new BasePaths structure to record the
   /// paths for a derived-to-base search.
-  explicit CXXBasePaths(bool FindAmbiguities = true,
-                        bool RecordPaths = true,
-                        bool DetectVirtual = true)
+  explicit PromotedFieldPaths(bool FindAmbiguities = true,
+                              bool RecordPaths = true,
+                              bool DetectVirtual = true)
     : FindAmbiguities(FindAmbiguities), RecordPaths(RecordPaths),
       DetectVirtual(DetectVirtual), DetectedVirtual(0), DeclsFound(0),
-      NumDeclsFound(0) { }
-  
-  ~CXXBasePaths() { delete [] DeclsFound; }
+      NumDeclsFound(0) {}
+
+  ~PromotedFieldPaths() { delete [] DeclsFound; }
   
   paths_iterator begin() { return Paths.begin(); }
   paths_iterator end()   { return Paths.end(); }
   const_paths_iterator begin() const { return Paths.begin(); }
   const_paths_iterator end()   const { return Paths.end(); }
   
-  CXXBasePath&       front()       { return Paths.front(); }
-  const CXXBasePath& front() const { return Paths.front(); }
-  
+  PromotedFieldPath&       front()       { return Paths.front(); }
+  const PromotedFieldPath &front() const { return Paths.front(); }
+
   decl_iterator found_decls_begin();
   decl_iterator found_decls_end();
   
@@ -225,11 +239,13 @@ public:
   /// \brief Clear the base-paths results.
   void clear();
   
-  /// \brief Swap this data structure's contents with another CXXBasePaths 
+  /// \brief Swap this data structure's contents with another PromotedFieldPaths
   /// object.
-  void swap(CXXBasePaths &Other);
+  void swap(PromotedFieldPaths &Other);
+#endif
 };
 
+#if 0
 /// \brief Uniquely identifies a virtual method within a class
 /// hierarchy by the method itself and a class subobject number.
 struct UniqueVirtualMethod {
@@ -364,8 +380,8 @@ class CXXFinalOverriderMap
 class CXXIndirectPrimaryBaseSet
   : public llvm::SmallSet<const CXXRecordDecl*, 32> { };
 
-} // end namespace gong
-
 #endif
+
+} // end namespace gong
 
 #endif

@@ -34,6 +34,8 @@ class BlockStmt;
 class IdentifierInfo;
 class NameTypeDecl;
 class TypeDecl;
+//class PromotedFieldPath;
+class PromotedFieldPaths;
 #if 0
 struct ASTTemplateArgumentListInfo;
 class CXXTemporary;
@@ -2471,6 +2473,31 @@ public:
   //static StructTypeDecl *CreateDeserialized(ASTContext &C, unsigned ID);
   
   //SourceRange getSourceRange() const LLVM_READONLY;
+
+  /// \brief Look for entities within the embedded fields of this struct,
+  /// transitively searching all embedded fields.
+  ///
+  /// FIXME: see if this callback is needed.
+  /// This routine uses the callback function \p BaseMatches to find base
+  /// classes meeting some search criteria, walking all base class subobjects
+  /// and populating the given \p Paths structure with the paths through the
+  /// inheritance hierarchy that resulted in a match. On a successful search,
+  /// the \p Paths structure can be queried to retrieve the matching paths and
+  /// to determine if there were any ambiguities.
+  ///
+  /// \param BaseMatches callback function used to determine whether a given
+  /// base matches the user-defined search criteria.
+  ///
+  /// \param UserData user data pointer that will be provided to \p BaseMatches.
+  ///
+  /// \param Paths used to record the paths from this class to its base class
+  /// subobjects that match the search criteria.
+  ///
+  /// \returns true if there exists any path from this class to a base class
+  /// subobject that matches the search criteria.
+  bool lookupInBases(//BaseMatchesCallback *BaseMatches,
+                     //void *UserData,
+                     PromotedFieldPaths &Paths) const;
 
   // Implement isa/cast/dyncast/etc.
   static bool classof(const Decl *D) { return classofKind(D->getKind()); }
