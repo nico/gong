@@ -2474,6 +2474,14 @@ public:
   
   //SourceRange getSourceRange() const LLVM_READONLY;
 
+  typedef specific_decl_iterator<AnonFieldDecl> anon_field_iterator;
+
+  anon_field_iterator anon_field_begin() const;
+
+  anon_field_iterator anon_field_end() const {
+    return anon_field_iterator(decl_iterator());
+  }
+
   /// \brief Look for entities within the embedded fields of this struct,
   /// transitively searching all embedded fields.
   ///

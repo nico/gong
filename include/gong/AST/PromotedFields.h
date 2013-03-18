@@ -156,11 +156,6 @@ class PromotedFieldPaths {
   /// while it is determining whether there are paths from a derived
   /// type to a base type.
   bool RecordPaths;
-  
-  /// DetectVirtual - Whether Sema::IsDerivedFrom should abort the search
-  /// if it finds a path that goes across a virtual base. The virtual class
-  /// is also recorded.
-  bool DetectVirtual;
 #endif
   
   /// A PromotedFieldPath that is used by Sema::lookupInBases
@@ -168,9 +163,6 @@ class PromotedFieldPaths {
   PromotedFieldPath ScratchPath;
 
 #if 0
-  /// DetectedVirtual - The base class that is virtual.
-  const RecordType *DetectedVirtual;
-  
   /// \brief Array of the declarations that have been found. This
   /// array is constructed only if needed, e.g., to iterate over the
   /// results within LookupResult.
@@ -197,10 +189,9 @@ public:
   /// BasePaths - Construct a new BasePaths structure to record the
   /// paths for a derived-to-base search.
   explicit PromotedFieldPaths(bool FindAmbiguities = true,
-                              bool RecordPaths = true,
-                              bool DetectVirtual = true)
+                              bool RecordPaths = true)
     : FindAmbiguities(FindAmbiguities), RecordPaths(RecordPaths),
-      DetectVirtual(DetectVirtual), DetectedVirtual(0), DeclsFound(0),
+      DeclsFound(0),
       NumDeclsFound(0) {}
 
   ~PromotedFieldPaths() { delete [] DeclsFound; }
@@ -232,15 +223,6 @@ public:
   /// \brief Specify whether we should be recording paths or not.
   void setRecordingPaths(bool RP) { RecordPaths = RP; }
   
-  /// \brief Whether we are detecting virtual bases.
-  bool isDetectingVirtual() const { return DetectVirtual; }
-  
-  /// \brief The virtual base discovered on the path (if we are merely
-  /// detecting virtuals).
-  const RecordType* getDetectedVirtual() const {
-    return DetectedVirtual;
-  }
-
   /// \brief Retrieve the type from which this base-paths search
   /// began
   CXXRecordDecl *getOrigin() const { return Origin; }

@@ -67,7 +67,6 @@ void PromotedFieldPaths::clear() {
   Paths.clear();
   ClassSubobjects.clear();
   ScratchPath.clear();
-  DetectedVirtual = 0;
 }
 
 /// @brief Swaps the contents of this PromotedFieldPaths structure with the
@@ -78,13 +77,10 @@ void PromotedFieldPaths::swap(PromotedFieldPaths &Other) {
   ClassSubobjects.swap(Other.ClassSubobjects);
   std::swap(FindAmbiguities, Other.FindAmbiguities);
   std::swap(RecordPaths, Other.RecordPaths);
-  std::swap(DetectVirtual, Other.DetectVirtual);
-  std::swap(DetectedVirtual, Other.DetectedVirtual);
 }
 
 bool CXXRecordDecl::isDerivedFrom(const CXXRecordDecl *Base) const {
-  PromotedFieldPaths Paths(/*FindAmbiguities=*/false, /*RecordPaths=*/false,
-                     /*DetectVirtual=*/false);
+  PromotedFieldPaths Paths(/*FindAmbiguities=*/false, /*RecordPaths=*/false);
   return isDerivedFrom(Base, Paths);
 }
 
@@ -103,8 +99,7 @@ bool CXXRecordDecl::isVirtuallyDerivedFrom(const CXXRecordDecl *Base) const {
   if (!getNumVBases())
     return false;
 
-  PromotedFieldPaths Paths(/*FindAmbiguities=*/false, /*RecordPaths=*/false,
-                     /*DetectVirtual=*/false);
+  PromotedFieldPaths Paths(/*FindAmbiguities=*/false, /*RecordPaths=*/false);
 
   if (getCanonicalDecl() == Base->getCanonicalDecl())
     return false;
@@ -188,44 +183,21 @@ bool PromotedFieldPaths::lookupInBases(ASTContext &Context,
                                  void *UserData*/) {
   bool FoundPath = false;
 
-  // The access of the path down to this record.
-  //AccessSpecifier AccessToHere = ScratchPath.Access;
   bool IsFirstStep = ScratchPath.empty();
 
+  for (StructTypeDecl::anon_field_iterator
+           AnonField = Struct->anon_field_begin(),
+           AnonFieldEnd = Struct->anon_field_end();
+       AnonField != AnonFieldEnd; ++AnonField) {
 #if 0
-  for (CXXRecordDecl::base_class_const_iterator BaseSpec = Record->bases_begin(),
-         BaseSpecEnd = Record->bases_end(); 
-       BaseSpec != BaseSpecEnd; 
-       ++BaseSpec) {
     // Find the record of the base class subobjects for this type.
     QualType BaseType = Context.getCanonicalType(BaseSpec->getType())
                                                           .getUnqualifiedType();
     
-    // C++ [temp.dep]p3:
-    //   In the definition of a class template or a member of a class template,
-    //   if a base class of the class template depends on a template-parameter,
-    //   the base class scope is not examined during unqualified name lookup 
-    //   either at the point of definition of the class template or member or 
-    //   during an instantiation of the class tem- plate or member.
-    if (BaseType->isDependentType())
-      continue;
-    
     // Determine whether we need to visit this base class at all,
     // updating the count of subobjects appropriately.
     std::pair<bool, unsigned>& Subobjects = ClassSubobjects[BaseType];
-    bool VisitBase = true;
-    bool SetVirtual = false;
-    if (BaseSpec->isVirtual()) {
-      VisitBase = !Subobjects.first;
-      Subobjects.first = true;
-      if (isDetectingVirtual() && DetectedVirtual == 0) {
-        // If this is the first virtual we find, remember it. If it turns out
-        // there is no base path here, we'll reset it later.
-        DetectedVirtual = BaseType->getAs<RecordType>();
-        SetVirtual = true;
-      }
-    } else
-      ++Subobjects.second;
+    ++Subobjects.second;
     
     if (isRecordingPaths()) {
       // Add this base specifier to the current path.
@@ -237,27 +209,6 @@ bool PromotedFieldPaths::lookupInBases(ASTContext &Context,
       else
         Element.SubobjectNumber = Subobjects.second;
       ScratchPath.push_back(Element);
-
-      // Calculate the "top-down" access to this base class.
-      // The spec actually describes this bottom-up, but top-down is
-      // equivalent because the definition works out as follows:
-      // 1. Write down the access along each step in the inheritance
-      //    chain, followed by the access of the decl itself.
-      //    For example, in
-      //      class A { public: int foo; };
-      //      class B : protected A {};
-      //      class C : public B {};
-      //      class D : private C {};
-      //    we would write:
-      //      private public protected public
-      // 2. If 'private' appears anywhere except far-left, access is denied.
-      // 3. Otherwise, overall access is determined by the most restrictive
-      //    access in the sequence.
-      if (IsFirstStep)
-        ScratchPath.Access = BaseSpec->getAccessSpecifier();
-      else
-        ScratchPath.Access = CXXRecordDecl::MergeAccess(AccessToHere, 
-                                                 BaseSpec->getAccessSpecifier());
     }
     
     // Track whether there's a path involving this specific base.
@@ -274,7 +225,7 @@ bool PromotedFieldPaths::lookupInBases(ASTContext &Context,
         // return immediately.
         return FoundPath;
       }
-    } else if (VisitBase) {
+    } else {
       CXXRecordDecl *BaseRecord
         = cast<CXXRecordDecl>(BaseSpec->getType()->castAs<RecordType>()
                                 ->getDecl());
@@ -298,17 +249,9 @@ bool PromotedFieldPaths::lookupInBases(ASTContext &Context,
     if (isRecordingPaths()) {
       ScratchPath.pop_back();
     }
-
-    // If we set a virtual earlier, and this isn't a path, forget it again.
-    if (SetVirtual && !FoundPathThroughBase) {
-      DetectedVirtual = 0;
-    }
+#endif
   }
 
-  // Reset the scratch path access.
-  ScratchPath.Access = AccessToHere;
-#endif
-  
   return FoundPath;
 }
 

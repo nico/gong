@@ -3072,6 +3072,13 @@ StructTypeDecl::Create(ASTContext &C, DeclContext *DC,
   return new (C) StructTypeDecl(DC, LLoc);
 }
 
+StructTypeDecl::anon_field_iterator StructTypeDecl::anon_field_begin() const {
+  //if (hasExternalLexicalStorage() && !LoadedFieldsFromExternalStorage)
+    //LoadFieldsFromExternalStorage();
+
+  return anon_field_iterator(decl_iterator(FirstDecl));
+}
+
 #if 0
 TypedefDecl *TypedefDecl::Create(ASTContext &C, DeclContext *DC,
                                  SourceLocation StartLoc, SourceLocation IdLoc,
