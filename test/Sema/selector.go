@@ -153,26 +153,26 @@ func embedded_fields() {
   c.c  // expected-diag {{no field 'c' in <type>}} FIXME shouldn't diag
   c.d  // expected-diag {{no field 'd' in <type>}}
   c.promoted
-  //c.promoted.a
-  //c.promoted.b
-  //c.promoted.c
-  //c.promoted.d
+  c.promoted.a
+  c.promoted.b
+  c.promoted.c
+  c.promoted.d  // expected-diag {{no field 'd' in <type>}}
 
   type promoted1 struct { a, b int }
   type promoted2 struct { a, c int }
-  var d struct { promoted1; promoted2 }
+  var d struct { promoted1; *promoted2 }
   d.a  // expected-diag {{no field 'a' in <type>}} FIXME explanation
   d.b  // expected-diag {{no field 'b' in <type>}} FIXME shouldn't diag
   d.c  // expected-diag {{no field 'c' in <type>}} FIXME shouldn't diag
   d.d  // expected-diag {{no field 'd' in <type>}}
   d.promoted1
-  //d.promoted1.a
-  //d.promoted1.b
-  //d.promoted1.c
+  d.promoted1.a
+  d.promoted1.b
+  d.promoted1.c  // expected-diag {{no field 'c' in <type>}}
   d.promoted2
-  //d.promoted2.a
-  //d.promoted2.b
-  //d.promoted2.c
+  d.promoted2.a
+  d.promoted2.b  // expected-diag {{no field 'b' in <type>}}
+  d.promoted2.c
 
   type pro1_d1 struct { a int }
   type pro2_d1 struct { a int }
