@@ -31,11 +31,11 @@
 #endif
 
 namespace gong {
-  
+class ASTContext;  
+class StructTypeDecl;
 #if 0
 class CXXBaseSpecifier;
 class CXXMethodDecl;
-class CXXRecordDecl;
 class NamedDecl;
 #endif
   
@@ -161,11 +161,13 @@ class PromotedFieldPaths {
   /// if it finds a path that goes across a virtual base. The virtual class
   /// is also recorded.
   bool DetectVirtual;
+#endif
   
-  /// ScratchPath - A BasePath that is used by Sema::lookupInBases
+  /// A PromotedFieldPath that is used by Sema::lookupInBases
   /// to help build the set of paths.
   PromotedFieldPath ScratchPath;
 
+#if 0
   /// DetectedVirtual - The base class that is virtual.
   const RecordType *DetectedVirtual;
   
@@ -174,16 +176,18 @@ class PromotedFieldPaths {
   /// results within LookupResult.
   NamedDecl **DeclsFound;
   unsigned NumDeclsFound;
-  
-  friend class CXXRecordDecl;
-  
+#endif
+
+  friend class StructTypeDecl;
+
+#if 0
   void ComputeDeclsFound();
+#endif
 
   bool lookupInBases(ASTContext &Context, 
-                     const CXXRecordDecl *Record,
+                     const StructTypeDecl *Struct/*,
                      CXXRecordDecl::BaseMatchesCallback *BaseMatches, 
-                     void *UserData);
-#endif
+                     void *UserData*/);
 public:
   typedef std::list<PromotedFieldPath>::iterator paths_iterator;
   typedef std::list<PromotedFieldPath>::const_iterator const_paths_iterator;

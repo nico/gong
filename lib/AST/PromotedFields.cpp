@@ -180,17 +180,19 @@ bool CXXRecordDecl::forallBases(ForallBasesCallback *BaseMatches,
 
   return AllMatches;
 }
+#endif
 
 bool PromotedFieldPaths::lookupInBases(ASTContext &Context,
-                                 const CXXRecordDecl *Record,
-                               CXXRecordDecl::BaseMatchesCallback *BaseMatches, 
-                                 void *UserData) {
+                                 const StructTypeDecl *Struct/*,
+                                CXXRecordDecl::BaseMatchesCallback *BaseMatches,
+                                 void *UserData*/) {
   bool FoundPath = false;
 
   // The access of the path down to this record.
-  AccessSpecifier AccessToHere = ScratchPath.Access;
+  //AccessSpecifier AccessToHere = ScratchPath.Access;
   bool IsFirstStep = ScratchPath.empty();
 
+#if 0
   for (CXXRecordDecl::base_class_const_iterator BaseSpec = Record->bases_begin(),
          BaseSpecEnd = Record->bases_end(); 
        BaseSpec != BaseSpecEnd; 
@@ -305,20 +307,20 @@ bool PromotedFieldPaths::lookupInBases(ASTContext &Context,
 
   // Reset the scratch path access.
   ScratchPath.Access = AccessToHere;
+#endif
   
   return FoundPath;
 }
-#endif
 
 bool StructTypeDecl::lookupInBases(//BaseMatchesCallback *BaseMatches,
                                    //void *UserData,
                                    PromotedFieldPaths &Paths) const {
-  return false;  // FIXME
-#if 0
   // If we didn't find anything, report that.
-  if (!Paths.lookupInBases(getASTContext(), this, BaseMatches, UserData))
+  if (!Paths.lookupInBases(getASTContext(), this/*, BaseMatches, UserData*/))
     return false;
 
+  return false;  // FIXME
+#if 0
   // If we're not recording paths or we won't ever find ambiguities,
   // we're done.
   if (!Paths.isRecordingPaths() || !Paths.isFindingAmbiguities())
