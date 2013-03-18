@@ -16,6 +16,7 @@
 
 #include "gong/Basic/LLVM.h"
 #include "llvm/ADT/SmallVector.h"
+#include <list>
 
 #if 0
 #include "gong/AST/DeclBase.h"
@@ -26,7 +27,6 @@
 #include "llvm/ADT/MapVector.h"
 #include "llvm/ADT/SmallSet.h"
 #include <cassert>
-#include <list>
 #include <map>
 #endif
 
@@ -132,11 +132,13 @@ class PromotedFieldPaths {
 #if 0
   /// \brief The type from which this search originated.
   CXXRecordDecl *Origin;
+#endif
   
   /// Paths - The actual set of paths that can be taken from the
   /// derived class to the same base class.
   std::list<PromotedFieldPath> Paths;
-  
+
+#if 0
   /// ClassSubobjects - Records the class subobjects for each class
   /// type that we've seen. The first element in the pair says
   /// whether we found a path to a virtual base for that class type,
@@ -181,9 +183,11 @@ class PromotedFieldPaths {
                      const CXXRecordDecl *Record,
                      CXXRecordDecl::BaseMatchesCallback *BaseMatches, 
                      void *UserData);
+#endif
 public:
   typedef std::list<PromotedFieldPath>::iterator paths_iterator;
   typedef std::list<PromotedFieldPath>::const_iterator const_paths_iterator;
+#if 0
   typedef NamedDecl **decl_iterator;
   
   /// BasePaths - Construct a new BasePaths structure to record the
@@ -196,12 +200,14 @@ public:
       NumDeclsFound(0) {}
 
   ~PromotedFieldPaths() { delete [] DeclsFound; }
+#endif
   
   paths_iterator begin() { return Paths.begin(); }
   paths_iterator end()   { return Paths.end(); }
   const_paths_iterator begin() const { return Paths.begin(); }
   const_paths_iterator end()   const { return Paths.end(); }
-  
+
+#if 0
   PromotedFieldPath&       front()       { return Paths.front(); }
   const PromotedFieldPath &front() const { return Paths.front(); }
 

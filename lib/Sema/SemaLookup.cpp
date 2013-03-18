@@ -14,6 +14,7 @@
 #include "gong/Sema/Sema.h"
 
 #include "gong/AST/Decl.h"
+#include "gong/AST/PromotedFields.h"
 #include "gong/Parse/Scope.h"
 #include "gong/Sema/Lookup.h"
 using namespace gong;
@@ -21,7 +22,6 @@ using namespace sema;
 
 #if 0
 #include "gong/AST/ASTContext.h"
-#include "gong/AST/CXXInheritance.h"
 #include "gong/AST/DeclCXX.h"
 #include "gong/AST/DeclLookups.h"
 #include "gong/AST/DeclObjC.h"
@@ -1035,8 +1035,6 @@ bool Sema::LookupQualifiedName(LookupResult &R, DeclContext *LookupCtx,
     return true;
   }
 
-  // FIXME: embedded fields / methods
-  return false;
 #if 0
   // Don't descend into implied contexts for redeclarations.
   // C++98 [namespace.qual]p6:
@@ -1053,13 +1051,14 @@ bool Sema::LookupQualifiedName(LookupResult &R, DeclContext *LookupCtx,
   // If this is a namespace, look it up in the implied namespaces.
   if (LookupCtx->isFileContext())
     return LookupQualifiedNameInUsingDirectives(*this, R, LookupCtx);
+#endif
 
-  // If this isn't a C++ class, we aren't allowed to look into base
-  // classes, we're done.
-  CXXRecordDecl *LookupRec = dyn_cast<CXXRecordDecl>(LookupCtx);
-  if (!LookupRec || !LookupRec->getDefinition())
+  // If this isn't a struct, there are no embedded fields, we're done.
+  StructTypeDecl *LookupRec = dyn_cast<StructTypeDecl>(LookupCtx);
+  if (!LookupRec /*|| !LookupRec->getDefinition()*/)
     return false;
 
+#if 0
   // If we're performing qualified name lookup into a dependent class,
   // then we are actually looking into a current instantiation. If we have any
   // dependent base classes, then we either have to delay lookup until
@@ -1070,9 +1069,11 @@ bool Sema::LookupQualifiedName(LookupResult &R, DeclContext *LookupCtx,
     R.setNotFoundInCurrentInstantiation();
     return false;
   }
+#endif
 
-  // Perform lookup into our base classes.
+  // Perform lookup into our possibly promoted fields.
   PromotedFieldPaths Paths;
+#if 0
   Paths.setOrigin(LookupRec);
 
   // Look for this member in our base classes
@@ -1107,10 +1108,13 @@ bool Sema::LookupQualifiedName(LookupResult &R, DeclContext *LookupCtx,
       BaseCallback = &CXXRecordDecl::FindNestedNameSpecifierMember;
       break;
   }
+#endif
 
-  if (!LookupRec->lookupInBases(BaseCallback,
-                                R.getLookupName().getAsOpaquePtr(), Paths))
+  if (!LookupRec->lookupInBases(//BaseCallback,
+                                //R.getLookupName().getAsOpaquePtr(),
+                                Paths))
     return false;
+#if 0
 
   R.setNamingClass(LookupRec);
 
@@ -1123,11 +1127,13 @@ bool Sema::LookupQualifiedName(LookupResult &R, DeclContext *LookupCtx,
   QualType SubobjectType;
   int SubobjectNumber = 0;
   AccessSpecifier SubobjectAccess = AS_none;
+#endif
 
   for (PromotedFieldPaths::paths_iterator Path = Paths.begin(), PathEnd = Paths.end();
        Path != PathEnd; ++Path) {
     const PromotedFieldPathElement &PathElement = Path->back();
 
+#if 0
     // Pick the best (i.e. most permissive i.e. numerically lowest) access
     // across all paths.
     SubobjectAccess = std::min(SubobjectAccess, Path->Access);
@@ -1184,8 +1190,10 @@ bool Sema::LookupQualifiedName(LookupResult &R, DeclContext *LookupCtx,
       R.setAmbiguousBaseSubobjects(Paths);
       return true;
     }
+#endif
   }
 
+#if 0
   // Lookup in a base class succeeded; return these results.
 
   DeclContext::lookup_result DR = Paths.front().Decls;
@@ -1196,8 +1204,8 @@ bool Sema::LookupQualifiedName(LookupResult &R, DeclContext *LookupCtx,
     R.addDecl(D, AS);
   }
   R.resolveKind();
-  return true;
 #endif
+  return true;
 }
 
 #if 0

@@ -313,6 +313,7 @@ bool PromotedFieldPaths::lookupInBases(ASTContext &Context,
 bool StructTypeDecl::lookupInBases(//BaseMatchesCallback *BaseMatches,
                                    //void *UserData,
                                    PromotedFieldPaths &Paths) const {
+  return false;  // FIXME
 #if 0
   // If we didn't find anything, report that.
   if (!Paths.lookupInBases(getASTContext(), this, BaseMatches, UserData))
