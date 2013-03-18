@@ -1,7 +1,3 @@
-- "does not name a type" for anon fields in structs should "note:" at definition
-- `var int int` has a bad diag too
-- clang: check if lookups can be cached, understand why child classes increase
-         number of lookups
 
 hotlist:
 P0 varspec type checking
@@ -17,6 +13,8 @@ P0 finish struct type support
          object.
          * include/clang/AST/CXXInheritance.h / lib/AST/CXXInheritance.cpp
            There's also CXXBasePaths::lookupInBases().
+            - clang: check if lookups can be cached, understand why child
+              classes increase number of lookups
      - mention struct name in diag
      - spelling
    - recursive struct types (P2)
