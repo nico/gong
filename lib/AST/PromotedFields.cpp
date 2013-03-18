@@ -181,19 +181,17 @@ bool PromotedFieldPaths::lookupInBases(ASTContext &Context,
     // updating the count of subobjects appropriately.
     std::pair<bool, unsigned>& Subobjects = ClassSubobjects[BaseType];
     ++Subobjects.second;
+#endif
     
     if (isRecordingPaths()) {
       // Add this base specifier to the current path.
       PromotedFieldPathElement Element;
-      Element.Base = &*BaseSpec;
-      Element.Class = Record;
-      if (BaseSpec->isVirtual())
-        Element.SubobjectNumber = 0;
-      else
-        Element.SubobjectNumber = Subobjects.second;
+      //Element.Base = &*BaseSpec;
+      //Element.Class = Record;
+      //Element.SubobjectNumber = Subobjects.second;
       ScratchPath.push_back(Element);
     }
-    
+#if 0
     // Track whether there's a path involving this specific base.
     bool FoundPathThroughBase = false;
     

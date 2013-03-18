@@ -32,11 +32,11 @@
 
 namespace gong {
 class ASTContext;  
+class NamedDecl;
 class StructTypeDecl;
 #if 0
 class CXXBaseSpecifier;
 class CXXMethodDecl;
-class NamedDecl;
 #endif
   
 /// \brief Represents an element in a path from a derived class to a
@@ -146,29 +146,28 @@ class PromotedFieldPaths {
   /// class subobjects for that class type. The key of the map is
   /// the cv-unqualified canonical type of the base class subobject.
   llvm::SmallDenseMap<QualType, std::pair<bool, unsigned>, 8> ClassSubobjects;
+#endif
   
   /// FindAmbiguities - Whether Sema::IsDerivedFrom should try find
   /// ambiguous paths while it is looking for a path from a derived
   /// type to a base type.
-  bool FindAmbiguities;
+  bool FindAmbiguities;  // FIXME: needed?
   
   /// RecordPaths - Whether Sema::IsDerivedFrom should record paths
   /// while it is determining whether there are paths from a derived
   /// type to a base type.
-  bool RecordPaths;
-#endif
+  bool RecordPaths;  // FIXME: needed?
   
   /// A PromotedFieldPath that is used by Sema::lookupInBases
   /// to help build the set of paths.
   PromotedFieldPath ScratchPath;
 
-#if 0
+
   /// \brief Array of the declarations that have been found. This
   /// array is constructed only if needed, e.g., to iterate over the
   /// results within LookupResult.
   NamedDecl **DeclsFound;
   unsigned NumDeclsFound;
-#endif
 
   friend class StructTypeDecl;
 
@@ -185,6 +184,7 @@ public:
   typedef std::list<PromotedFieldPath>::const_iterator const_paths_iterator;
 #if 0
   typedef NamedDecl **decl_iterator;
+#endif
   
   /// BasePaths - Construct a new BasePaths structure to record the
   /// paths for a derived-to-base search.
@@ -194,6 +194,7 @@ public:
       DeclsFound(0),
       NumDeclsFound(0) {}
 
+#if 0
   ~PromotedFieldPaths() { delete [] DeclsFound; }
 #endif
   
@@ -213,13 +214,13 @@ public:
   /// given base type is ambiguous (i.e., it refers to multiple subobjects of
   /// the same base type).
   bool isAmbiguous(CanQualType BaseType);
-  
+#endif
   /// \brief Whether we are finding multiple paths to detect ambiguities.
   bool isFindingAmbiguities() const { return FindAmbiguities; }
-  
+
   /// \brief Whether we are recording paths.
   bool isRecordingPaths() const { return RecordPaths; }
-  
+#if 0
   /// \brief Specify whether we should be recording paths or not.
   void setRecordingPaths(bool RP) { RecordPaths = RP; }
   
