@@ -136,3 +136,22 @@ func types() {
   type foo int
   foo.bar  // expected-diag {{selector base type <name> is not a struct}}
 }
+
+func embedded_fields() {
+  var a struct { int }
+  a.int
+
+  type str struct { str int }
+  var b struct { str }
+  b.str
+}
+
+// Test that the scope for anonymous fields is popped.
+type mytype struct {}  // expected-note {{previous definition is here}}
+type mystruct struct {
+  mytype
+}
+type mytype bool  // expected-diag {{redefinition of 'mytype'}}
+func embedded_fields_pop_scope() {
+  var a mytype
+}

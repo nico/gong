@@ -1778,10 +1778,12 @@ Sema::ActOnAnonymousField(SourceLocation StarLoc, DeclArg TypeArg, Scope *S) {
 
   // FIXME: If StarLoc is valid, call ActOnPointerType() to compute the right
   // type for the AnonFieldDecl.
-
+  CurContext->addDecl(FieldSpec);
+  PushDeclContext(S, FieldSpec);
   AnonFieldDecl *New =
       AnonFieldDecl::Create(Context, FieldSpec, StarLoc, TypeName);
   CheckRedefinitionAndPushOnScope(*this, FieldSpec, S, New);
+  PopDeclContext();
 
   return Owned(FieldSpec);
 }

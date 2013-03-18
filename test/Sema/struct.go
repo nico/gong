@@ -29,6 +29,13 @@ type anon_foo struct {
   foo int  // expected-diag {{redefinition of 'foo'}}
 }
 
+type anon_foo_2 struct {
+  foo int
+  // FIXME: The diag here is not great. ActOnTypeName() could check if a struct
+  //        is currently being defined and print a different error?
+  foo  // expected-diag {{'foo' does not name a type}}
+}
+
 type anon_pointer_foo struct {
   *foo  // expected-note {{previous definition is here}}
   foo int  // expected-diag {{redefinition of 'foo'}}

@@ -1,3 +1,8 @@
+- "does not name a type" for anon fields in structs should "note:" at definition
+- `var int int` has a bad diag too
+- clang: check if lookups can be cached, understand why child classes increase
+         number of lookups
+
 hotlist:
 P0 varspec type checking
    - let actonoperandname give types to at least operands referring to vars
@@ -6,6 +11,12 @@ P0 use that to give VarDecls and ConstDecls a type
 P0 finish struct type support
    - field lookup
      - embedded fields
+       - Sema::LookupQualifiedName(): look at BaseMatchesCallback. requires
+         api to query StructTypes for embedded fields? ends up calling
+         CXXRecordDecl::lookupInBases() with a callback. Fills in a CXXBasePaths
+         object.
+         * include/clang/AST/CXXInheritance.h / lib/AST/CXXInheritance.cpp
+           There's also CXXBasePaths::lookupInBases().
      - mention struct name in diag
      - spelling
    - recursive struct types (P2)
@@ -32,6 +43,16 @@ P2 interface types
 P1 type checking
 P2 hand type and / or initializer to ConstSpec
 P1 types for var and const
+
+stuff that isn't nailed down yet:
+- embedded fields
+- function signatures
+- package import! (ast serialization, compilation model)
+- multi-file packages
+- forward-declaration-less packages (also: recursive struct types)
+- ast iteration (for ast dumping, codegen)
+- constant expressions
+- codegen
 
 Types:
 - let ASTContext unify types on type identity. Types are identical if and
