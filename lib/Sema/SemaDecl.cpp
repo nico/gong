@@ -1704,7 +1704,6 @@ Sema::ActOnTypeName(SourceLocation IILoc, IdentifierInfo &II, Scope *S) {
     return Owned(D);
   } else {
     // FIXME: diag and note for ConstSpecs don't work yet.
-    //        note for var doesn't work yet.
     Diag(IILoc, diag::does_not_refer_to_type) << &II;
     if (VarDecl *VD = dyn_cast<VarDecl>(D))
       Diag(VD->getLocation(), diag::note_var_declared) << &II;
@@ -1712,6 +1711,8 @@ Sema::ActOnTypeName(SourceLocation IILoc, IdentifierInfo &II, Scope *S) {
       Diag(CD->getLocation(), diag::note_const_declared) << &II;
     else if (FunctionDecl *FD = dyn_cast<FunctionDecl>(D))
       Diag(FD->getLocation(), diag::note_func_declared) << &II;
+    else if (FieldDecl *FD = dyn_cast<FieldDecl>(D))
+      Diag(FD->getLocation(), diag::note_field_declared) << &II;
 
     return DeclError();
   }

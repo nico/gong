@@ -151,6 +151,7 @@ DIAG(no_new_vars_in_shortvardecl,  CLASS_ERROR,
 DIAG(note_var_declared,            CLASS_NOTE, "var %0 declared here")
 DIAG(note_const_declared,          CLASS_NOTE, "const %0 declared here")
 DIAG(note_func_declared,           CLASS_NOTE, "func %0 declared here")
+DIAG(note_field_declared,          CLASS_NOTE, "field %0 declared here")
 DIAG(undeclared_var_use,           CLASS_ERROR,
     "use of undeclared identifier %0")
 //DIAG(undeclared_var_use_suggest, CLASS_ERROR,

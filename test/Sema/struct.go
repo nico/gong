@@ -30,10 +30,13 @@ type anon_foo struct {
 }
 
 type anon_foo_2 struct {
-  foo int
-  // FIXME: The diag here is not great. ActOnTypeName() could check if a struct
-  //        is currently being defined and print a different error?
+  foo int  // expected-note {{field 'foo' declared here}}
   foo  // expected-diag {{'foo' does not name a type}}
+}
+
+type anon_foo_3 struct {
+  int  // expected-note {{field 'int' declared here}}
+  int  // expected-diag {{'int' does not name a type}}
 }
 
 type anon_pointer_foo struct {
