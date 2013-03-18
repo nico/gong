@@ -95,23 +95,6 @@ bool CXXRecordDecl::isDerivedFrom(const CXXRecordDecl *Base,
                        Paths);
 }
 
-bool CXXRecordDecl::isVirtuallyDerivedFrom(const CXXRecordDecl *Base) const {
-  if (!getNumVBases())
-    return false;
-
-  PromotedFieldPaths Paths(/*FindAmbiguities=*/false, /*RecordPaths=*/false);
-
-  if (getCanonicalDecl() == Base->getCanonicalDecl())
-    return false;
-  
-  Paths.setOrigin(const_cast<CXXRecordDecl*>(this));
-
-  const void *BasePtr = static_cast<const void*>(Base->getCanonicalDecl());
-  return lookupInBases(&FindVirtualBaseClass,
-                       const_cast<void *>(BasePtr),
-                       Paths);
-}
-
 static bool BaseIsNot(const CXXRecordDecl *Base, void *OpaqueTarget) {
   // OpaqueTarget is a CXXRecordDecl*.
   return Base->getCanonicalDecl() != (const CXXRecordDecl*) OpaqueTarget;
@@ -259,70 +242,7 @@ bool StructTypeDecl::lookupInBases(//BaseMatchesCallback *BaseMatches,
                                    //void *UserData,
                                    PromotedFieldPaths &Paths) const {
   // If we didn't find anything, report that.
-  if (!Paths.lookupInBases(getASTContext(), this/*, BaseMatches, UserData*/))
-    return false;
-
-  return false;  // FIXME
-#if 0
-  // If we're not recording paths or we won't ever find ambiguities,
-  // we're done.
-  if (!Paths.isRecordingPaths() || !Paths.isFindingAmbiguities())
-    return true;
-  
-  // C++ [class.member.lookup]p6:
-  //   When virtual base classes are used, a hidden declaration can be
-  //   reached along a path through the sub-object lattice that does
-  //   not pass through the hiding declaration. This is not an
-  //   ambiguity. The identical use with nonvirtual base classes is an
-  //   ambiguity; in that case there is no unique instance of the name
-  //   that hides all the others.
-  //
-  // FIXME: This is an O(N^2) algorithm, but DPG doesn't see an easy
-  // way to make it any faster.
-  for (PromotedFieldPaths::paths_iterator P = Paths.begin(), PEnd = Paths.end();
-       P != PEnd; /* increment in loop */) {
-    bool Hidden = false;
-
-    for (PromotedFieldPath::iterator PE = P->begin(), PEEnd = P->end();
-         PE != PEEnd && !Hidden; ++PE) {
-      if (PE->Base->isVirtual()) {
-        CXXRecordDecl *VBase = 0;
-        if (const RecordType *Record = PE->Base->getType()->getAs<RecordType>())
-          VBase = cast<CXXRecordDecl>(Record->getDecl());
-        if (!VBase)
-          break;
-
-        // The declaration(s) we found along this path were found in a
-        // subobject of a virtual base. Check whether this virtual
-        // base is a subobject of any other path; if so, then the
-        // declaration in this path are hidden by that patch.
-        for (PromotedFieldPaths::paths_iterator HidingP = Paths.begin(),
-                                       HidingPEnd = Paths.end();
-             HidingP != HidingPEnd;
-             ++HidingP) {
-          CXXRecordDecl *HidingClass = 0;
-          if (const RecordType *Record
-                       = HidingP->back().Base->getType()->getAs<RecordType>())
-            HidingClass = cast<CXXRecordDecl>(Record->getDecl());
-          if (!HidingClass)
-            break;
-
-          if (HidingClass->isVirtuallyDerivedFrom(VBase)) {
-            Hidden = true;
-            break;
-          }
-        }
-      }
-    }
-
-    if (Hidden)
-      P = Paths.Paths.erase(P);
-    else
-      ++P;
-  }
-  
-#endif
-  return true;
+  return Paths.lookupInBases(getASTContext(), this/*, BaseMatches, UserData*/);
 }
 
 #if 0
@@ -332,16 +252,6 @@ bool CXXRecordDecl::FindBaseClass(const CXXBaseSpecifier *Specifier,
   assert(((Decl *)BaseRecord)->getCanonicalDecl() == BaseRecord &&
          "User data for FindBaseClass is not canonical!");
   return Specifier->getType()->castAs<RecordType>()->getDecl()
-            ->getCanonicalDecl() == BaseRecord;
-}
-
-bool CXXRecordDecl::FindVirtualBaseClass(const CXXBaseSpecifier *Specifier, 
-                                         PromotedFieldPath &Path,
-                                         void *BaseRecord) {
-  assert(((Decl *)BaseRecord)->getCanonicalDecl() == BaseRecord &&
-         "User data for FindBaseClass is not canonical!");
-  return Specifier->isVirtual() &&
-         Specifier->getType()->castAs<RecordType>()->getDecl()
             ->getCanonicalDecl() == BaseRecord;
 }
 
