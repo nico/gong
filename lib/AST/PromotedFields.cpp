@@ -161,12 +161,10 @@ bool CXXRecordDecl::forallBases(ForallBasesCallback *BaseMatches,
 #endif
 
 /// \brief Callback that looks for any member of a class with the given name.
-static bool LookupAnyField(const AnonFieldDecl *Struct,
+static bool LookupAnyField(StructTypeDecl *Struct,
                            PromotedFieldPath &Path,
                            IdentifierInfo *Field) {
-  StructTypeDecl *Base = Struct->getType()->getAs<StructType>()->getDecl();
-
-  Path.Decls = Base->lookup(*Field);
+  Path.Decls = Struct->lookup(*Field);
   return !Path.Decls.empty();
 }
 
@@ -177,13 +175,23 @@ bool PromotedFieldPaths::lookupInBases(ASTContext &Context,
                                  void *UserData*/) {
   bool FoundPath = false;
 
-  bool IsFirstStep = ScratchPath.empty();
+  // Note: Lookup of anonymous fields in Go allows stopping once at least
+  // one decl has been found at a given depth, which suggests a BFS. The code
+  // below does a DFS, because deep trees of of anonymous fields should be
+  // rare and a DFS needs to keep only one path active.
 
+  // FIXME: This loop seems to not work right.
   for (StructTypeDecl::anon_field_iterator
            AnonField = Struct->anon_field_begin(),
            AnonFieldEnd = Struct->anon_field_end();
        AnonField != AnonFieldEnd; ++AnonField) {
+    const StructType *Curr = AnonField->getType()->getAs<StructType>();
+    if (!Curr)  // FIXME: check that this has a test.
+      continue;
+    StructTypeDecl *CurrDecl = Curr->getDecl();
+
 #if 0
+    //FIXME: Handle recursive anon fields.
     // Find the record of the base class subobjects for this type.
     QualType BaseType = Context.getCanonicalType(BaseSpec->getType())
                                                           .getUnqualifiedType();
@@ -202,36 +210,26 @@ bool PromotedFieldPaths::lookupInBases(ASTContext &Context,
       //Element.SubobjectNumber = Subobjects.second;
       ScratchPath.push_back(Element);
     }
-#if 0
-    // Track whether there's a path involving this specific base.
-    bool FoundPathThroughBase = false;
-    
-    if (BaseMatches(BaseSpec, ScratchPath, UserData)) {
+
+    if (LookupAnyField(CurrDecl, ScratchPath, Field)) {
       // We've found a path that terminates at this base.
-      FoundPath = FoundPathThroughBase = true;
+      FoundPath = true;
       if (isRecordingPaths()) {
         // We have a path. Make a copy of it before moving on.
         Paths.push_back(ScratchPath);
       } else if (!isFindingAmbiguities()) {
         // We found a path and we don't care about ambiguities;
         // return immediately.
+        //FIXME: Probably never the case in gong.
         return FoundPath;
       }
     } else {
-      CXXRecordDecl *BaseRecord
-        = cast<CXXRecordDecl>(BaseSpec->getType()->castAs<RecordType>()
-                                ->getDecl());
-      if (lookupInBases(Context, BaseRecord, BaseMatches, UserData)) {
-        // C++ [class.member.lookup]p2:
-        //   A member name f in one sub-object B hides a member name f in
-        //   a sub-object A if A is a base class sub-object of B. Any
-        //   declarations that are so hidden are eliminated from
-        //   consideration.
-        
+      if (lookupInBases(Context, CurrDecl, Field/*, BaseMatches, UserData*/)) {
         // There is a path to a base class that meets the criteria. If we're 
         // not collecting paths or finding ambiguities, we're done.
-        FoundPath = FoundPathThroughBase = true;
+        FoundPath = true;
         if (!isFindingAmbiguities())
+          // See FIXME above.
           return FoundPath;
       }
     }
@@ -241,7 +239,6 @@ bool PromotedFieldPaths::lookupInBases(ASTContext &Context,
     if (isRecordingPaths()) {
       ScratchPath.pop_back();
     }
-#endif
   }
 
   return FoundPath;
