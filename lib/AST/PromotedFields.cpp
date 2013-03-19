@@ -160,8 +160,19 @@ bool CXXRecordDecl::forallBases(ForallBasesCallback *BaseMatches,
 }
 #endif
 
+/// \brief Callback that looks for any member of a class with the given name.
+static bool LookupAnyField(const AnonFieldDecl *Struct,
+                           PromotedFieldPath &Path,
+                           IdentifierInfo *Field) {
+  StructTypeDecl *Base = Struct->getType()->getAs<StructType>()->getDecl();
+
+  Path.Decls = Base->lookup(*Field);
+  return !Path.Decls.empty();
+}
+
 bool PromotedFieldPaths::lookupInBases(ASTContext &Context,
-                                 const StructTypeDecl *Struct/*,
+                                 const StructTypeDecl *Struct,
+                                 IdentifierInfo *Field/*,
                                 CXXRecordDecl::BaseMatchesCallback *BaseMatches,
                                  void *UserData*/) {
   bool FoundPath = false;
@@ -238,9 +249,10 @@ bool PromotedFieldPaths::lookupInBases(ASTContext &Context,
 
 bool StructTypeDecl::lookupInBases(//BaseMatchesCallback *BaseMatches,
                                    //void *UserData,
+                                   IdentifierInfo *Field,
                                    PromotedFieldPaths &Paths) const {
   // If we didn't find anything, report that.
-  return Paths.lookupInBases(getASTContext(), this/*, BaseMatches, UserData*/);
+  return Paths.lookupInBases(getASTContext(), this, Field/*, BaseMatches, UserData*/);
 }
 
 #if 0

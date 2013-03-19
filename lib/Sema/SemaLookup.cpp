@@ -947,17 +947,6 @@ static bool LookupQualifiedNameInUsingDirectives(Sema &S, LookupResult &R,
   return Found;
 }
 
-/// \brief Callback that looks for any member of a class with the given name.
-static bool LookupAnyMember(const CXXBaseSpecifier *Specifier,
-                            PromotedFieldPath &Path,
-                            void *Name) {
-  RecordDecl *BaseRecord = Specifier->getType()->getAs<RecordType>()->getDecl();
-
-  DeclarationName N = DeclarationName::getFromOpaquePtr(Name);
-  Path.Decls = BaseRecord->lookup(N);
-  return !Path.Decls.empty();
-}
-
 /// \brief Determine whether the given set of member declarations contains only
 /// static members, nested types, and enumerators.
 template<typename InputIterator>
@@ -1112,6 +1101,7 @@ bool Sema::LookupQualifiedName(LookupResult &R, DeclContext *LookupCtx,
 
   if (!LookupRec->lookupInBases(//BaseCallback,
                                 //R.getLookupName().getAsOpaquePtr(),
+                                R.getLookupName(),
                                 Paths))
     return false;
 #if 0
@@ -1126,7 +1116,6 @@ bool Sema::LookupQualifiedName(LookupResult &R, DeclContext *LookupCtx,
   //   the result of the lookup.
   QualType SubobjectType;
   int SubobjectNumber = 0;
-  AccessSpecifier SubobjectAccess = AS_none;
 #endif
 
   for (PromotedFieldPaths::paths_iterator Path = Paths.begin(), PathEnd = Paths.end();
@@ -1134,10 +1123,6 @@ bool Sema::LookupQualifiedName(LookupResult &R, DeclContext *LookupCtx,
     const PromotedFieldPathElement &PathElement = Path->back();
 
 #if 0
-    // Pick the best (i.e. most permissive i.e. numerically lowest) access
-    // across all paths.
-    SubobjectAccess = std::min(SubobjectAccess, Path->Access);
-
     // Determine whether we're looking at a distinct sub-object or not.
     if (SubobjectType.isNull()) {
       // This is the first subobject we've looked at. Record its type.
@@ -1199,8 +1184,6 @@ bool Sema::LookupQualifiedName(LookupResult &R, DeclContext *LookupCtx,
   DeclContext::lookup_result DR = Paths.front().Decls;
   for (DeclContext::lookup_iterator I = DR.begin(), E = DR.end(); I != E; ++I) {
     NamedDecl *D = *I;
-    AccessSpecifier AS = CXXRecordDecl::MergeAccess(SubobjectAccess,
-                                                    D->getAccess());
     R.addDecl(D, AS);
   }
   R.resolveKind();

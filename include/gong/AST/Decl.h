@@ -2505,6 +2505,7 @@ public:
   /// subobject that matches the search criteria.
   bool lookupInBases(//BaseMatchesCallback *BaseMatches,
                      //void *UserData,
+                     IdentifierInfo *Field,
                      PromotedFieldPaths &Paths) const;
 
   // Implement isa/cast/dyncast/etc.

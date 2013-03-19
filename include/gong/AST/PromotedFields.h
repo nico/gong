@@ -14,12 +14,12 @@
 #ifndef LLVM_GONG_AST_PROMOTEDFIELDS_H
 #define LLVM_GONG_AST_PROMOTEDFIELDS_H
 
+#include "gong/AST/DeclBase.h"
 #include "gong/Basic/LLVM.h"
 #include "llvm/ADT/SmallVector.h"
 #include <list>
 
 #if 0
-#include "gong/AST/DeclBase.h"
 #include "gong/AST/DeclCXX.h"
 #include "gong/AST/DeclarationName.h"
 #include "gong/AST/Type.h"
@@ -32,6 +32,7 @@
 
 namespace gong {
 class ASTContext;  
+class IdentifierInfo;  
 class NamedDecl;
 class StructTypeDecl;
 #if 0
@@ -78,23 +79,13 @@ struct PromotedFieldPathElement {
 #endif
 class PromotedFieldPath : public SmallVector<PromotedFieldPathElement, 4> {
 public:
-#if 0
-  PromotedFieldPath() : Access(AS_public) {}
-
-  /// \brief The access along this inheritance path.  This is only
-  /// calculated when recording paths.  AS_none is a special value
-  /// used to indicate a path which permits no legal access.
-  AccessSpecifier Access;
-
   /// \brief The set of declarations found inside this base class
   /// subobject.
   DeclContext::lookup_result Decls;
 
   void clear() {
-    SmallVectorImpl<CXXBasePathElement>::clear();
-    Access = AS_public;
+    SmallVectorImpl<PromotedFieldPathElement>::clear();
   }
-#endif
 };
 
 #if 0
@@ -176,7 +167,8 @@ class PromotedFieldPaths {
 #endif
 
   bool lookupInBases(ASTContext &Context, 
-                     const StructTypeDecl *Struct/*,
+                     const StructTypeDecl *Struct,
+                     IdentifierInfo *Field/*,
                      CXXRecordDecl::BaseMatchesCallback *BaseMatches, 
                      void *UserData*/);
 public:
