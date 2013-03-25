@@ -148,9 +148,9 @@ func embedded_fields() {
   // FIXME: implement promoted fields.
   type promoted struct { a, b, c int }
   var c struct { promoted }
-  c.a  // expected-diag {{no field 'a' in <type>}} FIXME shouldn't diag
-  c.b  // expected-diag {{no field 'b' in <type>}} FIXME shouldn't diag
-  c.c  // expected-diag {{no field 'c' in <type>}} FIXME shouldn't diag
+  c.a
+  c.b
+  c.c
   c.d  // expected-diag {{no field 'd' in <type>}}
   c.promoted
   c.promoted.a
@@ -161,9 +161,9 @@ func embedded_fields() {
   type promoted1 struct { a, b int }
   type promoted2 struct { a, c int }
   var d struct { promoted1; *promoted2 }
-  d.a  // expected-diag {{no field 'a' in <type>}} FIXME explanation
-  d.b  // expected-diag {{no field 'b' in <type>}} FIXME shouldn't diag
-  d.c  // expected-diag {{no field 'c' in <type>}} FIXME shouldn't diag
+  d.a  // expected-diag {{name 'a' is ambiguous}}
+  d.b
+  d.c
   d.d  // expected-diag {{no field 'd' in <type>}}
   d.promoted1
   d.promoted1.a
@@ -180,10 +180,10 @@ func embedded_fields() {
   type pro2_d2 struct { pro2_d1 }
   type tp struct { pro1_d2; pro2_d1 }
   var vp tp
-  vp.a  // expected-diag {{no field 'a' in <type>}} FIXME: Ok, a in pro2_d1 has lower depth.
+  vp.a
   type tp2 struct { pro1_d2; pro2_d2 }
   var vp2 tp2
-  vp.a  // expected-diag {{no field 'a' in <type>}} FIXME better diag
+  vp2.a  // expected-diag {{name 'a' is ambiguous}}
 }
 
 // Test that the scope for anonymous fields is popped.

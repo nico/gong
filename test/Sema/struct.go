@@ -64,6 +64,3 @@ type anon_var struct {
 }
 
 // Field lookup is tested in selector.go.
-
-// FIXME:
-// promoted embedded fields

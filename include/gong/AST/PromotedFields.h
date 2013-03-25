@@ -31,6 +31,7 @@
 #endif
 
 namespace gong {
+class AnonFieldDecl;
 class ASTContext;  
 class IdentifierInfo;  
 class NamedDecl;
@@ -48,6 +49,8 @@ class CXXMethodDecl;
 /// base "number" that identifies which base subobject of the
 /// original derived class we are referencing.
 struct PromotedFieldPathElement {
+  const StructTypeDecl *Struct;
+  AnonFieldDecl *Field;
 #if 0
   /// \brief The base specifier that states the link from a derived
   /// class to a base class, which will be followed by this base
@@ -157,8 +160,8 @@ class PromotedFieldPaths {
   /// \brief Array of the declarations that have been found. This
   /// array is constructed only if needed, e.g., to iterate over the
   /// results within LookupResult.
-  NamedDecl **DeclsFound;
-  unsigned NumDeclsFound;
+  //NamedDecl **DeclsFound;
+  //unsigned NumDeclsFound;
 
   friend class StructTypeDecl;
 
@@ -182,9 +185,10 @@ public:
   /// paths for a derived-to-base search.
   explicit PromotedFieldPaths(bool FindAmbiguities = true,
                               bool RecordPaths = true)
-    : FindAmbiguities(FindAmbiguities), RecordPaths(RecordPaths),
-      DeclsFound(0),
-      NumDeclsFound(0) {}
+    : FindAmbiguities(FindAmbiguities), RecordPaths(RecordPaths)
+      //DeclsFound(0),
+      //NumDeclsFound(0)
+      {}
 
 #if 0
   ~PromotedFieldPaths() { delete [] DeclsFound; }
@@ -195,10 +199,12 @@ public:
   const_paths_iterator begin() const { return Paths.begin(); }
   const_paths_iterator end()   const { return Paths.end(); }
 
-#if 0
   PromotedFieldPath&       front()       { return Paths.front(); }
   const PromotedFieldPath &front() const { return Paths.front(); }
 
+  size_t size() const { return Paths.size(); }
+
+#if 0
   decl_iterator found_decls_begin();
   decl_iterator found_decls_end();
   
@@ -223,11 +229,14 @@ public:
   
   /// \brief Clear the base-paths results.
   void clear();
+#endif
   
   /// \brief Swap this data structure's contents with another PromotedFieldPaths
   /// object.
   void swap(PromotedFieldPaths &Other);
-#endif
+
+  /// Returns the subset of paths that have the shortes length.
+  PromotedFieldPaths shortestPaths() const;
 };
 
 #if 0

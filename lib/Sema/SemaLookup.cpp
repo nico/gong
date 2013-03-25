@@ -299,17 +299,17 @@ void LookupResult::sanityImpl() const {
   assert(ResultKind != Ambiguous || Decls.size() > 1 ||
          (Decls.size() == 1 && (Ambiguity == AmbiguousBaseSubobjects ||
                                 Ambiguity == AmbiguousBaseSubobjectTypes)));
-  //assert((Paths != NULL) == (ResultKind == Ambiguous &&
-  //                           (Ambiguity == AmbiguousBaseSubobjectTypes ||
-  //                            Ambiguity == AmbiguousBaseSubobjects)));
+  assert((Paths != NULL) == (ResultKind == Ambiguous &&
+                             (Ambiguity == AmbiguousBaseSubobjectTypes ||
+                              Ambiguity == AmbiguousBaseSubobjects)));
 }
 
-#if 0
 // Necessary because PromotedFieldPaths is not complete in Sema.h
 void LookupResult::deletePaths(PromotedFieldPaths *Paths) {
   delete Paths;
 }
 
+#if 0
 static NamedDecl *getVisibleDecl(NamedDecl *D);
 
 NamedDecl *LookupResult::getAcceptableDeclSlow(NamedDecl *D) const {
@@ -433,7 +433,7 @@ void LookupResult::resolveKind() {
     ResultKind = LookupResult::Found;
 }
 
-#if 0
+
 void LookupResult::addDeclsFromBasePaths(const PromotedFieldPaths &P) {
   PromotedFieldPaths::const_paths_iterator I, E;
   for (I = P.begin(), E = P.end(); I != E; ++I)
@@ -442,7 +442,7 @@ void LookupResult::addDeclsFromBasePaths(const PromotedFieldPaths &P) {
       addDecl(*DI);
 }
 
-void LookupResult::setAmbiguousBaseSubobjects(PromotedFieldPaths &P) {
+void LookupResult::setAmbiguousPromotedFields(PromotedFieldPaths &P) {
   Paths = new PromotedFieldPaths;
   Paths->swap(P);
   addDeclsFromBasePaths(*Paths);
@@ -450,6 +450,7 @@ void LookupResult::setAmbiguousBaseSubobjects(PromotedFieldPaths &P) {
   setAmbiguous(AmbiguousBaseSubobjects);
 }
 
+#if 0
 void LookupResult::setAmbiguousBaseSubobjectTypes(PromotedFieldPaths &P) {
   Paths = new PromotedFieldPaths;
   Paths->swap(P);
@@ -1118,11 +1119,17 @@ bool Sema::LookupQualifiedName(LookupResult &R, DeclContext *LookupCtx,
   int SubobjectNumber = 0;
 #endif
 
-  for (PromotedFieldPaths::paths_iterator Path = Paths.begin(), PathEnd = Paths.end();
+  Paths = Paths.shortestPaths();
+  if (Paths.size() > 1) {
+    R.setAmbiguousPromotedFields(Paths);
+    return true;
+  }
+#if 0
+  for (PromotedFieldPaths::paths_iterator Path = Paths.begin(),
+                                          PathEnd = Paths.end();
        Path != PathEnd; ++Path) {
     const PromotedFieldPathElement &PathElement = Path->back();
 
-#if 0
     // Determine whether we're looking at a distinct sub-object or not.
     if (SubobjectType.isNull()) {
       // This is the first subobject we've looked at. Record its type.
@@ -1175,19 +1182,18 @@ bool Sema::LookupQualifiedName(LookupResult &R, DeclContext *LookupCtx,
       R.setAmbiguousBaseSubobjects(Paths);
       return true;
     }
-#endif
   }
+#endif
 
-#if 0
-  // Lookup in a base class succeeded; return these results.
+  // Lookup in promoted fields succeeded; return these results.
 
   DeclContext::lookup_result DR = Paths.front().Decls;
   for (DeclContext::lookup_iterator I = DR.begin(), E = DR.end(); I != E; ++I) {
     NamedDecl *D = *I;
-    R.addDecl(D, AS);
+    R.addDecl(D);
   }
   R.resolveKind();
-#endif
+
   return true;
 }
 
@@ -1240,6 +1246,7 @@ bool Sema::LookupParsedName(LookupResult &R, Scope *S, CXXScopeSpec *SS,
   // Perform unqualified name lookup starting in the given scope.
   return LookupName(R, S, AllowBuiltinCreation);
 }
+#endif
 
 
 /// \brief Produce a diagnostic describing the ambiguity that resulted
@@ -1251,9 +1258,17 @@ bool Sema::LookupParsedName(LookupResult &R, Scope *S, CXXScopeSpec *SS,
 bool Sema::DiagnoseAmbiguousLookup(LookupResult &Result) {
   assert(Result.isAmbiguous() && "Lookup result must be ambiguous");
 
-  DeclarationName Name = Result.getLookupName();
+  IdentifierInfo *Name = Result.getLookupName();
   SourceLocation NameLoc = Result.getNameLoc();
-  SourceRange LookupRange = Result.getContextRange();
+  //SourceRange LookupRange = Result.getContextRange();
+
+  // FIXME: Add an ambiguity kind for promoted fields, assert that this is
+  // the only ambiguity kind that's used here.
+
+  // FIXME: better diag (mention ambiguous paths)
+  Diag(NameLoc, diag::ambiguous_name) << Name;
+  return true;  // FIXME
+#if 0
 
   switch (Result.getAmbiguityKind()) {
   case LookupResult::AmbiguousBaseSubobjects: {
@@ -1329,8 +1344,10 @@ bool Sema::DiagnoseAmbiguousLookup(LookupResult &Result) {
   }
 
   llvm_unreachable("unknown ambiguity kind");
+#endif
 }
 
+#if 0
 NamedDecl *Sema::LookupSingleName(Scope *S, DeclarationName Name,
                                   SourceLocation Loc,
                                   LookupNameKind NameKind,

@@ -123,6 +123,7 @@ public:
                SourceLocation NameLoc, Sema::LookupNameKind LookupKind,
                Sema::RedeclarationKind Redecl = Sema::NotForRedeclaration)
     : ResultKind(NotFound),
+      Paths(0),
       NamingClass(0),
       SemaRef(SemaRef),
       NameInfo(Name),
@@ -140,6 +141,7 @@ public:
   /// disabled.
   LookupResult(TemporaryToken _, const LookupResult &Other)
     : ResultKind(NotFound),
+      Paths(0),
       NamingClass(0),
       SemaRef(Other.SemaRef),
       NameInfo(Other.NameInfo),
@@ -151,6 +153,7 @@ public:
 
   ~LookupResult() {
     if (Diagnose) diagnose();
+    if (Paths) deletePaths(Paths);
   }
 
   /// Gets the name info to look up.
@@ -273,6 +276,11 @@ public:
   void resolveKindAfterFilter() {
     if (Decls.empty()) {
       ResultKind = NotFound;
+
+      if (Paths) {
+        deletePaths(Paths);
+        Paths = 0;
+      }
     } else {
       AmbiguityKind SavedAK = Ambiguity;
       ResultKind = Found;
@@ -282,6 +290,9 @@ public:
       // ambiguity kind.
       if (ResultKind == Ambiguous) {
         Ambiguity = SavedAK;
+      } else if (Paths) {
+        deletePaths(Paths);
+        Paths = 0;
       }
     }
   }
@@ -314,6 +325,10 @@ public:
   //  return getResultKind() == Found && isa<TagDecl>(getFoundDecl());
   //}
 
+  /// \brief Make these results show that the name was found in various
+  /// promoted fields.
+  void setAmbiguousPromotedFields(PromotedFieldPaths &P);
+
   /// \brief Make these results show that the name was found in
   /// different contexts and a tag decl was hidden by an ordinary
   /// decl in a different context.
@@ -325,6 +340,8 @@ public:
   void clear() {
     ResultKind = NotFound;
     Decls.clear();
+    if (Paths) deletePaths(Paths);
+    Paths = NULL;   
     NamingClass = 0;
   }
 
@@ -439,8 +456,8 @@ public:
 
 private:
   void diagnose() {
-    //if (isAmbiguous())
-    //  SemaRef.DiagnoseAmbiguousLookup(*this);
+    if (isAmbiguous())
+      SemaRef.DiagnoseAmbiguousLookup(*this);
     //else if (isClassLookup() && SemaRef.getLangOpts().AccessControl)
     //  SemaRef.CheckLookupAccess(*this);
   }
@@ -450,6 +467,7 @@ private:
     Ambiguity = AK;
   }
 
+  void addDeclsFromBasePaths(const PromotedFieldPaths &P);
   void configure();
 
   // Sanity checks.
@@ -468,10 +486,13 @@ private:
   //  return false;
   //}
 
+  static void deletePaths(PromotedFieldPaths *);
+
   // Results.
   LookupResultKind ResultKind;
   AmbiguityKind Ambiguity; // ill-defined unless ambiguous
   UnresolvedSet<8> Decls;
+  PromotedFieldPaths *Paths;
   CXXRecordDecl *NamingClass;
 
   // Parameters.

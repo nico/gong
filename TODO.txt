@@ -6,15 +6,7 @@ P0 varspec type checking
 P0 use that to give VarDecls and ConstDecls a type
 P0 finish struct type support
    - field lookup
-     - embedded fields
-       - Sema::LookupQualifiedName(): look at BaseMatchesCallback. requires
-         api to query StructTypes for embedded fields? ends up calling
-         CXXRecordDecl::lookupInBases() with a callback. Fills in a CXXBasePaths
-         object.
-         * include/clang/AST/CXXInheritance.h / lib/AST/CXXInheritance.cpp
-           There's also CXXBasePaths::lookupInBases().
-            - clang: check if lookups can be cached, understand why child
-              classes increase number of lookups
+     - embedded fields: Nicer diag in ambiguous case.
      - mention struct name in diag
      - spelling
    - recursive struct types (P2)

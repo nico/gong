@@ -68,17 +68,35 @@ void PromotedFieldPaths::clear() {
   ClassSubobjects.clear();
   ScratchPath.clear();
 }
+#endif
 
 /// @brief Swaps the contents of this PromotedFieldPaths structure with the
 /// contents of Other.
 void PromotedFieldPaths::swap(PromotedFieldPaths &Other) {
-  std::swap(Origin, Other.Origin);
+  //std::swap(Origin, Other.Origin);
   Paths.swap(Other.Paths);
-  ClassSubobjects.swap(Other.ClassSubobjects);
+  //ClassSubobjects.swap(Other.ClassSubobjects);
   std::swap(FindAmbiguities, Other.FindAmbiguities);
   std::swap(RecordPaths, Other.RecordPaths);
 }
 
+PromotedFieldPaths PromotedFieldPaths::shortestPaths() const {
+  size_t MinLength = UINT_MAX;
+  for (PromotedFieldPaths::const_paths_iterator Path = begin(), PathEnd = end();
+       Path != PathEnd; ++Path)
+    if (Path->size() < MinLength)
+      MinLength = Path->size();
+
+  PromotedFieldPaths R;
+  for (PromotedFieldPaths::const_paths_iterator Path = begin(), PathEnd = end();
+       Path != PathEnd; ++Path) {
+    if (Path->size() == MinLength)
+      R.Paths.push_back(*Path);
+  }
+  return R;
+}
+
+#if 0
 bool CXXRecordDecl::isDerivedFrom(const CXXRecordDecl *Base) const {
   PromotedFieldPaths Paths(/*FindAmbiguities=*/false, /*RecordPaths=*/false);
   return isDerivedFrom(Base, Paths);
@@ -205,6 +223,8 @@ bool PromotedFieldPaths::lookupInBases(ASTContext &Context,
     if (isRecordingPaths()) {
       // Add this base specifier to the current path.
       PromotedFieldPathElement Element;
+      Element.Struct = Struct;
+      Element.Field = *AnonField;
       //Element.Base = &*BaseSpec;
       //Element.Class = Record;
       //Element.SubobjectNumber = Subobjects.second;

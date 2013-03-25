@@ -2228,8 +2228,10 @@ public:
   void FilterLookupForScope(LookupResult &R, DeclContext *Ctx, Scope *S,
                             bool ConsiderLinkage,
                             bool ExplicitInstantiationOrSpecialization);
+#endif
 
   bool DiagnoseAmbiguousLookup(LookupResult &Result);
+#if 0
   //@}
 
   NamedDecl *LazilyCreateBuiltin(IdentifierInfo *II, unsigned ID,
