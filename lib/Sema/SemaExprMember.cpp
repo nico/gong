@@ -43,6 +43,7 @@ class RecordMemberExprValidatorCCC : public CorrectionCandidateCallback {
 }
 #endif
 
+// Returns true on failure.
 static bool
 LookupMemberExprInRecord(Sema &SemaRef, LookupResult &R, 
                          //SourceRange BaseRange,

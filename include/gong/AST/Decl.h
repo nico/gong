@@ -2474,12 +2474,73 @@ public:
   
   //SourceRange getSourceRange() const LLVM_READONLY;
 
-  typedef specific_decl_iterator<AnonFieldDecl> anon_field_iterator;
+  /// Iterates over AnonFieldDecls.
+  // FIXME: Cannot just be a specific_decl_iterator because AnonFieldDecls are
+  // nested in FieldSpecDecls.
+  class anon_field_iterator {
+    /// The current, underlying declaration iterator, which
+    /// will either be NULL or will point to a declaration of
+    /// type FieldSpecDecl.
+    DeclContext::decl_iterator Current;
+
+    /// Advances the current position up to the next AnonFieldDecl.
+    void SkipToNextDecl() {
+      while (*Current &&
+             !isa<AnonFieldDecl>(*cast<FieldSpecDecl>(*Current)->decls_begin()))
+        ++Current;
+    }
+
+  public:
+    // TODO: Add reference and pointer typedefs (with some appropriate proxy
+    // type) if we ever have a need for them.
+    typedef void reference;
+    typedef void pointer;
+    typedef std::iterator_traits<DeclContext::decl_iterator>::difference_type
+      difference_type;
+    typedef std::forward_iterator_tag iterator_category;
+
+    anon_field_iterator() : Current() { }
+
+    /// Construct a new iterator over the anon fields in the range
+    /// [C, end-of-declarations).
+    explicit anon_field_iterator(DeclContext::decl_iterator C) : Current(C) {
+      SkipToNextDecl();
+    }
+
+    AnonFieldDecl *operator*() const {
+      return cast<AnonFieldDecl>(*cast<FieldSpecDecl>(*Current)->decls_begin());
+    }
+    // This doesn't meet the iterator requirements, but it's convenient
+    AnonFieldDecl *operator->() const { return **this; }
+
+    anon_field_iterator& operator++() {
+      ++Current;
+      SkipToNextDecl();
+      return *this;
+    }
+
+    anon_field_iterator operator++(int) {
+      anon_field_iterator tmp(*this);
+      ++(*this);
+      return tmp;
+    }
+
+    friend bool operator==(const anon_field_iterator& x,
+                           const anon_field_iterator& y) {
+      return x.Current == y.Current;
+    }
+
+    friend bool operator!=(const anon_field_iterator& x,
+                           const anon_field_iterator& y) {
+      return x.Current != y.Current;
+    }
+  };
+
 
   anon_field_iterator anon_field_begin() const;
 
   anon_field_iterator anon_field_end() const {
-    return anon_field_iterator(decl_iterator());
+    return anon_field_iterator();
   }
 
   /// \brief Look for entities within the embedded fields of this struct,

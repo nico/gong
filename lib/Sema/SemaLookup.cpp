@@ -524,7 +524,7 @@ static bool LookupDirect(Sema &S, LookupResult &R, const DeclContext *DC) {
     NamedDecl *D = *I;
     //if ((D = R.getAcceptableDecl(D))) {  // FIXME: needed?
       R.addDecl(D);
-      //Found = true;
+      Found = true;
     //}
   }
 
