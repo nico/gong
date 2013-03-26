@@ -158,10 +158,10 @@ func embedded_fields() {
   c.promoted.c
   c.promoted.d  // expected-diag {{no field 'd' in <type>}}
 
-  type promoted1 struct { a, b int }
-  type promoted2 struct { a, c int }
+  type promoted1 struct { a, b int }  // expected-note {{could be in 'promoted1'}}
+  type promoted2 struct { a, c int }  // expected-note {{could be in 'promoted2'}}
   var d struct { promoted1; *promoted2 }
-  d.a  // expected-diag {{name 'a' is ambiguous, could be any of promoted1, promoted2}}
+  d.a  // expected-diag {{name 'a' is ambiguous}}
   d.b
   d.c
   d.d  // expected-diag {{no field 'd' in <type>}}
@@ -174,8 +174,8 @@ func embedded_fields() {
   d.promoted2.b  // expected-diag {{no field 'b' in <type>}}
   d.promoted2.c
 
-  type pro1_d1 struct { a int }
-  type pro2_d1 struct { a int }
+  type pro1_d1 struct { a int }  // expected-note {{could be in 'pro1_d2.pro1_d1'}}
+  type pro2_d1 struct { a int }  // expected-note {{could be in 'pro2_d2.pro2_d1'}}
   type pro1_d2 struct { pro1_d1 }
   type pro2_d2 struct { pro2_d1 }
   type tp struct { pro1_d2; pro2_d1 }
@@ -183,7 +183,7 @@ func embedded_fields() {
   vp.a
   type tp2 struct { pro1_d2; pro2_d2 }
   var vp2 tp2
-  vp2.a  // expected-diag {{name 'a' is ambiguous, could be any of pro1_d2.pro1_d1, pro2_d2.pro2_d1}}
+  vp2.a  // expected-diag {{name 'a' is ambiguous}}
 }
 
 // Test that the scope for anonymous fields is popped.
