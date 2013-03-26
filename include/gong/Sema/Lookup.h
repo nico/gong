@@ -192,6 +192,12 @@ public:
   /// \brief Return true if no decls were found
   bool empty() const { return Decls.empty(); }
 
+  /// \brief Return the promoted field paths structure that's associated with
+  /// these results, or null if none is.
+  PromotedFieldPaths *getPromotedFieldPaths() const {
+    return Paths;
+  }
+
   /// \brief Determine whether the given declaration is visible to the
   /// program.
   static bool isVisible(NamedDecl *D) {

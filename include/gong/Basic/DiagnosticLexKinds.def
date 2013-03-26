@@ -161,4 +161,5 @@ DIAG(no_field,                     CLASS_ERROR, "no field %0 in %1")
 DIAG(typecheck_field_reference_struct,
                                    CLASS_ERROR,
     "selector base type %0 is not a struct")
-DIAG(ambiguous_name,               CLASS_ERROR, "name %0 is ambiguous")
+DIAG(ambiguous_name,               CLASS_ERROR,
+    "name %0 is ambiguous, could be any of %1")

@@ -1247,6 +1247,31 @@ bool Sema::LookupParsedName(LookupResult &R, Scope *S, CXXScopeSpec *SS,
 #endif
 
 
+/// @brief Builds a string representing ambiguous promoted field paths.
+static std::string getAmbiguousPathsDisplayString(PromotedFieldPaths &Paths) {
+  std::string PathDisplayStr;
+  //std::set<unsigned> DisplayedPaths;
+  bool FirstPath = true;
+  for (PromotedFieldPaths::paths_iterator Path = Paths.begin();
+       Path != Paths.end(); ++Path, FirstPath = false) {
+    //if (DisplayedPaths.insert(Path->back().SubobjectNumber).second) {
+    // We haven't displayed a path to this particular base
+    // class subobject yet.
+    if (!FirstPath)
+      PathDisplayStr += ", ";
+    //PathDisplayStr += Context.getTypeDeclType(Paths.getOrigin()).getAsString();
+    bool First = true;
+    for (PromotedFieldPath::const_iterator Element = Path->begin();
+         Element != Path->end(); ++Element, First = false) {
+      PathDisplayStr +=
+          (First ? "" : ".") + Element->Field->getDeclName().getName().str();
+    }
+    //}
+  }
+  
+  return PathDisplayStr;
+}
+
 /// \brief Produce a diagnostic describing the ambiguity that resulted
 /// from name lookup.
 ///
@@ -1262,18 +1287,18 @@ bool Sema::DiagnoseAmbiguousLookup(LookupResult &Result) {
 
   switch (Result.getAmbiguityKind()) {
   case LookupResult::AmbiguousPromotedFields: {
-    //PromotedFieldPaths *Paths = Result.getBasePaths();
+    PromotedFieldPaths *Paths = Result.getPromotedFieldPaths();
     //QualType SubobjectType = Paths->front().back().Base->getType();
-    Diag(NameLoc, diag::ambiguous_name) << Name;
+    Diag(NameLoc, diag::ambiguous_name)
+        << Name << getAmbiguousPathsDisplayString(*Paths);
     //Diag(NameLoc, diag::err_ambiguous_member_multiple_subobjects)
       //<< Name << SubobjectType << getAmbiguousPathsDisplayString(*Paths)
       //<< LookupRange;
-    // FIXME: better diag (mention ambiguous paths)
+    // FIXME: better diag: good notes for ambiguities, fixit suggestions.
 
-    //PromotedFieldPaths *Paths = Result.getBasePaths();
     //std::set<Decl *> DeclsPrinted;
     //for (PromotedFieldPaths::paths_iterator Path = Paths->begin(),
-                                      //PathEnd = Paths->end();
+                                            //PathEnd = Paths->end();
          //Path != PathEnd; ++Path) {
       //Decl *D = Path->Decls.front();
       //if (DeclsPrinted.insert(D).second)
