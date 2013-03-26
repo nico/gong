@@ -52,33 +52,18 @@ public:
 
   enum AmbiguityKind {
     /// Name lookup results in an ambiguity because multiple
-    /// entities that meet the lookup criteria were found in
-    /// subobjects of different types. For example:
+    /// promoted fields meet the lookup criteria. For example:
     /// @code
-    /// struct A { void f(int); }
-    /// struct B { void f(double); }
-    /// struct C : A, B { };
-    /// void test(C c) {
-    ///   c.f(0); // error: A::f and B::f come from subobjects of different
-    ///           // types. overload resolution is not performed.
+    /// type A { x int; };
+    /// type B { x int; };
+    /// type C struct { A; B };
+    /// func test(c C) int {
+    ///   return c.x; // error: 'x' is ambiguous (could be c.a.x or c.b.x).
     /// }
     /// @endcode
-    AmbiguousBaseSubobjectTypes,
+    AmbiguousPromotedFields,
 
-    /// Name lookup results in an ambiguity because multiple
-    /// nonstatic entities that meet the lookup criteria were found
-    /// in different subobjects of the same type. For example:
-    /// @code
-    /// struct A { int x; };
-    /// struct B : A { };
-    /// struct C : A { };
-    /// struct D : B, C { };
-    /// int test(D d) {
-    ///   return d.x; // error: 'x' is found in two A subobjects (of B and C)
-    /// }
-    /// @endcode
-    AmbiguousBaseSubobjects,
-
+    // FIXME: needed?
     /// Name lookup results in an ambiguity because multiple definitions
     /// of entity that meet the lookup criteria were found in different
     /// declaration contexts.
@@ -92,24 +77,7 @@ public:
     ///    }
     /// }
     /// @endcode
-    AmbiguousReference,
-
-    /// Name lookup results in an ambiguity because an entity with a
-    /// tag name was hidden by an entity with an ordinary name from
-    /// a different context.
-    /// @code
-    /// namespace A { struct Foo {}; }
-    /// namespace B { void Foo(); }
-    /// namespace C {
-    ///   using namespace A;
-    ///   using namespace B;
-    /// }
-    /// void test() {
-    ///   C::Foo(); // error: tag 'A::Foo' is hidden by an object in a
-    ///             // different namespace
-    /// }
-    /// @endcode
-    AmbiguousTagHiding
+    AmbiguousReference
   };
 
   /// A little identifier for flagging temporary lookup results.
@@ -332,9 +300,9 @@ public:
   /// \brief Make these results show that the name was found in
   /// different contexts and a tag decl was hidden by an ordinary
   /// decl in a different context.
-  void setAmbiguousQualifiedTagHiding() {
-    setAmbiguous(AmbiguousTagHiding);
-  }
+  //void setAmbiguousQualifiedTagHiding() {
+    //setAmbiguous(AmbiguousTagHiding);
+  //}
 
   /// \brief Clears out any current state.
   void clear() {

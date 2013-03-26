@@ -1,4 +1,3 @@
-
 hotlist:
 P0 varspec type checking
    - let actonoperandname give types to at least operands referring to vars
@@ -7,6 +6,7 @@ P0 use that to give VarDecls and ConstDecls a type
 P0 finish struct type support
    - field lookup
      - embedded fields: Nicer diag in ambiguous case.
+       - maybe diag if there's an ambiguity that's shadowed by a valid name?
      - mention struct name in diag
      - spelling
    - recursive struct types (P2)

@@ -297,11 +297,9 @@ void LookupResult::sanityImpl() const {
   assert(ResultKind != FoundOverloaded || Decls.size() > 1);
   //assert(ResultKind != FoundUnresolvedValue || sanityCheckUnresolved());
   assert(ResultKind != Ambiguous || Decls.size() > 1 ||
-         (Decls.size() == 1 && (Ambiguity == AmbiguousBaseSubobjects ||
-                                Ambiguity == AmbiguousBaseSubobjectTypes)));
+         (Decls.size() == 1 && (Ambiguity == AmbiguousPromotedFields)));
   assert((Paths != NULL) == (ResultKind == Ambiguous &&
-                             (Ambiguity == AmbiguousBaseSubobjectTypes ||
-                              Ambiguity == AmbiguousBaseSubobjects)));
+                             (Ambiguity == AmbiguousPromotedFields)));
 }
 
 // Necessary because PromotedFieldPaths is not complete in Sema.h
@@ -447,7 +445,7 @@ void LookupResult::setAmbiguousPromotedFields(PromotedFieldPaths &P) {
   Paths->swap(P);
   addDeclsFromBasePaths(*Paths);
   resolveKind();
-  setAmbiguous(AmbiguousBaseSubobjects);
+  setAmbiguous(AmbiguousPromotedFields);
 }
 
 #if 0
@@ -1262,89 +1260,42 @@ bool Sema::DiagnoseAmbiguousLookup(LookupResult &Result) {
   SourceLocation NameLoc = Result.getNameLoc();
   //SourceRange LookupRange = Result.getContextRange();
 
-  // FIXME: Add an ambiguity kind for promoted fields, assert that this is
-  // the only ambiguity kind that's used here.
-
-  // FIXME: better diag (mention ambiguous paths)
-  Diag(NameLoc, diag::ambiguous_name) << Name;
-  return true;  // FIXME
-#if 0
-
   switch (Result.getAmbiguityKind()) {
-  case LookupResult::AmbiguousBaseSubobjects: {
-    PromotedFieldPaths *Paths = Result.getBasePaths();
-    QualType SubobjectType = Paths->front().back().Base->getType();
-    Diag(NameLoc, diag::err_ambiguous_member_multiple_subobjects)
-      << Name << SubobjectType << getAmbiguousPathsDisplayString(*Paths)
-      << LookupRange;
+  case LookupResult::AmbiguousPromotedFields: {
+    //PromotedFieldPaths *Paths = Result.getBasePaths();
+    //QualType SubobjectType = Paths->front().back().Base->getType();
+    Diag(NameLoc, diag::ambiguous_name) << Name;
+    //Diag(NameLoc, diag::err_ambiguous_member_multiple_subobjects)
+      //<< Name << SubobjectType << getAmbiguousPathsDisplayString(*Paths)
+      //<< LookupRange;
+    // FIXME: better diag (mention ambiguous paths)
 
-    DeclContext::lookup_iterator Found = Paths->front().Decls.begin();
-    while (isa<CXXMethodDecl>(*Found) &&
-           cast<CXXMethodDecl>(*Found)->isStatic())
-      ++Found;
-
-    Diag((*Found)->getLocation(), diag::note_ambiguous_member_found);
-
-    return true;
-  }
-
-  case LookupResult::AmbiguousBaseSubobjectTypes: {
-    Diag(NameLoc, diag::err_ambiguous_member_multiple_subobject_types)
-      << Name << LookupRange;
-
-    PromotedFieldPaths *Paths = Result.getBasePaths();
-    std::set<Decl *> DeclsPrinted;
-    for (PromotedFieldPaths::paths_iterator Path = Paths->begin(),
-                                      PathEnd = Paths->end();
-         Path != PathEnd; ++Path) {
-      Decl *D = Path->Decls.front();
-      if (DeclsPrinted.insert(D).second)
-        Diag(D->getLocation(), diag::note_ambiguous_member_found);
-    }
-
-    return true;
-  }
-
-  case LookupResult::AmbiguousTagHiding: {
-    Diag(NameLoc, diag::err_ambiguous_tag_hiding) << Name << LookupRange;
-
-    llvm::SmallPtrSet<NamedDecl*,8> TagDecls;
-
-    LookupResult::iterator DI, DE = Result.end();
-    for (DI = Result.begin(); DI != DE; ++DI)
-      if (TagDecl *TD = dyn_cast<TagDecl>(*DI)) {
-        TagDecls.insert(TD);
-        Diag(TD->getLocation(), diag::note_hidden_tag);
-      }
-
-    for (DI = Result.begin(); DI != DE; ++DI)
-      if (!isa<TagDecl>(*DI))
-        Diag((*DI)->getLocation(), diag::note_hiding_object);
-
-    // For recovery purposes, go ahead and implement the hiding.
-    LookupResult::Filter F = Result.makeFilter();
-    while (F.hasNext()) {
-      if (TagDecls.count(F.next()))
-        F.erase();
-    }
-    F.done();
+    //PromotedFieldPaths *Paths = Result.getBasePaths();
+    //std::set<Decl *> DeclsPrinted;
+    //for (PromotedFieldPaths::paths_iterator Path = Paths->begin(),
+                                      //PathEnd = Paths->end();
+         //Path != PathEnd; ++Path) {
+      //Decl *D = Path->Decls.front();
+      //if (DeclsPrinted.insert(D).second)
+        //Diag(D->getLocation(), diag::note_ambiguous_member_found);
+    //}
 
     return true;
   }
 
   case LookupResult::AmbiguousReference: {
-    Diag(NameLoc, diag::err_ambiguous_reference) << Name << LookupRange;
+    llvm_unreachable("unexpected ambiguity kind");  // FIXME?
+    //Diag(NameLoc, diag::err_ambiguous_reference) << Name << LookupRange;
 
-    LookupResult::iterator DI = Result.begin(), DE = Result.end();
-    for (; DI != DE; ++DI)
-      Diag((*DI)->getLocation(), diag::note_ambiguous_candidate) << *DI;
+    //LookupResult::iterator DI = Result.begin(), DE = Result.end();
+    //for (; DI != DE; ++DI)
+      //Diag((*DI)->getLocation(), diag::note_ambiguous_candidate) << *DI;
 
     return true;
   }
   }
 
   llvm_unreachable("unknown ambiguity kind");
-#endif
 }
 
 #if 0
