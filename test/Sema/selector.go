@@ -123,7 +123,6 @@ func pointer_pointer() {
   //(& &struct { a int }{}).a
 }
 
-// FIXME: embedded fields
 // FIXME: ignore blank identifiers
 
 func types() {
@@ -145,7 +144,6 @@ func embedded_fields() {
   var b struct { str }
   b.str
 
-  // FIXME: implement promoted fields.
   type promoted struct { a, b, c int }
   var c struct { promoted }
   c.a

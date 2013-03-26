@@ -3,20 +3,15 @@ P0 varspec type checking
    - let actonoperandname give types to at least operands referring to vars
    - then let actonvarspec check for assignability
 P0 use that to give VarDecls and ConstDecls a type
-P0 finish struct type support
-   - field lookup
-     - embedded fields: Nicer diag in ambiguous case.
-       - maybe diag if there's an ambiguity that's shadowed by a valid name?
-     - mention struct name in diag
-     - spelling
-   - recursive struct types (P2)
 P0 check types for identity, assignability
 P0 basic expression type checking (unary, binary ops)
 P0 support for number and string literals
    - implement support for fielddecl tags once that's done
 P0 give all exprs types, implement some sema for them
 P0 maps (needs comparison op checking), chans, slices, arrays
+P1 type printer (eg for better struct lookup diags)
 P1 give two distinct NameTypeDecls the same NameType.
+P1 spell checking for field lookups
 P1 function parameter lists (and return names, and methoddecls)
 !! ParseTypeList() needs something like IdentOrExprList for types, to
    make parameter parsing possible.
@@ -35,11 +30,11 @@ P2 hand type and / or initializer to ConstSpec
 P1 types for var and const
 
 stuff that isn't nailed down yet:
-- embedded fields
 - function signatures
 - package import! (ast serialization, compilation model)
 - multi-file packages
-- forward-declaration-less packages (also: recursive struct types)
+- forward-declaration-less packages
+   - recursive struct types
 - ast iteration (for ast dumping, codegen)
 - constant expressions
 - codegen
@@ -289,6 +284,9 @@ Inject into scopes:
 * decls in case clauses
 * handle methoddecls
 
+- field lookup:
+ - maybe diag if there's a promoted field ambiguity that's shadowed by a valid
+   name?
 
 - Name lookup, redecl errors, scope, decl ast
   In clang: SemaDecl.cpp, ActOnDeclarator(), PushOnScopeChains()
