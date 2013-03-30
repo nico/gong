@@ -27,5 +27,19 @@ func diag_on_different_name_types() {
   type t2 struct {}
 
   var a t1
-  var b t2 = a  // expected-diag {{variable of type <name> cannot be assigned an expression of type <name>}}
+  var b t2 = a // expected-diag {{variable of type <name> cannot be assigned an expression of type <name>}}
+  var c t1 = a
 }
+
+func identical_pointer_types() {
+  var a0 *int
+  var b0 int = a0 // expected-diag {{variable of type <name> cannot be assigned an expression of type <name>}}
+  var c0 *int = a0
+  var d0 **int = a0 // expected-diag {{variable of type <name> cannot be assigned an expression of type <name>}}
+
+  var a1 **int
+  var b1 int = a1 // expected-diag {{variable of type <name> cannot be assigned an expression of type <name>}}
+  var c1 *int = a1 // expected-diag {{variable of type <name> cannot be assigned an expression of type <name>}}
+  var d1 **int = a1
+}
+
