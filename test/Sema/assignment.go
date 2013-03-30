@@ -1,19 +1,23 @@
 // RUN: %gong_cc1 -verify %s -sema
 
-// expected-no-diagnostics  FIXME
-
 package p
 
 func f() {
-  var a, b int
+  var ia, ib int
 
-  var c, d int = a, b
+  // FIXME: make type printer print actual type names :-)
+  var ba bool = ia // expected-diag {{variable of type <name> cannot be assigned an expression of type <name>}}
 
-  var c0, d0 int = a, b, c
+  var ic, id int = ia, ib
 
-  var c1, d1, e1 int = a, b
+  // FIXME: needs diag:
+  var ic0, id0 int = ia, ib, ic
 
-  var e, f = a, b
+  // FIXME: needs better diag:
+  var ic1, id1, ie1 int = ia, ib // expected-diag {{variable of type <name> cannot be assigned an expression of type <name>}}
 
-  var v int = int  // FIXME: should-diag{{expected expression, got type}}
+  var ie, if_ = ia, ib
+
+  // FIXME: needs better diag:
+  var iv int = int // expected-diag {{variable of type <name> cannot be assigned an expression of type <name>}}
 }

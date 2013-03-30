@@ -2303,8 +2303,11 @@ ASTContext::getNameType(const NameTypeDecl *Decl) const {
   if (Decl->TypeForDecl) return Decl->TypeForDecl;
 
   // Named types are only identical if they originate in the same typespec,
-  // so there's no need to store them in a hash map.
+  // so there's no need to store them in a hash map. Uniq them by storing the
+  // type in the TypeSpecDecl.
   TypeSpecDecl *TSD = Decl->getTypeDecl();
+  if (TSD->TypeForDecl) return TSD->TypeForDecl;
+
   const Type *Named = getTypeDeclType(TSD->getTypeDecl());
 
   const Type *Canonical = Named;
@@ -2314,6 +2317,7 @@ ASTContext::getNameType(const NameTypeDecl *Decl) const {
   NameType *newType = new (*this, TypeAlignment)
       NameType(TSD, Named, Canonical);
   Decl->TypeForDecl = newType;
+  TSD->TypeForDecl = newType;
   Types.push_back(newType);
   return newType;
 }

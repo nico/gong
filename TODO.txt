@@ -10,6 +10,8 @@ P0 support for number and string literals
 P0 give all exprs types, implement some sema for them
 P0 maps (needs comparison op checking), chans, slices, arrays
 P1 type printer (eg for better struct lookup diags)
+   - blocked on type checking, to make sure i understand if aka notes are
+     desirable in go
 P1 give two distinct NameTypeDecls the same NameType.
 P1 spell checking for field lookups
 P1 function parameter lists (and return names, and methoddecls)
@@ -31,6 +33,7 @@ P1 types for var and const
 
 stuff that isn't nailed down yet:
 - function signatures
+- methods, interfaces
 - package import! (ast serialization, compilation model)
 - multi-file packages
 - forward-declaration-less packages

@@ -14,6 +14,7 @@
 #include "gong/Sema/Sema.h"
 
 #include "gong/AST/ASTContext.h"
+#include "gong/AST/Expr.h"
 #include "gong/AST/Decl.h"
 #include "gong/Parse/IdentifierList.h"
 #include "gong/Parse/Scope.h"
@@ -30,7 +31,6 @@ using namespace gong;
 #include "gong/AST/DeclCXX.h"
 #include "gong/AST/DeclTemplate.h"
 #include "gong/AST/EvaluatedExprVisitor.h"
-#include "gong/AST/ExprCXX.h"
 #include "gong/AST/StmtCXX.h"
 #include "gong/Basic/PartialDiagnostic.h"
 #include "gong/Basic/SourceManager.h"
@@ -1419,9 +1419,42 @@ void Sema::ActOnTypeSpec(DeclPtrTy Decl, SourceLocation IILoc,
   //return New;
 }
 
+/// Returns false if a value X can be assigned to a variable of type T.
+static bool CheckAssignable(Expr *X, const Type *T) {
+  const Type *XT = X->getType();
+  // A value x is assignable to a variable of type T ("x is assignable to T")
+  // in any of these cases:
+
+  // x's type is identical to T.
+  if (XT == T)
+    return false;
+
+  // FIXME: implement remaining checks.
+
+  // x's type V and T have identical underlying types and at least one of V or
+  // T is not a named type.
+  //if (XT->getUnderlyingType() == T->getUnderlyingType() && !
+
+  // T is an interface type and x implements T.
+
+  // x is a bidirectional channel value, T is a channel type, x's type V and T
+  // have identical element types, and at least one of V or T is not a named
+  // type.
+
+  // x is the predeclared identifier nil and T is a pointer, function, slice,
+  // map, channel, or interface type.
+
+  // x is an untyped constant representable by a value of type T.
+
+  // Any value may be assigned to the blank identifier.
+
+  return true;
+}
+
 /// Registers identifiers as var names.
-void Sema::ActOnVarSpec(DeclPtrTy Decl, IdentifierList &IdentList, DeclArg Type,
-                        SourceLocation OpLoc, MultiExprArg RHSs, Scope *S) {
+void Sema::ActOnVarSpec(DeclPtrTy Decl, IdentifierList &IdentList,
+                        DeclArg TypeD, SourceLocation OpLoc, MultiExprArg RHSs,
+                        Scope *S) {
   assert(S->getFlags() & Scope::DeclScope);
   DeclContext *DC = Decl.getAs<DeclarationDecl>();
 
@@ -1429,11 +1462,14 @@ void Sema::ActOnVarSpec(DeclPtrTy Decl, IdentifierList &IdentList, DeclArg Type,
   ArrayRef<SourceLocation> IdentLocs = IdentList.getIdentLocs();
   assert(Idents.size() >= 1);
 
+  // FIXME: share RHSs.size() checking with ActOnShortVarDeclStmt() below.
+  Expr **RHSData = (Expr **)RHSs.release();
+
   VarSpecDecl *VarSpec = VarSpecDecl::Create(Context, DC, IdentLocs[0]);
   VarSpec->setIdents(Idents, IdentLocs);
 
-  if (Type.get())
-    VarSpec->setTypeDecl(Type.takeAs<TypeDecl>());
+  if (TypeD.get())
+    VarSpec->setTypeDecl(TypeD.takeAs<TypeDecl>());
 
   for (unsigned i = 0; i < Idents.size(); ++i) {
     VarDecl *New = VarDecl::Create(Context, VarSpec, i);
@@ -1441,8 +1477,27 @@ void Sema::ActOnVarSpec(DeclPtrTy Decl, IdentifierList &IdentList, DeclArg Type,
     if (VarSpec->getTypeDecl())
       New->setType(Context.getTypeDeclType(VarSpec->getTypeDecl()));
 
-    // FIXME: If has rhs, get type from rhs
-    // check for assignability
+    // If has rhs, get type from rhs
+    if (RHSs.size() &&
+        RHSData[i] // FIXME: Remove once there are no ExprEmpty() results left.
+        ) {
+      Expr *RHS = RHSData[i];
+
+      if (New->getType()) {
+        if (CheckAssignable(RHS, New->getType())) {
+          // FIXME: add sourcerange for rhs
+          Diag(OpLoc, diag::cannot_assign)
+              << New->getType() << RHS->getType()
+              << SourceRange(IdentLocs[i], IdentLocs[i]);
+        } else {
+          // FIXME: on success, add RHS to ast.
+        }
+      } else {
+        New->setType(RHS->getType());
+      }
+    }
+
+    // FIXME: New should have a valid type by now, assert that.
 
     CheckRedefinitionAndPushOnScope(*this, VarSpec, S, New);
   }

@@ -368,6 +368,11 @@ public:
 /// Represents a TypeSpec in Go. A TypeSpec is just a name for a type.
 // FIXME: derive from TypeDecl? Probably not?
 class TypeSpecDecl : public NamedDecl {
+  /// TypeForDecl - This indicates the Type object that represents
+  /// this TypeSpecDecl.  It is a cache maintained by ASTContext::getNameType.
+  mutable const Type *TypeForDecl;
+  friend class ASTContext;
+
   virtual void anchor();
 
   const TypeDecl *T;

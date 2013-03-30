@@ -214,7 +214,6 @@ Sema::BuildMemberReferenceExpr(Expr *BaseExpr, const Type *BaseExprType,
   if (R.isAmbiguous())
     return ExprError();
 
-  // FIXME: embedded fields
   if (R.empty()) {
     // FIXME: make sure this prints the '*' for pointer-to-struct types (?)
     DeclContext *DC = BaseType->getAs<StructType>()->getDecl();
