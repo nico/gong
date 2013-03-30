@@ -21,3 +21,11 @@ func f() {
   // FIXME: needs better diag:
   var iv int = int // expected-diag {{variable of type <name> cannot be assigned an expression of type <name>}}
 }
+
+func diag_on_different_name_types() {
+  type t1 struct {}
+  type t2 struct {}
+
+  var a t1
+  var b t2 = a  // expected-diag {{variable of type <name> cannot be assigned an expression of type <name>}}
+}
