@@ -2540,12 +2540,73 @@ public:
       return x.Current != y.Current;
     }
   };
-
-
   anon_field_iterator anon_field_begin() const;
-
   anon_field_iterator anon_field_end() const {
     return anon_field_iterator();
+  }
+
+  /// Iterates over FieldDecls.
+  // FIXME: Share more code between this and anon_field_iterator.
+  class field_iterator {
+    /// The current, underlying declaration iterator, which
+    /// will either be NULL or will point to a declaration of
+    /// type FieldSpecDecl.
+    DeclContext::decl_iterator CurrentSpec;
+    /// The current decl in CurrentSpec.
+    DeclContext::decl_iterator Current;
+    // Note: This assumes that a StructTypeDecl doesn't have any children that
+    // aren't FieldSpecDecls.
+
+  public:
+    // TODO: Add reference and pointer typedefs (with some appropriate proxy
+    // type) if we ever have a need for them.
+    typedef void reference;
+    typedef void pointer;
+    typedef std::iterator_traits<DeclContext::decl_iterator>::difference_type
+      difference_type;
+    typedef std::forward_iterator_tag iterator_category;
+
+    field_iterator() : CurrentSpec(), Current() { }
+
+    /// Construct a new iterator over the fields in the range
+    /// [C, end-of-declarations).
+    explicit field_iterator(DeclContext::decl_iterator C)
+        : CurrentSpec(C),
+          Current(*C ? cast<FieldSpecDecl>(*C)->decls_begin() : C) {}
+
+    FieldDecl *operator*() const {
+      return cast<FieldDecl>(*Current);
+    }
+    // This doesn't meet the iterator requirements, but it's convenient
+    FieldDecl *operator->() const { return **this; }
+
+    field_iterator& operator++() {
+      ++Current;
+      if (!*Current) {
+        ++CurrentSpec;
+        if (*CurrentSpec)
+          Current = cast<FieldSpecDecl>(*CurrentSpec)->decls_begin();
+      }
+      return *this;
+    }
+
+    field_iterator operator++(int) {
+      field_iterator tmp(*this);
+      ++(*this);
+      return tmp;
+    }
+
+    friend bool operator==(const field_iterator& x, const field_iterator& y) {
+      return x.Current == y.Current;
+    }
+
+    friend bool operator!=(const field_iterator &x, const field_iterator &y) {
+      return x.Current != y.Current;
+    }
+  };
+  field_iterator field_begin() const;
+  field_iterator field_end() const {
+    return field_iterator();
   }
 
   /// \brief Look for entities within the embedded fields of this struct,

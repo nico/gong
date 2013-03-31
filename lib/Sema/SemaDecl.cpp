@@ -1420,13 +1420,13 @@ void Sema::ActOnTypeSpec(DeclPtrTy Decl, SourceLocation IILoc,
 }
 
 /// Returns false if a value X can be assigned to a variable of type T.
-static bool CheckAssignable(Expr *X, const Type *T) {
+static bool CheckAssignable(ASTContext &Ctx, Expr *X, const Type *T) {
   const Type *XT = X->getType();
   // A value x is assignable to a variable of type T ("x is assignable to T")
   // in any of these cases:
 
   // x's type is identical to T.
-  if (XT == T)
+  if (Ctx.isIdenticalType(XT, T))
     return false;
 
   // FIXME: implement remaining checks.
@@ -1484,7 +1484,7 @@ void Sema::ActOnVarSpec(DeclPtrTy Decl, IdentifierList &IdentList,
       Expr *RHS = RHSData[i];
 
       if (New->getType()) {
-        if (CheckAssignable(RHS, New->getType())) {
+        if (CheckAssignable(Context, RHS, New->getType())) {
           // FIXME: add sourcerange for rhs
           Diag(OpLoc, diag::cannot_assign)
               << New->getType() << RHS->getType()

@@ -61,10 +61,10 @@ namespace llvm {
 }
 
 namespace gong {
+class ASTContext;
 class StructTypeDecl;
 class TypeSpecDecl;
 #if 0
-  class ASTContext;
   class TypedefNameDecl;
   class TemplateDecl;
   class NonTypeTemplateParmDecl;
@@ -1897,12 +1897,12 @@ public:
 };
 #endif
 
-class StructType : public Type {
+class StructType : public Type, public llvm::FoldingSetNode {
   /// Stores the StructTypeDecl associated with this type.
   StructTypeDecl *decl;
 
-  explicit StructType(const StructTypeDecl *D)
-    : Type(Struct, this, 0), decl(const_cast<StructTypeDecl*>(D)) {}
+  explicit StructType(const StructTypeDecl *D, const Type *Canonical)
+    : Type(Struct, this, Canonical), decl(const_cast<StructTypeDecl*>(D)) {}
   friend class ASTContext;   // ASTContext creates these.
 
 public:
@@ -1910,6 +1910,12 @@ public:
   const Type *desugar() const { return this; }
 
   StructTypeDecl *getDecl() const { return decl; }
+
+  void Profile(llvm::FoldingSetNodeID &ID, const ASTContext &Ctx) {
+    return Profile(ID, getDecl(), Ctx);
+  }
+  static void Profile(llvm::FoldingSetNodeID &ID, const StructTypeDecl *D,
+                      const ASTContext &Context);
 
   static bool classof(const Type *T) { return T->getTypeClass() == Struct; }
 };

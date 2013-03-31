@@ -386,7 +386,7 @@ ASTContext::ASTContext(/*LangOptions& LOpts, SourceManager &SM,
                        Builtin::Context &builtins,
                        unsigned size_reserve,
                        bool DelayInitialization*/) 
-  : /*FunctionProtoTypes(this_()),
+  : CanStructTypes(this_()), /*FunctionProtoTypes(this_()),
     TemplateSpecializationTypes(this_()),
     DependentTemplateSpecializationTypes(this_()),
     SubstTemplateTemplateParmPacks(this_()),
@@ -2158,6 +2158,15 @@ ASTContext::getFunctionType(QualType ResultTy,
   if (FunctionProtoType *FTP =
         FunctionProtoTypes.FindNodeOrInsertPos(ID, InsertPos))
     return QualType(FTP, 0);
+  // Unique functions, to guarantee there is only one function of a particular
+  // structure.
+  llvm::FoldingSetNodeID ID;
+  FunctionProtoType::Profile(ID, ResultTy, ArgArray, NumArgs, EPI, *this);
+
+  void *InsertPos = 0;
+  if (FunctionProtoType *FTP =
+        FunctionProtoTypes.FindNodeOrInsertPos(ID, InsertPos))
+    return QualType(FTP, 0);
 
   // Determine whether the type being created is already canonical or not.
   bool isCanonical =
@@ -2303,7 +2312,7 @@ ASTContext::getNameType(const NameTypeDecl *Decl) const {
   if (Decl->TypeForDecl) return Decl->TypeForDecl;
 
   // Named types are only identical if they originate in the same typespec,
-  // so there's no need to store them in a hash map. Uniq them by storing the
+  // so there's no need to store them in a hash map. Unique them by storing the
   // type in the TypeSpecDecl.
   TypeSpecDecl *TSD = Decl->getTypeDecl();
   if (TSD->TypeForDecl) return TSD->TypeForDecl;
@@ -2325,13 +2334,25 @@ ASTContext::getNameType(const NameTypeDecl *Decl) const {
 const Type *ASTContext::getStructType(const StructTypeDecl *Decl) const {
   if (Decl->TypeForDecl) return Decl->TypeForDecl;
 
+  // Unique structs, to guarantee identical struct types get the same Type
+  // object.
+  llvm::FoldingSetNodeID ID;
+  StructType::Profile(ID, Decl, *this);
+
+  const Type *CanType = 0;
+  void *InsertPos = 0;
+  if (StructType *ST = CanStructTypes.FindNodeOrInsertPos(ID, InsertPos))
+    CanType = ST;
+
   //if (const RecordDecl *PrevDecl = Decl->getPreviousDecl())
     //if (PrevDecl->TypeForDecl)
       //return QualType(Decl->TypeForDecl = PrevDecl->TypeForDecl, 0); 
 
-  StructType *newType = new (*this, TypeAlignment) StructType(Decl);
+  StructType *newType = new (*this, TypeAlignment) StructType(Decl, CanType);
   Decl->TypeForDecl = newType;
   Types.push_back(newType);
+  if (!CanType)
+    CanStructTypes.InsertNode(newType, InsertPos);
   return newType;
 }
 

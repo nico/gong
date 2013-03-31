@@ -13,6 +13,7 @@
 
 #include "gong/AST/Type.h"
 
+#include "gong/AST/Decl.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/Support/ErrorHandling.h"
 using namespace gong;
@@ -21,7 +22,6 @@ using namespace gong;
 #include "gong/AST/ASTContext.h"
 #include "gong/AST/Attr.h"
 #include "gong/AST/CharUnits.h"
-#include "gong/AST/DeclCXX.h"
 #include "gong/AST/DeclObjC.h"
 #include "gong/AST/DeclTemplate.h"
 #include "gong/AST/Expr.h"
@@ -1774,7 +1774,25 @@ UnaryTransformType::UnaryTransformType(QualType BaseType,
          BaseType->containsUnexpandedParameterPack())
   , BaseType(BaseType), UnderlyingType(UnderlyingType), UKind(UKind)
 {}
+#endif
 
+// static
+void StructType::Profile(llvm::FoldingSetNodeID &ID, const StructTypeDecl *D,
+                         const ASTContext &Context) {
+  // "Two struct types are identical if they have the same sequence of fields,
+  // and if corresponding fields have the same names, and identical types, and
+  // identical tags. Two anonymous fields are considered to have the same name.
+  // Lower-case field names from different packages are always different."
+  // FIXME: implement tag checks and package restriction.
+  for (StructTypeDecl::field_iterator F = D->field_begin(),
+                                      FEnd = D->field_end();
+       F != FEnd; ++F) {
+    ID.AddPointer(&F->getDeclName());
+    ID.AddPointer(F->getType());
+  }
+}
+
+#if 0
 TagDecl *TagType::getDecl() const {
   return getInterestingTagDecl(decl);
 }

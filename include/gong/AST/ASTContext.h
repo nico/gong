@@ -94,9 +94,7 @@ class IdentifierTable;
 /// \brief Holds long-lived AST nodes (such as types and decls) that can be
 /// referred to throughout the semantic analysis of a file.
 class ASTContext : public RefCountedBase<ASTContext> {
-#if 0
   ASTContext &this_() { return *this; }
-#endif
 
   mutable std::vector<Type*> Types;
 
@@ -105,6 +103,7 @@ class ASTContext : public RefCountedBase<ASTContext> {
   mutable llvm::FoldingSet<ComplexType> ComplexTypes;
 #endif
   mutable llvm::FoldingSet<PointerType> PointerTypes;
+  mutable llvm::ContextualFoldingSet<StructType, ASTContext&> CanStructTypes;
 #if 0
   mutable llvm::FoldingSet<BlockPointerType> BlockPointerTypes;
   mutable llvm::FoldingSet<LValueReferenceType> LValueReferenceTypes;
@@ -1228,6 +1227,14 @@ public:
   bool hasSameType(QualType T1, QualType T2) const {
     return getCanonicalType(T1) == getCanonicalType(T2);
   }
+#endif
+
+  /// \brief Determine whether the given types \p T1 and \p T2 are identical.
+  bool isIdenticalType(const Type *T1, const Type *T2) const {
+    return T1->getCanonicalType() == T2->getCanonicalType();
+  }
+
+#if 0
 
   /// \brief Return this type as a completely-unqualified array type,
   /// capturing the qualifiers in \p Quals.
