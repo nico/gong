@@ -1788,7 +1788,7 @@ void StructType::Profile(llvm::FoldingSetNodeID &ID, const StructTypeDecl *D,
                                       FEnd = D->field_end();
        F != FEnd; ++F) {
     ID.AddPointer(&F->getDeclName());
-    ID.AddPointer(F->getType());
+    ID.AddPointer(F->getType()->getCanonicalType());
   }
 }
 

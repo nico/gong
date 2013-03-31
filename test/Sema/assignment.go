@@ -86,6 +86,9 @@ func identical_struct_types() {
   var a13 struct { a, b int }
   var b13 struct { b, a int } = a13  // expected-diag {{variable of type <name> cannot be assigned an expression of type <name>}}
 
+  var a14 struct { a struct{} };
+  var b14 struct { a struct{} } = a14;
+
   // FIXME: tests for structs with blank identifiers.
 
   // FIXME: Once packages are implemented, test for
