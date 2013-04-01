@@ -1,16 +1,7 @@
 hotlist:
-P0 basic expression type checking (unary, binary ops)
-P0 support for number and string literals
-   - implement support for fielddecl tags once that's done
-P0 give all exprs types, implement some sema for them
-P0 maps (needs comparison op checking), chans, slices, arrays
-P1 type printer (eg for better struct lookup diags)
-   - blocked on type checking, to make sure i understand if aka notes are
-     desirable in go
-P1 spell checking for field lookups
-P1 assignability checking for assignments
-P1 give ConstDecls a type? (is this blocked on constant expressions?)
-P1 function parameter lists (and return names, and methoddecls)
+P0 source ranges for exprs
+P0 function types
+P0 function parameter lists (and return names, and methoddecls)
 !! ParseTypeList() needs something like IdentOrExprList for types, to
    make parameter parsing possible.
        Parameters used in:
@@ -20,12 +11,25 @@ P1 function parameter lists (and return names, and methoddecls)
               FunctionDecl
               MethodDecl (also has a Receiver)
               MethodSpec (in Interfacetype; implicit Receiver)
+P0 function call exprs
+P1 interface types
+P1 basic expression type checking (unary, binary ops)
+P1 support for number and string literals
+   - implement support for fielddecl tags once that's done
+     - and tag effect on struct type identity once that's in
+P1 give all exprs types, implement some sema for them
+P1 maps (needs comparison op checking), chans, slices, arrays
+P1 type printer (eg for better struct lookup diags)
+   - blocked on type checking, to make sure i understand if aka notes are
+     desirable in go
+P1 spell checking for field lookups
+P1 assignability checking for assignments
+P1 give ConstDecls a type? (is this blocked on constant expressions?)
+P2 conversion checking
 P2 function literal parameter lists
-P2 typo correction for names (blocked on structs)
-P2 interface types
-P1 type checking
+P2 typo correction for names
 P2 hand type and / or initializer to ConstSpec
-P1 types for var and const
+P2 types for var and const
 
 stuff that isn't nailed down yet:
 - function signatures
