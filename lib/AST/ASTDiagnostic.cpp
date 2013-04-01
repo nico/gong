@@ -261,7 +261,7 @@ void gong::FormatASTNodeDiagnosticArgument(
       const Type *Ty(reinterpret_cast<Type*>(Val));
       //OS << ConvertTypeToDiagnosticString(Context, Ty, PrevArgs, NumPrevArgs,
       //                                    QualTypeVals);
-      OS << "<name>"; // FIXME
+      OS << "<typename>"; // FIXME
       NeedQuotes = false;
       break;
     }
@@ -288,7 +288,7 @@ void gong::FormatASTNodeDiagnosticArgument(
 
         OS << '\'';
         //ND->getNameForDiagnostic(OS, Context.getPrintingPolicy(), true);
-        OS << "<name>"; // FIXME
+        OS << "<dcname>"; // FIXME
         OS << '\'';
       }
       NeedQuotes = false;

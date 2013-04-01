@@ -2,7 +2,7 @@
 
 package p
 
-// FIXME: instead of <name>, print real type descriptions in diags.
+// FIXME: instead of <typename>, print real type descriptions in diags.
 
 func err() {
   undefined.asdf  // expected-diag {{use of undeclared identifier 'undefined'}}
@@ -18,7 +18,7 @@ func err() {
 }
 
 func f() {
-  f.a  // expected-diag {{selector base type <name> is not a struct}}
+  f.a  // expected-diag {{selector base type <typename> is not a struct}}
 }
 
 func happy() {
@@ -45,7 +45,7 @@ func happy() {
 
   const c foo = foo{}
   // FIXME: this should work, not diag
-  c.a  // expected-diag {{selector base type <name> is not a struct}}
+  c.a  // expected-diag {{selector base type <typename> is not a struct}}
 
   (a).a
   (a).b  // FIXME: should-diag
@@ -107,17 +107,17 @@ func pointer_pointer() {
   }
 
   var a **foo
-  a.a  // expected-diag {{selector base type <name> is not a struct}}
-  a.b  // expected-diag {{selector base type <name> is not a struct}}
-  a.c  // expected-diag {{selector base type <name> is not a struct}}
-  a.d  // expected-diag {{selector base type <name> is not a struct}}
-  a.s.a  // expected-diag {{selector base type <name> is not a struct}}
-  a.s.b  // expected-diag {{selector base type <name> is not a struct}}
+  a.a  // expected-diag {{selector base type <typename> is not a struct}}
+  a.b  // expected-diag {{selector base type <typename> is not a struct}}
+  a.c  // expected-diag {{selector base type <typename> is not a struct}}
+  a.d  // expected-diag {{selector base type <typename> is not a struct}}
+  a.s.a  // expected-diag {{selector base type <typename> is not a struct}}
+  a.s.b  // expected-diag {{selector base type <typename> is not a struct}}
 
-  (a).a  // expected-diag {{selector base type <name> is not a struct}}
-  (a).b  // expected-diag {{selector base type <name> is not a struct}}
-  ((((((a)))))).a  // expected-diag {{selector base type <name> is not a struct}}
-  ((((((a)))))).b  // expected-diag {{selector base type <name> is not a struct}}
+  (a).a  // expected-diag {{selector base type <typename> is not a struct}}
+  (a).b  // expected-diag {{selector base type <typename> is not a struct}}
+  ((((((a)))))).a  // expected-diag {{selector base type <typename> is not a struct}}
+  ((((((a)))))).b  // expected-diag {{selector base type <typename> is not a struct}}
 
   // FIXME: should diag, not crash
   //(& &struct { a int }{}).a
@@ -133,7 +133,7 @@ func types() {
   //(map[int]int).ho
 
   type foo int
-  foo.bar  // expected-diag {{selector base type <name> is not a struct}}
+  foo.bar  // expected-diag {{selector base type <typename> is not a struct}}
 }
 
 func embedded_fields() {
