@@ -1536,12 +1536,16 @@ const Type *ASTContext::getPointerType(const Type *T) const {
   if (PointerType *PT = PointerTypes.FindNodeOrInsertPos(ID, InsertPos))
     return PT;
 
-  // FIXME: This is likely not required.
   // If the pointee type isn't canonical, this won't be a canonical type either,
   // so fill in the canonical type field.
   const Type *Canonical = 0;
-  //if (!T.isCanonical())
-    //Canonical = getPointerType(getCanonicalType(T));
+  if (!T->isCanonical()) {
+    Canonical = getPointerType(T->getCanonicalType());
+
+    // Get the new insert position for the node we care about.
+    PointerType *NewIP = PointerTypes.FindNodeOrInsertPos(ID, InsertPos);
+    assert(NewIP == 0 && "Shouldn't be in the map!"); (void)NewIP;
+  }
 
   PointerType *New = new (*this, TypeAlignment) PointerType(T, Canonical);
   Types.push_back(New);

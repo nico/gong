@@ -109,11 +109,9 @@ class ExtQualsTypeCommonBase {
 
   /// \brief The canonical type of this type.
   ///
-  /// Only used for NameTypes. Note that this is used to implement type
-  /// identity checks in clang. In Go, new type names act more like new types
-  /// and not just as type aliases like in C. Hence, this pointer is currently
-  /// only used to quickly find the base type of a type name list.
-  // FIXME: Consider storing this only in NameType.
+  /// This is used to implement type identity checks. For example, two struct
+  /// types have the same canonical type if they are identical according to the
+  /// type system.
   const Type *CanonicalType;
 
   friend class NameType;
@@ -296,13 +294,12 @@ public:
   /// \brief Whether this type comes from an AST file.
   bool isFromAST() const { return TypeBits.FromAST; }
 
-#if 0
-  /// Determines if this type would be canonical if it had no further
-  /// qualification.
-  bool isCanonicalUnqualified() const {
-    return CanonicalType == QualType(this, 0);
+  /// Determines if this type is canonical.
+  bool isCanonical() const {
+    return CanonicalType == this;
   }
 
+#if 0
   /// Pull a single level of sugar off of this locally-unqualified type.
   /// Users should generally prefer SplitQualType::getSingleStepDesugaredType()
   /// or QualType::getSingleStepDesugaredType(const ASTContext&).

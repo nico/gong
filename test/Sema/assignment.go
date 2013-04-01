@@ -89,6 +89,9 @@ func identical_struct_types() {
   var a14 struct { a struct{} };
   var b14 struct { a struct{} } = a14;
 
+  var a15 struct { a *struct{} };
+  var b15 struct { a *struct{} } = a15;
+
   // FIXME: tests for structs with blank identifiers.
 
   // FIXME: Once packages are implemented, test for
