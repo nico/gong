@@ -63,7 +63,7 @@ func identical_struct_types() {
   var b5 struct{ int } = a5
 
   var a6 struct{ int }
-  var b6 struct{ *int } = a6 // FIXME should-diag {{variable of type <name> cannot be assigned an expression of type <name>}}
+  var b6 struct{ *int } = a6 // expected-diag {{variable of type <name> cannot be assigned an expression of type <name>}}
 
   var a7 struct{ *int }
   var b7 struct{ *int } = a7

@@ -1824,25 +1824,19 @@ Sema::ActOnAnonymousField(SourceLocation StarLoc, DeclArg TypeArg, Scope *S) {
   assert(S->getFlags() & Scope::DeclScope);
 
   // FIXME: Handle recursive pointer types better.
-  NameTypeDecl *TypeName = TypeArg.takeAs<NameTypeDecl>();
-  // FIXME: If StarLoc is valid, call ActOnPointerType() to compute the right
-  // type for the AnonFieldDecl.
-
-  SourceLocation StartLoc =
-      StarLoc.isValid() ? StarLoc : TypeName->getLocation();
+  NameTypeDecl *NameType = TypeArg.takeAs<NameTypeDecl>();
+  TypeDecl *FieldType = NameType;
+  if (StarLoc.isValid())
+    FieldType = ActOnPointerType(StarLoc, Owned(FieldType)).takeAs<TypeDecl>();
 
   FieldSpecDecl *FieldSpec =
-      FieldSpecDecl::Create(Context, CurContext, StartLoc);
-
-  // FIXME: Once ActOnPointerType() is called above, make sure this gets the
-  // type from the result from that call.
-  const Type *T = Context.getTypeDeclType(TypeName);
+      FieldSpecDecl::Create(Context, CurContext, FieldType->getLocation());
 
   CurContext->addDecl(FieldSpec);
   PushDeclContext(S, FieldSpec);
   AnonFieldDecl *New =
-      AnonFieldDecl::Create(Context, FieldSpec, StarLoc, TypeName);
-  New->setType(T);
+      AnonFieldDecl::Create(Context, FieldSpec, StarLoc, NameType);
+  New->setType(Context.getTypeDeclType(FieldType));
   CheckRedefinitionAndPushOnScope(*this, FieldSpec, S, New);
   PopDeclContext();
 

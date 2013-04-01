@@ -203,7 +203,12 @@ bool PromotedFieldPaths::lookupInBases(ASTContext &Context,
            AnonField = Struct->anon_field_begin(),
            AnonFieldEnd = Struct->anon_field_end();
        AnonField != AnonFieldEnd; ++AnonField) {
-    const StructType *Curr = AnonField->getType()->getAs<StructType>();
+    // Look through pointers.
+    const Type *FieldType = AnonField->getType();
+    if (const PointerType *P = dyn_cast<PointerType>(FieldType))
+      FieldType = P->getPointeeType();
+
+    const StructType *Curr = FieldType->getAs<StructType>();
     if (!Curr)  // FIXME: check that this has a test.
       continue;
     StructTypeDecl *CurrDecl = Curr->getDecl();
