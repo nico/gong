@@ -98,8 +98,10 @@ class TypeSpecDecl;
 /// two.
 ///
 class ExtQualsTypeCommonBase {
-  ExtQualsTypeCommonBase(const Type *UnderlyingType, const Type *canon)
-    : UnderlyingType(UnderlyingType), CanonicalType(canon) {}
+  ExtQualsTypeCommonBase(const Type *UnderlyingType, const Type *canon,
+                         const Type *RootType)
+    : UnderlyingType(UnderlyingType), RootType(RootType),
+      CanonicalType(canon) {}
 
   /// \brief The type's underlying type.
   ///
@@ -107,6 +109,13 @@ class ExtQualsTypeCommonBase {
   // FIXME: Consider storing this only in NameType.
   const Type *const UnderlyingType;
 
+  /// \brief The root type of this type.
+  ///
+  /// Only used for NameTypes. This stores the root of the UnderlyingType chain
+  /// that is not a named type.
+  // FIXME: Consider storing this only in NameType.
+  const Type *const RootType;
+  
   /// \brief The canonical type of this type.
   ///
   /// This is used to implement type identity checks. For example, two struct
@@ -274,8 +283,10 @@ private:
 protected:
   // silence VC++ warning C4355: 'this' : used in base member initializer list
   Type *this_() { return this; }
-  Type(TypeClass tc, const Type *UnderlyingType, const Type *Canon)
-    : ExtQualsTypeCommonBase(UnderlyingType, Canon == NULL ? this_() : Canon) {
+  Type(TypeClass tc, const Type *UnderlyingType, const Type *Canon,
+       const Type *Root = 0)
+    : ExtQualsTypeCommonBase(UnderlyingType, Canon == 0 ? this_() : Canon,
+                             Root == 0 ? this_() : Root) {
     TypeBits.TC = tc;
     //TypeBits.VariablyModified = VariablyModified;
     //TypeBits.CacheValidAndVisibility = 0;
@@ -610,6 +621,9 @@ public:
 #endif
   const Type *getCanonicalType() const {
     return CanonicalType;
+  }
+  const Type *getRootType() const {
+    return RootType;
   }
 #if 0
   CanQualType getCanonicalTypeUnqualified() const; // in CanonicalType.h
@@ -1717,8 +1731,8 @@ public:
 class NameType : public Type {
   TypeSpecDecl *Decl;
 protected:
-  NameType(const TypeSpecDecl *D, const Type *Underlying, const Type *Canon)
-    : Type(Type::Name, Underlying, Canon),
+  NameType(const TypeSpecDecl *D, const Type *Underlying, const Type *Root)
+    : Type(Type::Name, Underlying, 0, Root),
       Decl(const_cast<TypeSpecDecl*>(D)) {
   }
   friend class ASTContext;  // ASTContext creates these.
@@ -2612,7 +2626,7 @@ template <typename T> const T *Type::getAs() const {
   return dyn_cast<T>(UnderlyingType);
 #else
   // If the canonical form of this type isn't the right kind, reject it.
-  if (!isa<T>(CanonicalType))
+  if (!isa<T>(RootType))
     return 0;
 
   // If this is a typedef for the type, strip the typedef off without

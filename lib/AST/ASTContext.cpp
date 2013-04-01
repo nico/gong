@@ -2323,12 +2323,12 @@ ASTContext::getNameType(const NameTypeDecl *Decl) const {
 
   const Type *Named = getTypeDeclType(TSD->getTypeDecl());
 
-  const Type *Canonical = Named;
+  const Type *Root = Named;
   if (const NameType *Inner = dyn_cast_or_null<NameType>(Named))
-    Canonical = Inner->getCanonicalType();
+    Root = Inner->getRootType();
 
   NameType *newType = new (*this, TypeAlignment)
-      NameType(TSD, Named, Canonical);
+      NameType(TSD, Named, Root);
   Decl->TypeForDecl = newType;
   TSD->TypeForDecl = newType;
   Types.push_back(newType);
