@@ -98,24 +98,16 @@ class TypeSpecDecl;
 /// two.
 ///
 class ExtQualsTypeCommonBase {
-  ExtQualsTypeCommonBase(const Type *UnderlyingType, const Type *canon,
-                         const Type *RootType)
-    : UnderlyingType(UnderlyingType), RootType(RootType),
-      CanonicalType(canon) {}
+  ExtQualsTypeCommonBase(const Type *UnderlyingType, const Type *canon)
+    : UnderlyingType(UnderlyingType), CanonicalType(canon) {}
 
   /// \brief The type's underlying type.
-  ///
-  /// Only != this for NameTypes.
-  // FIXME: Consider storing this only in NameType.
-  const Type *const UnderlyingType;
-
-  /// \brief The root type of this type.
   ///
   /// Only used for NameTypes. This stores the root of the UnderlyingType chain
   /// that is not a named type.
   // FIXME: Consider storing this only in NameType.
-  const Type *const RootType;
-  
+  const Type *const UnderlyingType;
+
   /// \brief The canonical type of this type.
   ///
   /// This is used to implement type identity checks. For example, two struct
@@ -285,8 +277,8 @@ protected:
   Type *this_() { return this; }
   Type(TypeClass tc, const Type *UnderlyingType, const Type *Canon,
        const Type *Root = 0)
-    : ExtQualsTypeCommonBase(UnderlyingType, Canon == 0 ? this_() : Canon,
-                             Root == 0 ? this_() : Root) {
+    : ExtQualsTypeCommonBase(UnderlyingType == 0 ? this_() : UnderlyingType,
+                             Canon == 0 ? this_() : Canon) {
     TypeBits.TC = tc;
     //TypeBits.VariablyModified = VariablyModified;
     //TypeBits.CacheValidAndVisibility = 0;
@@ -299,8 +291,6 @@ protected:
 
 public:
   TypeClass getTypeClass() const { return static_cast<TypeClass>(TypeBits.TC); }
-
-  const Type* getUnderlyingType() const { return UnderlyingType; }
 
   /// \brief Whether this type comes from an AST file.
   bool isFromAST() const { return TypeBits.FromAST; }
@@ -414,6 +404,11 @@ public:
   bool isFunctionType() const;
   bool isFunctionNoProtoType() const { return getAs<FunctionNoProtoType>(); }
   bool isFunctionProtoType() const { return getAs<FunctionProtoType>(); }
+#endif
+  // FIXME: test (with |(int)|) that this checks CanonicalType not this once
+  // ParenTypes exist.
+  bool isNameType() const { return isa<NameType>(CanonicalType); }
+#if 0
   bool isPointerType() const;
   bool isAnyPointerType() const;   // Any C pointer
   bool isBlockPointerType() const;
@@ -619,12 +614,8 @@ public:
     return CanonicalType;
   }
 #endif
-  const Type *getCanonicalType() const {
-    return CanonicalType;
-  }
-  const Type *getRootType() const {
-    return RootType;
-  }
+  const Type *getCanonicalType() const { return CanonicalType; }
+  const Type *getUnderlyingType() const { return UnderlyingType; }
 #if 0
   CanQualType getCanonicalTypeUnqualified() const; // in CanonicalType.h
   LLVM_ATTRIBUTE_USED void dump() const;
@@ -1731,8 +1722,8 @@ public:
 class NameType : public Type {
   TypeSpecDecl *Decl;
 protected:
-  NameType(const TypeSpecDecl *D, const Type *Underlying, const Type *Root)
-    : Type(Type::Name, Underlying, 0, Root),
+  NameType(const TypeSpecDecl *D, const Type *Underlying)
+    : Type(Type::Name, Underlying, 0),
       Decl(const_cast<TypeSpecDecl*>(D)) {
   }
   friend class ASTContext;  // ASTContext creates these.
@@ -2626,7 +2617,7 @@ template <typename T> const T *Type::getAs() const {
   return dyn_cast<T>(UnderlyingType);
 #else
   // If the canonical form of this type isn't the right kind, reject it.
-  if (!isa<T>(RootType))
+  if (!isa<T>(UnderlyingType))
     return 0;
 
   // If this is a typedef for the type, strip the typedef off without

@@ -13,8 +13,8 @@ func f() {
   // FIXME: needs diag:
   var ic0, id0 int = ia, ib, ic
 
-  // FIXME: needs better diag:
-  var ic1, id1, ie1 int = ia, ib // expected-diag {{variable of type <name> cannot be assigned an expression of type <name>}}
+  // FIXME: needs diag:
+  var ic1, id1, ie1 int = ia, ib
 
   var ie, if_ = ia, ib
 
@@ -92,10 +92,24 @@ func identical_struct_types() {
   var a15 struct { a *struct{} };
   var b15 struct { a *struct{} } = a15;
 
-  type t struct {}
-  type u t
-  var a16 t
-  var b16 u = a16  // expected-diag {{variable of type <name> cannot be assigned an expression of type <name>}}
+  type t16 struct {}
+  type u16 t16
+  var a16 t16
+  var b16 u16 = a16  // expected-diag {{variable of type <name> cannot be assigned an expression of type <name>}}
+
+  type t17 struct{}
+  var a17 struct{}
+  var b17 t17 = a17
+
+  type t18 struct{}
+  type t18_2 t18
+  var a18 struct{}
+  var b18 t18_2 = a18
+
+  type t19 struct{}
+  type t19_2 struct{}
+  var a19 t19
+  var b19 t19_2 = a19  // expected-diag {{variable of type <name> cannot be assigned an expression of type <name>}}
 
   // FIXME: tests for structs with blank identifiers.
 

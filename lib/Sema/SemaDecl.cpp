@@ -1422,6 +1422,7 @@ void Sema::ActOnTypeSpec(DeclPtrTy Decl, SourceLocation IILoc,
 /// Returns false if a value X can be assigned to a variable of type T.
 static bool CheckAssignable(ASTContext &Ctx, Expr *X, const Type *T) {
   const Type *XT = X->getType();
+
   // A value x is assignable to a variable of type T ("x is assignable to T")
   // in any of these cases:
 
@@ -1429,12 +1430,13 @@ static bool CheckAssignable(ASTContext &Ctx, Expr *X, const Type *T) {
   if (Ctx.isIdenticalType(XT, T))
     return false;
 
-  // FIXME: implement remaining checks.
-
   // x's type V and T have identical underlying types and at least one of V or
   // T is not a named type.
-  //if (XT->getUnderlyingType() == T->getUnderlyingType() && !
+  if (Ctx.isIdenticalType(XT->getUnderlyingType(), T->getUnderlyingType()) &&
+      (!XT->isNameType() || !T->isNameType()))
+    return false;
 
+  // FIXME: implement remaining checks.
   // T is an interface type and x implements T.
 
   // x is a bidirectional channel value, T is a channel type, x's type V and T
@@ -1479,6 +1481,7 @@ void Sema::ActOnVarSpec(DeclPtrTy Decl, IdentifierList &IdentList,
 
     // If has rhs, get type from rhs
     if (RHSs.size() &&
+        i < RHSs.size() && // FIXME: Remove once this diags RHSs.size() above.
         RHSData[i] // FIXME: Remove once there are no ExprEmpty() results left.
         ) {
       Expr *RHS = RHSData[i];
