@@ -209,7 +209,7 @@ bool PromotedFieldPaths::lookupInBases(ASTContext &Context,
       FieldType = P->getPointeeType();
 
     const StructType *Curr = FieldType->getAs<StructType>();
-    if (!Curr)  // FIXME: check that this has a test.
+    if (!Curr)
       continue;
     StructTypeDecl *CurrDecl = Curr->getDecl();
 

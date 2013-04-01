@@ -139,6 +139,7 @@ func types() {
 func embedded_fields() {
   var a struct { int }
   a.int
+  a.foo  // expected-diag {{no field 'foo' in <type>}}
 
   type str struct { str int }
   var b struct { str }
