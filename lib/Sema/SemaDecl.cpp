@@ -1529,6 +1529,8 @@ Sema::ActOnShortVarDeclStmt(IdentifierList &IdentList,
     // FIXME: Remove superfluous expressions.
   }
 
+  Expr **RHSData = (Expr **)RHSs.release();
+
   // Collect previous decls.
   llvm::SmallVector<NamedDecl *, 8> PrevDecls;
   bool FoundNew = false;
@@ -1564,8 +1566,19 @@ Sema::ActOnShortVarDeclStmt(IdentifierList &IdentList,
   VarSpec->setIdents(Idents, IdentLocs);
 
   for (unsigned i = 0; i < Idents.size(); ++i) {
-    if (PrevDecls[i])
+    if (PrevDecls[i]) {
+      Expr *RHS = RHSData[i];
+      // FIXME: diag + note if the name referred to a type, const, ...
+      VarDecl *Prev = dyn_cast<VarDecl>(PrevDecls[i]);
+      if (Prev && RHS  // FIXME: Remove RHS check once ExprEmpty() is gone.
+          && CheckAssignable(Context, RHS, Prev->getType())) {
+        // FIXME: add sourcerange for rhs
+        Diag(OpLoc, diag::cannot_assign)
+            << Prev->getType() << RHS->getType()
+              << SourceRange(IdentLocs[i], IdentLocs[i]);
+      }
       continue;
+    }
     VarDecl *New = VarDecl::Create(Context, VarSpec, i);
     CheckRedefinitionAndPushOnScope(*this, VarSpec, getCurScope(), New);
   }

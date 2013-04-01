@@ -1,9 +1,4 @@
 hotlist:
-P0 varspec type checking
-   - let actonoperandname give types to at least operands referring to vars
-   - then let actonvarspec check for assignability
-P0 use that to give VarDecls and ConstDecls a type
-P0 check types for identity, assignability
 P0 basic expression type checking (unary, binary ops)
 P0 support for number and string literals
    - implement support for fielddecl tags once that's done
@@ -13,6 +8,8 @@ P1 type printer (eg for better struct lookup diags)
    - blocked on type checking, to make sure i understand if aka notes are
      desirable in go
 P1 spell checking for field lookups
+P1 assignability checking for assignments
+P1 give ConstDecls a type? (is this blocked on constant expressions?)
 P1 function parameter lists (and return names, and methoddecls)
 !! ParseTypeList() needs something like IdentOrExprList for types, to
    make parameter parsing possible.

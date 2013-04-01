@@ -104,3 +104,9 @@ func identical_struct_types() {
 
   // FIXME: Once recursive struct types work, add tests for these.
 }
+
+func short_var_decl() {
+  var a int
+  var b struct{}
+  a, c := b, b  // expected-diag {{variable of type <name> cannot be assigned an expression of type <name>}}
+}
