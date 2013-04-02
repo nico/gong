@@ -2,7 +2,7 @@
 
 package p
 
-// FIXME: instead of <typename>, print real type descriptions in diags.
+// FIXME: instead of '<struct>', print real type descriptions in diags.
 
 func err() {
   undefined.asdf  // expected-diag {{use of undeclared identifier 'undefined'}}
@@ -18,7 +18,8 @@ func err() {
 }
 
 func f() {
-  f.a  // expected-diag {{selector base type <typename> is not a struct}}
+  // FIXME: update diag once function types exist!
+  f.a  // expected-diag {{selector base type '<unknown type>' is not a struct}}
 }
 
 func happy() {
@@ -31,9 +32,9 @@ func happy() {
   a.a
   a.b
   a.c
-  a.d  // expected-diag{{no field 'd' in <type>}}
+  a.d  // expected-diag{{no field 'd' in '<struct>'}}
   a.s.a
-  a.s.b  // expected-diag{{no field 'b' in <type>}}
+  a.s.b  // expected-diag{{no field 'b' in '<struct>'}}
 
   type bar foo
   type baz bar
@@ -41,11 +42,11 @@ func happy() {
   abaz.a
   abaz.b
   abaz.c
-  abaz.d  // expected-diag{{no field 'd' in <type>}}
+  abaz.d  // expected-diag{{no field 'd' in '<struct>'}}
 
   const c foo = foo{}
   // FIXME: this should work, not diag
-  c.a  // expected-diag {{selector base type <typename> is not a struct}}
+  c.a  // expected-diag {{selector base type '<unknown type>' is not a struct}}
 
   (a).a
   (a).b  // FIXME: should-diag
@@ -66,9 +67,9 @@ func happy_direct_type() {
   a.a
   a.b
   a.c
-  a.d  // expected-diag{{no field 'd' in <type>}}
+  a.d  // expected-diag{{no field 'd' in '<struct>'}}
   a.s.a
-  a.s.b  // expected-diag{{no field 'b' in <type>}}
+  a.s.b  // expected-diag{{no field 'b' in '<struct>'}}
 
   (a).a
   (a).b  // FIXME: should-diag
@@ -86,9 +87,9 @@ func happy_pointer() {
   a.a
   a.b
   a.c
-  a.d  // expected-diag{{no field 'd' in <type>}}
+  a.d  // expected-diag{{no field 'd' in '<struct>'}}
   a.s.a
-  a.s.b  // expected-diag{{no field 'b' in <type>}}
+  a.s.b  // expected-diag{{no field 'b' in '<struct>'}}
 
   (a).a
   (a).b  // FIXME: should-diag
@@ -107,17 +108,17 @@ func pointer_pointer() {
   }
 
   var a **foo
-  a.a  // expected-diag {{selector base type <typename> is not a struct}}
-  a.b  // expected-diag {{selector base type <typename> is not a struct}}
-  a.c  // expected-diag {{selector base type <typename> is not a struct}}
-  a.d  // expected-diag {{selector base type <typename> is not a struct}}
-  a.s.a  // expected-diag {{selector base type <typename> is not a struct}}
-  a.s.b  // expected-diag {{selector base type <typename> is not a struct}}
+  a.a  // expected-diag {{selector base type '*foo' is not a struct}}
+  a.b  // expected-diag {{selector base type '*foo' is not a struct}}
+  a.c  // expected-diag {{selector base type '*foo' is not a struct}}
+  a.d  // expected-diag {{selector base type '*foo' is not a struct}}
+  a.s.a  // expected-diag {{selector base type '*foo' is not a struct}}
+  a.s.b  // expected-diag {{selector base type '*foo' is not a struct}}
 
-  (a).a  // expected-diag {{selector base type <typename> is not a struct}}
-  (a).b  // expected-diag {{selector base type <typename> is not a struct}}
-  ((((((a)))))).a  // expected-diag {{selector base type <typename> is not a struct}}
-  ((((((a)))))).b  // expected-diag {{selector base type <typename> is not a struct}}
+  (a).a  // expected-diag {{selector base type '*foo' is not a struct}}
+  (a).b  // expected-diag {{selector base type '*foo' is not a struct}}
+  ((((((a)))))).a  // expected-diag {{selector base type '*foo' is not a struct}}
+  ((((((a)))))).b  // expected-diag {{selector base type '*foo' is not a struct}}
 
   // FIXME: should diag, not crash
   //(& &struct { a int }{}).a
@@ -132,14 +133,15 @@ func types() {
   //map[int]int{}.ho
   //(map[int]int).ho
 
+  // FIXME: better diag
   type foo int
-  foo.bar  // expected-diag {{selector base type <typename> is not a struct}}
+  foo.bar  // expected-diag {{selector base type '<unknown type>' is not a struct}}
 }
 
 func embedded_fields() {
   var a struct { int }
   a.int
-  a.foo  // expected-diag {{no field 'foo' in <type>}}
+  a.foo  // expected-diag {{no field 'foo' in '<struct>'}}
 
   type str struct { str int }
   var b struct { str }
@@ -150,12 +152,12 @@ func embedded_fields() {
   c.a
   c.b
   c.c
-  c.d  // expected-diag {{no field 'd' in <type>}}
+  c.d  // expected-diag {{no field 'd' in '<struct>'}}
   c.promoted
   c.promoted.a
   c.promoted.b
   c.promoted.c
-  c.promoted.d  // expected-diag {{no field 'd' in <type>}}
+  c.promoted.d  // expected-diag {{no field 'd' in '<struct>'}}
 
   type promoted1 struct { a, b int }  // expected-note {{could be in 'promoted1'}}
   type promoted2 struct { a, c int }  // expected-note {{could be in 'promoted2'}}
@@ -163,14 +165,14 @@ func embedded_fields() {
   d.a  // expected-diag {{name 'a' is ambiguous}}
   d.b
   d.c
-  d.d  // expected-diag {{no field 'd' in <type>}}
+  d.d  // expected-diag {{no field 'd' in '<struct>'}}
   d.promoted1
   d.promoted1.a
   d.promoted1.b
-  d.promoted1.c  // expected-diag {{no field 'c' in <type>}}
+  d.promoted1.c  // expected-diag {{no field 'c' in '<struct>'}}
   d.promoted2
   d.promoted2.a
-  d.promoted2.b  // expected-diag {{no field 'b' in <type>}}
+  d.promoted2.b  // expected-diag {{no field 'b' in '<struct>'}}
   d.promoted2.c
 
   type pro1_d1 struct { a int }  // expected-note {{could be in 'pro1_d2.pro1_d1'}}

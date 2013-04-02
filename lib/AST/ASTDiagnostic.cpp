@@ -17,6 +17,8 @@
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/raw_ostream.h"
 
+using namespace gong;
+
 #if 0
 #include "gong/AST/DeclObjC.h"
 #include "gong/AST/DeclTemplate.h"
@@ -24,8 +26,6 @@
 #include "gong/AST/TemplateBase.h"
 #include "gong/AST/Type.h"
 #include "llvm/ADT/SmallString.h"
-
-using namespace gong;
 
 // Returns a desugared version of the QualType, and marks ShouldAKA as true
 // whenever we remove significant sugar from the type.
@@ -133,6 +133,7 @@ break; \
 
   return QC.apply(Context, QT);
 }
+#endif
 
 /// \brief Convert the given type to a string suitable for printing as part of 
 /// a diagnostic.
@@ -159,16 +160,18 @@ break; \
 /// \param QualTypeVals pointer values to QualTypes which are used in the
 /// diagnostic message
 static std::string
-ConvertTypeToDiagnosticString(ASTContext &Context, QualType Ty,
+ConvertTypeToDiagnosticString(ASTContext &Context, const Type *Ty,
                               const DiagnosticsEngine::ArgumentValue *PrevArgs,
                               unsigned NumPrevArgs,
                               ArrayRef<intptr_t> QualTypeVals) {
   // FIXME: Playing with std::string is really slow.
   bool ForceAKA = false;
-  QualType CanTy = Ty.getCanonicalType();
-  std::string S = Ty.getAsString(Context.getPrintingPolicy());
-  std::string CanS = CanTy.getAsString(Context.getPrintingPolicy());
+  const Type *CanTy = Ty->getCanonicalType();
 
+  std::string S = Ty->getAsString(/*Context.getPrintingPolicy()*/);
+  std::string CanS = CanTy->getAsString(/*Context.getPrintingPolicy()*/);
+
+#if 0
   for (unsigned I = 0, E = QualTypeVals.size(); I != E; ++I) {
     QualType CompareTy =
         QualType::getFromOpaquePtr(reinterpret_cast<void*>(QualTypeVals[I]));
@@ -228,11 +231,11 @@ ConvertTypeToDiagnosticString(ASTContext &Context, QualType Ty,
       }
     }
   }
+#endif
 
   S = "'" + S + "'";
   return S;
 }
-#endif
 
 void gong::FormatASTNodeDiagnosticArgument(
     DiagnosticsEngine::ArgumentKind Kind,
@@ -259,9 +262,8 @@ void gong::FormatASTNodeDiagnosticArgument(
              "Invalid modifier for Type argument");
       
       const Type *Ty(reinterpret_cast<Type*>(Val));
-      //OS << ConvertTypeToDiagnosticString(Context, Ty, PrevArgs, NumPrevArgs,
-      //                                    QualTypeVals);
-      OS << "<typename>"; // FIXME
+      OS << ConvertTypeToDiagnosticString(Context, Ty, PrevArgs, NumPrevArgs,
+                                          QualTypeVals);
       NeedQuotes = false;
       break;
     }
@@ -274,12 +276,15 @@ void gong::FormatASTNodeDiagnosticArgument(
         // FIXME: Get these strings from some localized place
         OS << "the global scope";
       } else if (TypeDecl *Type = dyn_cast<TypeDecl>(DC)) {
-        OS << "<type>"; // FIXME
-        //OS << ConvertTypeToDiagnosticString(Context,
-        //                                    Context.getTypeDeclType(Type),
-        //                                    PrevArgs, NumPrevArgs,
-        //                                    QualTypeVals);
+        OS << ConvertTypeToDiagnosticString(Context,
+                                            Context.getTypeDeclType(Type),
+                                            PrevArgs, NumPrevArgs,
+                                            QualTypeVals);
       } else {
+        // FIXME: This is currently not called in gong. If that's still true
+        // once functions work, kill it.
+        llvm_unreachable("see comment above this line");
+
         // FIXME: Get these strings from some localized place
         NamedDecl *ND = cast<NamedDecl>(DC);
         if (isa<FunctionDecl>(ND))

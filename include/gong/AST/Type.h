@@ -292,6 +292,16 @@ protected:
 public:
   TypeClass getTypeClass() const { return static_cast<TypeClass>(TypeBits.TC); }
 
+  //std::string getAsString() const;
+  std::string getAsString(/*const PrintingPolicy &Policy*/) const;
+  void getAsStringInternal(std::string &Str/*,
+                           const PrintingPolicy &Policy*/) const {
+    return getAsStringInternal(this, Str/*, Policy*/);
+  }
+  static void getAsStringInternal(const Type *ty,
+                                  std::string &out/*,
+                                  const PrintingPolicy &policy*/);
+
   /// \brief Whether this type comes from an AST file.
   bool isFromAST() const { return TypeBits.FromAST; }
 
