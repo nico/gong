@@ -379,7 +379,7 @@ class TypeSpecDecl : public NamedDecl {
 
   TypeSpecDecl(DeclContext *DC, SourceLocation L, IdentifierInfo *N,
                const TypeDecl *T)
-    : NamedDecl(Decl::TypeSpec, DC, L, N), T(T) { }
+    : NamedDecl(Decl::TypeSpec, DC, L, N), TypeForDecl(0), T(T) { }
 public:
   static TypeSpecDecl *Create(ASTContext &C, DeclContext *DC, SourceLocation L,
                               IdentifierInfo *II, const TypeDecl *T);
