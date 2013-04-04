@@ -11,6 +11,7 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include "gong/AST/ASTContext.h"
 #include "gong/AST/Decl.h"
 #include "gong/AST/Type.h"
 #include "gong/Basic/IdentifierTable.h"
@@ -21,7 +22,6 @@ using namespace gong;
 
 #if 0
 #include "gong/AST/PrettyPrinter.h"
-#include "gong/AST/ASTContext.h"
 #include "gong/AST/DeclObjC.h"
 #include "gong/AST/DeclTemplate.h"
 #include "gong/AST/Expr.h"
@@ -100,7 +100,6 @@ namespace {
     void printBefore(const Type *ty, raw_ostream &OS);
     void printAfter(const Type *ty, raw_ostream &OS);
     void AppendScope(DeclContext *DC, raw_ostream &OS);
-    //void printTag(TagDecl *T, raw_ostream &OS);
 #define ABSTRACT_TYPE(CLASS, PARENT)
 #define TYPE(CLASS, PARENT) \
     void print##CLASS##Before(const CLASS##Type *T, raw_ostream &OS); \
@@ -555,95 +554,66 @@ void TypePrinter::AppendScope(DeclContext *DC, raw_ostream &OS) {
   }
 }
 
-void TypePrinter::printTag(TagDecl *D, raw_ostream &OS) {
-  if (Policy.SuppressTag)
-    return;
+#endif
 
-  bool HasKindDecoration = false;
+void TypePrinter::printStructBefore(const StructType *T, raw_ostream &OS) {
+  //if (Policy.SuppressTag)
+    //return;
 
-  // bool SuppressTagKeyword
-  //   = Policy.LangOpts.CPlusPlus || Policy.SuppressTagKeyword;
+  //bool HasKindDecoration = false;
 
   // We don't print tags unless this is an elaborated type.
   // In C, we just assume every RecordType is an elaborated type.
-  if (!(Policy.LangOpts.CPlusPlus || Policy.SuppressTagKeyword ||
-        D->getTypedefNameForAnonDecl())) {
-    HasKindDecoration = true;
-    OS << D->getKindName();
-    OS << ' ';
-  }
+  //if (!(Policy.LangOpts.CPlusPlus || Policy.SuppressTagKeyword ||
+        //D->getTypedefNameForAnonDecl())) {
+    //HasKindDecoration = true;
+    //OS << D->getKindName();
+    //OS << ' ';
+  //}
 
   // Compute the full nested-name-specifier for this type.
   // In C, this will always be empty except when the type
   // being printed is anonymous within other Record.
-  if (!Policy.SuppressScope)
-    AppendScope(D->getDeclContext(), OS);
+  //if (!Policy.SuppressScope)
+    //AppendScope(D->getDeclContext(), OS);
 
-  if (const IdentifierInfo *II = D->getIdentifier())
-    OS << II->getName();
-  else if (TypedefNameDecl *Typedef = D->getTypedefNameForAnonDecl()) {
-    assert(Typedef->getIdentifier() && "Typedef without identifier?");
-    OS << Typedef->getIdentifier()->getName();
-  } else {
+  //if (const IdentifierInfo *II = D->getIdentifier())
+    //OS << II->getName();
+  //else if (TypedefNameDecl *Typedef = D->getTypedefNameForAnonDecl()) {
+    //assert(Typedef->getIdentifier() && "Typedef without identifier?");
+    //OS << Typedef->getIdentifier()->getName();
+  //} else {
     // Make an unambiguous representation for anonymous types, e.g.
     //   <anonymous enum at /usr/include/string.h:120:9>
     
-    if (isa<CXXRecordDecl>(D) && cast<CXXRecordDecl>(D)->isLambda()) {
-      OS << "<lambda";
-      HasKindDecoration = true;
-    } else {
-      OS << "<anonymous";
-    }
+    //if (isa<CXXRecordDecl>(D) && cast<CXXRecordDecl>(D)->isLambda()) {
+      //OS << "<lambda";
+      //HasKindDecoration = true;
+    //} else {
+      //OS << "<anonymous";
+    //}
     
-    if (Policy.AnonymousTagLocations) {
+    //if (Policy.AnonymousTagLocations) {
       // Suppress the redundant tag keyword if we just printed one.
       // We don't have to worry about ElaboratedTypes here because you can't
       // refer to an anonymous type with one.
-      if (!HasKindDecoration)
-        OS << " " << D->getKindName();
+      //if (!HasKindDecoration)
+        OS << "<struct";
 
-      PresumedLoc PLoc = D->getASTContext().getSourceManager().getPresumedLoc(
-          D->getLocation());
+      PresumedLoc PLoc =
+          PresumedLoc::build(T->getDecl()->getASTContext().getSourceManager(),
+                             T->getDecl()->getLocation());
       if (PLoc.isValid()) {
         OS << " at " << PLoc.getFilename()
            << ':' << PLoc.getLine()
            << ':' << PLoc.getColumn();
       }
-    }
+    //}
     
     OS << '>';
-  }
-
-  // If this is a class template specialization, print the template
-  // arguments.
-  if (ClassTemplateSpecializationDecl *Spec
-        = dyn_cast<ClassTemplateSpecializationDecl>(D)) {
-    const TemplateArgument *Args;
-    unsigned NumArgs;
-    if (TypeSourceInfo *TAW = Spec->getTypeAsWritten()) {
-      const TemplateSpecializationType *TST =
-        cast<TemplateSpecializationType>(TAW->getType());
-      Args = TST->getArgs();
-      NumArgs = TST->getNumArgs();
-    } else {
-      const TemplateArgumentList &TemplateArgs = Spec->getTemplateArgs();
-      Args = TemplateArgs.data();
-      NumArgs = TemplateArgs.size();
-    }
-    IncludeStrongLifetimeRAII Strong(Policy);
-    TemplateSpecializationType::PrintTemplateArgumentList(OS,
-                                                          Args, NumArgs,
-                                                          Policy);
-  }
+  //}
 
   spaceBeforePlaceHolder(OS);
-}
-#endif
-
-void TypePrinter::printStructBefore(const StructType *T, raw_ostream &OS) {
-  OS << "<struct>";
-  spaceBeforePlaceHolder(OS);
-  //printTag(T->getDecl(), OS);
 }
 void TypePrinter::printStructAfter(const StructType *T, raw_ostream &OS) { }
 

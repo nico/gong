@@ -165,11 +165,11 @@ ConvertTypeToDiagnosticString(ASTContext &Context, const Type *Ty,
                               unsigned NumPrevArgs,
                               ArrayRef<intptr_t> QualTypeVals) {
   // FIXME: Playing with std::string is really slow.
-  bool ForceAKA = false;
-  const Type *CanTy = Ty->getCanonicalType();
+  //bool ForceAKA = false;
+  //const Type *CanTy = Ty->getCanonicalType();
 
   std::string S = Ty->getAsString(/*Context.getPrintingPolicy()*/);
-  std::string CanS = CanTy->getAsString(/*Context.getPrintingPolicy()*/);
+  //std::string CanS = CanTy->getAsString(/*Context.getPrintingPolicy()*/);
 
 #if 0
   for (unsigned I = 0, E = QualTypeVals.size(); I != E; ++I) {

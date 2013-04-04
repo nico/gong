@@ -5,7 +5,6 @@ package p
 func f() {
   var ia, ib int
 
-  // FIXME: make type printer print actual type names :-)
   var ba bool = ia // expected-diag {{variable of type 'bool' cannot be assigned an expression of type 'int'}}
 
   var ic, id int = ia, ib
@@ -51,7 +50,7 @@ func identical_struct_types() {
   var b1 struct{ a int } = a1
 
   var a2 struct{ a int }
-  var b2 struct{ b int } = a2 // expected-diag {{variable of type '<struct>' cannot be assigned an expression of type '<struct>'}}
+  var b2 struct{ b int } = a2 // expected-diag-re {{variable of type '<struct.*/assignment.go:53:10>' cannot be assigned an expression of type '<struct.*/assignment.go:52:10>'}}
 
   var a3 struct{ a int "tag" }
   var b3 struct{ a int "tag" } = a3
@@ -63,7 +62,7 @@ func identical_struct_types() {
   var b5 struct{ int } = a5
 
   var a6 struct{ int }
-  var b6 struct{ *int } = a6 // expected-diag {{variable of type '<struct>' cannot be assigned an expression of type '<struct>'}}
+  var b6 struct{ *int } = a6 // expected-diag-re {{variable of type '<struct.*/assignment.go:65:10>' cannot be assigned an expression of type '<struct.*/assignment.go:64:10>'}}
 
   var a7 struct{ *int }
   var b7 struct{ *int } = a7
@@ -75,16 +74,16 @@ func identical_struct_types() {
   var b9 struct{ int "othertag" } = a9  // FIXME should-diag {{variable of type <type> cannot be assigned an expression of type <type>}}
 
   var a10 struct { a, b int }
-  var b10 struct { a int } = a10  // expected-diag {{variable of type '<struct>' cannot be assigned an expression of type '<struct>'}}
+  var b10 struct { a int } = a10 // expected-diag-re {{variable of type '<struct.*/assignment.go:77:11>' cannot be assigned an expression of type '<struct.*/assignment.go:76:11>'}}
 
   var a11 struct { a, b int }
   var b11 struct { a int; b int } = a11
 
   var a12 struct { a, b int }
-  var b12 struct { b int; a int } = a12  // expected-diag {{variable of type '<struct>' cannot be assigned an expression of type '<struct>'}}
+  var b12 struct { b int; a int } = a12 // expected-diag-re {{variable of type '<struct.*/assignment.go:83:11>' cannot be assigned an expression of type '<struct.*/assignment.go:82:11>'}}
 
   var a13 struct { a, b int }
-  var b13 struct { b, a int } = a13  // expected-diag {{variable of type '<struct>' cannot be assigned an expression of type '<struct>'}}
+  var b13 struct { b, a int } = a13 // expected-diag-re {{variable of type '<struct.*/assignment.go:86:11>' cannot be assigned an expression of type '<struct.*/assignment.go:85:11>'}}
 
   var a14 struct { a struct{} };
   var b14 struct { a struct{} } = a14;
@@ -122,5 +121,5 @@ func identical_struct_types() {
 func short_var_decl() {
   var a int
   var b struct{}
-  a, c := b, b  // expected-diag {{variable of type 'int' cannot be assigned an expression of type '<struct>'}}
+  a, c := b, b // expected-diag-re {{variable of type 'int' cannot be assigned an expression of type '<struct.*/assignment.go:123:9>'}}
 }

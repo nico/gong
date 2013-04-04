@@ -380,7 +380,7 @@ static const LangAS::Map *getAddressSpaceMap(const TargetInfo &T,
 }
 #endif
 
-ASTContext::ASTContext(/*LangOptions& LOpts, SourceManager &SM,
+ASTContext::ASTContext(/*LangOptions& LOpts,*/ SourceManager &SM,/*
                        const TargetInfo *t,*/
                        IdentifierTable &idents/*, SelectorTable &sels,
                        Builtin::Context &builtins,
@@ -404,7 +404,8 @@ ASTContext::ASTContext(/*LangOptions& LOpts, SourceManager &SM,
     FirstLocalImport(), LastLocalImport(),
     SourceMgr(SM), LangOpts(LOpts), 
     AddrSpaceMap(0), Target(t), PrintingPolicy(LOpts),*/
-    IntDecl(0), BoolDecl(0), Float32Decl(0), Idents(idents)/*, Selectors(sels),
+    IntDecl(0), BoolDecl(0), Float32Decl(0), SourceMgr(SM), Idents(idents)
+    /*, Selectors(sels),
     BuiltinInfo(builtins),
     DeclarationNames(*this),
     ExternalSource(0), Listener(0),

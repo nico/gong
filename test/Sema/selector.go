@@ -30,9 +30,9 @@ func happy() {
   a.a
   a.b
   a.c
-  a.d  // expected-diag{{no field 'd' in 'foo'}}
+  a.d  // expected-diag {{no field 'd' in 'foo'}}
   a.s.a
-  a.s.b  // expected-diag{{no field 'b' in '<struct>'}}
+  a.s.b  // expected-diag-re {{no field 'b' in '<struct.*/selector.go:26:7>'}}
 
   type bar foo
   type baz bar
@@ -65,9 +65,9 @@ func happy_direct_type() {
   a.a
   a.b
   a.c
-  a.d  // expected-diag{{no field 'd' in '<struct>'}}
+  a.d // expected-diag-re {{no field 'd' in '<struct.*/selector.go:61:9>'}}
   a.s.a
-  a.s.b  // expected-diag{{no field 'b' in '<struct>'}}
+  a.s.b // expected-diag-re {{no field 'b' in '<struct.*/selector.go:63:7>'}}
 
   (a).a
   (a).b  // FIXME: should-diag
@@ -87,7 +87,7 @@ func happy_pointer() {
   a.c
   a.d  // expected-diag{{no field 'd' in '*foo'}}
   a.s.a
-  a.s.b  // expected-diag{{no field 'b' in '*<struct>'}}
+  a.s.b // expected-diag-re {{no field 'b' in '\*<struct.*/selector.go:81:8>'}}
 
   (a).a
   (a).b  // FIXME: should-diag
@@ -139,7 +139,7 @@ func types() {
 func embedded_fields() {
   var a struct { int }
   a.int
-  a.foo  // expected-diag {{no field 'foo' in '<struct>'}}
+  a.foo // expected-diag-re {{no field 'foo' in '<struct.*/selector.go:140:9>'}}
 
   type str struct { str int }
   var b struct { str }
@@ -150,7 +150,7 @@ func embedded_fields() {
   c.a
   c.b
   c.c
-  c.d  // expected-diag {{no field 'd' in '<struct>'}}
+  c.d // expected-diag-re {{no field 'd' in '<struct.*/selector.go:149:9>'}}
   c.promoted
   c.promoted.a
   c.promoted.b
@@ -163,7 +163,7 @@ func embedded_fields() {
   d.a  // expected-diag {{name 'a' is ambiguous}}
   d.b
   d.c
-  d.d  // expected-diag {{no field 'd' in '<struct>'}}
+  d.d // expected-diag-re {{no field 'd' in '<struct.*/selector.go:162:9>'}}
   d.promoted1
   d.promoted1.a
   d.promoted1.b

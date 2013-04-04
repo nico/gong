@@ -16,6 +16,7 @@
 #include "gong/Basic/Diagnostic.h"
 #include "gong/Basic/DiagnosticIDs.h"
 #include "gong/Basic/LLVM.h"
+#include "gong/Basic/SourceManager.h"
 #include "gong/Basic/TokenKinds.h"
 #include "gong/Frontend/TextDiagnosticPrinter.h"
 #include "gong/Frontend/VerifyDiagnosticConsumer.h"
@@ -40,7 +41,6 @@
 #include "llvm/Support/Program.h"
 #include "llvm/Support/Process.h"
 #include "llvm/Support/Signals.h"
-#include "llvm/Support/SourceMgr.h"
 #include "llvm/Support/TargetSelect.h"
 #include <cctype>
 using namespace gong;
@@ -121,7 +121,7 @@ int main(int argc_, const char **argv_) {
       stats = true;
     }
 
-  llvm::SourceMgr SM;
+  SourceManager SM;
 
   IntrusiveRefCntPtr<DiagnosticOptions> DiagOpts = new DiagnosticOptions;
   ParseDiagnosticArgs(*DiagOpts, argc_, argv_);
@@ -154,7 +154,7 @@ int main(int argc_, const char **argv_) {
         if (sema) {
           if (stats)
             Decl::EnableStatistics();
-          ASTContext Context(L.getIdentifierTable());
+          ASTContext Context(SM, L.getIdentifierTable());
           Sema ParseActions(L, Context);
           Parser P(L, ParseActions);
           P.ParseSourceFile();

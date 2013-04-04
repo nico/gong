@@ -1803,7 +1803,8 @@ Sema::ActOnPointerType(SourceLocation StarLoc, DeclArg PointeeType) {
 
 Action::OwningDeclResult Sema::ActOnStartOfStructType(
     SourceLocation StructLoc, SourceLocation L, Scope *S) {
-  StructTypeDecl *Struct = StructTypeDecl::Create(Context, CurContext, L);
+  StructTypeDecl *Struct =
+      StructTypeDecl::Create(Context, CurContext, StructLoc);
 
   // Enter the struct context.
   PushDeclContext(S, Struct);

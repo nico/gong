@@ -284,10 +284,10 @@ class ASTContext : public RefCountedBase<ASTContext> {
   
   TranslationUnitDecl *TUDecl;
 
-#if 0
   /// \brief The associated SourceManager object.a
   SourceManager &SourceMgr;
 
+#if 0
   /// \brief The language options used to create the AST associated with
   ///  this ASTContext object.
   LangOptions &LangOpts;
@@ -335,6 +335,7 @@ public:
   void setPrintingPolicy(const gong::PrintingPolicy &Policy) {
     PrintingPolicy = Policy;
   }
+#endif
   
   SourceManager& getSourceManager() { return SourceMgr; }
   const SourceManager& getSourceManager() const { return SourceMgr; }
@@ -342,7 +343,6 @@ public:
   llvm::BumpPtrAllocator &getAllocator() const {
     return BumpAlloc;
   }
-#endif
 
   void *Allocate(unsigned Size, unsigned Align = 8) const {
     return BumpAlloc.Allocate(Size, Align);
@@ -628,7 +628,7 @@ public:
   mutable QualType VaListTagTy;
 #endif
 
-  ASTContext(/*LangOptions& LOpts, SourceManager &SM, const TargetInfo *t,*/
+  ASTContext(/*LangOptions& LOpts,*/ SourceManager &SM, /*const TargetInfo *t,*/
              IdentifierTable &idents/*, SelectorTable &sels,
              Builtin::Context &builtins,
              unsigned size_reserve,
