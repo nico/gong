@@ -109,25 +109,6 @@ namespace {
   };
 }
 
-#if 0
-static void AppendTypeQualList(raw_ostream &OS, unsigned TypeQuals) {
-  bool appendSpace = false;
-  if (TypeQuals & Qualifiers::Const) {
-    OS << "const";
-    appendSpace = true;
-  }
-  if (TypeQuals & Qualifiers::Volatile) {
-    if (appendSpace) OS << ' ';
-    OS << "volatile";
-    appendSpace = true;
-  }
-  if (TypeQuals & Qualifiers::Restrict) {
-    if (appendSpace) OS << ' ';
-    OS << "restrict";
-  }
-}
-#endif
-
 void TypePrinter::spaceBeforePlaceHolder(raw_ostream &OS) {
   if (!HasEmptyPlaceHolder)
     OS << ' ';

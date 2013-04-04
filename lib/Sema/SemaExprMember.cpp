@@ -216,8 +216,11 @@ Sema::BuildMemberReferenceExpr(Expr *BaseExpr, const Type *BaseExprType,
 
   if (R.empty()) {
     // FIXME: make sure this prints the '*' for pointer-to-struct types (?)
-    DeclContext *DC = BaseType->getAs<StructType>()->getDecl();
-    Diag(R.getNameLoc(), diag::no_field) << II << DC;
+    //DeclContext *DC = BaseType->getAs<StructType>()->getDecl();
+    // FIXME: clang prints DC instead of BaseExprType here. Don't do that,
+    // else we don't print struct names right. However, make sure ParenTypes
+    // get desugared once they exist.
+    Diag(R.getNameLoc(), diag::no_field) << II << BaseExprType;
     //Diag(R.getNameLoc(), diag::err_no_member)
       //<< MemberName << DC
       //<< (BaseExpr ? BaseExpr->getSourceRange() : SourceRange());
