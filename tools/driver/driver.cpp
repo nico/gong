@@ -13,6 +13,8 @@
 //===----------------------------------------------------------------------===//
 
 #include "gong/AST/ASTContext.h"
+#include "gong/AST/Decl.h"
+#include "gong/AST/Expr.h"
 #include "gong/Basic/Diagnostic.h"
 #include "gong/Basic/DiagnosticIDs.h"
 #include "gong/Basic/LLVM.h"
@@ -152,8 +154,10 @@ int main(int argc_, const char **argv_) {
         DumpTokens(L);
       else {
         if (sema) {
-          if (stats)
+          if (stats) {
             Decl::EnableStatistics();
+            Expr::EnableStatistics();
+          }
           ASTContext Context(SM, L.getIdentifierTable());
           Sema ParseActions(L, Context);
           Parser P(L, ParseActions);
@@ -161,8 +165,9 @@ int main(int argc_, const char **argv_) {
           if (stats) {
             Context.PrintStats();
             Decl::PrintStats();
+            Expr::PrintStats();
             L.getIdentifierTable().PrintStats();
-            // FIXME: stats for sema, stmt, expr
+            // FIXME: stats for sema, stmt
           }
         } else {
           MinimalAction ParseActions(L);

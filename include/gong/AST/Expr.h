@@ -118,6 +118,10 @@ public:
   /// de-serialization).
   struct EmptyShell { };
 
+private:
+  /// \brief Whether statistic collection is enabled.
+  static bool StatisticsEnabled;
+
   // Make vanilla 'new' and 'delete' illegal for Exprs.
 protected:
   void* operator new(size_t bytes) throw() {
@@ -320,19 +324,20 @@ protected:
     ExprBits.ExprClass = EC;
     //ExprBits.ValueKind = VK;
     setType(T);
-    //if (StatisticsEnabled) Expr::addExprClass(SC);
+    if (StatisticsEnabled) Expr::addExprClass(EC);
   }
 
   /// \brief Construct an empty expression.
   explicit Expr(ExprClass EC, EmptyShell) {
     ExprBits.ExprClass = EC;
-    //if (StatisticsEnabled) Expr::addExprClass(SC);
+    if (StatisticsEnabled) Expr::addExprClass(EC);
   }
 
 public:
   ExprClass getExprClass() const {
     return static_cast<ExprClass>(ExprBits.ExprClass);
   }
+  const char *getExprClassName() const;
 
   /// SourceLocation tokens are not useful in isolation - they are low level
   /// value objects created/interpreted by SourceManager. We assume AST
@@ -342,9 +347,9 @@ public:
   SourceLocation getLocEnd() const LLVM_READONLY;
 
   // global temp stats (until we have a per-module visitor)
-  //static void addExprClass(const ExprClass s);
-  //static void EnableStatistics();
-  //static void PrintStats();
+  static void addExprClass(const ExprClass s);
+  static void EnableStatistics();
+  static void PrintStats();
 
   const Type *getType() const { return TR; }
   void setType(const Type *t) {

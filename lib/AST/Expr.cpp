@@ -14,6 +14,7 @@
 #include "gong/AST/Expr.h"
 
 #include "gong/AST/ASTContext.h"
+#include "llvm/Support/raw_ostream.h"
 #if 0
 #include "gong/AST/APValue.h"
 #include "gong/AST/Attr.h"
@@ -31,13 +32,33 @@
 #include "gong/Lex/LiteralSupport.h"
 #include "gong/Sema/SemaDiagnostic.h"
 #include "llvm/Support/ErrorHandling.h"
-#include "llvm/Support/raw_ostream.h"
 #include <algorithm>
 #include <cstring>
 #endif
 
 using namespace gong;
 
+static struct ExprClassNameTable {
+  const char *Name;
+  unsigned Counter;
+  unsigned Size;
+} ExprClassInfo[Expr::lastExprConstant+1];
+
+static ExprClassNameTable &getExprInfoTableEntry(Expr::ExprClass E) {
+  static bool Initialized = false;
+  if (Initialized)
+    return ExprClassInfo[E];
+
+  // Intialize the table on the first use.
+  Initialized = true;
+#define ABSTRACT_EXPR(EXPR)
+#define EXPR(CLASS, PARENT) \
+  ExprClassInfo[(unsigned)Expr::CLASS##Class].Name = #CLASS;    \
+  ExprClassInfo[(unsigned)Expr::CLASS##Class].Size = sizeof(CLASS);
+#include "gong/AST/ExprNodes.def"
+
+  return ExprClassInfo[E];
+}
 void *Expr::operator new(size_t bytes, ASTContext& C,
                          unsigned alignment) throw() {
   return ::operator new(bytes, C, alignment);
@@ -46,6 +67,44 @@ void *Expr::operator new(size_t bytes, ASTContext& C,
 void *Expr::operator new(size_t bytes, ASTContext* C,
                          unsigned alignment) throw() {
   return ::operator new(bytes, *C, alignment);
+}
+
+const char *Expr::getExprClassName() const {
+  return getExprInfoTableEntry((ExprClass) ExprBits.ExprClass).Name;
+}
+
+void Expr::PrintStats() {
+  // Ensure the table is primed.
+  getExprInfoTableEntry(Expr::NoExprClass);
+
+  unsigned sum = 0;
+  llvm::errs() << "\n*** Expr Stats:\n";
+  for (int i = 0; i != Expr::lastExprConstant+1; i++) {
+    if (ExprClassInfo[i].Name == 0) continue;
+    sum += ExprClassInfo[i].Counter;
+  }
+  llvm::errs() << "  " << sum << " exprs total.\n";
+  sum = 0;
+  for (int i = 0; i != Expr::lastExprConstant+1; i++) {
+    if (ExprClassInfo[i].Name == 0) continue;
+    if (ExprClassInfo[i].Counter == 0) continue;
+    llvm::errs() << "    " << ExprClassInfo[i].Counter << " "
+                 << ExprClassInfo[i].Name << ", " << ExprClassInfo[i].Size
+                 << " each (" << ExprClassInfo[i].Counter*ExprClassInfo[i].Size
+                 << " bytes)\n";
+    sum += ExprClassInfo[i].Counter*ExprClassInfo[i].Size;
+  }
+
+  llvm::errs() << "Total bytes = " << sum << "\n";
+}
+
+void Expr::addExprClass(ExprClass s) {
+  ++getExprInfoTableEntry(s).Counter;
+}
+
+bool Expr::StatisticsEnabled = false;
+void Expr::EnableStatistics() {
+  StatisticsEnabled = true;
 }
 
 namespace {
