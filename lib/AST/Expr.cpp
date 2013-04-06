@@ -48,6 +48,130 @@ void *Expr::operator new(size_t bytes, ASTContext* C,
   return ::operator new(bytes, *C, alignment);
 }
 
+namespace {
+  struct good {};
+  struct bad {};
+
+  // These silly little functions have to be static inline to suppress
+  // unused warnings, and they have to be defined to suppress other
+  // warnings.
+  static inline good is_good(good) { return good(); }
+
+  //typedef Expr::child_range children_t();
+  //template <class T> good implements_children(children_t T::*) {
+    //return good();
+  //}
+  //static inline bad implements_children(children_t Expr::*) {
+    //return bad();
+  //}
+
+  typedef SourceLocation getLocStart_t() const;
+  template <class T> good implements_getLocStart(getLocStart_t T::*) {
+    return good();
+  }
+  static inline bad implements_getLocStart(getLocStart_t Expr::*) {
+    return bad();
+  }
+
+  typedef SourceLocation getLocEnd_t() const;
+  template <class T> good implements_getLocEnd(getLocEnd_t T::*) {
+    return good();
+  }
+  static inline bad implements_getLocEnd(getLocEnd_t Expr::*) {
+    return bad();
+  }
+
+//#define ASSERT_IMPLEMENTS_children(type) \
+  //(void) sizeof(is_good(implements_children(&type::children)))
+#define ASSERT_IMPLEMENTS_getLocStart(type) \
+  (void) sizeof(is_good(implements_getLocStart(&type::getLocStart)))
+#define ASSERT_IMPLEMENTS_getLocEnd(type) \
+  (void) sizeof(is_good(implements_getLocEnd(&type::getLocEnd)))
+}
+
+/// Check whether the various Expr classes implement their member
+/// functions.
+static inline void check_implementations() {
+#define ABSTRACT_EXPR(type)
+#define EXPR(type, base) \
+  ASSERT_IMPLEMENTS_getLocStart(type); \
+  ASSERT_IMPLEMENTS_getLocEnd(type);
+  //ASSERT_IMPLEMENTS_children(type);
+#include "gong/AST/ExprNodes.def"
+}
+
+//Expr::child_range Expr::children() {
+//  switch (getExprClass()) {
+//  case Expr::NoExprClass: llvm_unreachable("statement without class");
+//#define ABSTRACT_EXPR(type)
+//#define EXPR(type, base) \
+//  case Expr::type##Class: \
+//    return static_cast<type*>(this)->children();
+//#include "gong/AST/ExprNodes.def"
+//  }
+//  llvm_unreachable("unknown statement kind!");
+//}
+
+// Amusing macro metaprogramming hack: check whether a class provides
+// a more specific implementation of getSourceRange.
+//
+// See also Expr.cpp:getExprLoc().
+namespace {
+  /// This implementation is used when a class provides a custom
+  /// implementation of getSourceRange.
+  template <class S, class T>
+  SourceRange getSourceRangeImpl(const Expr *expr,
+                                 SourceRange (T::*v)() const) {
+    return static_cast<const S*>(expr)->getSourceRange();
+  }
+
+  /// This implementation is used when a class doesn't provide a custom
+  /// implementation of getSourceRange.  Overload resolution should pick it over
+  /// the implementation above because it's more specialized according to
+  /// function template partial ordering.
+  template <class S>
+  SourceRange getSourceRangeImpl(const Expr *expr,
+                                 SourceRange (Expr::*v)() const) {
+    return SourceRange(static_cast<const S*>(expr)->getLocStart(),
+                       static_cast<const S*>(expr)->getLocEnd());
+  }
+}
+
+SourceRange Expr::getSourceRange() const {
+  switch (getExprClass()) {
+  case Expr::NoExprClass: llvm_unreachable("statement without class");
+#define ABSTRACT_EXPR(type)
+#define EXPR(type, base) \
+  case Expr::type##Class: \
+    return getSourceRangeImpl<type>(this, &type::getSourceRange);
+#include "gong/AST/ExprNodes.def"
+  }
+  llvm_unreachable("unknown statement kind!");
+}
+
+SourceLocation Expr::getLocStart() const {
+  switch (getExprClass()) {
+  case Expr::NoExprClass: llvm_unreachable("statement without class");
+#define ABSTRACT_EXPR(type)
+#define EXPR(type, base) \
+  case Expr::type##Class: \
+    return static_cast<const type*>(this)->getLocStart();
+#include "gong/AST/ExprNodes.def"
+  }
+  llvm_unreachable("unknown statement kind");
+}
+
+SourceLocation Expr::getLocEnd() const {
+  switch (getExprClass()) {
+  case Expr::NoExprClass: llvm_unreachable("statement without class");
+#define ABSTRACT_EXPR(type)
+#define EXPR(type, base) \
+  case Expr::type##Class: \
+    return static_cast<const type*>(this)->getLocEnd();
+#include "gong/AST/ExprNodes.def"
+  }
+  llvm_unreachable("unknown statement kind");
+}
 
 #if 0
 const CXXRecordDecl *Expr::getBestDynamicClassType() const {
@@ -366,10 +490,11 @@ DeclRefExpr::DeclRefExpr(ASTContext &Ctx,
                          //NestedNameSpecifierLoc QualifierLoc,
                          ValueDecl *D, bool RefersToEnclosingLocal,
                          //const DeclarationNameInfo &NameInfo,
+                         SourceLocation L,
                          NamedDecl *FoundD,
                          const Type *T/*, ExprValueKind VK*/)
   : Expr(DeclRefExprClass, T), //, VK, OK_Ordinary, false, false, false, false),
-    D(D)/*, Loc(NameInfo.getLoc()), DNLoc(NameInfo.getInfo()) */{
+    D(D), Loc(L)/*, DNLoc(NameInfo.getInfo()) */{
   //DeclRefExprBits.HasQualifier = QualifierLoc ? 1 : 0;
   //if (QualifierLoc)
     //getInternalQualifierLoc() = QualifierLoc;
@@ -404,6 +529,7 @@ DeclRefExpr *DeclRefExpr::Create(ASTContext &Context,
                                  //NestedNameSpecifierLoc QualifierLoc,
                                  ValueDecl *D,
                                  bool RefersToEnclosingLocal,
+                                 SourceLocation L,
                                  //const DeclarationNameInfo &NameInfo,
                                  const Type *T,
                                  //ExprValueKind VK,
@@ -421,7 +547,7 @@ DeclRefExpr *DeclRefExpr::Create(ASTContext &Context,
   void *Mem = Context.Allocate(Size, llvm::alignOf<DeclRefExpr>());
   return new (Mem) DeclRefExpr(Context, /*QualifierLoc,*/ D,
                                RefersToEnclosingLocal,
-                               /*NameInfo,*/ FoundD, T/*, VK*/);
+                               /*NameInfo,*/ L, FoundD, T/*, VK*/);
 }
 
 #if 0
@@ -440,17 +566,6 @@ DeclRefExpr *DeclRefExpr::CreateEmpty(ASTContext &Context,
 
   void *Mem = Context.Allocate(Size, llvm::alignOf<DeclRefExpr>());
   return new (Mem) DeclRefExpr(EmptyShell());
-}
-
-SourceLocation DeclRefExpr::getLocStart() const {
-  if (hasQualifier())
-    return getQualifierLoc().getBeginLoc();
-  return getNameInfo().getLocStart();
-}
-SourceLocation DeclRefExpr::getLocEnd() const {
-  if (hasExplicitTemplateArgs())
-    return getRAngleLoc();
-  return getNameInfo().getLocEnd();
 }
 
 // FIXME: Maybe this should use DeclPrinter with a special "print predefined
@@ -1270,30 +1385,22 @@ MemberExpr *MemberExpr::Create(ASTContext &C, Expr *base,
   return new (C) MemberExpr(base, memberdecl, loc, ty);
 }
 
-#if 0
 SourceLocation MemberExpr::getLocStart() const {
-  if (isImplicitAccess()) {
-    if (hasQualifier())
-      return getQualifierLoc().getBeginLoc();
-    return MemberLoc;
-  }
-
-  // FIXME: We don't want this to happen. Rather, we should be able to
-  // detect all kinds of implicit accesses more cleanly.
   SourceLocation BaseStartLoc = getBase()->getLocStart();
-  if (BaseStartLoc.isValid())
+  //if (BaseStartLoc.isValid())  // FIXME: Why is this here?
     return BaseStartLoc;
-  return MemberLoc;
+  //return MemberLoc;
 }
 SourceLocation MemberExpr::getLocEnd() const {
-  SourceLocation EndLoc = getMemberNameInfo().getEndLoc();
-  if (hasExplicitTemplateArgs())
-    EndLoc = getRAngleLoc();
-  else if (EndLoc.isInvalid())
-    EndLoc = getBase()->getLocEnd();
-  return EndLoc;
+  return MemberLoc;
+  // FIXME: Why this?
+  //SourceLocation EndLoc = getMemberNameInfo().getEndLoc();
+  //if (EndLoc.isInvalid())
+  //  EndLoc = getBase()->getLocEnd();
+  //return EndLoc;
 }
 
+#if 0
 void CastExpr::CheckCastConsistency() const {
   switch (getCastKind()) {
   case CK_DerivedToBase:

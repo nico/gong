@@ -14,7 +14,7 @@ P0 function parameter lists (and return names, and methoddecls)
 P0 function call exprs
 P1 interface types
 P1 basic expression type checking (unary, binary ops)
-P1 support for number and string literals
+P1 number and string literals
    - implement support for fielddecl tags once that's done
      - and tag effect on struct type identity once that's in
 P1 give all exprs types, implement some sema for them

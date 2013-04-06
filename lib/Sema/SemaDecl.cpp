@@ -1488,10 +1488,10 @@ void Sema::ActOnVarSpec(DeclPtrTy Decl, IdentifierList &IdentList,
 
       if (New->getType()) {
         if (CheckAssignable(Context, RHS, New->getType())) {
-          // FIXME: add sourcerange for rhs
           Diag(OpLoc, diag::cannot_assign)
               << New->getType() << RHS->getType()
-              << SourceRange(IdentLocs[i], IdentLocs[i]);
+              << SourceRange(IdentLocs[i], IdentLocs[i])
+              << RHS->getSourceRange();
         } else {
           // FIXME: on success, add RHS to ast.
         }
@@ -1575,10 +1575,9 @@ Sema::ActOnShortVarDeclStmt(IdentifierList &IdentList,
       VarDecl *Prev = dyn_cast<VarDecl>(PrevDecls[i]);
       if (Prev && RHS  // FIXME: Remove RHS check once ExprEmpty() is gone.
           && CheckAssignable(Context, RHS, Prev->getType())) {
-        // FIXME: add sourcerange for rhs
         Diag(OpLoc, diag::cannot_assign)
             << Prev->getType() << RHS->getType()
-              << SourceRange(IdentLocs[i], IdentLocs[i]);
+            << SourceRange(IdentLocs[i], IdentLocs[i]) << RHS->getSourceRange();
       }
       continue;
     }

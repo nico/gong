@@ -334,6 +334,18 @@ public:
     return static_cast<ExprClass>(ExprBits.ExprClass);
   }
 
+  /// SourceLocation tokens are not useful in isolation - they are low level
+  /// value objects created/interpreted by SourceManager. We assume AST
+  /// clients will have a pointer to the respective SourceManager.
+  SourceRange getSourceRange() const LLVM_READONLY;
+  SourceLocation getLocStart() const LLVM_READONLY;
+  SourceLocation getLocEnd() const LLVM_READONLY;
+
+  // global temp stats (until we have a per-module visitor)
+  //static void addExprClass(const ExprClass s);
+  //static void EnableStatistics();
+  //static void PrintStats();
+
   const Type *getType() const { return TR; }
   void setType(const Type *t) {
     // In C++, the type of an expression is always adjusted so that it
@@ -990,6 +1002,7 @@ class DeclRefExpr : public Expr {
               //NestedNameSpecifierLoc QualifierLoc,
               ValueDecl *D, bool refersToEnclosingLocal,
               //const DeclarationNameInfo &NameInfo,
+              SourceLocation L, 
               NamedDecl *FoundD,
               const Type *T/*, ExprValueKind VK*/);
 
@@ -1021,6 +1034,7 @@ public:
                              //NestedNameSpecifierLoc QualifierLoc,
                              ValueDecl *D,
                              bool isEnclosingLocal,
+                             SourceLocation L,
                              //const DeclarationNameInfo &NameInfo,
                              const Type *T, //ExprValueKind VK,
                              NamedDecl *FoundD = 0);
@@ -1040,8 +1054,8 @@ public:
 
   SourceLocation getLocation() const { return Loc; }
   void setLocation(SourceLocation L) { Loc = L; }
-  SourceLocation getLocStart() const LLVM_READONLY;
-  SourceLocation getLocEnd() const LLVM_READONLY;
+  SourceLocation getLocStart() const LLVM_READONLY { return Loc; }
+  SourceLocation getLocEnd() const LLVM_READONLY { return Loc; }
 
   /// \brief Determine whether this declaration reference was preceded by a
   /// C++ nested-name-specifier, e.g., \c N::foo.
@@ -2248,8 +2262,8 @@ public:
   SourceLocation getMemberLoc() const { return MemberLoc; }
   void setMemberLoc(SourceLocation L) { MemberLoc = L; }
 
-  //SourceLocation getLocStart() const LLVM_READONLY;
-  //SourceLocation getLocEnd() const LLVM_READONLY;
+  SourceLocation getLocStart() const LLVM_READONLY;
+  SourceLocation getLocEnd() const LLVM_READONLY;
 
   //SourceLocation getExprLoc() const LLVM_READONLY { return MemberLoc; }
 

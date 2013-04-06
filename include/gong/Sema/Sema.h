@@ -2811,7 +2811,7 @@ public:
                            //CorrectionCandidateCallback &CCC,
                        llvm::ArrayRef<Expr *> Args = llvm::ArrayRef<Expr *>());
 
-  OwningExprResult BuildDeclRefExpr(Decl *D, const Type *Ty);
+  OwningExprResult BuildDeclRefExpr(Decl *D, SourceLocation L, const Type *Ty);
 
 #if 0
   ExprResult LookupInObjCMethod(LookupResult &LookUp, Scope *S,

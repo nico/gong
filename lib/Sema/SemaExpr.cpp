@@ -1388,7 +1388,8 @@ Sema::BuildDeclRefExpr(ValueDecl *D, QualType Ty, ExprValueKind VK,
 /// BuildDeclRefExpr - Build an expression that references a
 /// declaration that does not require a closure capture.
 Action::OwningExprResult
-Sema::BuildDeclRefExpr(Decl *D, const Type *Ty//, ExprValueKind VK,
+Sema::BuildDeclRefExpr(Decl *D, SourceLocation L, const Type *Ty
+                       //, ExprValueKind VK,
                        //const DeclarationNameInfo &NameInfo,
                        //const CXXScopeSpec *SS
                        ) {
@@ -1397,7 +1398,7 @@ Sema::BuildDeclRefExpr(Decl *D, const Type *Ty//, ExprValueKind VK,
 
   // FIXME: clang does some adjustments of the type.
   DeclRefExpr *E = DeclRefExpr::Create(Context,
-                                       D, refersToEnclosingScope,
+                                       D, refersToEnclosingScope, L,
                                        //NameInfo,
                                        //D->getType(),
                                        Ty
@@ -1691,7 +1692,7 @@ Sema::ActOnOperandName(SourceLocation IILoc, IdentifierInfo *II,
     // FIXME: remove this once all exprs have a type.
     if (!Ty) Ty = Context.UnknownAnyTy;
   }
-  return BuildDeclRefExpr(R.getFoundDecl(), Ty);
+  return BuildDeclRefExpr(R.getFoundDecl(), IILoc, Ty);
 }
 
 #if 0
