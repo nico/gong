@@ -1,6 +1,19 @@
 hotlist:
-P0 source ranges for exprs
 P0 function types
+  `"func" Signature` can either be a FunctionType (start of a Conversion)
+                                or the start of a FunctionLit
+  `"func" identifier Signature [Block]` is a FunctionDeclaration
+
+  Signature      = Parameters [ Result ] .
+  Result         = Parameters | Type .
+  Parameters     = "(" [ ParameterList [ "," ] ] ")" .
+  ParameterList  = ParameterDecl { "," ParameterDecl } .
+  ParameterDecl  = [ IdentifierList ] [ "..." ] Type .
+
+  FunctionTypeDecl: AST for http://tip.golang.org/ref/spec#Function_types
+  FunctionType: Type of FunctionTypeDecl, Function, FunctionLiteral (and
+                bound methods)
+  FunctionLitExpr: 
 P0 function parameter lists (and return names, and methoddecls)
 !! ParseTypeList() needs something like IdentOrExprList for types, to
    make parameter parsing possible.

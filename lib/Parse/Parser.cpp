@@ -364,9 +364,8 @@ bool Parser::ParseParameters() {
   BalancedDelimiterTracker T(*this, tok::l_paren);
   T.consumeOpen();
 
-  if (IsParameterList()) {
+  if (IsParameterList())
     ParseParameterList();
-  }
 
   if (Tok.is(tok::comma))
     ConsumeToken();
@@ -530,7 +529,7 @@ Action::OwningDeclResult Parser::ParseTypeName() {
 /// This is called for TypeName after the initial identifier has been read.
 Action::OwningDeclResult
 Parser::ParseTypeNameTail(SourceLocation IILoc, IdentifierInfo *Head,
-                          bool *SawIdentifierOnly) {
+                          bool *SawIdentifiersOnly) {
   if (Tok.isNot(tok::period)) {
     // The type name was just the identifier.
     return Actions.ActOnTypeName(IILoc, *Head, getCurScope());
@@ -539,8 +538,8 @@ Parser::ParseTypeNameTail(SourceLocation IILoc, IdentifierInfo *Head,
   // It's a QualifiedIdent.
   ConsumeToken();
 
-  if (SawIdentifierOnly)
-    *SawIdentifierOnly = false;
+  if (SawIdentifiersOnly)
+    *SawIdentifiersOnly = false;
 
   if (Tok.isNot(tok::identifier)) {
     Diag(Tok, diag::expected_ident);
