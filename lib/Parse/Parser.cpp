@@ -402,9 +402,14 @@ bool Parser::ParseParameterDecl() {
     IdentifierInfo *II = Tok.getIdentifierInfo();
     SourceLocation IILoc = ConsumeToken();
 
-    bool SawIdentifiersOnly = true;
-    ParseTypeNameTail(IILoc, II, &SawIdentifiersOnly);
-    ParseTypeListTail(/*AcceptEllipsis=*/true, &SawIdentifiersOnly);
+    IdentOrTypeList R(Actions, getCurScope()); //, IILoc, II);
+    if (Tok.is(tok::period)) {
+      OwningDeclResult T(ParseTypeNameTail(IILoc, II));
+      R.AddType(move(T));
+    } else
+      R.AddFirstIdent(IILoc, II);
+    ParseTypeListTail(R, /*AcceptEllipsis=*/true);
+    bool SawIdentifiersOnly = R.Kind() == IdentOrTypeList::RK_Ident;
 
     bool HadEllipsis = false;
     SourceLocation EllipsisLoc;
@@ -446,6 +451,11 @@ bool Parser::ParseParameterDecl() {
       Diag(EllipsisLoc, diag::expected_idents_only_before_ellipsis);
       return true;
     }
+
+    // Force the identifiers in R into types if they aren't already.
+    if (!HadTrailingType)
+      R.Types();
+
     return false;
   }
 
@@ -528,8 +538,7 @@ Action::OwningDeclResult Parser::ParseTypeName() {
 
 /// This is called for TypeName after the initial identifier has been read.
 Action::OwningDeclResult
-Parser::ParseTypeNameTail(SourceLocation IILoc, IdentifierInfo *Head,
-                          bool *SawIdentifiersOnly) {
+Parser::ParseTypeNameTail(SourceLocation IILoc, IdentifierInfo *Head) {
   if (Tok.isNot(tok::period)) {
     // The type name was just the identifier.
     return Actions.ActOnTypeName(IILoc, *Head, getCurScope());
@@ -537,9 +546,6 @@ Parser::ParseTypeNameTail(SourceLocation IILoc, IdentifierInfo *Head,
 
   // It's a QualifiedIdent.
   ConsumeToken();
-
-  if (SawIdentifiersOnly)
-    *SawIdentifiersOnly = false;
 
   if (Tok.isNot(tok::identifier)) {
     Diag(Tok, diag::expected_ident);
@@ -935,16 +941,18 @@ Parser::OwningDeclResult Parser::ParseElementType() {
 
 /// TypeList        = Type { "," Type } .
 bool Parser::ParseTypeList() {
-  ParseType();
-  return ParseTypeListTail();
+  OwningDeclResult LHS = ParseType();
+  IdentOrTypeList R(Actions, getCurScope());
+  R.AddType(move(LHS));
+  return ParseTypeListTail(R);
 }
 
 /// This is called after the first Type in a TypeList has been called.
 /// If SawIdentifiersOnly is not NULL, it's set to false if not all types in
 /// the list were single identifiers (else it's not written).
-bool Parser::ParseTypeListTail(bool AcceptEllipsis, bool *SawIdentifiersOnly) {
+bool Parser::ParseTypeListTail(IdentOrTypeList &Types, bool AcceptEllipsis) {
   while (Tok.is(tok::comma)) {
-    ConsumeToken();
+    SourceLocation CommaLoc = ConsumeToken();
     // FIXME: Diag if Tok doesn't start a type.
 
     if (Tok.is(tok::ellipsis)) {
@@ -954,15 +962,19 @@ bool Parser::ParseTypeListTail(bool AcceptEllipsis, bool *SawIdentifiersOnly) {
     }
 
     if (Tok.isNot(tok::identifier)) {
-      if (SawIdentifiersOnly)
-        *SawIdentifiersOnly = false;
-      ParseType();
+      OwningDeclResult R(ParseType());
+      Types.AddType(move(R));
       continue;
     }
 
     IdentifierInfo *II = Tok.getIdentifierInfo();
     SourceLocation IILoc = ConsumeToken();
-    ParseTypeNameTail(IILoc, II, SawIdentifiersOnly);
+
+    if (Tok.is(tok::period)) {
+      OwningDeclResult R(ParseTypeNameTail(IILoc, II));
+      Types.AddType(move(R));
+    } else
+      Types.AddIdent(CommaLoc, IILoc, II);
   }
   return false;
 }

@@ -183,8 +183,8 @@ public:
 
   OwningDeclResult ParseType();
   OwningDeclResult ParseTypeName();
-  OwningDeclResult ParseTypeNameTail(SourceLocation IILoc, IdentifierInfo *Head,
-                                     bool *SawIdentifierOnly = NULL);
+  OwningDeclResult ParseTypeNameTail(SourceLocation IILoc,
+                                     IdentifierInfo *Head);
   OwningDeclResult ParseTypeLit();
   OwningDeclResult ParseArrayOrSliceType();
   OwningDeclResult ParseArrayType(BalancedDelimiterTracker &T);
@@ -204,8 +204,77 @@ public:
   bool IsElementType() { return IsType(); }
   OwningDeclResult ParseElementType();
   bool ParseTypeList();
-  bool ParseTypeListTail(bool AcceptEllipsis = false,
-                         bool *SawIdentifiersOnly = NULL);
+  // A ParameterDecl starting with an IdentifierList looks the same to the
+  // parser as a ParameterList where each ParameterDecl is just a TypeName.
+  // The token after the list differentiates the two cases:
+  //   func f(a, b, c int   < "a, b, c" is an identifier list
+  //   func f(a, b, c)      < "a, b, c" are TypeNames in a ParameterList
+  // This class stores either an IdentifierList or a TypeList and provides a
+  // function to convert an IdentifierList to a TypeList if needed.
+  class IdentOrTypeList {
+  public:
+    // The kind of value this instance stores.
+    enum ResultKind { RK_Type, RK_Ident };
+  private:
+    Action &Actions;
+    Scope *S;
+    IdentifierList Idents;  // Only valid if Kind == RK_Ident
+    DeclVector Tys;  // Only valid if Kind == RK_Type
+    ResultKind ResKind;
+
+    // Converts an IdentifierList IdentOrTypeList to a TypeList.
+    void ToTypes() {
+      if (ResKind == RK_Type)
+        return;
+      ResKind = RK_Type;
+      ArrayRef<IdentifierInfo*> IdentsRef = Idents.getIdents();
+      ArrayRef<SourceLocation> IILocs = Idents.getIdentLocs();
+      for (unsigned i = 0; i < IdentsRef.size(); ++i) {
+        OwningDeclResult R(
+            Actions.ActOnTypeName(IILocs[i], *IdentsRef[i], S));
+        Tys.push_back(R.release());
+      }
+    }
+
+  public:
+    // Constructs an empty IdentOrTypeList.
+    IdentOrTypeList(Action &Actions, Scope *S)
+      : Actions(Actions), S(S), Tys(Actions), ResKind(RK_Ident) {}
+
+    void AddType(OwningDeclResult Type) {
+      if (ResKind != RK_Type)
+        ToTypes();
+      Tys.push_back(Type.release());
+    }
+
+    void AddFirstIdent(SourceLocation IILoc, IdentifierInfo *II) {
+      assert(Tys.size() == 0);
+      Idents.initialize(IILoc, II);
+    }
+
+    void AddIdent(SourceLocation CommaLoc, SourceLocation IILoc,
+                  IdentifierInfo *II) {
+      if (ResKind == RK_Ident)
+        Idents.add(CommaLoc, IILoc, II);
+      else {
+        OwningDeclResult R(Actions.ActOnTypeName(IILoc, *II, S));
+        Tys.push_back(R.release());
+      }
+    }
+
+    ResultKind Kind() {
+      return ResKind;
+    }
+    DeclVector &Types() {
+      ToTypes();
+      return Tys;
+    }
+    IdentifierList &Identifiers() {
+      assert(ResKind == RK_Ident);
+      return Idents;
+    }
+  };
+  bool ParseTypeListTail(IdentOrTypeList &R, bool AcceptEllipsis = false);
 
   // This is called after an identifier has been read. It returns if the next
   // token could follow an identifier list in an IdentifierList production.
