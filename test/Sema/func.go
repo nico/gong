@@ -12,3 +12,12 @@ func f5(int, int) {}
 
 func f6(int, b a) {}  // expected-diag {{use of undeclared identifier 'a'}}
 func f7(int, b int) {}
+
+func f8() a {}  // expected-diag {{use of undeclared identifier 'a'}}
+func f9() int {}
+
+func f10() (a) {}  // expected-diag {{use of undeclared identifier 'a'}}
+func f11() (int) {}
+
+func f12() (b a) {}  // expected-diag {{use of undeclared identifier 'a'}}
+func f13() (b int) {}
