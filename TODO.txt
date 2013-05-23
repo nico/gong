@@ -15,15 +15,13 @@ P0 function types
                 bound methods)
   FunctionLitExpr: 
 P0 function parameter lists (and return names, and methoddecls)
-!! ParseTypeList() needs something like IdentOrExprList for types, to
-   make parameter parsing possible.
-       Parameters used in:
-          func Signature (for params and optionally for result)
-              used for FunctionType, which is used by
-                  FunctionLit
-              FunctionDecl
-              MethodDecl (also has a Receiver)
-              MethodSpec (in Interfacetype; implicit Receiver)
+   Parameters used in:
+      func Signature (for params and optionally for result)
+          used for FunctionType, which is used by
+              FunctionLit
+          FunctionDecl
+          MethodDecl (also has a Receiver)
+          MethodSpec (in Interfacetype; implicit Receiver)
 P0 function call exprs
 P1 interface types
 P1 basic expression type checking (unary, binary ops)
