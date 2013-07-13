@@ -86,6 +86,11 @@ Action::OwningStmtResult Parser::ParseStatement() {
   case tok::rune_literal:
   case tok::star:
   case tok::string_literal:
+
+  // These two can't start a SimpleStmt, but ParseSimpleStmt() prints a nice
+  // diagnostic for prefix inc/dec stmts.
+  case tok::plusplus:
+  case tok::minusminus:
     return ParseSimpleStmt();
   
   default:
@@ -102,13 +107,25 @@ Action::OwningStmtResult Parser::ParseSimpleStmt(SimpleStmtKind *OutKind,
   if (Tok.is(tok::semi))
     return ParseEmptyStmt();
 
+  bool IsPreIncDec = false;
+  tok::TokenKind IncDecKind;
+  SourceLocation IncDecLoc;
+  if (Tok.is(tok::plusplus) || Tok.is(tok::minusminus)) {
+    // Go has "a++", but not "++a". Provide a nice fixit if a user uses the
+    // latter.
+    IsPreIncDec = true;
+    IncDecKind = Tok.getKind();
+    IncDecLoc = ConsumeToken();
+  }
+
   // Could be: ExpressionStmt, SendStmt, IncDecStmt, Assignment. They all start
   // with an Expression.
   OwningStmtResult Result(Actions);
+  SimpleStmtKind StmtKind = SSK_Normal;
   if (Tok.is(tok::identifier)) {
     IdentifierInfo *II = Tok.getIdentifierInfo();
     SourceLocation IILoc = ConsumeToken();
-    Result = ParseSimpleStmtTail(IILoc, II, OutKind, Ext).take();
+    Result = ParseSimpleStmtTail(IILoc, II, &StmtKind, Ext).take();
   } else {
     // Here: Statements starting with an unary operator, Conversions to
     // type literals that don't start with an operator (array, slice, map,
@@ -118,9 +135,31 @@ Action::OwningStmtResult Parser::ParseSimpleStmt(SimpleStmtKind *OutKind,
     TypeSwitchGuardParam Opt, *POpt = Ext == SSE_TypeSwitchGuard ? &Opt : NULL;
     OwningExprResult LHSExpr = ParseExpression(POpt, NULL);
     IdentOrExprList LHS(Actions, getCurScope(), LHSExpr);
-    Result = ParseSimpleStmtTailAfterExpression(LHS, StartLoc, POpt, OutKind,
+    Result = ParseSimpleStmtTailAfterExpression(LHS, StartLoc, POpt, &StmtKind,
                                                 Ext).take();
   }
+
+  if (IsPreIncDec) {
+    if (StmtKind == SSK_Expression) {
+      Diag(IncDecLoc, diag::no_prefix_op)
+          << tok::getTokenSimpleSpelling(IncDecKind);
+
+      // FIXME: add a fixit to insert ++ / -- in the right place, requires
+      // getting the end loc of an OwningStmtResult. Then:
+      // FIXME: Need to recover, but need some way to convert an SSK_Expression
+      // OwningStmtResult into an OwningExprResult (also needed for for loops).
+      //Result = Actions.ActOnIncDecStmt(move(Result), InsertLoc, IncDecKind);
+      return StmtError(); // FIXME: test this happens before OutKind is written.
+    } else {
+      Diag(IncDecLoc, diag::unexpected_token)
+          << tok::getTokenSimpleSpelling(IncDecKind);
+      return StmtError(); // FIXME: test this happens before OutKind is written.
+    }
+  }
+
+  if (OutKind)
+    *OutKind = StmtKind;
+
   return Result;
 }
 

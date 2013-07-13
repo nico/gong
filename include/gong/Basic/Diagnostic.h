@@ -549,7 +549,8 @@ inline const DiagnosticBuilder &operator<<(const DiagnosticBuilder &DB, int I) {
   return DB;
 }
 
-inline const DiagnosticBuilder &operator<<(const DiagnosticBuilder &DB,bool I) {
+inline const DiagnosticBuilder &operator<<(const DiagnosticBuilder &DB,
+                                           bool I) {
   DB.AddTaggedVal(I, DiagnosticsEngine::ak_sint);
   return DB;
 }
