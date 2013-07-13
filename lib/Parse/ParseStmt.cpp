@@ -104,20 +104,24 @@ Action::OwningStmtResult Parser::ParseSimpleStmt(SimpleStmtKind *OutKind,
 
   // Could be: ExpressionStmt, SendStmt, IncDecStmt, Assignment. They all start
   // with an Expression.
+  OwningStmtResult Result(Actions);
   if (Tok.is(tok::identifier)) {
     IdentifierInfo *II = Tok.getIdentifierInfo();
     SourceLocation IILoc = ConsumeToken();
-    return ParseSimpleStmtTail(IILoc, II, OutKind, Ext);
+    Result = ParseSimpleStmtTail(IILoc, II, OutKind, Ext).take();
+  } else {
+    // Here: Statements starting with an unary operator, Conversions to
+    // type literals that don't start with an operator (array, slice, map,
+    // interface, chan), expressions in (), int / float / rune / string
+    // literals, array / slice / map literals.
+    SourceLocation StartLoc = Tok.getLocation();
+    TypeSwitchGuardParam Opt, *POpt = Ext == SSE_TypeSwitchGuard ? &Opt : NULL;
+    OwningExprResult LHSExpr = ParseExpression(POpt, NULL);
+    IdentOrExprList LHS(Actions, getCurScope(), LHSExpr);
+    Result = ParseSimpleStmtTailAfterExpression(LHS, StartLoc, POpt, OutKind,
+                                                Ext).take();
   }
-  // Here: Statements starting with an unary operator, Conversions to
-  // type literals that don't start with an operator (array, slice, map,
-  // interface, chan), expressions in (), int / float / rune / string literals,
-  // array / slice / map literals.
-  SourceLocation StartLoc = Tok.getLocation();
-  TypeSwitchGuardParam Opt, *POpt = Ext == SSE_TypeSwitchGuard ? &Opt : NULL;
-  OwningExprResult LHSExpr = ParseExpression(POpt, NULL);
-  IdentOrExprList LHS(Actions, getCurScope(), LHSExpr);
-  return ParseSimpleStmtTailAfterExpression(LHS, StartLoc, POpt, OutKind, Ext);
+  return Result;
 }
 
 namespace {
