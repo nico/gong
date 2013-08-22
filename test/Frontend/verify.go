@@ -1,4 +1,4 @@
-// RUN: %gong_cc1 -verify %s 2>&1 | FileCheck %s
+// RUN: not %gong_cc1 -verify %s 2>&1 | FileCheck %s
 
 package p;
 func g() {

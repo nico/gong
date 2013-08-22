@@ -1,4 +1,4 @@
-// RUN: %gong_cc1 %s -sema 2>&1 | FileCheck %s
+// RUN: not %gong_cc1 %s -sema 2>&1 | FileCheck %s
 // Note: This doesn't run with -verify. This is a regression test for a crash
 //       that only happened without -verify.
 

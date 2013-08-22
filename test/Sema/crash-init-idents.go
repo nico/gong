@@ -1,4 +1,4 @@
-// RUN: %gong_cc1 %s -sema 2>&1 | FileCheck %s
+// RUN: not %gong_cc1 %s -sema 2>&1 | FileCheck %s
 // CHECK-NOT: Assertion failed
 package p
 
