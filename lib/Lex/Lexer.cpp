@@ -408,6 +408,8 @@ void Lexer::LexIdentifier(Token &Result, const char *CurPtr) {
 
   FormTokenWithChars(Result, CurPtr, tok::identifier);
 
+  // FIXME: Early return here if LexingRawMode() is set?
+
   // Update the token info (identifier info and appropriate token kind).
   // This converts e.g. "for" from tok::identifier to tok::kw_for.
   IdentifierInfo *II = &Identifiers.get(StringRef(IdStart, Result.getLength()));
