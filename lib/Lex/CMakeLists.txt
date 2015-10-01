@@ -7,4 +7,5 @@ add_gong_library(gongLex
 
   LINK_LIBS
   gongBasic
+  gongUtf
   )

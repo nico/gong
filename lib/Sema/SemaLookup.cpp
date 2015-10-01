@@ -369,7 +369,7 @@ void LookupResult::resolveKind() {
     //  }
     //}
 
-    if (!Unique.insert(D)) {
+    if (!Unique.insert(D).second) {
       // If it's not unique, pull something off the back (and
       // continue at this index).
       Decls[I] = Decls[--N];

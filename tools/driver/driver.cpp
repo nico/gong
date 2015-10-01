@@ -29,7 +29,6 @@
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/SmallString.h"
 #include "llvm/ADT/SmallVector.h"
-#include "llvm/ADT/OwningPtr.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/ManagedStatic.h"
@@ -137,10 +136,10 @@ int main(int argc_, const char **argv_) {
   Diags.setSourceManager(&SM);
 
   if (FileName) {
-    OwningPtr<llvm::MemoryBuffer> NewBuf;
-    llvm::MemoryBuffer::getFileOrSTDIN(FileName, NewBuf);
-    if (NewBuf) {
-      unsigned id = SM.AddNewSourceBuffer(NewBuf.take(), llvm::SMLoc());
+    llvm::ErrorOr<std::unique_ptr<llvm::MemoryBuffer>> Buffer =
+        llvm::MemoryBuffer::getFileOrSTDIN(FileName);
+    if (Buffer) {
+      unsigned id = SM.AddNewSourceBuffer(std::move(*Buffer), llvm::SMLoc());
       Lexer L(Diags, SM, SM.getMemoryBuffer(id));
 
       if (DiagOpts->VerifyDiagnostics) {

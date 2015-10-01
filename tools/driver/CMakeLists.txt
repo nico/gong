@@ -22,8 +22,5 @@ add_gong_executable(gong
 
 target_link_libraries(gong
   gongBasic
-  gongCodeGen
-  gongDriver
   gongFrontend
-  gongFrontendTool
   )

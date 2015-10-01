@@ -301,8 +301,6 @@ void gong::FormatASTNodeDiagnosticArgument(
     }
   }
 
-  OS.flush();
-
   if (NeedQuotes) {
     Output.insert(Output.begin()+OldEnd, '\'');
     Output.push_back('\'');

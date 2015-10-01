@@ -13,8 +13,6 @@ add_gong_library(gongSema
 
   LINK_LIBS
   gongAST
-  gongAnalysis
   gongBasic
-  gongEdit
   gongLex
   )

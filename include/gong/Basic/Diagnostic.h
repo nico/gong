@@ -20,7 +20,6 @@
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/DenseMap.h"
 #include "llvm/ADT/IntrusiveRefCntPtr.h"
-#include "llvm/ADT/OwningPtr.h"
 #include "llvm/Support/type_traits.h"
 
 #include <vector>
@@ -410,7 +409,7 @@ class DiagnosticBuilder {
   // Emit() would end up with if we used that as our status variable.
   mutable bool IsActive;
 
-  void operator=(const DiagnosticBuilder &) LLVM_DELETED_FUNCTION;
+  void operator=(const DiagnosticBuilder &) = delete;
   friend class DiagnosticsEngine;
   
   DiagnosticBuilder()
@@ -572,10 +571,9 @@ inline const DiagnosticBuilder &operator<<(const DiagnosticBuilder &DB,
 // so that we only match those arguments that are (statically) DeclContexts;
 // other arguments that derive from DeclContext (e.g., RecordDecls) will not
 // match.
-template<typename T>
-inline
-typename llvm::enable_if<llvm::is_same<T, DeclContext>, 
-                         const DiagnosticBuilder &>::type
+template <typename T>
+inline typename std::enable_if<std::is_same<T, DeclContext>::value,
+                               const DiagnosticBuilder &>::type
 operator<<(const DiagnosticBuilder &DB, T *DC) {
   DB.AddTaggedVal(reinterpret_cast<intptr_t>(DC),
                   DiagnosticsEngine::ak_declcontext);

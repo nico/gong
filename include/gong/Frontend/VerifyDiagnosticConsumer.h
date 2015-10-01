@@ -63,8 +63,8 @@ public:
     }
 
   private:
-    Directive(const Directive &) LLVM_DELETED_FUNCTION;
-    void operator=(const Directive &) LLVM_DELETED_FUNCTION;
+    Directive(const Directive &) = delete;
+    void operator=(const Directive &) = delete;
   };
 
   typedef std::vector<Directive*> DirectiveList;
@@ -92,7 +92,7 @@ private:
   DiagnosticsEngine &Diags;
   DiagnosticConsumer *PrimaryClient;
   bool OwnsPrimaryClient;
-  OwningPtr<TextDiagnosticBuffer> Buffer;
+  std::unique_ptr<TextDiagnosticBuffer> Buffer;
   llvm::SourceMgr *SrcManager;
   DirectiveStatus Status;
   ExpectedData ED;

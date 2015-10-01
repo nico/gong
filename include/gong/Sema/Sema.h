@@ -188,8 +188,8 @@ typedef std::pair<llvm::PointerUnion<const TemplateTypeParmType*, NamedDecl*>,
 
 /// Sema - This implements semantic analysis and AST building for C.
 class Sema : public Action {
-  Sema(const Sema &) LLVM_DELETED_FUNCTION;
-  void operator=(const Sema &) LLVM_DELETED_FUNCTION;
+  Sema(const Sema &) = delete;
+  void operator=(const Sema &) = delete;
 #if 0
   mutable const TargetAttributesSema* TheTargetAttributesSema;
 
@@ -847,8 +847,8 @@ public:
     return Diags.Report(Loc, DiagID);
   }
 
-  void DeleteExpr(ExprTy *E) LLVM_OVERRIDE;
-  void DeleteStmt(StmtTy *S) LLVM_OVERRIDE;
+  void DeleteExpr(ExprTy *E) override;
+  void DeleteStmt(StmtTy *S) override;
 
   OwningExprResult Owned(Expr* E) {
     //assert(!E || E->isRetained());
@@ -1453,57 +1453,57 @@ public:
 
   void ActOnImportSpec(SourceLocation PathLoc, StringRef ImportPath,
                        IdentifierInfo *LocalName,
-                       bool IsLocal) LLVM_OVERRIDE;
+                       bool IsLocal) override;
 
   DeclPtrTy ActOnSingleDecl(SourceLocation TypeLoc,
-                            DeclGroupKind DeclKind) LLVM_OVERRIDE;
+                            DeclGroupKind DeclKind) override;
   DeclPtrTy ActOnStartMultiDecl(SourceLocation TypeLoc,
                                 SourceLocation LParenLoc,
-                                DeclGroupKind DeclKind) LLVM_OVERRIDE;
+                                DeclGroupKind DeclKind) override;
   void ActOnFinishMultiDecl(DeclPtrTy Decl,
-                            SourceLocation RParenLoc) LLVM_OVERRIDE;
+                            SourceLocation RParenLoc) override;
 
   void ActOnConstSpec(DeclPtrTy Decl, IdentifierList &Idents,
-                      Scope *S) LLVM_OVERRIDE;
+                      Scope *S) override;
   void ActOnTypeSpec(DeclPtrTy Decl, SourceLocation IILoc, IdentifierInfo &II,
-                     DeclArg Type, Scope *S) LLVM_OVERRIDE;
+                     DeclArg Type, Scope *S) override;
   void ActOnVarSpec(DeclPtrTy Decl, IdentifierList &Idents, DeclArg Type,
                     SourceLocation OpLoc, MultiExprArg RHSs, Scope *S)
-                    LLVM_OVERRIDE;
+                    override;
 
   OwningStmtResult ActOnShortVarDeclStmt(IdentifierList &Idents,
                                          SourceLocation OpLoc,
-                                         MultiExprArg RHSs) LLVM_OVERRIDE;
+                                         MultiExprArg RHSs) override;
 
   DeclPtrTy ActOnFunctionDecl(SourceLocation FuncLoc, SourceLocation NameLoc,
-                              IdentifierInfo &II, Scope *S) LLVM_OVERRIDE;
+                              IdentifierInfo &II, Scope *S) override;
 
-  void ActOnStartOfFunctionDef(DeclPtrTy Fun, Scope *FnBodyScope) LLVM_OVERRIDE;
-  void ActOnFinishFunctionBody(DeclPtrTy Decl, StmtArg Body) LLVM_OVERRIDE;
+  void ActOnStartOfFunctionDef(DeclPtrTy Fun, Scope *FnBodyScope) override;
+  void ActOnFinishFunctionBody(DeclPtrTy Decl, StmtArg Body) override;
 
   OwningDeclResult ActOnTypeName(SourceLocation IILoc, IdentifierInfo &II,
-                                 Scope *CurScope) LLVM_OVERRIDE;
+                                 Scope *CurScope) override;
   OwningDeclResult ActOnPointerType(SourceLocation StarLoc,
-                                    Action::DeclArg PointeeType) LLVM_OVERRIDE;
+                                    Action::DeclArg PointeeType) override;
   OwningDeclResult ActOnStartOfStructType(SourceLocation StructLoc,
                                           SourceLocation L,
-                                          Scope *S) LLVM_OVERRIDE;
+                                          Scope *S) override;
   OwningDeclResult ActOnFieldDecl(IdentifierList &Idents, DeclArg Type,
-                                  Scope *S) LLVM_OVERRIDE;
+                                  Scope *S) override;
   OwningDeclResult ActOnAnonymousField(SourceLocation StarLoc, DeclArg TypeName,
-                                       Scope *S) LLVM_OVERRIDE;
-  void ActOnFieldDeclTag(DeclArg Field, ExprArg Tag) LLVM_OVERRIDE;
+                                       Scope *S) override;
+  void ActOnFieldDeclTag(DeclArg Field, ExprArg Tag) override;
   void ActOnFinishStructType(DeclArg Struct, SourceLocation R,
-                             MultiDeclArg Fields) LLVM_OVERRIDE;
+                             MultiDeclArg Fields) override;
 
   /// Scope actions.
-  void ActOnPopScope(SourceLocation Loc, Scope *S) LLVM_OVERRIDE;
-  void ActOnTranslationUnitScope(Scope *S) LLVM_OVERRIDE;
+  void ActOnPopScope(SourceLocation Loc, Scope *S) override;
+  void ActOnTranslationUnitScope(Scope *S) override;
 
   //===--------------------------------------------------------------------===//
   // Statement Parsing Callbacks: SemaStmt.cpp.
   OwningStmtResult ActOnBlockStmt(SourceLocation L, SourceLocation R,
-                                  MultiStmtArg Elts) LLVM_OVERRIDE;
+                                  MultiStmtArg Elts) override;
 #if 0
 
   Decl *ParsedFreeStandingDeclSpec(Scope *S, AccessSpecifier AS,
@@ -2674,10 +2674,10 @@ public:
   //===--------------------------------------------------------------------===//
   // Expression Parsing Callbacks: SemaExpr.cpp.
   OwningExprResult ActOnOperandName(SourceLocation IILoc, IdentifierInfo *II,
-                                    Scope *CurScope) LLVM_OVERRIDE;
+                                    Scope *CurScope) override;
   OwningExprResult ActOnSelectorExpr(ExprArg Base, SourceLocation OpLoc,
                                      SourceLocation IILoc, IdentifierInfo *II)
-                                     LLVM_OVERRIDE;
+                                     override;
 
 #if 0
   bool CanUseDecl(NamedDecl *D);
@@ -5607,10 +5607,10 @@ public:
     bool CheckInstantiationDepth(SourceLocation PointOfInstantiation,
                                  SourceRange InstantiationRange);
 
-    InstantiatingTemplate(const InstantiatingTemplate&) LLVM_DELETED_FUNCTION;
+    InstantiatingTemplate(const InstantiatingTemplate&) = delete;
 
     InstantiatingTemplate&
-    operator=(const InstantiatingTemplate&) LLVM_DELETED_FUNCTION;
+    operator=(const InstantiatingTemplate&) = delete;
   };
 
   void PrintInstantiationStack();

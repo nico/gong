@@ -91,8 +91,8 @@ class Lexer {
   /// Note that in raw mode that the MS and Diags pointers are null.
   bool LexingRawMode;
 
-  Lexer(const Lexer &) LLVM_DELETED_FUNCTION;
-  void operator=(const Lexer &) LLVM_DELETED_FUNCTION;
+  Lexer(const Lexer &) = delete;
+  void operator=(const Lexer &) = delete;
 
   void InitLexer(const char *BufStart, const char *BufPtr, const char *BufEnd);
 public:

@@ -1636,7 +1636,7 @@ public:
   /// Registers an identifier as package name, unless \a IsLocal is set.
   virtual void ActOnImportSpec(SourceLocation PathLoc, StringRef ImportPath,
                                IdentifierInfo *LocalName,
-                               bool IsLocal) LLVM_OVERRIDE;
+                               bool IsLocal) override;
 
   /// This looks at the IdentifierInfo::FETokenInfo field to determine whether
   /// the name is a package name, type name, or not in this scope.
@@ -1646,18 +1646,18 @@ public:
   /// Registers an identifier as type name.
   virtual void ActOnTypeSpec(DeclPtrTy Decl, SourceLocation IILoc,
                              IdentifierInfo &II, DeclArg Type,
-                             Scope *S) LLVM_OVERRIDE;
+                             Scope *S) override;
 
   /// Registers an identifier as function name.
   virtual DeclPtrTy ActOnFunctionDecl(SourceLocation FuncLoc,
                                       SourceLocation NameLoc,
                                       IdentifierInfo &II,
-                                      Scope *S) LLVM_OVERRIDE;
+                                      Scope *S) override;
 
   /// ActOnPopScope - When a scope is popped, if any typedefs are now
   /// out-of-scope, they are removed from the IdentifierInfo::FETokenInfo field.
-  virtual void ActOnPopScope(SourceLocation Loc, Scope *S) LLVM_OVERRIDE;
-  virtual void ActOnTranslationUnitScope(Scope *S) LLVM_OVERRIDE;
+  virtual void ActOnPopScope(SourceLocation Loc, Scope *S) override;
+  virtual void ActOnTranslationUnitScope(Scope *S) override;
 };
 
 ///// PrettyStackTraceActionsDecl - If a crash occurs in the parser while parsing
