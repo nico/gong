@@ -169,3 +169,6 @@ add_subdirectory(tools)
 option(GONG_INCLUDE_TESTS
        "Generate build targets for the Gong unit tests."
        ${LLVM_INCLUDE_TESTS})
+if( GONG_INCLUDE_TESTS )
+  add_subdirectory(test)
+endif()
