@@ -30,12 +30,12 @@ static const enum raw_ostream::Colors fixitColor =
   raw_ostream::GREEN;
 static const enum raw_ostream::Colors caretColor =
   raw_ostream::GREEN;
-static const enum raw_ostream::Colors warningColor =
-  raw_ostream::MAGENTA;
-static const enum raw_ostream::Colors templateColor =
-  raw_ostream::CYAN;
+//static const enum raw_ostream::Colors warningColor =
+  //raw_ostream::MAGENTA;
+//static const enum raw_ostream::Colors templateColor =
+  //raw_ostream::CYAN;
 static const enum raw_ostream::Colors errorColor = raw_ostream::RED;
-static const enum raw_ostream::Colors fatalColor = raw_ostream::RED;
+//static const enum raw_ostream::Colors fatalColor = raw_ostream::RED;
 // Used for changing only the bold attribute.
 static const enum raw_ostream::Colors savedColor =
   raw_ostream::SAVEDCOLOR;

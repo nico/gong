@@ -172,8 +172,8 @@ private:
   
   /// \brief Counts for DiagnosticErrorTrap to check whether an error occurred
   /// during a parsing section, e.g. during parsing a function.
-  unsigned TrapNumErrorsOccurred;
-  unsigned TrapNumUnrecoverableErrorsOccurred;
+  //unsigned TrapNumErrorsOccurred;
+  //unsigned TrapNumUnrecoverableErrorsOccurred;
 
   unsigned NumDiags;         ///< Number of diags reported
 

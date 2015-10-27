@@ -1641,7 +1641,7 @@ public:
   /// This looks at the IdentifierInfo::FETokenInfo field to determine whether
   /// the name is a package name, type name, or not in this scope.
   virtual IdentifierInfoType classifyIdentifier(const IdentifierInfo &II,
-                                                const Scope* S);
+                                                const Scope* S) override;
 
   /// Registers an identifier as type name.
   virtual void ActOnTypeSpec(DeclPtrTy Decl, SourceLocation IILoc,

@@ -123,14 +123,14 @@ namespace gong {
 
       /// Return the description of the specified custom diagnostic.
       StringRef getDescription(unsigned DiagID) const {
-        assert(this && DiagID-DIAG_UPPER_LIMIT < DiagInfo.size() &&
+        assert(DiagID - DIAG_UPPER_LIMIT < DiagInfo.size() &&
                "Invalid diagnosic ID");
         return DiagInfo[DiagID-DIAG_UPPER_LIMIT].second;
       }
 
       /// Return the level of the specified custom diagnostic.
       DiagnosticIDs::Level getLevel(unsigned DiagID) const {
-        assert(this && DiagID-DIAG_UPPER_LIMIT < DiagInfo.size() &&
+        assert(DiagID - DIAG_UPPER_LIMIT < DiagInfo.size() &&
                "Invalid diagnosic ID");
         return DiagInfo[DiagID-DIAG_UPPER_LIMIT].first;
       }

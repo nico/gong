@@ -767,7 +767,7 @@ public:
   void Initialize();
 
   virtual IdentifierInfoType classifyIdentifier(const IdentifierInfo &II,
-                                                const Scope* S) {
+                                                const Scope* S) override {
     return IIT_Unknown;  // FIXME
   }
   
