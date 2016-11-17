@@ -23,6 +23,6 @@ PresumedLoc PresumedLoc::build(const SourceManager &SM, SourceLocation Loc) {
   if (ID == -1)
     return PresumedLoc();
   std::pair<unsigned, unsigned> LC = SM.getLineAndColumn(Loc);
-  return PresumedLoc(SM.getMemoryBuffer(ID)->getBufferIdentifier(), LC.first,
-                     LC.second, SM.getBufferInfo(ID).IncludeLoc);
+  return PresumedLoc(SM.getMemoryBuffer(ID)->getBufferIdentifier().data(),
+                     LC.first, LC.second, SM.getBufferInfo(ID).IncludeLoc);
 }

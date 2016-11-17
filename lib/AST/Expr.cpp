@@ -603,7 +603,7 @@ DeclRefExpr *DeclRefExpr::Create(ASTContext &Context,
   if (FoundD)
     Size += sizeof(NamedDecl *);
 
-  void *Mem = Context.Allocate(Size, llvm::alignOf<DeclRefExpr>());
+  void *Mem = Context.Allocate(Size, alignof(DeclRefExpr));
   return new (Mem) DeclRefExpr(Context, /*QualifierLoc,*/ D,
                                RefersToEnclosingLocal,
                                /*NameInfo,*/ L, FoundD, T/*, VK*/);
@@ -623,7 +623,7 @@ DeclRefExpr *DeclRefExpr::CreateEmpty(ASTContext &Context,
   if (HasTemplateKWAndArgsInfo)
     Size += ASTTemplateKWAndArgsInfo::sizeFor(NumTemplateArgs);
 
-  void *Mem = Context.Allocate(Size, llvm::alignOf<DeclRefExpr>());
+  void *Mem = Context.Allocate(Size, alignof(DeclRefExpr));
   return new (Mem) DeclRefExpr(EmptyShell());
 }
 
@@ -917,7 +917,7 @@ StringLiteral *StringLiteral::Create(ASTContext &C, StringRef Str,
   // any concatenated string tokens.
   void *Mem = C.Allocate(sizeof(StringLiteral)+
                          sizeof(SourceLocation)*(NumStrs-1),
-                         llvm::alignOf<StringLiteral>());
+                         alignof(StringLiteral));
   StringLiteral *SL = new (Mem) StringLiteral(Ty);
 
   // OPTIMIZE: could allocate this appended to the StringLiteral.
@@ -934,7 +934,7 @@ StringLiteral *StringLiteral::Create(ASTContext &C, StringRef Str,
 StringLiteral *StringLiteral::CreateEmpty(ASTContext &C, unsigned NumStrs) {
   void *Mem = C.Allocate(sizeof(StringLiteral)+
                          sizeof(SourceLocation)*(NumStrs-1),
-                         llvm::alignOf<StringLiteral>());
+                         alignof(StringLiteral));
   StringLiteral *SL = new (Mem) StringLiteral(QualType());
   SL->CharByteWidth = 0;
   SL->Length = 0;
@@ -3543,8 +3543,7 @@ ObjCMessageExpr *ObjCMessageExpr::alloc(ASTContext &C,
                                         unsigned NumStoredSelLocs) {
   unsigned Size = sizeof(ObjCMessageExpr) + sizeof(void *) + 
     NumArgs * sizeof(Expr *) + NumStoredSelLocs * sizeof(SourceLocation);
-  return (ObjCMessageExpr *)C.Allocate(Size,
-                                     llvm::AlignOf<ObjCMessageExpr>::Alignment);
+  return (ObjCMessageExpr *)C.Allocate(Size, alignof(ObjCMessageExpr));
 }
 
 void ObjCMessageExpr::getSelectorLocs(
@@ -3926,7 +3925,7 @@ PseudoObjectExpr *PseudoObjectExpr::Create(ASTContext &Context, EmptyShell sh,
                                            unsigned numSemanticExprs) {
   void *buffer = Context.Allocate(sizeof(PseudoObjectExpr) +
                                     (1 + numSemanticExprs) * sizeof(Expr*),
-                                  llvm::alignOf<PseudoObjectExpr>());
+                                  alignof(PseudoObjectExpr));
   return new(buffer) PseudoObjectExpr(sh, numSemanticExprs);
 }
 
@@ -3955,7 +3954,7 @@ PseudoObjectExpr *PseudoObjectExpr::Create(ASTContext &C, Expr *syntax,
 
   void *buffer = C.Allocate(sizeof(PseudoObjectExpr) +
                               (1 + semantics.size()) * sizeof(Expr*),
-                            llvm::alignOf<PseudoObjectExpr>());
+                            alignof(PseudoObjectExpr));
   return new(buffer) PseudoObjectExpr(type, VK, syntax, semantics,
                                       resultIndex);
 }

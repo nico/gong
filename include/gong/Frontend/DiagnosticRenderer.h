@@ -27,10 +27,11 @@ namespace gong {
 
 class DiagnosticOptions;
 //class LangOptions;
-class StoredDiagnostic;
+//class StoredDiagnostic;
 
-typedef llvm::PointerUnion<const Diagnostic *,
-                           const StoredDiagnostic *> DiagOrStoredDiag;
+//typedef llvm::PointerUnion<const Diagnostic *,
+//                           const StoredDiagnostic *> DiagOrStoredDiag;
+typedef void* DiagOrStoredDiag;
   
 /// \brief Class to encapsulate the logic for formatting a diagnostic message.
 ///  Actual "printing" logic is implemented by subclasses.
@@ -134,7 +135,7 @@ public:
                       const SourceManager *SM,
                       DiagOrStoredDiag D = (Diagnostic *)0);
 
-  void emitStoredDiagnostic(StoredDiagnostic &Diag);
+  //void emitStoredDiagnostic(StoredDiagnostic &Diag);
 };
   
 /// Subclass of DiagnosticRender that turns all subdiagostics into explicit

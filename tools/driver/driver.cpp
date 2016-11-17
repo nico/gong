@@ -102,7 +102,7 @@ void ParseDiagnosticArgs(DiagnosticOptions &DiagOpts, int argc,
 }
 
 int main(int argc_, const char **argv_) {
-  llvm::sys::PrintStackTraceOnErrorSignal();
+  llvm::sys::PrintStackTraceOnErrorSignal(argv_[0]);
   llvm::PrettyStackTraceProgram X(argc_, argv_);
 
   llvm::InitializeAllTargets();

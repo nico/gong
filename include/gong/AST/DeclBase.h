@@ -58,8 +58,7 @@ class UsingDirectiveDecl;
 
 namespace llvm {
 // DeclContext* is only 4-byte aligned on 32-bit systems.
-template<>
-  class PointerLikeTypeTraits<gong::DeclContext*> {
+template <> class PointerLikeTypeTraits<gong::DeclContext *> {
   typedef gong::DeclContext* PT;
 public:
   static inline void *getAsVoidPointer(PT P) { return P; }
@@ -860,7 +859,7 @@ protected:
 
    DeclContext(Decl::Kind K)
      : DeclKind(K), ExternalLexicalStorage(false),
-       ExternalVisibleStorage(false), LookupPtr(0, false), FirstDecl(0),
+       ExternalVisibleStorage(false), LookupPtr(), FirstDecl(0),
        LastDecl(0) { }
 
 public:
