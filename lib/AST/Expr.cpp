@@ -128,6 +128,7 @@ namespace {
   template <class T> good implements_getLocStart(getLocStart_t T::*) {
     return good();
   }
+  LLVM_ATTRIBUTE_UNUSED
   static inline bad implements_getLocStart(getLocStart_t Expr::*) {
     return bad();
   }
@@ -136,6 +137,7 @@ namespace {
   template <class T> good implements_getLocEnd(getLocEnd_t T::*) {
     return good();
   }
+  LLVM_ATTRIBUTE_UNUSED
   static inline bad implements_getLocEnd(getLocEnd_t Expr::*) {
     return bad();
   }
@@ -143,13 +145,14 @@ namespace {
 //#define ASSERT_IMPLEMENTS_children(type) \
   //(void) sizeof(is_good(implements_children(&type::children)))
 #define ASSERT_IMPLEMENTS_getLocStart(type) \
-  (void) sizeof(is_good(implements_getLocStart(&type::getLocStart)))
+  (void) is_good(implements_getLocStart(&type::getLocStart))
 #define ASSERT_IMPLEMENTS_getLocEnd(type) \
-  (void) sizeof(is_good(implements_getLocEnd(&type::getLocEnd)))
+  (void) is_good(implements_getLocEnd(&type::getLocEnd))
 }
 
 /// Check whether the various Expr classes implement their member
 /// functions.
+LLVM_ATTRIBUTE_UNUSED
 static inline void check_implementations() {
 #define ABSTRACT_EXPR(type)
 #define EXPR(type, base) \

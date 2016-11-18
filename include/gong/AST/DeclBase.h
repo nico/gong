@@ -57,6 +57,7 @@ class UsingDirectiveDecl;
 #endif
 
 namespace llvm {
+
 // DeclContext* is only 4-byte aligned on 32-bit systems.
 template <> class PointerLikeTypeTraits<gong::DeclContext *> {
   typedef gong::DeclContext* PT;
@@ -67,6 +68,18 @@ public:
   }
   enum { NumLowBitsAvailable = 2 };
 };
+
+// StoredDeclsMap* is only 4-byte aligned on 32-bit systems.
+template <> class PointerLikeTypeTraits<gong::StoredDeclsMap *> {
+  typedef gong::StoredDeclsMap* PT;
+public:
+  static inline void *getAsVoidPointer(PT P) { return P; }
+  static inline PT getFromVoidPointer(void *P) {
+    return static_cast<PT>(P);
+  }
+  enum { NumLowBitsAvailable = 2 };
+};
+
 }
 
 namespace gong {
