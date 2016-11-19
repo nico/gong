@@ -168,3 +168,6 @@ DIAG(ambiguous_name,               CLASS_ERROR, "name %0 is ambiguous")
 DIAG(note_could_be,                CLASS_NOTE, "could be in %0")
 DIAG(cannot_assign,                CLASS_ERROR,
     "variable of type %0 cannot be assigned an expression of type %1")
+
+// FIXME: move to DiagnosticDriverKinds
+DIAG(drv_generic_error, CLASS_ERROR, "%0: %1")

@@ -138,7 +138,10 @@ int main(int argc_, const char **argv_) {
   if (FileName) {
     llvm::ErrorOr<std::unique_ptr<llvm::MemoryBuffer>> Buffer =
         llvm::MemoryBuffer::getFileOrSTDIN(FileName);
-    if (Buffer) {
+    if (std::error_code EC = Buffer.getError()) {
+      Diags.Report(SourceLocation(), diag::drv_generic_error) << EC.message()
+                                                              << FileName;
+    } else {
       unsigned id = SM.AddNewSourceBuffer(std::move(*Buffer), llvm::SMLoc());
       Lexer L(Diags, SM, SM.getMemoryBuffer(id));
 
