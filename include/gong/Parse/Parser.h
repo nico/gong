@@ -306,7 +306,7 @@ public:
 
   /// If \a TOpt points to a TypeParam, then the expression parser
   /// will allow types in addition to expressions.
-  /// TSGOpt.Kind will be set to EK_Type if a type was parsed.
+  /// TOpt.Kind will be set to EK_Type if a type was parsed.
   /// This is needed to parse the first parenthesized tokens in an expression
   /// like |([]int)(4)| and |((interface{}))(4)|.
   struct TypeParam {
