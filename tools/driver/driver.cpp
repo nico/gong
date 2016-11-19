@@ -46,6 +46,16 @@
 #include <cctype>
 using namespace gong;
 
+std::string GetExecutablePath(const char *Argv0, bool CanonicalPrefixes) {
+  if (!CanonicalPrefixes)
+    return Argv0;
+
+  // This just needs to be some symbol in the binary; C++ doesn't
+  // allow taking the address of ::main however.
+  void *P = (void*) (intptr_t) GetExecutablePath;
+  return llvm::sys::fs::getMainExecutable(Argv0, P);
+}
+
 namespace {
 
 void DumpTokens(Lexer &L) {
@@ -110,6 +120,7 @@ int main(int argc_, const char **argv_) {
   bool dumpTokens = false;
   bool sema = false;
   bool stats = false;
+  bool CanonicalPrefixes = true;
   const char* FileName = NULL;
   for (int i = 1; i < argc_; ++i)
     if (argv_[i][0] != '-' || !argv_[i][1]) {
@@ -120,6 +131,8 @@ int main(int argc_, const char **argv_) {
       sema = true;  // This should become opt-out once sema is useful.
     } else if (argv_[i] == std::string("-print-stats")) {
       stats = true;
+    } else if (argv_[i] == std::string("-no-canoncial-prefixes")) {
+      CanonicalPrefixes = false;
     }
 
   SourceManager SM;
@@ -130,6 +143,8 @@ int main(int argc_, const char **argv_) {
   // DiagnosticOptions instance.
   TextDiagnosticPrinter *DiagClient
     = new TextDiagnosticPrinter(llvm::errs(), &*DiagOpts);
+  std::string Path = GetExecutablePath(argv_[0], /*CanonicalPrefixes=*/true);
+  DiagClient->setPrefix(llvm::sys::path::filename(Path));
 
   IntrusiveRefCntPtr<DiagnosticIDs> DiagIDs(new DiagnosticIDs);
   DiagnosticsEngine Diags(DiagIDs, DiagClient);
@@ -144,6 +159,11 @@ int main(int argc_, const char **argv_) {
     } else {
       unsigned id = SM.AddNewSourceBuffer(std::move(*Buffer), llvm::SMLoc());
       Lexer L(Diags, SM, SM.getMemoryBuffer(id));
+
+      // Reset to a fresh (prefix-less) diag client now that we know that
+      // diagnostics are going to be about code instead of about driver
+      // concerns.
+      Diags.setClient(new TextDiagnosticPrinter(llvm::errs(), &*DiagOpts));
 
       if (DiagOpts->VerifyDiagnostics) {
         VerifyDiagnosticConsumer* verifier =

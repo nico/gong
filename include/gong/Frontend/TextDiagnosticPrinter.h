@@ -33,6 +33,10 @@ public:
                         bool OwnsOutputStream = false);
   virtual ~TextDiagnosticPrinter();
 
+  /// Set the diagnostic printer prefix string, which will be printed at the
+  /// start of any diagnostics. If empty, no prefix string is used.
+  void setPrefix(std::string Value) { Prefix = std::move(Value); }
+
   void handleDiagnostic(DiagnosticsEngine::Level Level, const Diagnostic &Info);
 };
 
