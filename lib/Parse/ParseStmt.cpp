@@ -740,6 +740,8 @@ Action::OwningStmtResult Parser::ParseCommClause() {
 
 /// CommCase   = "case" ( SendStmt | RecvStmt ) | "default" .
 /// RecvStmt   = [ Expression [ "," Expression ] ( "=" | ":=" ) ] RecvExpr .
+// FIXME: RecvStmt   = [ ExpressionList "=" | IdentifierList ":=" ] RecvExpr .
+// after https://github.com/golang/go/commit/d3679726b4639c
 /// RecvExpr   = Expression .
 /// SendStmt = Channel "<-" Expression .
 /// Channel  = Expression .
@@ -885,6 +887,9 @@ Action::OwningStmtResult Parser::ParseForStmtTail(SourceLocation ForLoc) {
 /// This is called when Tok points at "range".
 /// RangeClause = Expression [ "," Expression ] ( "=" | ":=" )
 ///               "range" Expression .
+// FIXME: RangeClause = ( ExpressionList "=" | IdentifierList ":=" )
+//                "range" Expression .
+// after https://github.com/golang/go/commit/d3679726b4639c
 bool Parser::ParseRangeClauseTail(tok::TokenKind Op, SimpleStmtKind *OutKind,
                                   SimpleStmtExts Exts) {
   assert(Tok.is(tok::kw_range) && "expected 'range'");
