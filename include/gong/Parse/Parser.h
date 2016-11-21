@@ -470,7 +470,10 @@ public:
     SSE_RangeClause,
 
     // In addition to SimpleStmts, also accept TypeSwitchGuard.
-    SSE_TypeSwitchGuard
+    SSE_TypeSwitchGuard,
+
+    // Only accept SendStmts or RecvStmts, for use in a CommCase.
+    SSE_SendRecvStmt,
   };
   /// This describes what ParseSimpleStmt() parsed.
   enum SimpleStmtKind {

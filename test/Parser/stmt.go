@@ -189,7 +189,10 @@ func f() {
   select {
   case a<-4:        // Send
   case <-4:         // Unnamed receive
+  case (<-4):       // (possibly parenthesized)
+  case ((<-4)):
   case a = <-4:     // Named receive
+  case a = (<-4):
   case a := <-4:    // Named receive
   case a,b = <-4:   // Named receive
   case a,b := <-4:  // Named receive

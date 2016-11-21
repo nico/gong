@@ -759,6 +759,9 @@ bool Parser::ParseCommCase() {
 
   ConsumeToken();  // Consume 'case'.
 
+#if 0
+  ParseSimpleStmt()
+#else
   OwningExprResult LHS = ParseExpression();
   if (Tok.is(tok::lessminus))
     return ParseSendStmtTail(move(LHS)).isInvalid();
@@ -788,6 +791,7 @@ bool Parser::ParseCommCase() {
   } else {
     // LHS was the RecvExpr, nothing to do.
   }
+#endif
   return false;
 }
 
