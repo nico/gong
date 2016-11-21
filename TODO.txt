@@ -191,6 +191,9 @@ check IsExpression() everywhere ParseExpression() is called
 diag only once on 
   a := (a[1)
 
+diag only once on
+  for a := 4; a = 4; a++ {}
+
 Try to emit diags at end of previous token instead of on current token in
 many cases. e.g.
 
