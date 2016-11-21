@@ -263,7 +263,7 @@ Parser::ParseSimpleStmtTailAfterExpression(IdentOrExprList &LHS,
 
     if (Tok.is(tok::kw_range))
       // FIXME: check that Exprs has at most two elements in it.
-      return ParseRangeClauseTail(Op, OpLoc, OutKind, Ext)
+      return ParseRangeClauseTail(LHS, OpLoc, Op, OutKind, Ext)
                  ? StmtError()
                  : Actions.StmtEmpty(); // FIXME
 
@@ -290,7 +290,7 @@ Parser::ParseSimpleStmtTailAfterExpression(IdentOrExprList &LHS,
     tok::TokenKind Op = Tok.getKind();
     SourceLocation OpLoc = ConsumeToken();
     if (Tok.is(tok::kw_range))
-      return ParseRangeClauseTail(Op, OpLoc, OutKind, Ext) ? StmtError()
+      return ParseRangeClauseTail(LHS, OpLoc, Op, OutKind, Ext) ? StmtError()
              : Actions.StmtEmpty();  // FIXME
     // FIXME: if Op is '=' and the expression a TypeSwitchGuard, provide fixit
     // to turn '=' into ':='.
@@ -301,7 +301,7 @@ Parser::ParseSimpleStmtTailAfterExpression(IdentOrExprList &LHS,
   if (Tok.is(tok::colonequal)) {
     SourceLocation OpLoc = ConsumeToken();
     if (Tok.is(tok::kw_range))
-      return ParseRangeClauseTail(tok::colonequal, OpLoc, OutKind, Ext)
+      return ParseRangeClauseTail(LHS, OpLoc, tok::colonequal, OutKind, Ext)
                  ? StmtError()
                  : Actions.StmtEmpty(); // FIXME
     if (LHS.Kind() != IdentOrExprList::RK_Ident) {
@@ -892,8 +892,8 @@ Action::OwningStmtResult Parser::ParseForStmtTail(SourceLocation ForLoc) {
 // FIXME: RangeClause = ( ExpressionList "=" | IdentifierList ":=" )
 //                "range" Expression .
 // after https://github.com/golang/go/commit/d3679726b4639c
-bool Parser::ParseRangeClauseTail(tok::TokenKind Op, SourceLocation OpLoc,
-                                  SimpleStmtKind *OutKind,
+bool Parser::ParseRangeClauseTail(IdentOrExprList &LHS, SourceLocation OpLoc,
+                                  tok::TokenKind Op, SimpleStmtKind *OutKind,
                                   SimpleStmtExts Exts) {
   assert(Tok.is(tok::kw_range) && "expected 'range'");
   SourceLocation RangeLoc = ConsumeToken();
@@ -912,7 +912,27 @@ bool Parser::ParseRangeClauseTail(tok::TokenKind Op, SourceLocation OpLoc,
   if (OutKind)
     *OutKind = SSK_RangeClause;
 
-  return ParseExpression().isInvalid();
+  // Parse expression following `range`.
+  OwningExprResult Exp(ParseExpression());
+
+  // FIXME: wrap Exp in SelectExpr node.
+
+  if (Op == tok::colonequal) {
+    if (LHS.Kind() == IdentOrExprList::RK_Ident) {
+      // FIXME: Use a dedicated ActOn method here.
+      ExprVector Exprs(Actions);
+      Exprs.push_back(Exp.release());
+      return Actions
+          .ActOnShortVarDeclStmt(LHS.Identifiers(), OpLoc, move_arg(Exprs))
+          .isInvalid();
+    } else {
+      // FIXME: fixit to change ':=' to '='
+      Diag(OpLoc, diag::invalid_expr_left_of_colonequal);
+      Failed = true;
+    }
+  }
+
+  return Exp.isInvalid();
 }
 
 /// DeferStmt = "defer" Expression .

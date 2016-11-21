@@ -98,6 +98,9 @@ func scope_for() {
   for b := 1; ; {
     b // check that |b| is defined at this point.
   }
+  for c := range "" {
+    c // check that |c| is defined at this point.
+  }
   a := 1  // expected-diag {{no new variables declared}}
 }
 

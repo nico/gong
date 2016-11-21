@@ -526,8 +526,9 @@ public:
   OwningStmtResult ParseForStmt();
   OwningStmtResult ParseWhileAsForStmt(SourceLocation WhileLoc);
   OwningStmtResult ParseForStmtTail(SourceLocation ForLoc);
-  bool ParseRangeClauseTail(tok::TokenKind Op, SourceLocation OpLoc,
-                            SimpleStmtKind *OutKind, SimpleStmtExts Exts);
+  bool ParseRangeClauseTail(IdentOrExprList &LHS, SourceLocation OpLoc,
+                            tok::TokenKind Op, SimpleStmtKind *OutKind,
+                            SimpleStmtExts Exts);
   OwningStmtResult ParseDeferStmt();
   OwningStmtResult ParseEmptyStmt();
   OwningStmtResult ParseBlock();

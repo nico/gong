@@ -217,9 +217,9 @@ func f() {
   for a <<= range "" {}  // expected-diag{{expected ':=' or '='}}
   for a, b := range "hi" {}
   for a, b = range "hi" {}
-  for a[i] := range "hi" {}
+  for a[i] := range "hi" {}  // expected-diag{{unexpected expression before ':='}}
   for a[i] = range "hi" {}
-  for a[i], b[i] := range "hi" {}
+  for a[i], b[i] := range "hi" {}  // expected-diag{{unexpected expression before ':='}}
   for a[i], b[i] = range "hi" {}
   for a[i], b[i] += range "hi" {}  // expected-diag{{expected ':=' or '='}}
 
