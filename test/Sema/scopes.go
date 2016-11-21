@@ -117,10 +117,13 @@ func scope_switch() {
   a := 1  // expected-diag {{no new variables declared}}
 
   // TypeSwitchStmt
-  switch a := 1; b := a.(type) {
+  switch c := 1; b := c.(type) {
   default:
     b // check that |b| is defined at this point.
     b := 1  // expected-note {{declared here}}
     b := 1  // expected-diag {{no new variables declared}}
+    c // check that |c| is defined at this point.
+    c := 1  // expected-note {{declared here}}
+    c := 1  // expected-diag {{no new variables declared}}
   }
 }
