@@ -213,6 +213,8 @@ func f() {
 
   for a := range "hi" {}
   for a = range "hi" {}
+  for a += range "" {}  // expected-diag{{expected ':=' or '='}}
+  for a <<= range "" {}  // expected-diag{{expected ':=' or '='}}
   for a, b := range "hi" {}
   for a, b = range "hi" {}
   for a[i] := range "hi" {}

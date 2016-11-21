@@ -289,7 +289,7 @@ Parser::ParseSimpleStmtTailAfterExpression(IdentOrExprList &LHS,
     tok::TokenKind Op = Tok.getKind();
     SourceLocation OpLoc = ConsumeToken();
     if (Tok.is(tok::kw_range))
-      return ParseRangeClauseTail(tok::colonequal, OutKind, Ext) ? StmtError()
+      return ParseRangeClauseTail(Op, OutKind, Ext) ? StmtError()
              : Actions.StmtEmpty();  // FIXME
     // FIXME: if Op is '=' and the expression a TypeSwitchGuard, provide fixit
     // to turn '=' into ':='.
