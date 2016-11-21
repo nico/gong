@@ -896,12 +896,12 @@ bool Parser::ParseRangeClauseTail(tok::TokenKind Op, SourceLocation OpLoc,
                                   SimpleStmtKind *OutKind,
                                   SimpleStmtExts Exts) {
   assert(Tok.is(tok::kw_range) && "expected 'range'");
-  ConsumeToken();
+  SourceLocation RangeLoc = ConsumeToken();
 
   // FIXME: return an invalid statement in this case.
   bool Failed = false;
   if (Exts != SSE_RangeClause) {
-    Diag(Tok, diag::range_only_valid_in_for);
+    Diag(RangeLoc, diag::range_only_valid_in_for);
     Failed = true;
   }
   if (Op != tok::equal && Op != tok::colonequal) {
