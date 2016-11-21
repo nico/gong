@@ -102,6 +102,7 @@ func scope_for() {
 }
 
 func scope_switch() {
+  // ExprSwitchStmt
   a := 1  // expected-note {{declared here}}
   switch a := 1; {
   default:
@@ -114,4 +115,12 @@ func scope_switch() {
     b // check that |b| is defined at this point.
   }
   a := 1  // expected-diag {{no new variables declared}}
+
+  // TypeSwitchStmt
+  switch a := 1; b := a.(type) {
+  default:
+    b // check that |b| is defined at this point.
+    b := 1  // expected-note {{declared here}}
+    b := 1  // expected-diag {{no new variables declared}}
+  }
 }
