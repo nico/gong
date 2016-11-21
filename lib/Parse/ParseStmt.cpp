@@ -889,11 +889,8 @@ Action::OwningStmtResult Parser::ParseForStmtTail(SourceLocation ForLoc) {
 }
 
 /// This is called when Tok points at "range".
-/// RangeClause = Expression [ "," Expression ] ( "=" | ":=" )
+/// RangeClause = ( ExpressionList "=" | IdentifierList ":=" )
 ///               "range" Expression .
-// FIXME: RangeClause = ( ExpressionList "=" | IdentifierList ":=" )
-//                "range" Expression .
-// after https://github.com/golang/go/commit/d3679726b4639c
 bool Parser::ParseRangeClauseTail(SourceLocation StartLoc, IdentOrExprList &LHS,
                                   SourceLocation OpLoc, tok::TokenKind Op,
                                   SimpleStmtKind *OutKind,
