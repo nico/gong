@@ -165,11 +165,12 @@ Action::OwningStmtResult Parser::ParseSimpleStmt(SimpleStmtKind *OutKind,
 
 namespace {
 
-bool IsAssignmentOp(tok::TokenKind Kind) {
+bool IsAssignmentOp(tok::TokenKind Kind, bool AcceptExtendedAssign = true) {
   switch (Kind) {
   default:
     return false;
   case tok::equal:
+    return true;
   case tok::plusequal:
   case tok::minusequal:
   case tok::pipeequal:
@@ -181,7 +182,7 @@ bool IsAssignmentOp(tok::TokenKind Kind) {
   case tok::greatergreaterequal:
   case tok::ampequal:
   case tok::ampcaretequal:
-    return true;
+    return AcceptExtendedAssign;
   }
 }
 
@@ -249,9 +250,11 @@ Parser::ParseSimpleStmtTailAfterExpression(IdentOrExprList &LHS,
     // only statements starting with an expression list).
     // TypeSwitchGuards can have only a single identifier, so they don't matter
     // here.
-    if (!IsAssignmentOp(Tok.getKind()) && Tok.isNot(tok::colonequal)) {
-      Diag(Tok, diag::expected_assign_op);
-      SkipUntil(tok::semi, tok::l_brace,
+    if (!IsAssignmentOp(Tok.getKind(), Ext != SSE_SendRecvStmt) &&
+        Tok.isNot(tok::colonequal)) {
+      Diag(Tok, Ext == SSE_SendRecvStmt ? diag::expected_colonequal_or_equal
+                                        : diag::expected_assign_op);
+      SkipUntil(tok::semi, tok::l_brace, tok::colon,
                 /*StopAtSemi=*/false, /*DontConsume=*/true);
       return StmtError();
       // FIXME: For bonus points, only suggest ':=' if at least one identifier
@@ -289,6 +292,10 @@ Parser::ParseSimpleStmtTailAfterExpression(IdentOrExprList &LHS,
   if (IsAssignmentOp(Tok.getKind())) {
     tok::TokenKind Op = Tok.getKind();
     SourceLocation OpLoc = ConsumeToken();
+    if (Ext == SSE_SendRecvStmt && Op != tok::equal) {
+      Diag(OpLoc, diag::expected_colonequal_or_equal);
+      Op = tok::equal;  // Lame recovery attempt.
+    }
     if (Tok.is(tok::kw_range))
       return ParseRangeClauseTail(StartLoc, LHS, OpLoc, Op, OutKind, Ext)
                  ? StmtError()
@@ -743,9 +750,7 @@ Action::OwningStmtResult Parser::ParseCommClause() {
 }
 
 /// CommCase   = "case" ( SendStmt | RecvStmt ) | "default" .
-/// RecvStmt   = [ Expression [ "," Expression ] ( "=" | ":=" ) ] RecvExpr .
-// FIXME: RecvStmt   = [ ExpressionList "=" | IdentifierList ":=" ] RecvExpr .
-// after https://github.com/golang/go/commit/d3679726b4639c
+/// RecvStmt   = [ ExpressionList "=" | IdentifierList ":=" ] RecvExpr .
 /// RecvExpr   = Expression .
 /// SendStmt = Channel "<-" Expression .
 /// Channel  = Expression .
@@ -759,40 +764,12 @@ bool Parser::ParseCommCase() {
 
   ConsumeToken();  // Consume 'case'.
 
-#if 0
-  ParseSimpleStmt()
-#else
-  OwningExprResult LHS = ParseExpression();
-  if (Tok.is(tok::lessminus))
-    return ParseSendStmtTail(move(LHS)).isInvalid();
-
-  // This is a RecvStmt.
-  bool FoundAssignOp = false;
-  if (Tok.is(tok::comma)) {
-    IdentOrExprList Exprs(Actions, getCurScope(), move(LHS));
-    // FIXME: RecvStmt allows just one optional further Expr, no full exprlist.
-    ParseExpressionListTail(Exprs);
-
-    if (Tok.isNot(tok::equal) && Tok.isNot(tok::colonequal)) {
-      Diag(Tok, diag::expected_colonequal_or_equal);
-      // FIXME: recover?
-      return true;
-    }
-    ConsumeToken();  // Eat '=' or ':='.
-    FoundAssignOp = true;
-  } else if (Tok.is(tok::equal) || Tok.is(tok::colonequal)) {
-    ConsumeToken();  // Eat '=' or ':='.
-    FoundAssignOp = true;
-  }
-
-  if (FoundAssignOp) {
-    // Parse RecvExpr after the assignment operator.
-    ParseExpression();
-  } else {
-    // LHS was the RecvExpr, nothing to do.
-  }
-#endif
-  return false;
+  // Note: CommCase only accepts (potentially parenthesized) send and recv
+  // expressions (and a recv expression can be assigned to a variable).
+  // Calling ParseSimpleStmt() accepts more than that, so sema needs to
+  // reject some case stmts later on (e.g. `case a++:`).
+  SimpleStmtKind Kind;
+  return ParseSimpleStmt(&Kind, SSE_SendRecvStmt).isInvalid();
 }
 
 /// ForStmt = "for" [ Condition | ForClause | RangeClause ] Block .

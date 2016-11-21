@@ -199,6 +199,8 @@ func f() {
   }
   select {
   case a, b:  // expected-diag{{expected ':=' or '='}}
+  case a += <-4:  // expected-diag{{expected ':=' or '='}}
+  case a, b += <-4:  // expected-diag{{expected ':=' or '='}}
   }
 
   // ForStmt

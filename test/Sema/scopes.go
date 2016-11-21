@@ -50,9 +50,6 @@ func f() {
       type D int
   }
 
-  a := 4  // FIXME: Remove! This is needed because the case below does a
-          //        lookup for "a" on the lhs of ':=' :-/
-          // See also https://code.google.com/p/go/issues/detail?id=4653
   select {
     default:
       type A int  // expected-note {{previous definition is here}}
