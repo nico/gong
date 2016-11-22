@@ -665,6 +665,7 @@ bool Parser::ParseSwitchCase(CaseClauseType Type) {
   case ExprCaseClause: return ParseExpressionList(Exprs);
   case TypeCaseClause: return ParseTypeList();
   }
+  llvm_unreachable("unexpected case clause");
 }
 
 /// SelectStmt = "select" "{" { CommClause } "}" .

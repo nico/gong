@@ -18,6 +18,7 @@
 #include "gong/Basic/Diagnostic.h"
 #include "gong/Lex/Lexer.h"
 #include "llvm/ADT/STLExtras.h"
+#include <limits.h>
 
 namespace llvm {
   class SourceMgr;

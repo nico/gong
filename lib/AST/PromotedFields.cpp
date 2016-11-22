@@ -14,6 +14,7 @@
 #include "gong/AST/PromotedFields.h"
 
 #include "gong/AST/Decl.h"
+#include <limits.h>
 
 using namespace gong;
 
