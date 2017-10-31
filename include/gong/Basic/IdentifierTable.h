@@ -328,7 +328,7 @@ namespace llvm {
 // Provide PointerLikeTypeTraits for IdentifierInfo pointers, which
 // are not guaranteed to be 8-byte aligned.
 template<>
-class PointerLikeTypeTraits<gong::IdentifierInfo*> {
+struct PointerLikeTypeTraits<gong::IdentifierInfo*> {
 public:
   static inline void *getAsVoidPointer(gong::IdentifierInfo* P) {
     return P;
@@ -340,7 +340,7 @@ public:
 };
 
 template<>
-class PointerLikeTypeTraits<const gong::IdentifierInfo*> {
+struct PointerLikeTypeTraits<const gong::IdentifierInfo*> {
 public:
   static inline const void *getAsVoidPointer(const gong::IdentifierInfo* P) {
     return P;

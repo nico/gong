@@ -62,7 +62,7 @@ namespace gong {
 
 namespace llvm {
   template <int UID>
-  class PointerLikeTypeTraits<gong::OpaquePtr<UID> > {
+  struct PointerLikeTypeTraits<gong::OpaquePtr<UID> > {
   public:
     static inline void *getAsVoidPointer(gong::OpaquePtr<UID> P) {
       // FIXME: Doesn't work? return P.getAs< void >();
@@ -167,7 +167,7 @@ namespace llvm {
 
 namespace llvm {
   template<>
-  class PointerLikeTypeTraits<gong::ActionBase*> {
+  struct PointerLikeTypeTraits<gong::ActionBase*> {
     typedef gong::ActionBase* PT;
   public:
     static inline void *getAsVoidPointer(PT P) { return P; }

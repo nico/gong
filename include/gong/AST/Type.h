@@ -48,9 +48,9 @@ namespace gong {
 
 namespace llvm {
   template <typename T>
-  class PointerLikeTypeTraits;
+  struct PointerLikeTypeTraits;
   template<>
-  class PointerLikeTypeTraits< ::gong::Type*> {
+  struct PointerLikeTypeTraits< ::gong::Type*> {
   public:
     static inline void *getAsVoidPointer(::gong::Type *P) { return P; }
     static inline ::gong::Type *getFromVoidPointer(void *P) {
