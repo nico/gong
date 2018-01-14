@@ -126,7 +126,7 @@ macro(add_gong_library name)
   llvm_add_library(${name} ${ARG_UNPARSED_ARGUMENTS} ${srcs})
 
   if(TARGET ${name})
-    target_link_libraries(${name} ${cmake_2_8_12_INTERFACE} ${LLVM_COMMON_LIBS})
+    target_link_libraries(${name} INTERFACE ${LLVM_COMMON_LIBS})
     set_property(GLOBAL APPEND PROPERTY GONG_EXPORTS ${name})
   else()
     # Add empty "phony" target

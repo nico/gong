@@ -21,6 +21,7 @@ add_gong_executable(gong
   )
 
 target_link_libraries(gong
+  PRIVATE
   gongBasic
   gongFrontend
   )
